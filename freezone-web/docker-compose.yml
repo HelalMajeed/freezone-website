@@ -1,0 +1,23 @@
+# Local PostgreSQL for FREEZONE. Start: docker compose up -d
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: freezone-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: freezone
+      POSTGRES_PASSWORD: freezone_dev
+      POSTGRES_DB: freezone
+    ports:
+      # Host 5432 — يجب أن يطابق منفذ DATABASE_URL في freezone-web/.env و freezone-api/.env
+      - "5432:5432"
+    volumes:
+      - freezone_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U freezone -d freezone"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  freezone_pg_data:

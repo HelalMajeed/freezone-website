@@ -1,0 +1,125 @@
+import { Suspense, lazy, useLayoutEffect } from "react";
+import { Link, Outlet, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { NavBar } from "@/components/layout/NavBar";
+import { SetDocumentLocale } from "@/components/providers/SetDocumentLocale";
+import { PageTransition } from "@/components/motion/PageTransition";
+import { fetchStorefrontBootstrap } from "@/lib/storefront-bootstrap";
+import { StorefrontProvider } from "@/components/providers/StorefrontProvider";
+import { ThemeApplier } from "@/components/providers/ThemeApplier";
+import { StoreJsonLd } from "@/components/seo/StoreJsonLd";
+import { AnnouncementBar } from "@/components/ui/AnnouncementBar";
+import { StorefrontPrefetch } from "@/components/storefront/StorefrontPrefetch";
+import { setLocale } from "@/i18n/i18n";
+import { LocaleRouteFallback } from "@/routes/LocaleRouteFallback";
+
+const Footer = lazy(() => import("@/components/layout/Footer").then((m) => ({ default: m.Footer })));
+
+export function LocaleLayout() {
+  const { locale: loc } = useParams<{ locale: string }>();
+  const locale = loc === "ar" ? "ar" : "en";
+  const dir = locale === "ar" ? "rtl" : "ltr";
+  const lc = locale;
+
+  const { data: bundle, isLoading, isError } = useQuery({
+    queryKey: ["storefront-bootstrap", lc],
+    queryFn: () => fetchStorefrontBootstrap(lc),
+    /** Catalog (categories, images) changes in admin — refresh when returning to this tab */
+    staleTime: 5_000,
+    refetchOnWindowFocus: true,
+  });
+
+  useLayoutEffect(() => {
+    setLocale(lc);
+  }, [lc]);
+
+  const baseUrl = import.meta.env.VITE_PUBLIC_SITE_URL || window.location.origin;
+
+  if (isLoading && !bundle) {
+    return (
+      <>
+        <SetDocumentLocale locale={locale} dir={dir} />
+        <LocaleRouteFallback />
+      </>
+    );
+  }
+
+  if (isError || !bundle) {
+    return (
+      <>
+        <SetDocumentLocale locale={locale} dir={dir} />
+        <div className="container" style={{ padding: "80px 20px", textAlign: "center" }}>
+          <p>تعذر تحميل المتجر. تحقق من تشغيل واجهة الـ API.</p>
+        </div>
+      </>
+    );
+  }
+
+  const { site, home, catalog, homeSections, theme } = bundle;
+
+  if (site.maintenanceMode) {
+    return (
+      <>
+        <SetDocumentLocale locale={locale} dir={dir} />
+        <div
+          style={{
+            minHeight: "100dvh",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 32,
+            textAlign: "center",
+            background: "#0f172a",
+            color: "#e2e8f0",
+          }}
+        >
+          <h1 style={{ fontSize: "1.75rem", marginBottom: 12 }}>الموقع تحت الصيانة</h1>
+          <p style={{ maxWidth: 420, lineHeight: 1.6, color: "#94a3b8" }}>
+            نعمل على حلّات سريعة لتحسين تجربتكم. يمكن للمسؤولين الاستمرار في لوحة الإدارة على{" "}
+            <Link to="/admin" style={{ color: "#f87171" }}>
+              /admin
+            </Link>
+            .
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <SetDocumentLocale locale={locale} dir={dir} />
+      <StoreJsonLd site={site} locale={locale} baseUrl={baseUrl} />
+      <div style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
+        <StorefrontPrefetch />
+        <StorefrontProvider
+          value={{
+            site,
+            home,
+            catalog: catalog,
+            theme,
+            homeSections,
+          }}
+        >
+          <ThemeApplier tokens={theme}>
+            <AnnouncementBar />
+            <NavBar />
+            <main className="app-main">
+              <PageTransition>
+                <Suspense fallback={<LocaleRouteFallback />}>
+                  <Outlet />
+                </Suspense>
+              </PageTransition>
+            </main>
+            <Suspense fallback={<footer style={{ minHeight: 80, flexShrink: 0 }} aria-hidden />}>
+              <div style={{ flexShrink: 0 }}>
+                <Footer />
+              </div>
+            </Suspense>
+          </ThemeApplier>
+        </StorefrontProvider>
+      </div>
+    </>
+  );
+}

@@ -1,0 +1,150 @@
+.section {
+  padding: 80px 0;
+  background: #ffffff;
+  border-top: 1px solid #f2f2f2;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: -0.01em;
+  position: relative;
+  display: inline-block;
+  padding-bottom: 12px;
+}
+
+.title::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 3px;
+  background: var(--primary-color, #B00000);
+  border-radius: 2px;
+}
+
+.tickerSection {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Full-bleed strip: no side padding, edges clip inside viewport */
+.marqueeViewport {
+  width: 100%;
+  overflow: hidden;
+  direction: ltr;
+}
+
+.marqueeTrackLeft,
+.marqueeTrackRight,
+.marqueeTrackStatic {
+  display: flex;
+  align-items: center;
+  gap: clamp(48px, 8vw, 96px);
+  padding: 8px 0;
+}
+
+.marqueeTrackLeft,
+.marqueeTrackRight {
+  width: max-content;
+  will-change: transform;
+}
+
+.marqueeTrackStatic {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding-left: clamp(16px, 4vw, 32px);
+  padding-right: clamp(16px, 4vw, 32px);
+  box-sizing: border-box;
+}
+
+.marqueeTrackLeft {
+  animation: brandScrollLeft 45s linear infinite;
+}
+
+.marqueeTrackRight {
+  animation: brandScrollRight 45s linear infinite;
+}
+
+@keyframes brandScrollLeft {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes brandScrollRight {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.brandCircle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 120px;
+  min-height: 48px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  text-decoration: none;
+  border: none;
+  background: transparent;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.brandCircle:hover {
+  opacity: 0.85;
+  transform: scale(1.05);
+}
+
+.brandImg {
+  display: block;
+  width: 132px;
+  max-width: min(132px, 28vw);
+  height: 40px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.brandName {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #374151;
+  text-align: center;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .section {
+  background: #0a0a0a;
+  border-top: 1px solid #1a1a1a;
+}
+
+[data-theme="dark"] .title {
+  color: #eee;
+}
+
+[data-theme="dark"] .brandName {
+  color: #d1d5db;
+}

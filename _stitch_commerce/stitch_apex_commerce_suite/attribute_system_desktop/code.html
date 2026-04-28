@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Attribute &amp; Filter System Builder</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline-variant": "#c3c6d6",
+                      "surface-bright": "#f8f9ff",
+                      "surface-container-high": "#dde9ff",
+                      "secondary-container": "#b47dfe",
+                      "on-tertiary": "#ffffff",
+                      "on-surface": "#061c34",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-container": "#406de4",
+                      "inverse-surface": "#1e314a",
+                      "on-secondary-container": "#450087",
+                      "outline": "#747685",
+                      "tertiary-fixed": "#4efcd6",
+                      "tertiary-container": "#00846d",
+                      "secondary-fixed-dim": "#d8b9ff",
+                      "surface-variant": "#d3e3ff",
+                      "primary": "#1f53c9",
+                      "on-primary-fixed-variant": "#003daa",
+                      "tertiary": "#006856",
+                      "surface-container": "#e6eeff",
+                      "surface": "#f8f9ff",
+                      "secondary-fixed": "#eddcff",
+                      "on-tertiary-fixed": "#002019",
+                      "error-container": "#ffdad6",
+                      "on-error-container": "#93000a",
+                      "on-primary": "#ffffff",
+                      "surface-dim": "#c8dbfb",
+                      "on-tertiary-container": "#f4fff9",
+                      "on-background": "#061c34",
+                      "surface-container-low": "#eff4ff",
+                      "on-secondary": "#ffffff",
+                      "on-primary-fixed": "#00174c",
+                      "background": "#f8f9ff",
+                      "tertiary-fixed-dim": "#18dfba",
+                      "on-error": "#ffffff",
+                      "on-primary-container": "#fefcff",
+                      "error": "#ba1a1a",
+                      "on-surface-variant": "#434654",
+                      "on-secondary-fixed-variant": "#5e22a5",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "on-secondary-fixed": "#290055",
+                      "inverse-on-surface": "#ebf1ff",
+                      "surface-container-highest": "#d3e3ff",
+                      "on-tertiary-fixed-variant": "#005142",
+                      "surface-tint": "#2355cc",
+                      "secondary": "#773fbe",
+                      "primary-fixed": "#dbe1ff",
+                      "inverse-primary": "#b4c5ff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sidebar-width-collapsed": "80px",
+                      "container-padding": "24px",
+                      "card-gap": "24px",
+                      "base-unit": "8px",
+                      "drawer-width": "400px",
+                      "sidebar-width-expanded": "260px"
+              },
+              "fontFamily": {
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "body-base": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-caps": [
+                              "11px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.5px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-base": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-base antialiased flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="bg-white dark:bg-slate-950 flex flex-col py-6 space-y-1 fixed left-0 top-0 bottom-0 h-screen w-64 border-r border-slate-200 dark:border-slate-800 soft tonal shift from background tray flat transition-all ease-in-out duration-300 z-50">
+<div class="px-6 mb-8 flex items-center space-x-3">
+<div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[20px]">corporate_fare</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Main Menu</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Enterprise Admin</p>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-1 overflow-y-auto">
+<!-- Dashboard -->
+<a class="flex items-center px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 rounded-lg mx-2 hover:translate-x-1 transition-transform duration-200 group" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">dashboard</span>
+<span class="font-['Inter'] text-[13px] font-medium">Dashboard</span>
+</a>
+<!-- Organization -->
+<a class="flex items-center px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 rounded-lg mx-2 hover:translate-x-1 transition-transform duration-200 group" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">corporate_fare</span>
+<span class="font-['Inter'] text-[13px] font-medium">Organization</span>
+</a>
+<!-- Financials -->
+<a class="flex items-center px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 rounded-lg mx-2 hover:translate-x-1 transition-transform duration-200 group" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">account_balance_wallet</span>
+<span class="font-['Inter'] text-[13px] font-medium">Financials</span>
+</a>
+<!-- Analytics -->
+<a class="flex items-center px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 rounded-lg mx-2 hover:translate-x-1 transition-transform duration-200 group" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">insights</span>
+<span class="font-['Inter'] text-[13px] font-medium">Analytics</span>
+</a>
+<!-- Resources -->
+<a class="flex items-center px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 rounded-lg mx-2 hover:translate-x-1 transition-transform duration-200 group" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">inventory_2</span>
+<span class="font-['Inter'] text-[13px] font-medium">Resources</span>
+</a>
+<!-- Settings (ACTIVE) -->
+<a class="flex items-center px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg mx-2 Active: opacity-80 scale-[0.99] transition-all" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">settings</span>
+<span class="font-['Inter'] text-[13px] font-medium">Settings</span>
+</a>
+</nav>
+<div class="px-6 py-4 mt-auto">
+<button class="w-full py-2 px-4 bg-primary text-on-primary rounded-lg font-['Inter'] text-[13px] font-medium shadow-sm hover:opacity-90 transition-opacity">
+                Upgrade Plan
+            </button>
+</div>
+<div class="px-4 pb-4 space-y-1">
+<a class="flex items-center px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 rounded-lg mx-2 hover:translate-x-1 transition-transform duration-200 group" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">help</span>
+<span class="font-['Inter'] text-[13px] font-medium">Help Center</span>
+</a>
+<a class="flex items-center px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 rounded-lg mx-2 hover:translate-x-1 transition-transform duration-200 group" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">logout</span>
+<span class="font-['Inter'] text-[13px] font-medium">Log Out</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area Wrapper -->
+<div class="flex-1 flex flex-col ml-64 overflow-hidden relative">
+<!-- TopNavBar -->
+<header class="bg-white/90 backdrop-blur-md dark:bg-slate-900/90 w-full border-b border-slate-200/60 dark:border-slate-800/60 shadow-[0_4px_20px_-4px_rgba(93,135,255,0.1)] sticky top-0 z-40 flex items-center justify-between px-6 h-16 w-full tonal layers with subtle hair-line borders">
+<div class="flex items-center space-x-6">
+<!-- Brand Logo (TopNavBar setting) -->
+<span class="text-xl font-bold text-slate-900 dark:text-white tracking-tighter">EnterpriseOS</span>
+<!-- Search Bar (on_left) -->
+<div class="hidden md:flex items-center bg-surface-container rounded-full px-4 py-1.5 w-64 border border-outline-variant/30 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+<span class="material-symbols-outlined text-outline text-[18px] mr-2">search</span>
+<input class="bg-transparent border-none outline-none text-body-sm font-body-sm text-on-surface w-full placeholder-on-surface-variant focus:ring-0 p-0" placeholder="Search attributes..." type="text"/>
+</div>
+</div>
+<div class="flex items-center space-x-2">
+<button class="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-200 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-200 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">chat_bubble</span>
+</button>
+<button class="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-200 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full ml-4 bg-surface-container-high border border-outline-variant overflow-hidden cursor-pointer">
+<img alt="User profile photo" class="w-full h-full object-cover" data-alt="Professional headshot of a corporate user in a well-lit studio setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvoGKfX6X2g9jNsKaFXt81JfaJRkMQXGsME8-EdfGNIiDJnnz6AOTJkWj3KcM3vlA-E5WRpdZv44uCzUaP6_RyOZ-lvoNT8RgqKawLyB_pITJ8s5e_SnqMHoj1uICdaY_EcOt1E9oWJRH2XOtMuMGpaz5Xbp6VlV8RO5zshNNlXVzivDghABSGNol5enmDfEW0URen4WJqOcZyD4PVC0Zcu7EK14JTr1FBONpoWrvPNrHBqCpnXhnAPBnfIJTaUC4M1LV3Y31HttzU"/>
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 overflow-y-auto p-container-padding bg-background">
+<div class="max-w-7xl mx-auto space-y-8">
+<!-- Page Header -->
+<div>
+<h1 class="font-display-lg text-display-lg text-on-surface mb-2">Attribute &amp; Filter Builder</h1>
+<p class="font-body-base text-body-base text-on-surface-variant max-w-2xl">Design and configure product attributes to power intelligent frontend search filters.</p>
+</div>
+<!-- Template Selection (Glassmorphism inspired) -->
+<section class="space-y-4">
+<h2 class="font-headline-md text-headline-md text-on-surface">Quick Start Templates</h2>
+<div class="flex gap-4 overflow-x-auto pb-2">
+<!-- Active Template -->
+<button class="flex items-center space-x-3 bg-primary/10 border border-primary/20 px-5 py-3 rounded-xl min-w-[160px] hover:bg-primary/15 transition-colors">
+<span class="material-symbols-outlined text-primary">apparel</span>
+<span class="font-body-base text-body-base font-medium text-primary">Clothing</span>
+</button>
+<!-- Inactive Templates -->
+<button class="flex items-center space-x-3 bg-surface border border-outline-variant px-5 py-3 rounded-xl min-w-[160px] hover:bg-surface-container transition-colors shadow-sm">
+<span class="material-symbols-outlined text-on-surface-variant">devices</span>
+<span class="font-body-base text-body-base font-medium text-on-surface">Electronics</span>
+</button>
+<button class="flex items-center space-x-3 bg-surface border border-outline-variant px-5 py-3 rounded-xl min-w-[160px] hover:bg-surface-container transition-colors shadow-sm">
+<span class="material-symbols-outlined text-on-surface-variant">chair</span>
+<span class="font-body-base text-body-base font-medium text-on-surface">Furniture</span>
+</button>
+<button class="flex items-center space-x-3 bg-surface border border-outline-variant px-5 py-3 rounded-xl min-w-[160px] hover:bg-surface-container transition-colors shadow-sm">
+<span class="material-symbols-outlined text-on-surface-variant">local_florist</span>
+<span class="font-body-base text-body-base font-medium text-on-surface">Cosmetics</span>
+</button>
+</div>
+</section>
+<!-- Builder Section -->
+<section class="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">
+<!-- Builder Header -->
+<div class="p-6 border-b border-outline-variant flex items-center justify-between bg-surface">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Configured Attributes</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Drag to reorder how filters appear on the storefront.</p>
+</div>
+<button class="flex items-center px-4 py-2 bg-primary text-on-primary rounded-lg font-body-sm text-body-sm font-medium hover:opacity-90 transition-opacity shadow-sm">
+<span class="material-symbols-outlined text-[18px] mr-2">add</span>
+                            Add Attribute
+                        </button>
+</div>
+<!-- Builder Grid -->
+<div class="p-6 bg-surface-container-low/50">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-card-gap">
+<!-- Card 1: Color (Hex) -->
+<div class="bg-surface rounded-xl border border-outline-variant shadow-sm flex flex-col">
+<div class="p-4 border-b border-outline-variant/50 flex items-center justify-between group cursor-grab">
+<div class="flex items-center space-x-3">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-on-surface-variant transition-colors">drag_indicator</span>
+<h4 class="font-body-base text-body-base font-semibold text-on-surface">Color</h4>
+<span class="px-2 py-0.5 bg-surface-container-high text-on-surface font-label-caps text-label-caps rounded uppercase tracking-wide">Hex Swatch</span>
+</div>
+<div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-md"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-error hover:bg-error-container/50 rounded-md"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+</div>
+</div>
+<div class="p-4 flex-1 flex flex-col space-y-4">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2">Values (12)</p>
+<div class="flex flex-wrap gap-2">
+<span class="px-2 py-1 bg-surface-container rounded-md font-body-sm text-body-sm text-on-surface">Midnight Blue</span>
+<span class="px-2 py-1 bg-surface-container rounded-md font-body-sm text-body-sm text-on-surface">Crimson Red</span>
+<span class="px-2 py-1 bg-surface-container rounded-md font-body-sm text-body-sm text-on-surface">Forest Green</span>
+<span class="px-2 py-1 bg-surface-container rounded-md font-body-sm text-body-sm text-on-surface-variant">+9 more</span>
+</div>
+</div>
+<div class="mt-auto">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2">Frontend Preview</p>
+<div class="p-4 bg-surface-container-lowest border border-outline-variant rounded-lg">
+<div class="flex gap-2">
+<div class="w-8 h-8 rounded-full bg-[#1e3a8a] border-2 border-primary ring-2 ring-transparent ring-offset-1 cursor-pointer"></div>
+<div class="w-8 h-8 rounded-full bg-[#991b1b] border border-outline-variant hover:border-outline cursor-pointer"></div>
+<div class="w-8 h-8 rounded-full bg-[#166534] border border-outline-variant hover:border-outline cursor-pointer"></div>
+<div class="w-8 h-8 rounded-full bg-[#000000] border border-outline-variant hover:border-outline cursor-pointer"></div>
+<div class="w-8 h-8 rounded-full bg-[#ffffff] border border-outline-variant hover:border-outline cursor-pointer relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-transparent to-gray-100"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2: Size (Radio/Buttons) -->
+<div class="bg-surface rounded-xl border border-outline-variant shadow-sm flex flex-col">
+<div class="p-4 border-b border-outline-variant/50 flex items-center justify-between group cursor-grab">
+<div class="flex items-center space-x-3">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-on-surface-variant transition-colors">drag_indicator</span>
+<h4 class="font-body-base text-body-base font-semibold text-on-surface">Size</h4>
+<span class="px-2 py-0.5 bg-surface-container-high text-on-surface font-label-caps text-label-caps rounded uppercase tracking-wide">Button Group</span>
+</div>
+<div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-md"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-error hover:bg-error-container/50 rounded-md"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+</div>
+</div>
+<div class="p-4 flex-1 flex flex-col space-y-4">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2">Values (6)</p>
+<div class="flex flex-wrap gap-2">
+<span class="px-2 py-1 bg-surface-container rounded-md font-body-sm text-body-sm text-on-surface">XS</span>
+<span class="px-2 py-1 bg-surface-container rounded-md font-body-sm text-body-sm text-on-surface">S</span>
+<span class="px-2 py-1 bg-surface-container rounded-md font-body-sm text-body-sm text-on-surface">M</span>
+<span class="px-2 py-1 bg-surface-container rounded-md font-body-sm text-body-sm text-on-surface">L</span>
+<span class="px-2 py-1 bg-surface-container rounded-md font-body-sm text-body-sm text-on-surface">XL</span>
+<span class="px-2 py-1 bg-surface-container rounded-md font-body-sm text-body-sm text-on-surface">XXL</span>
+</div>
+</div>
+<div class="mt-auto">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2">Frontend Preview</p>
+<div class="p-4 bg-surface-container-lowest border border-outline-variant rounded-lg">
+<div class="flex flex-wrap gap-2">
+<button class="px-4 py-1.5 border border-outline-variant rounded-md text-on-surface font-body-sm text-body-sm hover:bg-surface-container transition-colors">XS</button>
+<button class="px-4 py-1.5 border-2 border-primary bg-primary/5 rounded-md text-primary font-body-sm text-body-sm font-medium">S</button>
+<button class="px-4 py-1.5 border border-outline-variant rounded-md text-on-surface font-body-sm text-body-sm hover:bg-surface-container transition-colors">M</button>
+<button class="px-4 py-1.5 border border-outline-variant rounded-md text-on-surface font-body-sm text-body-sm hover:bg-surface-container transition-colors">L</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 3: Material (Checkbox) -->
+<div class="bg-surface rounded-xl border border-outline-variant shadow-sm flex flex-col">
+<div class="p-4 border-b border-outline-variant/50 flex items-center justify-between group cursor-grab">
+<div class="flex items-center space-x-3">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-on-surface-variant transition-colors">drag_indicator</span>
+<h4 class="font-body-base text-body-base font-semibold text-on-surface">Material</h4>
+<span class="px-2 py-0.5 bg-surface-container-high text-on-surface font-label-caps text-label-caps rounded uppercase tracking-wide">Checkbox List</span>
+</div>
+<div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-md"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-error hover:bg-error-container/50 rounded-md"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+</div>
+</div>
+<div class="p-4 flex-1 flex flex-col space-y-4">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2">Values (5)</p>
+<div class="flex flex-wrap gap-2">
+<span class="px-2 py-1 bg-surface-container rounded-md font-body-sm text-body-sm text-on-surface">100% Cotton</span>
+<span class="px-2 py-1 bg-surface-container rounded-md font-body-sm text-body-sm text-on-surface">Organic Cotton</span>
+<span class="px-2 py-1 bg-surface-container rounded-md font-body-sm text-body-sm text-on-surface">Recycled Polyester</span>
+</div>
+</div>
+<div class="mt-auto">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2">Frontend Preview</p>
+<div class="p-4 bg-surface-container-lowest border border-outline-variant rounded-lg space-y-3">
+<label class="flex items-center space-x-3 cursor-pointer group">
+<div class="w-5 h-5 rounded border-2 border-primary bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-[14px]">check</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface">100% Cotton</span>
+<span class="font-body-sm text-body-sm text-outline ml-auto text-xs">(42)</span>
+</label>
+<label class="flex items-center space-x-3 cursor-pointer group">
+<div class="w-5 h-5 rounded border border-outline-variant group-hover:border-outline transition-colors bg-white"></div>
+<span class="font-body-sm text-body-sm text-on-surface">Organic Cotton</span>
+<span class="font-body-sm text-body-sm text-outline ml-auto text-xs">(18)</span>
+</label>
+<label class="flex items-center space-x-3 cursor-pointer group">
+<div class="w-5 h-5 rounded border border-outline-variant group-hover:border-outline transition-colors bg-white"></div>
+<span class="font-body-sm text-body-sm text-on-surface">Linen Blend</span>
+<span class="font-body-sm text-body-sm text-outline ml-auto text-xs">(7)</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 4: Brand (Select/Search) -->
+<div class="bg-surface rounded-xl border border-outline-variant shadow-sm flex flex-col">
+<div class="p-4 border-b border-outline-variant/50 flex items-center justify-between group cursor-grab">
+<div class="flex items-center space-x-3">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-on-surface-variant transition-colors">drag_indicator</span>
+<h4 class="font-body-base text-body-base font-semibold text-on-surface">Brand</h4>
+<span class="px-2 py-0.5 bg-surface-container-high text-on-surface font-label-caps text-label-caps rounded uppercase tracking-wide">Searchable Select</span>
+</div>
+<div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-md"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-error hover:bg-error-container/50 rounded-md"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+</div>
+</div>
+<div class="p-4 flex-1 flex flex-col space-y-4">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2">Values (Dynamic)</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Linked to Product Database (Brands Table)</p>
+</div>
+<div class="mt-auto">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2">Frontend Preview</p>
+<div class="p-4 bg-surface-container-lowest border border-outline-variant rounded-lg">
+<div class="w-full border border-outline-variant rounded-md px-3 py-2 flex items-center justify-between bg-white text-on-surface cursor-pointer">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Select Brands...</span>
+<span class="material-symbols-outlined text-outline text-[20px]">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</div>
+</body></html>

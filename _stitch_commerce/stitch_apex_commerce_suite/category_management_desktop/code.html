@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Category Management - EnterpriseOS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline-variant": "#c3c6d6",
+                        "surface-bright": "#f8f9ff",
+                        "surface-container-high": "#dde9ff",
+                        "secondary-container": "#b47dfe",
+                        "on-tertiary": "#ffffff",
+                        "on-surface": "#061c34",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#406de4",
+                        "inverse-surface": "#1e314a",
+                        "on-secondary-container": "#450087",
+                        "outline": "#747685",
+                        "tertiary-fixed": "#4efcd6",
+                        "tertiary-container": "#00846d",
+                        "secondary-fixed-dim": "#d8b9ff",
+                        "surface-variant": "#d3e3ff",
+                        "primary": "#1f53c9",
+                        "on-primary-fixed-variant": "#003daa",
+                        "tertiary": "#006856",
+                        "surface-container": "#e6eeff",
+                        "surface": "#f8f9ff",
+                        "secondary-fixed": "#eddcff",
+                        "on-tertiary-fixed": "#002019",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#c8dbfb",
+                        "on-tertiary-container": "#f4fff9",
+                        "on-background": "#061c34",
+                        "surface-container-low": "#eff4ff",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#00174c",
+                        "background": "#f8f9ff",
+                        "tertiary-fixed-dim": "#18dfba",
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#fefcff",
+                        "error": "#ba1a1a",
+                        "on-surface-variant": "#434654",
+                        "on-secondary-fixed-variant": "#5e22a5",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-secondary-fixed": "#290055",
+                        "inverse-on-surface": "#ebf1ff",
+                        "surface-container-highest": "#d3e3ff",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "surface-tint": "#2355cc",
+                        "secondary": "#773fbe",
+                        "primary-fixed": "#dbe1ff",
+                        "inverse-primary": "#b4c5ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sidebar-width-collapsed": "80px",
+                        "container-padding": "24px",
+                        "card-gap": "24px",
+                        "base-unit": "8px",
+                        "drawer-width": "400px",
+                        "sidebar-width-expanded": "260px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-base": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "body-sm": ["13px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-caps": ["11px", { "lineHeight": "1.2", "letterSpacing": "0.5px", "fontWeight": "700" }],
+                        "display-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "body-base": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen flex font-body-base text-body-base">
+<!-- SideNavBar -->
+<nav class="bg-white dark:bg-slate-950 h-screen w-64 border-r border-slate-200 dark:border-slate-800 flex flex-col py-6 space-y-1 fixed left-0 top-0 bottom-0 z-30 transition-all ease-in-out duration-300">
+<div class="px-6 mb-8 hidden">
+<span class="font-headline-md text-headline-md text-slate-900 dark:text-white">EnterpriseOS</span>
+</div>
+<div class="px-6 mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden">
+<img alt="Company Logo" class="w-full h-full object-cover" data-alt="Corporate logo or abstract geometric shape representing a company avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCA_9QDks7YmUik5OxogVk5GAO0xtF_MYxdYecN0rhAw3j3fv3wvDenj1DK7niCbHV7UiO4MTcrR0CE2Ov882AT78PBs2O-TWxUwS7TeQZgPld1GYcq5gGmDDRKaXAEj_jiqzo993k1zq6zko6Xdc1dYRZjLLTGiHSjU_Z_Qf-H9t8RVZooeaL1xu6abMYsZMzr2fdhyk81MVMigDblhiw_Oe80reaHRPGd8jny2W_pu3BJE6A8vfDiKTlJ20o2wdH9yMOurexOFDy3"/>
+</div>
+<div>
+<h2 class="font-body-base text-body-base font-semibold text-on-surface">Main Menu</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Enterprise Admin</p>
+</div>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto mt-4 px-2 space-y-1">
+<a class="flex items-center gap-3 px-4 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 rounded-lg mx-2 hover:translate-x-1 transition-transform duration-200 font-['Inter'] text-[13px] font-medium" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 rounded-lg mx-2 hover:translate-x-1 transition-transform duration-200 font-['Inter'] text-[13px] font-medium" href="#">
+<span class="material-symbols-outlined">corporate_fare</span>
+                Organization
+            </a>
+<a class="flex items-center gap-3 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg mx-2 hover:translate-x-1 transition-transform duration-200 font-['Inter'] text-[13px] font-medium" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+                Financials
+            </a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 rounded-lg mx-2 hover:translate-x-1 transition-transform duration-200 font-['Inter'] text-[13px] font-medium" href="#">
+<span class="material-symbols-outlined">insights</span>
+                Analytics
+            </a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 rounded-lg mx-2 hover:translate-x-1 transition-transform duration-200 font-['Inter'] text-[13px] font-medium" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+                Resources
+            </a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 rounded-lg mx-2 hover:translate-x-1 transition-transform duration-200 font-['Inter'] text-[13px] font-medium" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+</div>
+<div class="px-4 mt-auto space-y-1">
+<a class="flex items-center gap-3 px-4 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 rounded-lg mx-2 hover:translate-x-1 transition-transform duration-200 font-['Inter'] text-[13px] font-medium" href="#">
+<span class="material-symbols-outlined">help</span>
+                Help Center
+            </a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 rounded-lg mx-2 hover:translate-x-1 transition-transform duration-200 font-['Inter'] text-[13px] font-medium" href="#">
+<span class="material-symbols-outlined">logout</span>
+                Log Out
+            </a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 ml-64 flex flex-col min-h-screen w-full relative overflow-hidden">
+<!-- TopNavBar -->
+<header class="bg-white/90 backdrop-blur-md dark:bg-slate-900/90 w-full border-b border-slate-200/60 dark:border-slate-800/60 shadow-[0_4px_20px_-4px_rgba(93,135,255,0.1)] sticky top-0 z-40 flex items-center justify-between px-6 h-16 w-full">
+<div class="flex items-center gap-6">
+<span class="text-xl font-bold text-slate-900 dark:text-white tracking-tighter">EnterpriseOS</span>
+<div class="relative w-64 hidden md:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+<input class="w-full pl-9 pr-4 py-2 bg-surface-bright border border-outline-variant rounded-lg font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-outline text-on-surface" placeholder="Search..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-full transition-colors duration-200 flex items-center justify-center">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-full transition-colors duration-200 flex items-center justify-center">
+<span class="material-symbols-outlined">chat_bubble</span>
+</button>
+<button class="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-full transition-colors duration-200 flex items-center justify-center">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-high ml-2 overflow-hidden cursor-pointer border border-outline-variant">
+<img alt="User profile photo" class="w-full h-full object-cover" data-alt="Portrait of a professional person for a profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBABFeu37V0k2hjZMRneaVEWvP0utAP87nqTNVBUbm0UATq1uKOqh2Ov2aA2ldw6lr5zdXMZZtAlJyg6BZalIKOLteVOB3w7KynuRvjAvq82nlzzLl2BUZxySp8mCT9Cnmn0_kMoOe_jc2mS7YMtMF8rk4DgcJX-qfmjPPFt6QhWjWQwB0cr8CM5VYir2Exh0LY3QHUrdWdizS8pepTz4wV-xvkX3ugjq-bIVI55RuBq2gtBe1evvOqNNZVYOMs41yjLcdzJtSyaGeG"/>
+</div>
+</div>
+</header>
+<!-- Canvas Area -->
+<div class="flex-1 p-container-padding overflow-y-auto">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+<div>
+<h1 class="font-headline-md text-headline-md text-on-surface mb-1">Category Management</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Organize and manage your product taxonomy.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-4 py-2 border border-outline-variant text-on-surface font-body-sm text-body-sm font-medium rounded-lg hover:bg-surface-bright transition-colors shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                        Export
+                    </button>
+<button class="px-4 py-2 bg-primary text-on-primary font-body-sm text-body-sm font-medium rounded-lg hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        New Category
+                    </button>
+</div>
+</div>
+<!-- Bulk Action Bar -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 mb-6 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<input class="w-4 h-4 text-primary border-outline-variant rounded focus:ring-primary" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Select All</span>
+</div>
+<div class="h-4 w-px bg-outline-variant"></div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">0 selected</span>
+</div>
+<div class="flex items-center gap-2 opacity-50 pointer-events-none">
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-bright rounded transition-colors" title="Delete Selected">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-bright rounded transition-colors" title="Move Selected">
+<span class="material-symbols-outlined text-[20px]">drive_file_move</span>
+</button>
+</div>
+</div>
+<!-- Category Tree Container -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden mb-8">
+<!-- Level 1 Category -->
+<div class="group border-b border-outline-variant last:border-b-0 hover:bg-surface-bright transition-colors">
+<div class="flex items-center p-4 pl-4 cursor-pointer">
+<div class="flex items-center gap-3 w-full">
+<span class="material-symbols-outlined text-outline cursor-grab hover:text-on-surface transition-colors active:cursor-grabbing">drag_indicator</span>
+<button class="w-5 h-5 flex items-center justify-center text-on-surface-variant rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
+</button>
+<input class="w-4 h-4 text-primary border-outline-variant rounded focus:ring-primary" type="checkbox"/>
+<div class="w-8 h-8 rounded bg-surface-container flex items-center justify-center ml-1">
+<span class="material-symbols-outlined text-primary text-[18px]">checkroom</span>
+</div>
+<div class="flex-1 ml-2">
+<h3 class="font-body-base text-body-base font-semibold text-on-surface">Apparel &amp; Accessories</h3>
+</div>
+<div class="flex items-center gap-6">
+<div class="bg-surface-container-high px-2.5 py-0.5 rounded-full">
+<span class="font-label-caps text-label-caps text-primary">124 ITEMS</span>
+</div>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded transition-colors" title="Add Subcategory">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded transition-colors" title="Edit">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 text-error hover:bg-error-container rounded transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Level 2 Subcategories -->
+<div class="bg-surface-bright pl-14">
+<!-- Subcategory 1 -->
+<div class="group/sub border-t border-outline-variant/50 hover:bg-surface-container-low transition-colors">
+<div class="flex items-center p-3 pl-4 cursor-pointer border-l-2 border-transparent hover:border-primary">
+<div class="flex items-center gap-3 w-full">
+<span class="material-symbols-outlined text-outline/50 cursor-grab hover:text-on-surface transition-colors">drag_indicator</span>
+<button class="w-5 h-5 flex items-center justify-center text-on-surface-variant rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">keyboard_arrow_right</span>
+</button>
+<input class="w-4 h-4 text-primary border-outline-variant rounded focus:ring-primary" type="checkbox"/>
+<div class="flex-1 ml-2">
+<span class="font-body-sm text-body-sm font-medium text-on-surface">Men's Clothing</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="bg-surface-container-low border border-outline-variant/50 px-2.5 py-0.5 rounded-full">
+<span class="font-label-caps text-label-caps text-on-surface-variant">42 ITEMS</span>
+</div>
+<div class="flex items-center gap-1 opacity-0 group-hover/sub:opacity-100 transition-opacity">
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 text-error hover:bg-error-container rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Subcategory 2 (Active/Selected state implied by drawer) -->
+<div class="group/sub border-t border-outline-variant/50 bg-primary-fixed hover:bg-primary-fixed transition-colors">
+<div class="flex items-center p-3 pl-4 cursor-pointer border-l-2 border-primary">
+<div class="flex items-center gap-3 w-full">
+<span class="material-symbols-outlined text-outline/50 cursor-grab hover:text-on-surface transition-colors">drag_indicator</span>
+<button class="w-5 h-5 flex items-center justify-center text-on-surface-variant rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
+</button>
+<input class="w-4 h-4 text-primary border-outline-variant rounded focus:ring-primary" type="checkbox"/>
+<div class="flex-1 ml-2">
+<span class="font-body-sm text-body-sm font-semibold text-primary">Women's Clothing</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="bg-primary/10 px-2.5 py-0.5 rounded-full">
+<span class="font-label-caps text-label-caps text-primary">82 ITEMS</span>
+</div>
+<div class="flex items-center gap-1 opacity-100 transition-opacity">
+<button class="p-1.5 text-on-surface-variant hover:bg-white/50 rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+</button>
+<button class="p-1.5 text-primary bg-white/50 rounded transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 text-error hover:bg-error-container rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Level 3 Sub-subcategories -->
+<div class="bg-surface-bright pl-14 pb-2">
+<div class="group/subsub border-t border-outline-variant/30 hover:bg-surface-container-low transition-colors">
+<div class="flex items-center p-2.5 pl-4 cursor-pointer">
+<div class="flex items-center gap-3 w-full">
+<span class="material-symbols-outlined text-outline/30 cursor-grab hover:text-on-surface transition-colors text-[16px]">drag_indicator</span>
+<div class="w-5 h-5"></div> <!-- Spacer for no children -->
+<input class="w-3.5 h-3.5 text-primary border-outline-variant rounded focus:ring-primary" type="checkbox"/>
+<div class="flex-1 ml-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Dresses</span>
+</div>
+<div class="flex items-center gap-6">
+<span class="font-label-caps text-label-caps text-outline">35 ITEMS</span>
+<div class="flex items-center gap-1 opacity-0 group-hover/subsub:opacity-100 transition-opacity">
+<button class="p-1 text-on-surface-variant hover:bg-surface-container-high rounded transition-colors">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+</button>
+<button class="p-1 text-error hover:bg-error-container rounded transition-colors">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="group/subsub border-t border-outline-variant/30 hover:bg-surface-container-low transition-colors">
+<div class="flex items-center p-2.5 pl-4 cursor-pointer">
+<div class="flex items-center gap-3 w-full">
+<span class="material-symbols-outlined text-outline/30 cursor-grab hover:text-on-surface transition-colors text-[16px]">drag_indicator</span>
+<div class="w-5 h-5"></div>
+<input class="w-3.5 h-3.5 text-primary border-outline-variant rounded focus:ring-primary" type="checkbox"/>
+<div class="flex-1 ml-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Activewear</span>
+</div>
+<div class="flex items-center gap-6">
+<span class="font-label-caps text-label-caps text-outline">47 ITEMS</span>
+<div class="flex items-center gap-1 opacity-0 group-hover/subsub:opacity-100 transition-opacity">
+<button class="p-1 text-on-surface-variant hover:bg-surface-container-high rounded transition-colors">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+</button>
+<button class="p-1 text-error hover:bg-error-container rounded transition-colors">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Another Level 1 Category -->
+<div class="group border-b border-outline-variant last:border-b-0 hover:bg-surface-bright transition-colors">
+<div class="flex items-center p-4 pl-4 cursor-pointer">
+<div class="flex items-center gap-3 w-full">
+<span class="material-symbols-outlined text-outline cursor-grab hover:text-on-surface transition-colors">drag_indicator</span>
+<button class="w-5 h-5 flex items-center justify-center text-on-surface-variant rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">keyboard_arrow_right</span>
+</button>
+<input class="w-4 h-4 text-primary border-outline-variant rounded focus:ring-primary" type="checkbox"/>
+<div class="w-8 h-8 rounded bg-surface-container flex items-center justify-center ml-1">
+<span class="material-symbols-outlined text-primary text-[18px]">devices</span>
+</div>
+<div class="flex-1 ml-2">
+<h3 class="font-body-base text-body-base font-semibold text-on-surface">Electronics</h3>
+</div>
+<div class="flex items-center gap-6">
+<div class="bg-surface-container-high px-2.5 py-0.5 rounded-full">
+<span class="font-label-caps text-label-caps text-primary">89 ITEMS</span>
+</div>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 text-error hover:bg-error-container rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Another Level 1 Category -->
+<div class="group hover:bg-surface-bright transition-colors">
+<div class="flex items-center p-4 pl-4 cursor-pointer">
+<div class="flex items-center gap-3 w-full">
+<span class="material-symbols-outlined text-outline cursor-grab hover:text-on-surface transition-colors">drag_indicator</span>
+<button class="w-5 h-5 flex items-center justify-center text-on-surface-variant rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">keyboard_arrow_right</span>
+</button>
+<input class="w-4 h-4 text-primary border-outline-variant rounded focus:ring-primary" type="checkbox"/>
+<div class="w-8 h-8 rounded bg-surface-container flex items-center justify-center ml-1">
+<span class="material-symbols-outlined text-primary text-[18px]">home_iot_device</span>
+</div>
+<div class="flex-1 ml-2">
+<h3 class="font-body-base text-body-base font-semibold text-on-surface">Home &amp; Garden</h3>
+</div>
+<div class="flex items-center gap-6">
+<div class="bg-surface-container-high px-2.5 py-0.5 rounded-full">
+<span class="font-label-caps text-label-caps text-primary">210 ITEMS</span>
+</div>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 text-error hover:bg-error-container rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Overlay Backdrop -->
+<div class="fixed inset-0 bg-on-surface/20 backdrop-blur-sm z-50 pointer-events-none"></div>
+<!-- Side Drawer (Edit Category) -->
+<aside class="fixed right-0 top-0 bottom-0 w-drawer-width bg-surface-container-lowest shadow-[-8px_0_24px_rgba(0,0,0,0.05)] z-50 flex flex-col border-l border-outline-variant transform transition-transform duration-300">
+<!-- Drawer Header -->
+<div class="flex items-center justify-between p-6 border-b border-outline-variant">
+<h2 class="font-headline-md text-headline-md text-on-surface">Edit Category</h2>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Drawer Body -->
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<div class="space-y-4">
+<div>
+<label class="block font-body-sm text-body-sm font-medium text-on-surface mb-1.5">Category Name *</label>
+<input class="w-full px-3 py-2 bg-surface-bright border border-outline-variant rounded-lg font-body-base text-body-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-on-surface" type="text" value="Women's Clothing"/>
+</div>
+<div>
+<label class="block font-body-sm text-body-sm font-medium text-on-surface mb-1.5">Parent Category</label>
+<div class="relative">
+<select class="w-full px-3 py-2 bg-surface-bright border border-outline-variant rounded-lg font-body-base text-body-base appearance-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-on-surface">
+<option>Apparel &amp; Accessories</option>
+<option>Electronics</option>
+<option>Home &amp; Garden</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+</div>
+</div>
+<div>
+<label class="block font-body-sm text-body-sm font-medium text-on-surface mb-1.5">Description</label>
+<textarea class="w-full px-3 py-2 bg-surface-bright border border-outline-variant rounded-lg font-body-base text-body-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-on-surface resize-none" rows="3">Apparel specifically designed for women.</textarea>
+</div>
+</div>
+<div class="h-px bg-outline-variant"></div>
+<div>
+<h3 class="font-body-base text-body-base font-semibold text-on-surface mb-4">Category Image</h3>
+<div class="border-2 border-dashed border-outline-variant rounded-xl p-6 flex flex-col items-center justify-center bg-surface-bright hover:bg-surface-container-high transition-colors cursor-pointer group">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary">add_photo_alternate</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface font-medium mb-1">Click to upload or drag and drop</p>
+<p class="font-label-caps text-label-caps text-outline">SVG, PNG, JPG or GIF (max. 800x400px)</p>
+</div>
+</div>
+<div class="h-px bg-outline-variant"></div>
+<div class="space-y-4">
+<h3 class="font-body-base text-body-base font-semibold text-on-surface">Settings</h3>
+<label class="flex items-center justify-between cursor-pointer">
+<div>
+<span class="font-body-sm text-body-sm font-medium text-on-surface block">Visible in navigation</span>
+<span class="font-label-caps text-label-caps text-outline">Show this category in the main customer menus.</span>
+</div>
+<div class="relative">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</label>
+</div>
+</div>
+<!-- Drawer Footer -->
+<div class="p-6 border-t border-outline-variant bg-surface-container-lowest flex items-center justify-end gap-3">
+<button class="px-4 py-2 border border-outline-variant text-on-surface font-body-sm text-body-sm font-medium rounded-lg hover:bg-surface-bright transition-colors shadow-sm">
+                Cancel
+            </button>
+<button class="px-4 py-2 bg-primary text-on-primary font-body-sm text-body-sm font-medium rounded-lg hover:bg-primary/90 transition-colors shadow-sm">
+                Save Changes
+            </button>
+</div>
+</aside>
+</body></html>

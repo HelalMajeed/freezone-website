@@ -1,0 +1,347 @@
+import type { FacetAttributeDef, Product } from "./data";
+import { productBelongsToCategory } from "./productCategoryMembership";
+
+export type FacetDefinition = {
+  key: string;
+  labelKey: string;
+  /** When set (from `Category.facetAttributes`), overrides i18n for this facet. */
+  name_en?: string;
+  name_ar?: string;
+};
+
+/** Title for filters / PDP — uses DB names when present, else `Products.*` i18n. */
+export function facetDefinitionDisplayTitle(
+  def: FacetDefinition,
+  locale: "en" | "ar",
+  t: (key: string, opts?: Record<string, string>) => string,
+): string {
+  const en = def.name_en?.trim() ?? "";
+  const ar = def.name_ar?.trim() ?? "";
+  if (en || ar) {
+    const primary = locale === "ar" ? ar : en;
+    const fallback = locale === "ar" ? en : ar;
+    return primary || fallback || def.key;
+  }
+  return def.labelKey === "facetGeneric" ? t("facetGeneric", { key: def.key }) : t(def.labelKey);
+}
+
+/** Maps spec key → Products.* translation key (fallback: show raw `key` in UI when missing). */
+export const FACET_KEY_TO_LABEL: Record<string, string> = {
+  model: "facetModel",
+  screen: "facetScreen",
+  cpu: "facetCpu",
+  gpu: "facetGpu",
+  ram: "facetRam",
+  storage: "facetStorage",
+  storageType: "facetStorageType",
+  screenSize: "facetScreenSize",
+  refreshRate: "facetRefreshRate",
+  resolution: "facetResolution",
+  panelType: "facetPanelType",
+  componentType: "facetComponentType",
+  systemType: "facetSystemType",
+  channelCount: "facetChannelCount",
+  vram: "facetVram",
+  touchscreen: "facetTouchscreen",
+  os: "facetOs",
+  mbFormFactor: "facetMbFormFactor",
+  socketType: "facetSocketType",
+  psuWattage: "facetPsuWattage",
+  paperType: "facetPaperType",
+  printColor: "facetPrintColor",
+  printTechnology: "facetPrintTechnology",
+  printSpeedPpm: "facetPrintSpeedPpm",
+  duplexPrinting: "facetDuplexPrinting",
+  scanResolution: "facetScanResolution",
+  connectivityPrinter: "facetConnectivityPrinter",
+  cameraColorMode: "facetCameraColorMode",
+  viewingAngleDeg: "facetViewingAngleDeg",
+  nightVisionMeters: "facetNightVisionMeters",
+  ipRating: "facetIpRating",
+  lensType: "facetLensType",
+  poeSupport: "facetPoeSupport",
+  recordingResolution: "facetRecordingResolution",
+  imagingQuality: "facetImagingQuality",
+  lensFocalMm: "facetLensFocalMm",
+  hybridVideoSignals: "facetHybridVideoSignals",
+  imageSensor: "facetImageSensor",
+  smartDetection: "facetSmartDetection",
+  smartProtocol: "facetSmartProtocol",
+  switchCount: "facetSwitchCount",
+  sensorCount: "facetSensorCount",
+  voiceAssistantCompat: "facetVoiceAssistantCompat",
+  smartHubMaxDevices: "facetSmartHubMaxDevices",
+  panelWattPeakW: "facetPanelWattPeakW",
+  solarCellType: "facetSolarCellType",
+  batteryCapacityKwh: "facetBatteryCapacityKwh",
+  batteryCapacityAh: "facetBatteryCapacityAh",
+  inverterType: "facetInverterType",
+  nominalVoltageV: "facetNominalVoltageV",
+  phaseCount: "facetPhaseCount",
+  upsVA: "facetUpsVa",
+  pureSineWave: "facetPureSineWave",
+  outletsCount: "facetOutletsCount",
+  usbPortsPower: "facetUsbPortsPower",
+  efficiencyPercent: "facetEfficiencyPercent",
+  licenseType: "facetLicenseType",
+  seatCount: "facetSeatCount",
+  softwarePlatform: "facetSoftwarePlatform",
+  subscriptionTerm: "facetSubscriptionTerm",
+  sizeLabel: "facetSizeLabel",
+  dimensionsMm: "facetDimensionsMm",
+  weightKg: "facetWeightKg",
+  cableLengthM: "facetCableLengthM",
+  colorVariant: "facetColorVariant",
+  material: "facetMaterial",
+  compatibilityList: "facetCompatibilityList",
+  mountingType: "facetMountingType",
+  wattage: "facetWattage",
+  maxCurrentA: "facetMaxCurrentA",
+  cableGauge: "facetCableGauge",
+  portCount: "facetPortCount",
+  wifiStandard: "facetWifiStandard",
+  maxSpeedMbps: "facetMaxSpeedMbps",
+  audioDriverSize: "facetAudioDriverSize",
+  impedanceOhms: "facetImpedanceOhms",
+  batteryLifeHours: "facetBatteryLifeHours",
+};
+
+/** Facet keys and i18n label keys per category (`cat` from product / URL). */
+export const CATEGORY_FACETS: Record<string, FacetDefinition[]> = {
+  gaming: [
+    { key: "cpu", labelKey: "facetCpu" },
+    { key: "gpu", labelKey: "facetGpu" },
+    { key: "ram", labelKey: "facetRam" },
+  ],
+  computers: [
+    { key: "cpu", labelKey: "facetCpu" },
+    { key: "ram", labelKey: "facetRam" },
+    { key: "storageType", labelKey: "facetStorageType" },
+  ],
+  laptops: [
+    { key: "cpu", labelKey: "facetCpu" },
+    { key: "ram", labelKey: "facetRam" },
+    { key: "storageType", labelKey: "facetStorageType" },
+    { key: "screenSize", labelKey: "facetScreenSize" },
+    { key: "gpu", labelKey: "facetGpu" },
+  ],
+  monitors: [
+    { key: "screenSize", labelKey: "facetScreenSize" },
+    { key: "refreshRate", labelKey: "facetRefreshRate" },
+    { key: "resolution", labelKey: "facetResolution" },
+    { key: "panelType", labelKey: "facetPanelType" },
+  ],
+  components: [
+    { key: "componentType", labelKey: "facetComponentType" },
+    { key: "cpu", labelKey: "facetCpu" },
+    { key: "gpu", labelKey: "facetGpu" },
+    { key: "ram", labelKey: "facetRam" },
+    { key: "socketType", labelKey: "facetSocketType" },
+    { key: "psuWattage", labelKey: "facetPsuWattage" },
+  ],
+  security: [
+    { key: "systemType", labelKey: "facetSystemType" },
+    { key: "channelCount", labelKey: "facetChannelCount" },
+  ],
+  cctv: [
+    { key: "imagingQuality", labelKey: "facetImagingQuality" },
+    { key: "resolution", labelKey: "facetResolution" },
+    { key: "recordingResolution", labelKey: "facetRecordingResolution" },
+    { key: "lensFocalMm", labelKey: "facetLensFocalMm" },
+    { key: "lensType", labelKey: "facetLensType" },
+    { key: "nightVisionMeters", labelKey: "facetNightVisionMeters" },
+    { key: "hybridVideoSignals", labelKey: "facetHybridVideoSignals" },
+    { key: "ipRating", labelKey: "facetIpRating" },
+    { key: "imageSensor", labelKey: "facetImageSensor" },
+    { key: "smartDetection", labelKey: "facetSmartDetection" },
+    { key: "cameraColorMode", labelKey: "facetCameraColorMode" },
+    { key: "viewingAngleDeg", labelKey: "facetViewingAngleDeg" },
+    { key: "poeSupport", labelKey: "facetPoeSupport" },
+    { key: "channelCount", labelKey: "facetChannelCount" },
+  ],
+  "all-in-one": [
+    { key: "cpu", labelKey: "facetCpu" },
+    { key: "ram", labelKey: "facetRam" },
+    { key: "storageType", labelKey: "facetStorageType" },
+    { key: "screenSize", labelKey: "facetScreenSize" },
+  ],
+  "smart-home": [
+    { key: "smartProtocol", labelKey: "facetSmartProtocol" },
+    { key: "systemType", labelKey: "facetSystemType" },
+    { key: "switchCount", labelKey: "facetSwitchCount" },
+    { key: "sensorCount", labelKey: "facetSensorCount" },
+    { key: "voiceAssistantCompat", labelKey: "facetVoiceAssistantCompat" },
+    { key: "smartHubMaxDevices", labelKey: "facetSmartHubMaxDevices" },
+    { key: "wifiStandard", labelKey: "facetWifiStandard" },
+  ],
+  accessories: [
+    { key: "sizeLabel", labelKey: "facetSizeLabel" },
+    { key: "dimensionsMm", labelKey: "facetDimensionsMm" },
+    { key: "weightKg", labelKey: "facetWeightKg" },
+    { key: "cableLengthM", labelKey: "facetCableLengthM" },
+    { key: "colorVariant", labelKey: "facetColorVariant" },
+    { key: "material", labelKey: "facetMaterial" },
+    { key: "compatibilityList", labelKey: "facetCompatibilityList" },
+    { key: "mountingType", labelKey: "facetMountingType" },
+    { key: "componentType", labelKey: "facetComponentType" },
+  ],
+  phones: [
+    { key: "ram", labelKey: "facetRam" },
+    { key: "storageType", labelKey: "facetStorageType" },
+    { key: "os", labelKey: "facetOs" },
+    { key: "screenSize", labelKey: "facetScreenSize" },
+  ],
+  printers: [
+    { key: "paperType", labelKey: "facetPaperType" },
+    { key: "printColor", labelKey: "facetPrintColor" },
+    { key: "printTechnology", labelKey: "facetPrintTechnology" },
+    { key: "printSpeedPpm", labelKey: "facetPrintSpeedPpm" },
+    { key: "duplexPrinting", labelKey: "facetDuplexPrinting" },
+    { key: "scanResolution", labelKey: "facetScanResolution" },
+    { key: "connectivityPrinter", labelKey: "facetConnectivityPrinter" },
+    { key: "resolution", labelKey: "facetResolution" },
+  ],
+  software: [
+    { key: "licenseType", labelKey: "facetLicenseType" },
+    { key: "seatCount", labelKey: "facetSeatCount" },
+    { key: "softwarePlatform", labelKey: "facetSoftwarePlatform" },
+    { key: "subscriptionTerm", labelKey: "facetSubscriptionTerm" },
+    { key: "os", labelKey: "facetOs" },
+  ],
+  "power-solutions": [
+    { key: "panelWattPeakW", labelKey: "facetPanelWattPeakW" },
+    { key: "solarCellType", labelKey: "facetSolarCellType" },
+    { key: "batteryCapacityKwh", labelKey: "facetBatteryCapacityKwh" },
+    { key: "batteryCapacityAh", labelKey: "facetBatteryCapacityAh" },
+    { key: "inverterType", labelKey: "facetInverterType" },
+    { key: "nominalVoltageV", labelKey: "facetNominalVoltageV" },
+    { key: "phaseCount", labelKey: "facetPhaseCount" },
+    { key: "upsVA", labelKey: "facetUpsVa" },
+    { key: "pureSineWave", labelKey: "facetPureSineWave" },
+    { key: "outletsCount", labelKey: "facetOutletsCount" },
+    { key: "usbPortsPower", labelKey: "facetUsbPortsPower" },
+    { key: "efficiencyPercent", labelKey: "facetEfficiencyPercent" },
+    { key: "wattage", labelKey: "facetWattage" },
+    { key: "maxCurrentA", labelKey: "facetMaxCurrentA" },
+  ],
+  electric: [
+    { key: "wattage", labelKey: "facetWattage" },
+    { key: "nominalVoltageV", labelKey: "facetNominalVoltageV" },
+    { key: "maxCurrentA", labelKey: "facetMaxCurrentA" },
+    { key: "cableGauge", labelKey: "facetCableGauge" },
+    { key: "ipRating", labelKey: "facetIpRating" },
+  ],
+  hardware: [
+    { key: "portCount", labelKey: "facetPortCount" },
+    { key: "wifiStandard", labelKey: "facetWifiStandard" },
+    { key: "maxSpeedMbps", labelKey: "facetMaxSpeedMbps" },
+    { key: "componentType", labelKey: "facetComponentType" },
+  ],
+};
+
+const STORAGE_TO_COMPONENT: Record<string, string> = {
+  cpu: "CPU",
+  gpu: "GPU",
+  ram: "RAM",
+  mb: "Motherboard",
+  storage: "SSD / Storage",
+  psu: "PSU",
+  case: "Case",
+  cooling: "Cooling",
+  monitor: "Monitor",
+  desk: "Desk",
+  headphones: "Headset",
+  mouse: "Mouse",
+  keyboard: "Keyboard",
+  chair: "Chair",
+  NVMe: "Other",
+  "N/A": "Other",
+};
+
+/**
+ * @param dynamic إن وُجد (من قاعدة البيانات `Category.facetKeys` كسلسلة مفاتيح أو كائنات ثنائية اللغة) يُستخدم بدل الجدول الثابت.
+ */
+export function facetDefinitionsForCategory(
+  catId: string,
+  dynamic?: string[] | FacetAttributeDef[] | null,
+): FacetDefinition[] {
+  if (!catId) return [];
+  if (dynamic?.length) {
+    const first = dynamic[0];
+    if (typeof first === "string") {
+      return (dynamic as string[]).map((key) => ({
+        key,
+        labelKey: FACET_KEY_TO_LABEL[key] ?? "facetGeneric",
+      }));
+    }
+    return (dynamic as FacetAttributeDef[]).map((a) => ({
+      key: a.key,
+      labelKey: FACET_KEY_TO_LABEL[a.key] ?? "facetGeneric",
+      name_en: a.name_en,
+      name_ar: a.name_ar,
+    }));
+  }
+  return CATEGORY_FACETS[catId] ?? [];
+}
+
+export function getProductFacetValue(product: Product, facetKey: string): string | undefined {
+  const fromSpecs = product.specs?.[facetKey];
+  if (fromSpecs !== undefined && String(fromSpecs).trim() !== "") {
+    return String(fromSpecs).trim();
+  }
+
+  if (facetKey === "componentType" && productBelongsToCategory(product, "components")) {
+    const raw = product.storage?.toLowerCase() ?? "";
+    return STORAGE_TO_COMPONENT[raw] ?? product.storage;
+  }
+
+  return undefined;
+}
+
+export function collectFacetValues(products: Product[], catId: string, facetKey: string): string[] {
+  return collectFacetValueCounts(products, catId, facetKey).map((x) => x.value);
+}
+
+/** قيم فريدة مع عدد المنتجات لكل قيمة (مثل واجهات المتاجر: 16GB 35) */
+export function collectFacetValueCounts(
+  products: Product[],
+  catId: string,
+  facetKey: string,
+): { value: string; count: number }[] {
+  const pool = catId ? products.filter((p) => productBelongsToCategory(p, catId)) : products;
+  const map = new Map<string, number>();
+  for (const p of pool) {
+    const v = getProductFacetValue(p, facetKey);
+    if (v) map.set(v, (map.get(v) ?? 0) + 1);
+  }
+  return Array.from(map.entries())
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => a.value.localeCompare(b.value, undefined, { numeric: true }));
+}
+
+export function collectBrandCounts(products: Product[], catId: string): { value: string; count: number }[] {
+  const pool = catId ? products.filter((p) => productBelongsToCategory(p, catId)) : products;
+  const map = new Map<string, number>();
+  for (const p of pool) {
+    map.set(p.brand, (map.get(p.brand) ?? 0) + 1);
+  }
+  return Array.from(map.entries())
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => a.value.localeCompare(b.value));
+}
+
+export function productMatchesFacetSelections(
+  product: Product,
+  catId: string,
+  selections: Record<string, string[]>,
+  dynamicFacetKeys?: string[] | FacetAttributeDef[] | null,
+): boolean {
+  const defs = facetDefinitionsForCategory(catId, dynamicFacetKeys);
+  for (const { key } of defs) {
+    const selected = selections[key];
+    if (!selected?.length) continue;
+    const val = getProductFacetValue(product, key);
+    if (!val || !selected.includes(val)) return false;
+  }
+  return true;
+}

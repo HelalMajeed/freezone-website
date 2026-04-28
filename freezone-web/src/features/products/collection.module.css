@@ -1,0 +1,284 @@
+/* Collection page — filter toolbar + mobile drawer */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.toolbarLeft {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.filterToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-light);
+  background: var(--bg-secondary);
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.2s, background 0.2s;
+}
+.filterToggle:hover {
+  border-color: var(--red-600);
+  background: rgba(220, 38, 38, 0.04);
+}
+
+.badgeCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: var(--gray-200);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.sortWrap {
+  position: relative;
+  min-width: 200px;
+  flex: 1 1 200px;
+  max-width: 320px;
+}
+
+.sortLabel {
+  position: absolute;
+  inset-inline-start: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-secondary);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sortSelect {
+  width: 100%;
+  padding-block: 12px;
+  padding-inline-start: 88px;
+  padding-inline-end: 42px;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-secondary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  /* Chevron on inline-end (right in LTR, left in RTL) so it never sits on Arabic text */
+  background-position: right 12px center;
+}
+
+:global(html[dir="rtl"]) .sortSelect {
+  background-position: left 12px center;
+}
+
+.sortSelect:focus {
+  outline: none;
+  border-color: var(--red-600);
+}
+
+.resultInline {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Wider than global .container so 4-up cards match prior 3-up width */
+:global(.container).collectionWide {
+  max-width: 1600px;
+}
+
+.layoutGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  padding-bottom: 80px;
+}
+
+@media (min-width: 1024px) {
+  .layoutGrid {
+    grid-template-columns: 280px 1fr;
+    align-items: start;
+  }
+}
+
+.sidebarDesktop {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .sidebarDesktop {
+    display: block;
+    align-self: start;
+    min-height: 0;
+    position: sticky;
+    /* Below measured NavBar (--fz-storefront-sticky-offset); +8px so the card clears the shadow */
+    top: calc(var(--fz-storefront-sticky-offset, 152px) + 8px);
+    max-height: calc(
+      100dvh - var(--fz-storefront-sticky-offset, 152px) - 8px - env(safe-area-inset-bottom, 0px) - 20px
+    );
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Below mega-menu / header layers; above page content */
+    z-index: 40;
+  }
+}
+
+/* Mobile filter overlay */
+.drawerBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 2000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s var(--ease-smooth);
+}
+
+.drawerBackdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drawerPanel {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(420px, 92vw);
+  max-width: 100%;
+  background: var(--bg-primary);
+  z-index: 2001;
+  box-shadow: 8px 0 40px rgba(0, 0, 0, 0.15);
+  transform: translateX(-100%);
+  transition: transform 0.3s var(--ease-smooth);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.drawerPanel.open {
+  transform: translateX(0);
+}
+
+html[dir="rtl"] .drawerPanel {
+  left: auto;
+  right: 0;
+  transform: translateX(100%);
+  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.15);
+}
+
+html[dir="rtl"] .drawerPanel.open {
+  transform: translateX(0);
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border-light);
+  font-weight: 900;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.drawerClose {
+  background: var(--bg-secondary);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+.drawerBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 14px 20px;
+}
+
+/* Filter sidebar is normally sticky; in drawer it should scroll with content */
+.drawerBody :global(aside) {
+  position: static !important;
+  top: auto !important;
+  max-height: none !important;
+  box-shadow: none;
+}
+
+.drawerFooter {
+  flex-shrink: 0;
+  padding: 16px;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  gap: 10px;
+}
+
+.applyBtn {
+  flex: 1;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--red-600);
+  color: white;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.clearInline {
+  flex: 0 0 auto;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-light);
+  background: transparent;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+@media (min-width: 1024px) {
+  .filterToggle {
+    display: none;
+  }
+  .drawerBackdrop,
+  .drawerPanel {
+    display: none !important;
+  }
+}

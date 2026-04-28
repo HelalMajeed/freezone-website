@@ -1,0 +1,184 @@
+/* ═══════════════════════════════════════════════
+   CONTACT PAGE   ═══════════════════════════════════════════════ */
+
+.wrapper {
+  padding-bottom: 100px;
+}
+
+/* Page title block (used by contact/page.tsx) */
+.header {
+  padding: clamp(36px, 10vw, 72px) 0 clamp(28px, 6vw, 44px);
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+/* ── Page Hero ────────────────────────────────── */
+.pageHero {
+  background: var(--gray-950);
+  color: white;
+  padding: 56px 0 52px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  position: relative;
+  overflow: hidden;
+}
+.pageHero::before {
+  content: '';
+  position: absolute;
+  top: -80px; left: 50%; transform: translateX(-50%);
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(220,38,38,0.09) 0%, transparent 70%);
+}
+
+.heroInner { position: relative; z-index: 1; }
+
+.heroEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--red-500);
+  margin-bottom: 12px;
+}
+.eyeLine { width: 24px; height: 2px; background: var(--red-500); }
+
+.headerTitle {
+  font-family: var(--fz-font-display);
+  font-size: clamp(2.8rem, 6vw, 4rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.headerDesc {
+  color: rgba(255,255,255,0.45);
+  font-size: 1rem;
+  max-width: 520px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* ── Main Content ─────────────────────────────── */
+.mainSection {
+  padding: 64px 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+}
+@media (min-width: 1024px) { .grid { grid-template-columns: 1fr 1.4fr; gap: 64px; } }
+
+/* ── Contact Info ─────────────────────────────── */
+.contactInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.infoItem {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 20px;
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  transition: all 0.22s var(--ease-smooth);
+}
+.infoItem:hover {
+  border-color: rgba(220,38,38,0.2);
+  box-shadow: var(--shadow-sm);
+}
+
+.iconBox {
+  width: 48px;
+  height: 48px;
+  background: rgba(220,38,38,0.08);
+  color: var(--red-600);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(220,38,38,0.15);
+}
+
+.infoLabel {
+  font-weight: 800;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.infoText {
+  color: var(--text-secondary);
+  line-height: 1.55;
+  font-size: 0.93rem;
+}
+
+/* ── Form Card ────────────────────────────────── */
+.formCard {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: clamp(28px, 5vw, 44px);
+  box-shadow: var(--shadow-lg);
+  border: 1.5px solid var(--border-light);
+}
+
+.formCard h3 {
+  font-family: var(--fz-font-display);
+  font-weight: 900;
+  font-size: 1.9rem;
+  margin-bottom: 24px;
+  text-transform: uppercase;
+  letter-spacing: -0.5px;
+}
+
+.formGroup { margin-bottom: 18px; }
+
+.label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 7px;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+}
+
+.input, .textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: inherit;
+}
+.input:focus, .textarea:focus {
+  outline: none;
+  border-color: var(--red-600) !important;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.1) !important;
+}
+
+.textarea {
+  min-height: 130px;
+  resize: vertical;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 15px;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}

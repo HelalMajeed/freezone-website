@@ -1,0 +1,33 @@
+{
+  "name": "freezone",
+  "private": true,
+  "description": "Monorepo: freezone-api (Express) and freezone-web (Vite + React SPA).",
+  "scripts": {
+    "dev:api": "npm run dev --prefix freezone-api",
+    "dev:web": "npm run dev:vite:delayed --prefix freezone-web",
+    "predev": "node freezone-web/scripts/init-env.cjs && node freezone-web/scripts/ensure-dev-database.cjs && node freezone-web/scripts/ensure-prisma-migrate.cjs",
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:commerce:api": "npm run dev --prefix commerce-suite/admin-api",
+    "dev:commerce:web": "npm run dev --prefix commerce-suite/admin-web",
+    "build:api": "npm run build --prefix freezone-api",
+    "build:web": "npm run build --prefix freezone-web",
+    "build": "npm run build:api && npm run build:web",
+    "start:api": "npm run start --prefix freezone-api",
+    "start:web": "npm run preview --prefix freezone-web",
+    "db:up": "npm run db:up --prefix freezone-web",
+    "db:down": "npm run db:down --prefix freezone-web",
+    "db:push": "npm run db:push --prefix freezone-api",
+    "db:migrate": "npm run db:migrate --prefix freezone-api",
+    "db:seed": "npm run db:seed --prefix freezone-api",
+    "db:setup": "npm run db:setup --prefix freezone-api",
+    "db:local": "npm run db:up --prefix freezone-web && npm run db:setup --prefix freezone-api",
+    "db:status": "npm run db:status --prefix freezone-api",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f web api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

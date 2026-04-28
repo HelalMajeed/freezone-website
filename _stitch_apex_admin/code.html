@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Content Management - Homepage Builder</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#dde2f3",
+                        "on-tertiary-fixed": "#002022",
+                        "error": "#ba1a1a",
+                        "inverse-on-surface": "#ffedeb",
+                        "secondary": "#585e6c",
+                        "secondary-fixed-dim": "#c1c6d7",
+                        "inverse-surface": "#3e2c2b",
+                        "primary": "#b51822",
+                        "surface-variant": "#f9dcd9",
+                        "on-secondary-container": "#5e6473",
+                        "on-primary-container": "#fffbff",
+                        "on-tertiary-fixed-variant": "#004f53",
+                        "on-surface": "#271816",
+                        "on-primary-fixed": "#410004",
+                        "inverse-primary": "#ffb3ad",
+                        "surface-tint": "#b91c24",
+                        "tertiary-fixed-dim": "#6fd6dd",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed": "#161c27",
+                        "surface": "#fff8f7",
+                        "surface-container-highest": "#f9dcd9",
+                        "on-error": "#ffffff",
+                        "surface-container": "#ffe9e7",
+                        "surface-dim": "#f0d4d1",
+                        "surface-container-lowest": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "tertiary": "#00666c",
+                        "primary-container": "#d93537",
+                        "outline": "#8f6f6d",
+                        "on-background": "#271816",
+                        "on-primary-fixed-variant": "#930013",
+                        "on-secondary-fixed-variant": "#414754",
+                        "background": "#fff8f7",
+                        "on-secondary": "#ffffff",
+                        "outline-variant": "#e4beba",
+                        "secondary-fixed": "#dde2f3",
+                        "tertiary-fixed": "#8cf2fa",
+                        "surface-container-low": "#fff0ef",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed-dim": "#ffb3ad",
+                        "on-tertiary-container": "#f4ffff",
+                        "primary-fixed": "#ffdad7",
+                        "surface-bright": "#fff8f7",
+                        "tertiary-container": "#008188",
+                        "on-primary": "#ffffff",
+                        "surface-container-high": "#ffe2df",
+                        "on-surface-variant": "#5b403e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "element-padding-x": "1rem",
+                        "sidebar-collapsed": "64px",
+                        "element-padding-y": "0.75rem",
+                        "container-padding": "2rem",
+                        "card-gap": "1.5rem",
+                        "sidebar-width": "260px"
+                    },
+                    "fontFamily": {
+                        "mono-data": ["monospace"],
+                        "inter": ["Inter", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "h2": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "h3": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "600" }],
+                        "body-base": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "h1": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "mono-data": ["13px", { "lineHeight": "20px", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #F7FAFC; color: #271816; font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .icon-fill { font-variation-settings: 'FILL' 1; }
+        
+        /* Custom Input Focus as per style guidance */
+        .form-input-custom:focus {
+            outline: none;
+            border-color: #271816; /* Black */
+            box-shadow: 0 0 0 2px rgba(229, 62, 62, 0.4); /* Subtle Red glow */
+        }
+        
+        /* Toggle Switch Styles */
+        .toggle-checkbox:checked { right: 0; border-color: #d93537; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #d93537; }
+        .toggle-checkbox:checked + .toggle-label:after { transform: translateX(100%); border-color: white; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-body-base font-body-base">
+<!-- Shared Component: SideNavBar -->
+<nav class="fixed left-0 top-0 h-full flex flex-col pt-4 pb-8 w-[260px] border-r border-outline-variant shadow-none bg-surface-container-lowest z-40 duration-200 ease-in-out font-inter text-sm font-medium">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined icon-fill text-lg">view_in_ar</span>
+</div>
+<div>
+<h2 class="text-lg font-black tracking-tight text-on-surface leading-tight">Management</h2>
+<p class="text-xs text-on-surface-variant font-normal">Enterprise v2.0</p>
+</div>
+</div>
+<ul class="flex-1 space-y-1 px-3">
+<!-- Inactive -->
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:bg-[#F7FAFC] hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">dashboard</span>
+                    Dashboard
+                </a>
+</li>
+<!-- Active (Content) -->
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#F7FAFC] text-primary border-l-4 border-primary transition-colors" href="#">
+<span class="material-symbols-outlined icon-fill text-lg">article</span>
+                    Content
+                </a>
+</li>
+<!-- Inactive -->
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:bg-[#F7FAFC] hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">inventory_2</span>
+                    Products
+                </a>
+</li>
+<!-- Inactive -->
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:bg-[#F7FAFC] hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">perm_media</span>
+                    Media
+                </a>
+</li>
+<!-- Inactive -->
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:bg-[#F7FAFC] hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">palette</span>
+                    Design
+                </a>
+</li>
+<!-- Inactive -->
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:bg-[#F7FAFC] hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">shopping_cart</span>
+                    Orders
+                </a>
+</li>
+</ul>
+<div class="px-3 mt-auto">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:bg-[#F7FAFC] hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">settings</span>
+                Settings
+            </a>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col ml-[260px] bg-[#F7FAFC] min-w-0">
+<!-- Shared Component: TopNavBar -->
+<header class="flex justify-between items-center px-6 h-16 w-full sticky top-0 z-30 bg-surface-container-lowest border-b border-outline-variant shadow-sm font-inter text-sm antialiased text-secondary">
+<!-- Left: Brand / Search -->
+<div class="flex items-center gap-8">
+<div class="text-xl font-bold text-on-surface">AdminPanel</div>
+<div class="relative hidden md:block w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-sm">search</span>
+<input class="w-full pl-9 pr-4 py-1.5 bg-[#F7FAFC] border border-outline-variant rounded-full text-sm focus:outline-none focus:border-on-surface focus:ring-1 focus:ring-on-surface transition-all" placeholder="Search..." type="text"/>
+</div>
+</div>
+<!-- Right: Actions -->
+<div class="flex items-center gap-4">
+<button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F7FAFC] transition-colors text-secondary hover:text-on-surface">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F7FAFC] transition-colors text-secondary hover:text-on-surface">
+<span class="material-symbols-outlined text-[20px]">help</span>
+</button>
+<div class="h-6 w-px bg-outline-variant mx-1"></div>
+<button class="bg-primary hover:bg-primary-container text-on-primary px-4 py-1.5 rounded text-sm font-medium transition-colors active:opacity-80">
+                    Add Product
+                </button>
+<div class="ml-2 w-8 h-8 rounded-full overflow-hidden border border-outline-variant cursor-pointer">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="professional headshot of a young man smiling slightly against a neutral gray background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJ-loTqeVnJa8MPxWN4iBTUqeMa8d7OaWgQ17XwULI3CD8YEkJNbjZZvBpWa_jNaZiRP_61M1YEGA-ORhLIQv8pELWzwUnl9eNXiThGIaiXwhgiKgysC69KvlK1_iQ6WW81aCqF4YxKxjirwoXrYd7sZo8al-IvKW9pBxM4Ul5DcKeaGfg1mjZRKxh0zpE_d9-C082yPnDCmIlw6tcV_MQ3UpQ71TTanKgl6assZnj6k8FgO8AZEEwj_-Sb362Wy6JWBj83_ISD3pP"/>
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 overflow-y-auto p-container-padding">
+<div class="max-w-[1600px] mx-auto flex flex-col gap-6 h-full">
+<!-- Page Header (Specific to this screen's functionality) -->
+<div class="flex items-center justify-between">
+<div>
+<h1 class="font-h1 text-h1 text-on-surface">Homepage Builder</h1>
+<p class="font-body-base text-body-base text-secondary mt-1">Manage sections and layout for the storefront home page.</p>
+</div>
+<button class="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant text-on-surface hover:bg-[#F7FAFC] px-4 py-2 rounded shadow-sm transition-colors font-medium text-sm">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        Add New Section
+                    </button>
+</div>
+<!-- Layout Columns -->
+<div class="flex gap-card-gap flex-1 items-start min-h-0">
+<!-- Left Column: Section Editor -->
+<div class="flex-1 max-w-3xl flex flex-col gap-4">
+<!-- Draggable Item 1: Hero (Expanded) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg shadow-[0_4px_10px_rgba(0,0,0,0.04)] overflow-hidden">
+<!-- Header Row -->
+<div class="flex items-center gap-3 p-4 bg-surface-container-lowest border-b border-outline-variant">
+<span class="material-symbols-outlined text-secondary cursor-grab hover:text-on-surface">drag_indicator</span>
+<span class="material-symbols-outlined text-secondary">view_carousel</span>
+<h3 class="font-h3 text-h3 text-on-surface flex-1">Hero Section</h3>
+<!-- Custom Toggle -->
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 top-0 left-0 transition-transform duration-200 ease-in-out translate-x-5 border-primary" id="toggle-hero" name="toggle-hero" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-primary cursor-pointer transition-colors duration-200 ease-in-out" for="toggle-hero"></label>
+</div>
+<span class="material-symbols-outlined text-secondary cursor-pointer">expand_less</span>
+</div>
+<!-- Expanded Body -->
+<div class="p-6 flex flex-col gap-6">
+<!-- Form Group -->
+<div>
+<label class="block font-label-caps text-label-caps text-secondary mb-2 uppercase">Hero Title</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-sm text-on-surface form-input-custom transition-shadow" type="text" value="Discover the Future of Enterprise"/>
+</div>
+<!-- Two Columns for CTA -->
+<div class="flex gap-4">
+<div class="flex-1">
+<label class="block font-label-caps text-label-caps text-secondary mb-2 uppercase">CTA Button Text</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-sm text-on-surface form-input-custom transition-shadow" type="text" value="Start Free Trial"/>
+</div>
+<div class="flex-1">
+<label class="block font-label-caps text-label-caps text-secondary mb-2 uppercase">CTA Link</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-sm text-on-surface font-mono-data form-input-custom transition-shadow" type="text" value="/signup"/>
+</div>
+</div>
+<!-- Background Image Picker -->
+<div>
+<label class="block font-label-caps text-label-caps text-secondary mb-2 uppercase">Background Image</label>
+<div class="flex items-end gap-4">
+<div class="w-48 h-28 rounded border border-outline-variant overflow-hidden relative group">
+<img alt="Background Preview" class="w-full h-full object-cover" data-alt="abstract view of earth from space at night with glowing city lights connected by digital network lines" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAT-T7SZTOe00KiIOiMebj2Xl5uJVMYdNkrZaqvp4lGWTJ0BbwyMaGM0QER6oqwYlD4l2AfwzM7nt_EKm9QHCv_g39LRe8Go14TJQJVc2RDwMYNdvWSE93CsqF40KFLKYGRkMN75UyywPL56E6XkxnbxO96aTRfUWlShx8zYbErVcBYMlvLKHTTeoE_87ki4Llpf8UF3sMkWTFJsV01fo4ULpV1Dx4ulql7frNWVA0vGTpBNB_JcAEYBvIyKRfyZKZVaXCaO_D8CaQn"/>
+<div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-white">edit</span>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<button class="bg-surface-container-lowest border border-outline-variant text-on-surface hover:bg-[#F7FAFC] px-3 py-1.5 rounded shadow-sm transition-colors text-sm font-medium">
+                                                Change Image
+                                            </button>
+<span class="text-xs text-secondary">Recommended size: 1920x1080px</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Draggable Item 2: Featured Products (Collapsed) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg shadow-[0_4px_10px_rgba(0,0,0,0.04)] flex items-center gap-3 p-4 hover:border-outline transition-colors">
+<span class="material-symbols-outlined text-secondary cursor-grab hover:text-on-surface">drag_indicator</span>
+<span class="material-symbols-outlined text-secondary">grid_view</span>
+<h3 class="font-h3 text-h3 text-on-surface flex-1">Featured Products</h3>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 top-0 left-0 transition-transform duration-200 ease-in-out translate-x-5 border-primary" id="toggle-feat" name="toggle-feat" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-primary cursor-pointer transition-colors duration-200 ease-in-out" for="toggle-feat"></label>
+</div>
+<span class="material-symbols-outlined text-secondary cursor-pointer hover:text-on-surface">expand_more</span>
+</div>
+<!-- Draggable Item 3: Banner (Collapsed) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg shadow-[0_4px_10px_rgba(0,0,0,0.04)] flex items-center gap-3 p-4 hover:border-outline transition-colors">
+<span class="material-symbols-outlined text-secondary cursor-grab hover:text-on-surface">drag_indicator</span>
+<span class="material-symbols-outlined text-secondary">ad_units</span>
+<h3 class="font-h3 text-h3 text-on-surface flex-1">Promo Banner</h3>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 top-0 left-0 transition-transform duration-200 ease-in-out border-secondary-fixed-dim" id="toggle-banner" name="toggle-banner" type="checkbox"/>
+<label class="block overflow-hidden h-5 rounded-full bg-secondary-fixed-dim cursor-pointer transition-colors duration-200 ease-in-out" for="toggle-banner"></label>
+</div>
+<span class="material-symbols-outlined text-secondary cursor-pointer hover:text-on-surface">expand_more</span>
+</div>
+<!-- Draggable Item 4: Newsletter (Collapsed) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg shadow-[0_4px_10px_rgba(0,0,0,0.04)] flex items-center gap-3 p-4 hover:border-outline transition-colors">
+<span class="material-symbols-outlined text-secondary cursor-grab hover:text-on-surface">drag_indicator</span>
+<span class="material-symbols-outlined text-secondary">mark_email_read</span>
+<h3 class="font-h3 text-h3 text-on-surface flex-1">Newsletter Signup</h3>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 top-0 left-0 transition-transform duration-200 ease-in-out translate-x-5 border-primary" id="toggle-news" name="toggle-news" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-primary cursor-pointer transition-colors duration-200 ease-in-out" for="toggle-news"></label>
+</div>
+<span class="material-symbols-outlined text-secondary cursor-pointer hover:text-on-surface">expand_more</span>
+</div>
+</div>
+<!-- Right Column: Live Preview -->
+<div class="w-80 flex-shrink-0 sticky top-[calc(64px+2rem)]">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-[0_10px_20px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col h-[600px]">
+<!-- Browser Bar Mockup -->
+<div class="bg-[#F7FAFC] border-b border-outline-variant px-4 py-2 flex items-center gap-2">
+<div class="flex gap-1.5">
+<div class="w-2.5 h-2.5 rounded-full bg-outline-variant"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-outline-variant"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-outline-variant"></div>
+</div>
+<div class="mx-auto bg-white border border-outline-variant rounded text-[10px] px-2 py-0.5 text-secondary w-2/3 text-center truncate">
+                                    myshop.com/home
+                                </div>
+</div>
+<!-- Preview Canvas -->
+<div class="flex-1 bg-white overflow-y-auto relative">
+<!-- Abstracted Preview Content -->
+<!-- Hero Block -->
+<div class="h-40 relative bg-secondary-container">
+<img alt="Preview Background" class="w-full h-full object-cover opacity-80" data-alt="abstract view of earth from space at night with glowing city lights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZ5u6RYqzbRath9DBDzuW_XHcajgGnH4TVbU-YGYSxKgXTYgBwGsdxedSKUGnuuosBYjnY-719RCPHXauY-gV4O1I_qgsubJBLsVH24DuyWixEeF5qPbNnD11UljcE9xjOBgEBjmc_CPhHifLhYWfh4VPbDSVc_Nu3x7JJ2Vjonqkkh5jw4fQTxDTH7n_FAN16vYMFz6giIY3XzVKDWUZ7nhl4oMaETkI1plUTgRboZBXHtxFrPew2O7kzVn4YN9v4YxxZdCTk2ynm"/>
+<div class="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+<div class="w-3/4 h-4 bg-white/90 rounded mb-2"></div>
+<div class="w-1/2 h-3 bg-white/70 rounded mb-4"></div>
+<div class="w-20 h-6 bg-primary rounded"></div>
+</div>
+</div>
+<!-- Featured Block -->
+<div class="p-4">
+<div class="w-32 h-3 bg-outline-variant rounded mb-4 mx-auto"></div>
+<div class="grid grid-cols-2 gap-2">
+<div class="aspect-square bg-[#F7FAFC] rounded border border-outline-variant"></div>
+<div class="aspect-square bg-[#F7FAFC] rounded border border-outline-variant"></div>
+<div class="aspect-square bg-[#F7FAFC] rounded border border-outline-variant"></div>
+<div class="aspect-square bg-[#F7FAFC] rounded border border-outline-variant"></div>
+</div>
+</div>
+<!-- Disabled Banner Block (Greyed out) -->
+<div class="h-16 bg-[#F7FAFC] border-y border-outline-variant border-dashed flex items-center justify-center opacity-50 relative">
+<span class="material-symbols-outlined text-outline-variant text-xl">visibility_off</span>
+</div>
+<!-- Newsletter Block -->
+<div class="p-6 bg-surface flex flex-col items-center">
+<div class="w-24 h-3 bg-outline-variant rounded mb-2"></div>
+<div class="w-full flex gap-1 mt-2">
+<div class="flex-1 h-6 bg-white border border-outline-variant rounded"></div>
+<div class="w-12 h-6 bg-secondary-fixed-dim rounded"></div>
+</div>
+</div>
+</div>
+<!-- Floating Overlay for Preview Status -->
+<div class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-on-surface text-surface px-3 py-1.5 rounded-full text-[10px] font-label-caps uppercase tracking-wider shadow-lg flex items-center gap-1.5 opacity-90">
+<span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                                Live Preview
+                            </div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

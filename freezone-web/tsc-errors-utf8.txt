@@ -1,0 +1,22 @@
+﻿.next/dev/types/validator.ts(24,44): error TS2344: Type 'Route' does not satisfy the constraint 'LayoutRoutes'.
+  Type 'import("C:/Users/MAKROV404/Desktop/abd almonam/freezone-web/.next/dev/types/routes").LayoutRoutes' is not assignable to type 'import("C:/Users/MAKROV404/Desktop/abd almonam/freezone-web/.next/types/routes").LayoutRoutes'.
+    Type '"/"' is not assignable to type 'LayoutRoutes'.
+.next/dev/types/validator.ts(24,75): error TS2344: Type 'Route' does not satisfy the constraint 'LayoutRoutes'.
+  Type 'import("C:/Users/MAKROV404/Desktop/abd almonam/freezone-web/.next/dev/types/routes").LayoutRoutes' is not assignable to type 'import("C:/Users/MAKROV404/Desktop/abd almonam/freezone-web/.next/types/routes").LayoutRoutes'.
+    Type '"/"' is not assignable to type 'LayoutRoutes'.
+.next/dev/types/validator.ts(42,39): error TS2307: Cannot find module '../../../src/app/about/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(150,39): error TS2307: Cannot find module '../../../src/app/cart/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(159,39): error TS2307: Cannot find module '../../../src/app/checkout/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(168,39): error TS2307: Cannot find module '../../../src/app/contact/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(177,39): error TS2307: Cannot find module '../../../src/app/login/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(186,39): error TS2307: Cannot find module '../../../src/app/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(195,39): error TS2307: Cannot find module '../../../src/app/pc-builder/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(204,39): error TS2307: Cannot find module '../../../src/app/product/[id]/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(213,39): error TS2307: Cannot find module '../../../src/app/products/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(222,39): error TS2307: Cannot find module '../../../src/app/register/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(246,39): error TS2307: Cannot find module '../../../src/app/layout.js' or its corresponding type declarations.
+src/i18n.ts(6,33): error TS2345: Argument of type '({ locale }: GetRequestConfigParams) => Promise<{ messages: any; }>' is not assignable to parameter of type '(params: GetRequestConfigParams) => RequestConfig | Promise<RequestConfig>'.
+  Type 'Promise<{ messages: any; }>' is not assignable to type 'RequestConfig | Promise<RequestConfig>'.
+    Type 'Promise<{ messages: any; }>' is not assignable to type 'Promise<RequestConfig>'.
+      Type '{ messages: any; }' is not assignable to type 'RequestConfig'.
+        Property 'locale' is missing in type '{ messages: any; }' but required in type '{ locale: string; }'.

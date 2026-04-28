@@ -1,0 +1,56 @@
+/* Admin panel — design tokens (Stitch / Apex-inspired, light enterprise shell) */
+.admin-root {
+  /* Canvas */
+  --admin-bg: #f7fafc;
+  --admin-canvas: #f7fafc;
+
+  /* Surfaces */
+  --admin-surface: #ffffff;
+  --admin-surface-muted: #f8fafc;
+  --admin-surface-inset: #f1f5f9;
+  --admin-sidebar: #ffffff;
+  --admin-table-header: #edf2f7;
+
+  /* Structure */
+  --admin-border: #e2e8f0;
+  --admin-border-strong: #cbd5e1;
+  --admin-outline-variant: #e4beba;
+
+  /* Typography */
+  --admin-text: #1a202c;
+  --admin-text-warm: #271816;
+  --admin-muted: #64748b;
+  --admin-muted-warm: #5b403e;
+
+  /* Accent — primary from design bundle */
+  --admin-accent: #b51822;
+  --admin-accent-bright: #d93537;
+  --admin-accent-soft: rgba(181, 24, 34, 0.1);
+  --admin-accent-ring: rgba(229, 62, 62, 0.38);
+  --admin-on-accent: #ffffff;
+
+  /* Legacy aliases (existing modules) */
+  --admin-radius: 8px;
+  --admin-radius-lg: 12px;
+  --admin-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --admin-shadow-card: 0 4px 10px rgba(0, 0, 0, 0.04);
+  --admin-shadow-float: 0 10px 24px rgba(15, 23, 42, 0.08);
+
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--admin-text);
+  background: var(--admin-bg);
+}
+
+.admin-login-root {
+  --admin-login-bg: #f7fafc;
+  --admin-text: #1a202c;
+  --admin-muted: #64748b;
+  --admin-accent: #b51822;
+  --admin-surface: #ffffff;
+  --admin-border: #e2e8f0;
+  min-height: 100vh;
+  background: radial-gradient(ellipse 100% 80% at 50% -30%, rgba(181, 24, 34, 0.08), transparent), var(--admin-login-bg);
+  color: var(--admin-text);
+}

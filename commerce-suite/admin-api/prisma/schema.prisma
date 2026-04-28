@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Nested catalog categories (infinite depth). Independent from legacy freezone `Category` until migration.
+model CatalogCategory {
+  id        String   @id @default(cuid())
+  parentId  String?
+  parent    CatalogCategory?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  CatalogCategory[] @relation("CategoryTree")
+
+  slug     String
+  nameEn   String
+  nameAr   String
+  imageUrl String?
+  sortOrder Int     @default(0)
+  active   Boolean @default(true)
+
+  attributes CatalogCategoryAttribute[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([parentId, slug])
+  @@index([parentId, sortOrder])
+}
+
+model CatalogAttribute {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  nameEn    String
+  nameAr    String
+  /// text | select | color | number | boolean
+  type      String
+  options   Json?
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+
+  categories CatalogCategoryAttribute[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active, sortOrder])
+}
+
+model CatalogCategoryAttribute {
+  categoryId  String
+  attributeId String
+  sortOrder   Int     @default(0)
+
+  category  CatalogCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  attribute CatalogAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, attributeId])
+  @@index([attributeId])
+}
+
+/// Minimal RBAC scaffold — extend with User model + Casl/permissions.
+model AdminRole {
+  id    String @id @default(cuid())
+  name  String @unique
+  users AdminUser[]
+}
+
+model AdminUser {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String
+  roleId    String
+  role      AdminRole @relation(fields: [roleId], references: [id])
+  createdAt DateTime  @default(now())
+}

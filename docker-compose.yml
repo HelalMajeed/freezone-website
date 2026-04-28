@@ -1,0 +1,79 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: freezone
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-freezone_dev}
+      POSTGRES_DB: freezone
+    volumes:
+      - freezone_pg:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U freezone -d freezone"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./freezone-api
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://freezone:${POSTGRES_PASSWORD:-freezone_dev}@postgres:5432/freezone
+      API_PORT: "4000"
+      NEXT_INTERNAL_ORIGIN: http://web:3000
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-4000}:4000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/api/public/site').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  web:
+    build:
+      context: ./freezone-web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        API_INTERNAL_URL: http://api:4000
+    environment:
+      DATABASE_URL: postgresql://freezone:${POSTGRES_PASSWORD:-freezone_dev}@postgres:5432/freezone
+      API_INTERNAL_URL: http://api:4000
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-}
+      ADMIN_REQUIRE_PASSWORD: ${ADMIN_REQUIRE_PASSWORD:-true}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-change-admin-session-secret-in-production}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+volumes:
+  freezone_pg:

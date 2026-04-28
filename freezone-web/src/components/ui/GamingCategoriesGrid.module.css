@@ -1,0 +1,208 @@
+.section {
+  padding: 60px 0;
+  background: white; /* Or light gray to match the page */
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.cardWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.card {
+  width: 100%;
+  aspect-ratio: 3 / 4; /* Tall cards like the image */
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 40px 20px;
+  text-decoration: none;
+  background: var(--gray-900); /* Fallback */
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  transition: transform 0.4s var(--ease-spring), box-shadow 0.4s;
+  cursor: pointer;
+}
+
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+}
+
+.bgImage {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 1;
+  transition: transform 0.6s var(--ease-spring);
+}
+
+.card:hover .bgImage {
+  transform: scale(1.05);
+}
+
+/* Tint overlay — 25% opacity stops (matches category color layer) */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(14, 45, 50, 0.25) 0%,
+    rgba(14, 45, 50, 0.25) 50%,
+    rgba(5, 20, 25, 0.25) 100%
+  );
+  z-index: 2;
+  mix-blend-mode: multiply;
+}
+
+/* Base text */
+.content {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.titleAr {
+  font-family: var(--fz-font-display);
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.titleEn {
+  font-family: var(--fz-font-display);
+  color: white;
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+/* Label below the card */
+.bottomLabel {
+  font-family: var(--fz-font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--gray-900);
+  text-align: center;
+}
+
+/* =========================================
+   SCI-FI HUD CORNERS (Pure CSS)
+   ========================================= */
+.corner {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  z-index: 5;
+  border-color: rgba(255, 255, 255, 0.6);
+  border-style: solid;
+  border-width: 0;
+  transition: border-color 0.3s, transform 0.3s;
+}
+
+.card:hover .corner {
+  border-color: rgba(255, 255, 255, 1);
+}
+
+/* 16px inset from the card edge */
+.topLeft {
+  top: 16px;
+  left: 16px;
+  border-top-width: 2px;
+  border-left-width: 2px;
+  border-top-left-radius: 8px; /* Slightly rounded outer edge */
+}
+
+.topRight {
+  top: 16px;
+  right: 16px;
+  border-top-width: 2px;
+  border-right-width: 2px;
+  border-top-right-radius: 8px;
+}
+
+.bottomLeft {
+  bottom: 16px;
+  left: 16px;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+  border-bottom-left-radius: 8px;
+}
+
+.bottomRight {
+  bottom: 16px;
+  right: 16px;
+  border-bottom-width: 2px;
+  border-right-width: 2px;
+  border-bottom-right-radius: 8px;
+}
+
+/* Add small inner ticks/dots to mimic the HUD details */
+.corner::after {
+  content: "";
+  position: absolute;
+  background: rgba(255, 255, 255, 0.6);
+  transition: background 0.3s;
+}
+
+.card:hover .corner::after {
+  background: white;
+}
+
+/* Dash horizontal styling on the corners */
+.topLeft::after { top: -2px; right: -8px; width: 4px; height: 2px; }
+.topRight::after { top: -2px; left: -8px; width: 4px; height: 2px; }
+.bottomLeft::after { bottom: -2px; right: -8px; width: 4px; height: 2px; }
+.bottomRight::after { bottom: -2px; left: -8px; width: 4px; height: 2px; }
+
+/* The dashed lines on the left/right edges */
+.card::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  height: 40px;
+  width: 2px;
+  background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.6) 0, rgba(255,255,255,0.6) 8px, transparent 8px, transparent 12px);
+  z-index: 5;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  height: 40px;
+  width: 2px;
+  background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.6) 0, rgba(255,255,255,0.6) 8px, transparent 8px, transparent 12px);
+  z-index: 5;
+}

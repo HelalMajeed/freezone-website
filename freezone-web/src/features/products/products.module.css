@@ -1,0 +1,181 @@
+/* ═══════════════════════════════════════════════
+   PRODUCTS PAGE   ═══════════════════════════════════════════════ */
+
+.productsPageShell {
+  padding-top: 20px;
+}
+
+/* ── Layout ───────────────────────────────────── */
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding-top: 40px;
+  padding-bottom: 80px;
+}
+@media (min-width: 1024px) { .layout { flex-direction: row; } }
+
+.sidebarCol {
+  width: 100%;
+}
+@media (min-width: 1024px) {
+  .sidebarCol {
+    width: 268px;
+    flex-shrink: 0;
+  }
+}
+
+.mainCol { flex: 1; min-width: 0; }
+
+/* ── Top Bar ──────────────────────────────────── */
+.topBar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1.5px solid var(--border-light);
+}
+@media (min-width: 768px) {
+  .topBar { flex-direction: row; align-items: center; justify-content: space-between; }
+}
+
+/* ── Search (column: input + hint + chips) ───── */
+.searchColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  max-width: 520px;
+}
+
+.searchCrossHint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.queryChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.queryChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.queryChip:hover {
+  border-color: rgba(220, 38, 38, 0.45);
+  background: #fef2f2;
+}
+.queryChipIcon {
+  flex-shrink: 0;
+  opacity: 0.65;
+}
+
+/* ── Search Input ─────────────────────────────── */
+.searchWrapper {
+  position: relative;
+  flex: 1;
+  max-width: 420px;
+}
+
+.searchIcon {
+  position: absolute;
+  inset-inline-start: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-400);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding-block: 11px;
+  padding-inline-start: 44px;
+  padding-inline-end: 16px;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-full);
+  font-size: 0.9rem;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.searchInput:focus,
+.searchInput:focus-visible {
+  border-color: var(--border-light) !important;
+  background: var(--bg-secondary);
+  box-shadow: none !important;
+  outline: none !important;
+}
+.searchInput::placeholder { color: var(--gray-400); }
+
+/* ── Result Count ─────────────────────────────── */
+.resultCount {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+.resultCount strong { color: var(--text-primary); }
+
+/* ── Products Grid ────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+@media (min-width: 640px)  { .grid { grid-template-columns: repeat(2, 1fr); gap: 16px; } }
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1280px) {
+  .grid { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+}
+
+/* ── No Results ───────────────────────────────── */
+.noResults {
+  text-align: center;
+  padding: 80px 20px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xl);
+  border: 2px dashed var(--border-light);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.noResults h3 { font-weight: 800; font-size: 1.3rem; color: var(--text-primary); }
+.noResults p  { color: var(--text-secondary); font-size: 0.95rem; }
+.noResults button { padding: 10px 24px; margin-top: 8px; }
+
+.noResultsTitleBilingual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
+.noResultsLang {
+  display: block;
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+.noResultsLang[dir="rtl"] {
+  font-size: 1.25rem;
+}

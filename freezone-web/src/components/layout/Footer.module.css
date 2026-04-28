@@ -1,0 +1,233 @@
+.wrapper {
+  background: #ffffff;
+  color: var(--gray-800);
+  position: relative;
+  border-top: 1px solid var(--gray-300);
+  /* Avoid clipping motion transforms on children; prevent horizontal bleed only */
+  overflow-x: clip;
+  overflow-y: visible;
+  flex-shrink: 0;
+  padding-top: 60px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  padding-bottom: 60px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+@media (min-width: 640px) {
+  .grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (min-width: 1024px) {
+  .grid { grid-template-columns: 2fr 1fr 1fr 1.5fr; gap: 60px; }
+}
+
+/* Brand column: title comes from SiteLogo (image or FZ + name) */
+
+.tagline {
+  color: var(--red-500);
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.brandDesc {
+  font-size: 0.9rem;
+  line-height: 1.8;
+  color: var(--gray-600);
+  margin-bottom: 24px;
+  max-width: 85%;
+}
+
+@media (max-width: 639px) {
+  .brandDesc { max-width: 100%; }
+  .wrapper { padding-top: 48px; }
+  .grid { gap: 32px; padding-bottom: 48px; }
+}
+
+.socials {
+  display: flex;
+  gap: 12px;
+}
+
+.socialIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--gray-100);
+  border: 1px solid var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-800);
+  transition: all 0.3s;
+}
+
+.socialIcon:hover {
+  background: var(--red-600);
+  border-color: var(--red-600);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+/* Column Titles */
+.colTitle {
+  color: #0a0a0a;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+/* Links */
+.linksList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.linkItem {
+  color: var(--gray-600);
+  font-size: 0.95rem;
+  transition: color 0.2s, transform 0.2s;
+  display: inline-flex;
+}
+
+.linkItem:hover {
+  color: var(--red-500);
+  transform: translateX(4px);
+}
+
+/* Contact Details */
+.contactItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+  color: var(--gray-600);
+}
+
+.contactIcon {
+  color: var(--red-600);
+  margin-top: 2px;
+}
+
+/* Newsletter */
+.newsletter {
+  margin-top: 32px;
+}
+
+.newsTitle {
+  color: #0a0a0a;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.newsDesc {
+  font-size: 0.85rem;
+  color: var(--gray-600);
+  margin-bottom: 16px;
+}
+
+.inputGroup {
+  display: flex;
+  align-items: stretch;
+  background: var(--gray-100);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--gray-200);
+  transition: border-color 0.3s;
+}
+
+.inputGroup:focus-within {
+  border-color: var(--red-600);
+}
+
+.input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 12px 16px;
+  color: #0a0a0a;
+  font-size: 0.9rem;
+}
+
+.input::placeholder {
+  color: var(--gray-500);
+}
+
+.submitBtn {
+  background: var(--red-600);
+  color: white;
+  border: none;
+  padding: 0 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.submitBtn:hover {
+  background: var(--red-700);
+}
+
+/* Bottom Bar — full-width strip (matches main footer surface) */
+.bottomStrip {
+  width: 100%;
+  background: #ffffff;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.bottomInner {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 24px;
+  padding-bottom: 24px;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .bottomInner {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+.copyright {
+  font-size: 0.85rem;
+  color: var(--gray-700);
+}
+
+.payments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .payments {
+    justify-content: flex-end;
+  }
+}
+
+.payBadge {
+  background: var(--gray-100);
+  border: 1px solid var(--gray-200);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #0a0a0a;
+  letter-spacing: 0.5px;
+}

@@ -1,0 +1,42 @@
+{
+  "app": { "name": "Commerce Admin" },
+  "nav": {
+    "dashboard": "Dashboard",
+    "categories": "Categories",
+    "attributes": "Attributes",
+    "products": "Products",
+    "settings": "Settings"
+  },
+  "topbar": {
+    "searchPlaceholder": "Search categories, products…",
+    "notifications": "Notifications",
+    "language": "Language",
+    "profile": "Account"
+  },
+  "categories": {
+    "title": "Category management",
+    "subtitle": "Nested tree, drag to reorder siblings, edit in drawer.",
+    "add": "Add category",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "bulkDelete": "Delete selected",
+    "empty": "No categories yet.",
+    "drawerCreate": "New category",
+    "drawerEdit": "Edit category",
+    "slug": "Slug (kebab-case)",
+    "nameEn": "Name (EN)",
+    "nameAr": "Name (AR)",
+    "parent": "Parent",
+    "root": "Root",
+    "imageUrl": "Image URL",
+    "attributes": "Attributes",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "active": "Active"
+  },
+  "dashboard": {
+    "title": "Overview",
+    "subtitle": "KPIs and quick actions (extend with Recharts)."
+  }
+}
