@@ -4,6 +4,9 @@ import react from "@vitejs/plugin-react";
 
 const apiTarget = process.env.VITE_DEV_API_PROXY || "http://127.0.0.1:4000";
 
+/** Hosts like Render set `PORT` for the process; local preview keeps 3000. */
+const previewPort = Number(process.env.PORT) || 3000;
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -29,8 +32,9 @@ export default defineConfig({
   preview: {
     host: true,
     allowedHosts: true,
-    port: 3000,
-    strictPort: true,
+    port: previewPort,
+    /** When `PORT` is set (e.g. Render), bind exactly to that port. */
+    strictPort: Boolean(process.env.PORT),
     proxy: {
       "/api": { target: apiTarget, changeOrigin: true },
       "/uploads": { target: apiTarget, changeOrigin: true },
