@@ -1,0 +1,12 @@
+# Netlify must deploy the Vite *build output* only.
+# Wrong publish dir → browser loads /src/main.tsx (source) and MIME errors on module scripts.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# SPA: serve index.html for client-side routes. Static files under /assets are still served first.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
