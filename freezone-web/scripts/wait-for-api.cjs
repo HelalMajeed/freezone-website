@@ -46,6 +46,12 @@ async function main() {
     process.exit(0);
   }
 
+  /** Netlify previews do not run freezone-api on localhost:4000 beside Vite. */
+  if (process.env.NETLIFY === "true") {
+    console.log("[wait-for-api] NETLIFY environment — skipping wait for local API.");
+    process.exit(0);
+  }
+
   const port = getApiPort();
   const url = `http://127.0.0.1:${port}/`;
   console.log(`[wait-for-api] Waiting for API at ${url} …`);

@@ -105,6 +105,12 @@ async function main() {
     process.exit(0);
   }
 
+  /** Netlify (build / preview / CLI) has no localhost Postgres — never block here. */
+  if (process.env.NETLIFY === "true") {
+    console.log("[ensure-dev-database] NETLIFY environment — skipping local Postgres wait.");
+    process.exit(0);
+  }
+
   const dbUrl = getDatabaseUrl();
   if (!dbUrl) {
     console.warn("[ensure-dev-database] No DATABASE_URL in env or .env files — start API with care.");

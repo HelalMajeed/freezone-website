@@ -13,6 +13,11 @@ function main() {
     process.exit(0);
   }
 
+  if (process.env.NETLIFY === "true") {
+    console.log("[ensure-prisma-migrate] NETLIFY environment — skipping Prisma migrate from freezone-web.");
+    process.exit(0);
+  }
+
   const dbUrl = getDatabaseUrl();
   if (!dbUrl) {
     console.warn("[ensure-prisma-migrate] No DATABASE_URL — skipping migrate (API may use static mode only).");
