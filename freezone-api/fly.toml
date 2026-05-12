@@ -37,12 +37,12 @@ primary_region = "iad"
 # before deploy (avoids deploy abort on DB/timeouts). Migrations still run on each
 # Machine boot via docker-entrypoint.sh — set DATABASE_URL before expecting a healthy app.
 #
-# Re-enable after `npx prisma migrate deploy` succeeds from SSH (see Fly docs):
+# Re-enable after SSH migrate succeeds (see README Fly section):
 #   release_command = "npx prisma migrate deploy"
-# Optional if the default 5m release timeout is too short:
-#   release_command_timeout = "10m"
+#   release_command_timeout = "10m"   # optional; default Fly release timeout is 5m
 
 [deploy]
   strategy = "rolling"
+  # Step 1 (debug): keep release_command commented so Fly does not fail the deploy phase.
   # release_command = "npx prisma migrate deploy"
   # release_command_timeout = "10m"

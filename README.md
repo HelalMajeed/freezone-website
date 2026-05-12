@@ -150,6 +150,7 @@ npm run docker:up
 - Install CLI (Windows): `winget install Fly-io.flyctl -e --accept-source-agreements --accept-package-agreements`
 - Log in: `flyctl auth login` (or set `FLY_API_TOKEN` for non-interactive use).
 - One-shot deploy + secrets + SSH migrate: run [`freezone-api/scripts/fly-deploy.ps1`](freezone-api/scripts/fly-deploy.ps1) (Windows) or [`freezone-api/scripts/fly-deploy.sh`](freezone-api/scripts/fly-deploy.sh) (macOS/Linux). Optional: `$env:DATABASE_URL = 'postgresql://...'` before the script to push/update the Fly secret.
+- After login, health: `flyctl status -a freezone-website` and open `https://freezone-website.fly.dev/health` (replace with your app name if different).
 
 ---
 
