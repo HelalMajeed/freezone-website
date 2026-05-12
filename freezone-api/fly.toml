@@ -1,0 +1,48 @@
+# Fly.io — freezone-api (Express + Prisma)
+#
+# Deploy from this directory so the Docker build context matches the Dockerfile:
+#   cd freezone-api && fly deploy
+#
+# If your Fly app name is not `freezone-website`, change `app` below or run:
+#   fly config save -a <your-app-name>
+# and merge the downloaded `fly.toml` with this file.
+
+app = "freezone-website"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[http_service.checks]]
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "15s"
+  method = "GET"
+  path = "/health"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+# ─── Release command (Prisma migrations) ───────────────────────────────────
+# `release_command` is commented out so Fly does not run a one-off migrate Machine
+# before deploy (avoids deploy abort on DB/timeouts). Migrations still run on each
+# Machine boot via docker-entrypoint.sh — set DATABASE_URL before expecting a healthy app.
+#
+# Re-enable after `npx prisma migrate deploy` succeeds from SSH (see Fly docs):
+#   release_command = "npx prisma migrate deploy"
+# Optional if the default 5m release timeout is too short:
+#   release_command_timeout = "10m"
+
+[deploy]
+  strategy = "rolling"
+  # release_command = "npx prisma migrate deploy"
+  # release_command_timeout = "10m"
