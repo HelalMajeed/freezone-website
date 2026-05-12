@@ -1,6 +1,7 @@
 /**
  * Before `npm run dev`: ensure PostgreSQL is reachable for DATABASE_URL (localhost).
  * - Port 5433 (Windows pg-local-cluster): runs pg-local-cluster-start.ps1
+ * - Port 5435 (Windows, cloned .pgdata-run): runs pg-local-cluster-start-run.ps1 when .pgdata-run exists
  * - Port 5432: docker compose up -d when Docker CLI is available (freezone-web/docker-compose.yml)
  * - Remote hosts (Neon, etc.): no-op
  *
@@ -90,6 +91,16 @@ function startPgLocalClusterWindows() {
   return r.status === 0;
 }
 
+function startPgLocalClusterRunWindows() {
+  const ps1 = path.join(webRoot, "scripts", "pg-local-cluster-start-run.ps1");
+  const r = spawnSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ps1], {
+    cwd: webRoot,
+    stdio: "inherit",
+    encoding: "utf8",
+  });
+  return r.status === 0;
+}
+
 function startDockerPostgres(docker) {
   try {
     execSync(`${docker} compose up -d`, { cwd: webRoot, stdio: "inherit", shell: true });
@@ -137,6 +148,18 @@ async function main() {
       console.error(
         "[ensure-dev-database] pg-local-cluster-start failed. Install PostgreSQL 16, ensure freezone-web/.pgdata exists (run once: npm run db:local), or use Docker + DATABASE_URL on port 5432.",
       );
+      process.exit(1);
+    }
+  } else if (process.platform === "win32" && port === 5435) {
+    const runDir = path.join(webRoot, ".pgdata-run");
+    if (!fs.existsSync(runDir)) {
+      console.error(
+        "[ensure-dev-database] DATABASE_URL uses port 5435 but freezone-web/.pgdata-run is missing. Clone .pgdata to .pgdata-run once, or use port 5433 after reboot.",
+      );
+      process.exit(1);
+    }
+    if (!startPgLocalClusterRunWindows()) {
+      console.error("[ensure-dev-database] pg-local-cluster-start-run failed.");
       process.exit(1);
     }
   } else if (port === 5432) {

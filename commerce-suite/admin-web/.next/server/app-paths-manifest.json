@@ -1,8 +1,0 @@
-{
-  "/_not-found/page": "app/_not-found/page.js",
-  "/[locale]/page": "app/[locale]/page.js",
-  "/[locale]/(dashboard)/dashboard/categories/page": "app/[locale]/(dashboard)/dashboard/categories/page.js",
-  "/[locale]/(dashboard)/dashboard/attributes/page": "app/[locale]/(dashboard)/dashboard/attributes/page.js",
-  "/[locale]/(dashboard)/dashboard/page": "app/[locale]/(dashboard)/dashboard/page.js",
-  "/[locale]/(dashboard)/dashboard/settings/page": "app/[locale]/(dashboard)/dashboard/settings/page.js"
-}

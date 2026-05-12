@@ -104,6 +104,19 @@ export const FACET_KEY_TO_LABEL: Record<string, string> = {
   audioDriverSize: "facetAudioDriverSize",
   impedanceOhms: "facetImpedanceOhms",
   batteryLifeHours: "facetBatteryLifeHours",
+  /** Tablets / iPad */
+  biometricAuth: "facetBiometricAuth",
+  bluetoothVersion: "facetBluetoothVersion",
+  cameraFront: "facetCameraFront",
+  cameraRear: "facetCameraRear",
+  cellularNetwork: "facetCellularNetwork",
+  chargingPowerW: "facetChargingPowerW",
+  connectorType: "facetConnectorType",
+  displayFeatures: "facetDisplayFeatures",
+  keyboardAccessory: "facetKeyboardAccessory",
+  stylusSupport: "facetStylusSupport",
+  batteryCapacityMah: "facetBatteryCapacityMah",
+  speakerConfig: "facetSpeakerConfig",
 };
 
 /** Facet keys and i18n label keys per category (`cat` from product / URL). */
@@ -191,6 +204,45 @@ export const CATEGORY_FACETS: Record<string, FacetDefinition[]> = {
     { key: "os", labelKey: "facetOs" },
     { key: "screenSize", labelKey: "facetScreenSize" },
   ],
+  tablets: [
+    { key: "model", labelKey: "facetModel" },
+    { key: "cpu", labelKey: "facetCpu" },
+    { key: "gpu", labelKey: "facetGpu" },
+    { key: "ram", labelKey: "facetRam" },
+    { key: "vram", labelKey: "facetVram" },
+    { key: "storage", labelKey: "facetStorage" },
+    { key: "storageType", labelKey: "facetStorageType" },
+    { key: "os", labelKey: "facetOs" },
+    { key: "screenSize", labelKey: "facetScreenSize" },
+    { key: "resolution", labelKey: "facetResolution" },
+    { key: "refreshRate", labelKey: "facetRefreshRate" },
+    { key: "panelType", labelKey: "facetPanelType" },
+    { key: "touchscreen", labelKey: "facetTouchscreen" },
+    { key: "displayFeatures", labelKey: "facetDisplayFeatures" },
+    { key: "biometricAuth", labelKey: "facetBiometricAuth" },
+    { key: "cameraFront", labelKey: "facetCameraFront" },
+    { key: "cameraRear", labelKey: "facetCameraRear" },
+    { key: "stylusSupport", labelKey: "facetStylusSupport" },
+    { key: "keyboardAccessory", labelKey: "facetKeyboardAccessory" },
+    { key: "cellularNetwork", labelKey: "facetCellularNetwork" },
+    { key: "wifiStandard", labelKey: "facetWifiStandard" },
+    { key: "bluetoothVersion", labelKey: "facetBluetoothVersion" },
+    { key: "maxSpeedMbps", labelKey: "facetMaxSpeedMbps" },
+    { key: "connectorType", labelKey: "facetConnectorType" },
+    { key: "portCount", labelKey: "facetPortCount" },
+    { key: "usbPortsPower", labelKey: "facetUsbPortsPower" },
+    { key: "batteryCapacityMah", labelKey: "facetBatteryCapacityMah" },
+    { key: "batteryLifeHours", labelKey: "facetBatteryLifeHours" },
+    { key: "chargingPowerW", labelKey: "facetChargingPowerW" },
+    { key: "speakerConfig", labelKey: "facetSpeakerConfig" },
+    { key: "voiceAssistantCompat", labelKey: "facetVoiceAssistantCompat" },
+    { key: "weightKg", labelKey: "facetWeightKg" },
+    { key: "dimensionsMm", labelKey: "facetDimensionsMm" },
+    { key: "ipRating", labelKey: "facetIpRating" },
+    { key: "material", labelKey: "facetMaterial" },
+    { key: "colorVariant", labelKey: "facetColorVariant" },
+    { key: "compatibilityList", labelKey: "facetCompatibilityList" },
+  ],
   printers: [
     { key: "paperType", labelKey: "facetPaperType" },
     { key: "printColor", labelKey: "facetPrintColor" },
@@ -239,6 +291,19 @@ export const CATEGORY_FACETS: Record<string, FacetDefinition[]> = {
   ],
 };
 
+/** Map alternate category slugs to the canonical `CATEGORY_FACETS` entry (admin + storefront). */
+const CATEGORY_FACET_SLUG_ALIASES: Record<string, string> = {
+  ipad: "tablets",
+  tablet: "tablets",
+  "tablets-ipad": "tablets",
+  "tablets-ipads": "tablets",
+};
+
+export function resolveCatalogFacetSlug(catId: string): string {
+  const k = catId.trim().toLowerCase();
+  return CATEGORY_FACET_SLUG_ALIASES[k] ?? k;
+}
+
 const STORAGE_TO_COMPONENT: Record<string, string> = {
   cpu: "CPU",
   gpu: "GPU",
@@ -281,7 +346,7 @@ export function facetDefinitionsForCategory(
       name_ar: a.name_ar,
     }));
   }
-  return CATEGORY_FACETS[catId] ?? [];
+  return CATEGORY_FACETS[resolveCatalogFacetSlug(catId)] ?? [];
 }
 
 export function getProductFacetValue(product: Product, facetKey: string): string | undefined {

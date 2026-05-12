@@ -105,7 +105,8 @@ export default function AdminEditProductPage() {
       raw.images = [...raw.images].sort((a, b) => a.sortOrder - b.sortOrder);
       const secondaryCategoryIds =
         raw.secondaryCategories?.map((x) => x.categoryId).filter((n) => Number.isFinite(n)) ?? [];
-      const { secondaryCategories: _sc, ...rest } = raw;
+      const { secondaryCategories, ...rest } = raw;
+      void secondaryCategories;
       setProduct({ ...rest, secondaryCategoryIds });
       const cat = cats.find((x) => x.id === raw.categoryId);
       const keys = facetKeysFromCategoryJson(cat?.facetKeys);

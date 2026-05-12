@@ -8,6 +8,8 @@ export type FacetAttributeDef = {
 export interface Category {
   id: string;
   name: string;
+  /** Arabic name for static catalog / seed parity with API. */
+  nameAr?: string;
   icon: string;
   color: string;
   img: string | null;
@@ -65,6 +67,14 @@ export const CATEGORIES: Category[] = [
   { id: "all-in-one", name: "All-in-One", icon: "🖥️", color: "#0EA5E9", img: null },
   { id: "smart-home", name: "Smart Home", icon: "🏠", color: "#14B8A6", img: null },
   { id: "phones", name: "Phones", icon: "📱", color: "#6366F1", img: null },
+  {
+    id: "tablets",
+    name: "Tablets & iPad",
+    nameAr: "تابلت وأيباد",
+    icon: "📱",
+    color: "#9333EA",
+    img: null,
+  },
   { id: "power-solutions", name: "Power Solutions", icon: "🔋", color: "#CA8A04", img: null },
 ];
 

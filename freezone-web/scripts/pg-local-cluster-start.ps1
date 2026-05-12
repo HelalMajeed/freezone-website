@@ -20,6 +20,7 @@ if ($status -match 'server is running') {
   Write-Host "[pg-local-cluster] Already running."
   exit 0
 }
-& pg_ctl -D $pgRoot -l (Join-Path $pgRoot "logfile") start
+$log = Join-Path $env:TEMP "freezone-pgdata.log"
+& pg_ctl -D $pgRoot -l $log start
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Write-Host "[pg-local-cluster] Started (port 5433). DATABASE_URL should use localhost:5433"

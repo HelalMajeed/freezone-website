@@ -9,6 +9,9 @@ node_modules/
 dist/
 build/
 coverage/
+
+# Next.js output (generated; CI builds from source)
+commerce-suite/admin-web/.next/
 .DS_Store
 *.log
 npm-debug.log*

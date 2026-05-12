@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node scripts/init-env.cjs && node scripts/ensure-dev-database.cjs && node scripts/ensure-prisma-migrate.cjs && concurrently -n api,web -c blue,green \"npm run dev:api --prefix ..\" \"node scripts/wait-for-api.cjs && vite\"",
+    "dev": "node scripts/init-env.cjs && node scripts/ensure-dev-database.cjs && node scripts/ensure-prisma-migrate.cjs && node scripts/check-dev-ports.cjs && concurrently -n api,web -c blue,green \"npm run dev:api --prefix ..\" \"node scripts/wait-for-api.cjs && vite\"",
     "dev:vite": "vite",
     "dev:netlify": "node scripts/init-env.cjs && vite",
     "dev:vite:delayed": "node scripts/wait-for-api.cjs && vite",
@@ -13,6 +13,8 @@
     "preview": "vite preview",
     "start": "vite preview",
     "lint": "eslint src",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "env:init": "node scripts/init-env.cjs",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
@@ -24,7 +26,9 @@
     "db:local": "npm run env:init && npm run db:provision",
     "db:local:win": "powershell -ExecutionPolicy Bypass -File ./scripts/db-local-win.ps1",
     "pg:cluster:start": "powershell -ExecutionPolicy Bypass -File ./scripts/pg-local-cluster-start.ps1",
+    "pg:cluster:start:run": "powershell -ExecutionPolicy Bypass -File ./scripts/pg-local-cluster-start-run.ps1",
     "pg:cluster:stop": "powershell -ExecutionPolicy Bypass -File ./scripts/pg-local-cluster-stop.ps1",
+    "pg:cluster:stop:run": "powershell -ExecutionPolicy Bypass -File ./scripts/pg-local-cluster-stop-run.ps1",
     "db:status": "npm run db:status --prefix ../freezone-api",
     "lan:info": "node scripts/print-lan-dev-info.cjs",
     "lan:firewall": "powershell -ExecutionPolicy Bypass -File ./scripts/allow-lan-dev-firewall.ps1"
@@ -59,6 +63,7 @@
     "sharp": "^0.34.5",
     "typescript": "^5",
     "typescript-eslint": "^8.46.0",
-    "vite": "^7.2.0"
+    "vite": "^7.2.0",
+    "vitest": "^3.2.4"
   }
 }

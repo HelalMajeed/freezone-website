@@ -5,8 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, SlidersHorizontal } from "lucide-react";
 import clsx from "clsx";
-import { getFacetCatalogOrder } from "@/components/admin/facet/facet-keys-utils";
-import { parseFacetKeysFromUnknown } from "@/components/admin/facet/facet-keys-utils";
+import { getFacetCatalogOrder, parseAdminCategoryFacetKeys } from "@/components/admin/facet/facet-keys-utils";
 import type { FacetAttributeDef } from "@/lib/data";
 import { validateFacetAttributesForSave } from "@/lib/facet-attributes";
 import { CategoryCard, type CategoryCardData } from "./CategoryCard";
@@ -63,7 +62,7 @@ export default function AdminCategoriesPage() {
       );
       const ft: Record<number, FacetAttributeDef[]> = {};
       for (const r of data) {
-        ft[r.id] = parseFacetKeysFromUnknown(r.facetKeys);
+        ft[r.id] = parseAdminCategoryFacetKeys(r.slug, r.facetKeys);
       }
       setFacetAttrsById(ft);
     }

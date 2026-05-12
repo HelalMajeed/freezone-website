@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import "express-async-errors";
 import multer from "multer";
 
 import * as adminAudit from "./app/api/admin/audit/route";
@@ -104,6 +105,25 @@ async function main() {
   app.use(cookieParser());
   app.use(express.json({ limit: "15mb" }));
 
+  /** Opt-in JSON access logs: set `LOG_HTTP=1` (avoid noisy stdout in production by default). */
+  if (process.env.LOG_HTTP === "1") {
+    app.use((req, res, next) => {
+      const started = Date.now();
+      const pathOnly = req.originalUrl.split("?")[0] ?? req.originalUrl;
+      res.on("finish", () => {
+        const line = {
+          ts: new Date().toISOString(),
+          method: req.method,
+          path: pathOnly,
+          status: res.statusCode,
+          ms: Date.now() - started,
+        };
+        console.log(JSON.stringify(line));
+      });
+      next();
+    });
+  }
+
   /** Serve files written by `POST /api/admin/upload` — storefront and admin load `/uploads/...`. */
   app.use(
     "/uploads",
@@ -115,6 +135,11 @@ async function main() {
 
   app.get("/", (_req, res) => {
     res.type("application/json").send({ ok: true, service: "freezone-api" });
+  });
+
+  app.get("/health", (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.type("application/json").send({ ok: true, service: "freezone-api", at: new Date().toISOString() });
   });
 
   app.get("/api/public/site", async (req, res) => {
@@ -322,6 +347,24 @@ async function main() {
       }
     },
   );
+
+  app.use((_req, res) => {
+    res.status(404).type("application/json").send(JSON.stringify({ ok: false, error: "NOT_FOUND" }));
+  });
+
+  app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === "LIMIT_FILE_SIZE") {
+        res.status(413).type("application/json").send(JSON.stringify({ ok: false, error: "FILE_TOO_LARGE" }));
+        return;
+      }
+      res.status(400).type("application/json").send(JSON.stringify({ ok: false, error: err.message }));
+      return;
+    }
+    console.error("[api] Unhandled error:", err);
+    if (res.headersSent) return;
+    res.status(500).type("application/json").send(JSON.stringify({ ok: false, error: "INTERNAL_ERROR" }));
+  });
 
   const port = parseInt(process.env.API_PORT || "4000", 10);
   /** 0.0.0.0 = accept connections on every interface (LAN + loopback). Use API_HOST=127.0.0.1 to lock to local only. */

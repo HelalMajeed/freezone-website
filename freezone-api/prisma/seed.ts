@@ -45,7 +45,7 @@ async function main() {
       data: {
         slug: c.id,
         nameEn: c.name,
-        nameAr: c.name,
+        nameAr: c.nameAr ?? c.name,
         icon: c.icon,
         color: c.color,
         sortOrder: i,
@@ -121,8 +121,9 @@ async function main() {
       { labelEn: "Components", labelAr: "مكونات", href: "/products?cat=components", iconKey: "cpu", sortOrder: 3, active: true },
       { labelEn: "Accessories", labelAr: "إكسسوارات", href: "/products?cat=accessories", iconKey: "headphones", sortOrder: 4, active: true },
       { labelEn: "Printers", labelAr: "طابعات", href: "/products?cat=printers", iconKey: "printer", sortOrder: 5, active: true },
-      { labelEn: "Network", labelAr: "شبكات", href: "/products?cat=network", iconKey: "shield-check", sortOrder: 6, active: true },
-      { labelEn: "Cables", labelAr: "كوابل", href: "/products?cat=accessories", iconKey: "package", sortOrder: 7, active: true },
+      { labelEn: "Tablets & iPad", labelAr: "تابلت وأيباد", href: "/products?cat=tablets", iconKey: "tablet", sortOrder: 6, active: true },
+      { labelEn: "Network", labelAr: "شبكات", href: "/products?cat=network", iconKey: "shield-check", sortOrder: 7, active: true },
+      { labelEn: "Cables", labelAr: "كوابل", href: "/products?cat=accessories", iconKey: "package", sortOrder: 8, active: true },
     ],
   });
 

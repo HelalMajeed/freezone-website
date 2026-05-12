@@ -1,8 +1,0 @@
-{
-  "/_not-found/page": "/_not-found",
-  "/[locale]/page": "/[locale]",
-  "/[locale]/(dashboard)/dashboard/categories/page": "/[locale]/dashboard/categories",
-  "/[locale]/(dashboard)/dashboard/attributes/page": "/[locale]/dashboard/attributes",
-  "/[locale]/(dashboard)/dashboard/page": "/[locale]/dashboard",
-  "/[locale]/(dashboard)/dashboard/settings/page": "/[locale]/dashboard/settings"
-}

@@ -36,11 +36,30 @@ function getDatabaseUrl() {
   return String(m.DATABASE_URL || "").trim();
 }
 
+/** API port for dev scripts — prefer explicit shell, then api/.env (source of truth), then web/.env fallback. */
 function getApiPort() {
+  const webEnv = loadEnvFile(path.join(webRoot, ".env"));
+  const apiEnv = loadEnvFile(path.join(apiRoot, ".env"));
+
+  const tryPort = (raw) => {
+    const n = parseInt(String(raw ?? "").trim(), 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+
+  return (
+    tryPort(process.env.API_PORT) ??
+    tryPort(apiEnv.API_PORT) ??
+    tryPort(webEnv.API_PORT) ??
+    4000
+  );
+}
+
+/** Vite dev server port (see vite.config.ts). */
+function getViteDevPort() {
   const m = getMergedEnv();
-  const p = m.API_PORT || "4000";
+  const p = m.VITE_DEV_PORT || "3000";
   const n = parseInt(String(p), 10);
-  return Number.isFinite(n) && n > 0 ? n : 4000;
+  return Number.isFinite(n) && n > 0 ? n : 3000;
 }
 
 module.exports = {
@@ -50,4 +69,5 @@ module.exports = {
   getMergedEnv,
   getDatabaseUrl,
   getApiPort,
+  getViteDevPort,
 };

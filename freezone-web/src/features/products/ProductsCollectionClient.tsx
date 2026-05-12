@@ -6,7 +6,7 @@ import { Trans } from "react-i18next";
 import type { Product, Category } from "@/lib/data";
 import { FilterSidebar, type FilterState } from "@/components/layout/FilterSidebar";
 import { ProductCard } from "@/components/ui/ProductCard";
-import { productMatchesFacetSelections } from "@/lib/productFacetConfig";
+import { facetDefinitionsForCategory, productMatchesFacetSelections } from "@/lib/productFacetConfig";
 import { productBelongsToCategory } from "@/lib/productCategoryMembership";
 import {
   evaluateProductCatalogSearch,
@@ -24,6 +24,26 @@ import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 export type SortOption = "featured" | "relevant" | "price-asc" | "price-desc" | "date-new" | "date-old";
+
+function parseCsvValues(values: string[]): string[] {
+  const out: string[] = [];
+  for (const raw of values) {
+    if (!raw) continue;
+    for (const token of raw.split(",")) {
+      const v = token.trim();
+      if (v) out.push(v);
+    }
+  }
+  return Array.from(new Set(out));
+}
+
+function parsePriceParam(raw: string | null): { pMin: string; pMax: string } {
+  if (!raw) return { pMin: "", pMax: "" };
+  const [minRaw, maxRaw] = raw.split("-", 2);
+  const pMin = minRaw?.trim() ?? "";
+  const pMax = maxRaw?.trim() ?? "";
+  return { pMin, pMax };
+}
 
 function countActiveFilters(f: FilterState, query: string): number {
   let n = 0;
@@ -113,12 +133,23 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
   const locale = useLocale();
   const [searchParams, setSearchParams] = useSearchParams();
   const catParam = searchParams.get("cat") ?? initialCat;
-  const brandParams = searchParams.getAll("brand");
+  const brandParams = parseCsvValues(searchParams.getAll("brand"));
   const featuredParam = searchParams.get("featured") === "true" || initialFeatured;
   const qParam = searchParams.get("q") ?? "";
+  const { pMin: pMinParam, pMax: pMaxParam } = parsePriceParam(searchParams.get("price"));
+
+  const categoryMeta = categories.find((c) => c.id === catParam);
+  const dynamicFacetKeys =
+    categoryMeta?.facetAttributes?.length ? categoryMeta.facetAttributes : categoryMeta?.facetKeys ?? null;
+  const facetDefs = facetDefinitionsForCategory(catParam, dynamicFacetKeys);
 
   const initialBrands =
     brandParams.length > 0 ? brandParams : initialBrand ? [initialBrand] : [];
+  const initialSpecSelections = facetDefs.reduce<Record<string, string[]>>((acc, def) => {
+    const fromUrl = parseCsvValues(searchParams.getAll(def.key));
+    if (fromUrl.length > 0) acc[def.key] = fromUrl;
+    return acc;
+  }, {});
 
   const [query, setQuery] = useState(qParam);
   const [sortBy, setSortBy] = useState<SortOption>("relevant");
@@ -127,33 +158,56 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
     setQuery(qParam);
   }, [qParam]);
 
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterState>({
+    cat: catParam || "",
+    brands: initialBrands,
+    pMin: pMinParam,
+    pMax: pMaxParam,
+    inStock: false,
+    listingAge: "all",
+    onSale: false,
+    featured: featuredParam,
+    specSelections: initialSpecSelections,
+  });
+
   useEffect(() => {
     const id = window.setTimeout(() => {
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
-          const trimmed = query.trim();
-          if (trimmed) next.set("q", trimmed);
+          const trimmedQuery = query.trim();
+          if (trimmedQuery) next.set("q", trimmedQuery);
           else next.delete("q");
+
+          if (filters.cat) next.set("cat", filters.cat);
+          else next.delete("cat");
+
+          next.delete("brand");
+          for (const b of filters.brands) next.append("brand", b);
+
+          if (filters.featured) next.set("featured", "true");
+          else next.delete("featured");
+
+          const pMin = filters.pMin.trim();
+          const pMax = filters.pMax.trim();
+          if (pMin || pMax) next.set("price", `${pMin || "0"}-${pMax || ""}`);
+          else next.delete("price");
+
+          for (const def of facetDefs) {
+            const values = filters.specSelections[def.key] ?? [];
+            if (values.length > 0) next.set(def.key, values.join(","));
+            else next.delete(def.key);
+          }
+
+          if (next.toString() === prev.toString()) return prev;
           return next;
         },
         { replace: true },
       );
-    }, 400);
+    }, 300);
     return () => window.clearTimeout(id);
-  }, [query, setSearchParams]);
-  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-  const [filters, setFilters] = useState<FilterState>({
-    cat: catParam || "",
-    brands: initialBrands,
-    pMin: "",
-    pMax: "",
-    inStock: false,
-    listingAge: "all",
-    onSale: false,
-    featured: featuredParam,
-    specSelections: {},
-  });
+  }, [query, filters, facetDefs, setSearchParams]);
 
   const clearFilters = () => {
     setFilters({

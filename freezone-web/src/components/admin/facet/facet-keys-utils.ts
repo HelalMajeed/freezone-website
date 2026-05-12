@@ -1,13 +1,34 @@
 import type { FacetAttributeDef } from "@/lib/data";
-import { parseFacetAttributesFromUnknown } from "@/lib/facet-attributes";
-
+import { defaultFacetNamesForKey, parseFacetAttributesFromUnknown } from "@/lib/facet-attributes";
 import { getAllFacetCatalogKeysOrdered } from "@/lib/facet-admin-labels";
+import { CATEGORY_FACETS, resolveCatalogFacetSlug } from "@/lib/productFacetConfig";
 
 const CATALOG_ORDER = getAllFacetCatalogKeysOrdered();
 
 /** @deprecated use `parseFacetAttributesFromUnknown` */
 export function parseFacetKeysFromUnknown(raw: unknown): FacetAttributeDef[] {
   return parseFacetAttributesFromUnknown(raw);
+}
+
+/**
+ * Admin categories: use saved `facetKeys` from the API when present; otherwise hydrate from
+ * `CATEGORY_FACETS` for this slug (via `resolveCatalogFacetSlug`, e.g. `ipad` → `tablets`) so
+ * defaults appear in the UI until the user saves once to persist them on the category row.
+ */
+export function parseAdminCategoryFacetKeys(slug: string, raw: unknown): FacetAttributeDef[] {
+  const fromDb = facetAttributesToOrderedSelection(parseFacetAttributesFromUnknown(raw));
+  if (fromDb.length > 0) return fromDb;
+  const s = slug.trim();
+  const defs = CATEGORY_FACETS[resolveCatalogFacetSlug(s)] ?? CATEGORY_FACETS[s];
+  if (!defs?.length) return [];
+  return defs.map((d) => {
+    const fb = defaultFacetNamesForKey(d.key);
+    return {
+      key: d.key,
+      name_en: (d.name_en?.trim() || fb.name_en).trim(),
+      name_ar: (d.name_ar?.trim() || fb.name_ar).trim(),
+    };
+  });
 }
 
 export function facetAttributesToOrderedSelection(attrs: FacetAttributeDef[]): FacetAttributeDef[] {
