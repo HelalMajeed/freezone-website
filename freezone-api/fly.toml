@@ -1,54 +1,36 @@
-# Fly.io — freezone-api (Express + Prisma)
+# fly.toml app configuration file generated for freezone-website on 2026-05-12T22:53:31Z
 #
-# Option A — from monorepo root (recommended): use `fly.toml` in repo root; it sets
-#   dockerfile = "freezone-api/Dockerfile" and SERVICE_PATH=freezone-api.
-#   flyctl deploy -a freezone-website
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
-# Option B — from this directory (Docker context = freezone-api):
-#   flyctl deploy -a freezone-website
-#
-# If your Fly app name is not `freezone-website`, change `app` below or run:
-#   fly config save -a <your-app-name>
-# and merge the downloaded `fly.toml` with this file.
 
-app = "freezone-website"
-primary_region = "iad"
+app = 'freezone-website'
+primary_region = 'ams'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
+
   [build.args]
-    SERVICE_PATH = "."
+    SERVICE_PATH = '.'
+
+[deploy]
+  strategy = 'rolling'
 
 [http_service]
   internal_port = 4000
   force_https = true
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
 
-[[http_service.checks]]
-  interval = "15s"
-  timeout = "10s"
-  grace_period = "60s"
-  method = "GET"
-  path = "/health"
+  [[http_service.checks]]
+    interval = '15s'
+    timeout = '10s'
+    grace_period = '1m0s'
+    method = 'GET'
+    path = '/health'
 
 [[vm]]
-  memory = "512mb"
-  cpu_kind = "shared"
+  memory = '512mb'
+  cpu_kind = 'shared'
   cpus = 1
-
-# ─── Release command (Prisma migrations) ───────────────────────────────────
-# `release_command` is commented out so Fly does not run a one-off migrate Machine
-# before deploy (avoids deploy abort on DB/timeouts). Migrations still run on each
-# Machine boot via docker-entrypoint.sh — set DATABASE_URL before expecting a healthy app.
-#
-# Re-enable after SSH migrate succeeds (see README Fly section):
-#   release_command = "npx prisma migrate deploy"
-#   release_command_timeout = "10m"   # optional; default Fly release timeout is 5m
-
-[deploy]
-  strategy = "rolling"
-  # Step 1 (debug): keep release_command commented so Fly does not fail the deploy phase.
-  # release_command = "npx prisma migrate deploy"
-  # release_command_timeout = "10m"
+  memory_mb = 4096
