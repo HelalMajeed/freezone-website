@@ -13,7 +13,8 @@
     "db:seed": "prisma db seed",
     "db:delete-products": "tsx prisma/delete-all-products.ts",
     "db:setup": "prisma generate && prisma migrate deploy && prisma db seed",
-    "db:status": "prisma migrate status"
+    "db:status": "prisma migrate status",
+    "fly:deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/fly-deploy.ps1"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
