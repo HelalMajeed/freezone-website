@@ -1,0 +1,44 @@
+# Fly.io — freezone-api, deployed from monorepo root.
+# Build context = repo root; Dockerfile copies via SERVICE_PATH=freezone-api.
+#
+# From repo root:
+#   flyctl deploy -a freezone-website
+#
+# Or deploy only the API subfolder (uses freezone-api/fly.toml + context):
+#   flyctl deploy ./freezone-api -a freezone-website
+
+app = "freezone-website"
+primary_region = "iad"
+
+[build]
+  dockerfile = "freezone-api/Dockerfile"
+  [build.args]
+    SERVICE_PATH = "freezone-api"
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[http_service.checks]]
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "15s"
+  method = "GET"
+  path = "/health"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+# Re-enable after migrations succeed from SSH:
+#   release_command = "npx prisma migrate deploy"
+#   release_command_timeout = "10m"
+
+[deploy]
+  strategy = "rolling"
+  # release_command = "npx prisma migrate deploy"
+  # release_command_timeout = "10m"

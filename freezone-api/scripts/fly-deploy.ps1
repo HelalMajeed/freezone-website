@@ -7,7 +7,7 @@
   1) flyctl auth whoami (must be logged in: flyctl auth login, or set FLY_API_TOKEN)
   2) flyctl secrets list
   3) If $env:DATABASE_URL is set: flyctl secrets set DATABASE_URL=... (deploy releases secrets)
-  4) flyctl deploy (cwd = freezone-api)
+  4) flyctl deploy (cwd = monorepo root so root fly.toml + Dockerfile SERVICE_PATH apply)
   5) flyctl ssh ... npx prisma migrate deploy
 
   Environment:
@@ -38,8 +38,9 @@ function Invoke-Fly {
 }
 
 $app = if ($env:FLY_APP_NAME) { $env:FLY_APP_NAME } else { "freezone-website" }
-$apiRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-Set-Location $apiRoot
+# freezone-api/scripts -> monorepo root (parent of freezone-api)
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+Set-Location $repoRoot
 
 Write-Host "==> flyctl auth" -ForegroundColor Cyan
 Invoke-Fly auth whoami
@@ -54,7 +55,7 @@ if ($env:DATABASE_URL) {
   Write-Host "==> skip secrets set (set DATABASE_URL env to push a new DB URL)" -ForegroundColor Yellow
 }
 
-Write-Host "==> deploy ($app) from $apiRoot" -ForegroundColor Cyan
+Write-Host "==> deploy ($app) from $repoRoot" -ForegroundColor Cyan
 Invoke-Fly deploy -a $app
 
 Write-Host "==> prisma migrate deploy via SSH ($app)" -ForegroundColor Cyan

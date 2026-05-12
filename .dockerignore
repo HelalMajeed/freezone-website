@@ -1,0 +1,13 @@
+# Shrink Fly / Docker build context when building from repo root (freezone-api image).
+.git
+.github
+**/.next
+**/node_modules
+**/dist
+**/coverage
+commerce-suite
+freezone-web
+docs
+_stitch_apex_admin
+_stitch_commerce
+**/*.md

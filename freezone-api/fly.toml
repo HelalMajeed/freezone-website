@@ -1,7 +1,11 @@
 # Fly.io — freezone-api (Express + Prisma)
 #
-# Deploy from this directory so the Docker build context matches the Dockerfile:
-#   cd freezone-api && fly deploy
+# Option A — from monorepo root (recommended): use `fly.toml` in repo root; it sets
+#   dockerfile = "freezone-api/Dockerfile" and SERVICE_PATH=freezone-api.
+#   flyctl deploy -a freezone-website
+#
+# Option B — from this directory (Docker context = freezone-api):
+#   flyctl deploy -a freezone-website
 #
 # If your Fly app name is not `freezone-website`, change `app` below or run:
 #   fly config save -a <your-app-name>
@@ -12,6 +16,8 @@ primary_region = "iad"
 
 [build]
   dockerfile = "Dockerfile"
+  [build.args]
+    SERVICE_PATH = "."
 
 [http_service]
   internal_port = 4000

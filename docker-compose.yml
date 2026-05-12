@@ -19,6 +19,8 @@ services:
     build:
       context: ./freezone-api
       dockerfile: Dockerfile
+      args:
+        SERVICE_PATH: "."
     environment:
       DATABASE_URL: postgresql://freezone:${POSTGRES_PASSWORD:-freezone_dev}@postgres:5432/freezone
       API_PORT: "4000"

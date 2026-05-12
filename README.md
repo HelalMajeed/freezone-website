@@ -146,7 +146,8 @@ npm run docker:up
 
 ## Fly.io (`freezone-api`)
 
-- Config: [`freezone-api/fly.toml`](freezone-api/fly.toml) (default app name `freezone-website`; override with `FLY_APP_NAME`).
+- **From monorepo root** (recommended): root [`fly.toml`](fly.toml) builds `freezone-api/Dockerfile` with `SERVICE_PATH=freezone-api`. Run: `flyctl deploy -a freezone-website`
+- **From `freezone-api/`**: [`freezone-api/fly.toml`](freezone-api/fly.toml) with Docker context = that folder. Run: `flyctl deploy -a freezone-website`
 - Install CLI (Windows): `winget install Fly-io.flyctl -e --accept-source-agreements --accept-package-agreements`
 - Log in: `flyctl auth login` (or set `FLY_API_TOKEN` for non-interactive use).
 - One-shot deploy + secrets + SSH migrate: run [`freezone-api/scripts/fly-deploy.ps1`](freezone-api/scripts/fly-deploy.ps1) (Windows) or [`freezone-api/scripts/fly-deploy.sh`](freezone-api/scripts/fly-deploy.sh) (macOS/Linux). Optional: `$env:DATABASE_URL = 'postgresql://...'` before the script to push/update the Fly secret.

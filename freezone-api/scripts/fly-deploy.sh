@@ -14,7 +14,7 @@
 set -euo pipefail
 
 APP="${FLY_APP_NAME:-freezone-website}"
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
 if ! command -v flyctl >/dev/null 2>&1; then
