@@ -1,0 +1,38 @@
+# Fly.io — commerce-suite/admin-api (NestJS + Prisma, global prefix /v1)
+#
+# From this directory:
+#   flyctl deploy -a commerce-admin-api
+#
+# Requires secret: DATABASE_URL (PostgreSQL, reachable from Fly)
+
+app = "commerce-admin-api"
+primary_region = "iad"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3020"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 3020
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[http_service.checks]]
+  interval = "15s"
+  timeout = "10s"
+  grace_period = "60s"
+  method = "GET"
+  path = "/v1/offers"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "1024mb"
+
+[deploy]
+  strategy = "rolling"

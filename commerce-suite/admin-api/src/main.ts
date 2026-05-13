@@ -15,6 +15,8 @@ async function bootstrap() {
       /127\.0\.0\.1:5174$/,
       /localhost:4173$/,
       /127\.0\.0\.1:4173$/,
+      /^https:\/\/[\w.-]+\.fly\.dev$/,
+      /^https:\/\/[\w.-]+\.netlify\.app$/,
     ],
     credentials: true,
   });
