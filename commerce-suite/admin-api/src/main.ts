@@ -28,9 +28,9 @@ async function bootstrap() {
     }),
   );
   const port = process.env.PORT ? Number(process.env.PORT) : 3020;
-  await app.listen(port);
+  await app.listen(port, "0.0.0.0");
   // eslint-disable-next-line no-console
-  console.log(`commerce-admin-api listening on http://localhost:${port}/v1`);
+  console.log(`commerce-admin-api listening on http://0.0.0.0:${port}/v1`);
 }
 
 bootstrap();
