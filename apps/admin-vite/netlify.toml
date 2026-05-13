@@ -1,4 +1,6 @@
 [build]
+  # `postinstall` in apps/admin-vite installs freezone-web deps so `tsc` can resolve modules for
+  # files under ../../freezone-web/src (see scripts/ensure-freezone-web-deps.cjs).
   command = "npm run build"
   publish = "dist"
 
