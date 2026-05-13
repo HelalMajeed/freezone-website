@@ -528,5 +528,31 @@
     "a4": "Cash on delivery, cash at our store when you pick up, or electronic methods (ZainCash, Qi Card, Visa, Mastercard) as agreed on WhatsApp — the site does not auto-charge your card.",
     "q5": "What is your return policy?",
     "a5": "Products can be returned or exchanged within 30 days provided they are in their original unopened condition."
+  },
+  "AdminShell": {
+    "navOffers": "Offers"
+  },
+  "AdminOffers": {
+    "title": "Offers & sub-services",
+    "tabs": {
+      "all": "All services",
+      "offersOnly": "Offers only"
+    },
+    "tableEmpty": "No services to display yet.",
+    "toastSaved": "Saved",
+    "toastOrderSaved": "Order updated",
+    "toastOrderError": "Could not update order",
+    "retry": "Retry",
+    "loadError": "Could not load sub-services",
+    "colName": "Name",
+    "colOffer": "Offer",
+    "colActive": "Active",
+    "colOrder": "Order",
+    "actions": "Actions",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "langEn": "English",
+    "langAr": "Arabic",
+    "reload": "Reload"
   }
 }

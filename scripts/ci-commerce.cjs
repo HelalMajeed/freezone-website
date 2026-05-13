@@ -29,7 +29,9 @@ run("npm run build", adminWeb, webEnv);
 
 const viteEnv = {
   ...process.env,
-  VITE_API_BASE_URL: process.env.VITE_API_BASE_URL || "http://127.0.0.1:3020/v1",
+  VITE_COMMERCE_API_BASE_URL:
+    process.env.VITE_COMMERCE_API_BASE_URL || process.env.VITE_API_BASE_URL || "http://127.0.0.1:3020/v1",
+  VITE_API_URL: process.env.VITE_API_URL || "http://127.0.0.1:4000",
 };
 run("npm install", adminVite, viteEnv);
 run("npm run lint", adminVite, viteEnv);

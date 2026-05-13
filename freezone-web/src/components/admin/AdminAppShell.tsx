@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
@@ -14,6 +16,7 @@ import {
   Tag,
   ShoppingCart,
   TicketPercent,
+  Gift,
   ExternalLink,
   LogOut,
   Store,
@@ -29,39 +32,40 @@ import styles from "./AdminChrome.module.css";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
-const GROUPS: { label: string; items: NavItem[] }[] = [
-  {
-    label: "الواجهة والمحتوى",
-    items: [
-      { href: "/admin", label: "لوحة التحكم", icon: LayoutDashboard },
-      { href: "/admin/cms", label: "إعدادات الموقع (CMS)", icon: LayoutPanelTop },
-      { href: "/admin/content", label: "بناء الصفحة الرئيسية", icon: LayoutGrid },
-      { href: "/admin/media", label: "مكتبة الوسائط", icon: Images },
-      { href: "/admin/design", label: "المظهر والألوان", icon: Palette },
-    ],
-  },
-  {
-    label: "المتجر والكتالوج",
-    items: [
-      { href: "/admin/products", label: "المنتجات", icon: Package },
-      { href: "/admin/categories", label: "التصنيفات", icon: FolderTree },
-      { href: "/admin/brands", label: "العلامات التجارية", icon: Tag },
-    ],
-  },
-  {
-    label: "المبيعات والتسويق",
-    items: [
-      { href: "/admin/orders", label: "الطلبات", icon: ShoppingCart },
-      { href: "/admin/coupons", label: "الكوبونات", icon: TicketPercent },
-    ],
-  },
-  {
-    label: "النظام",
-    items: [{ href: "/admin/audit", label: "سجل التدقيق", icon: History }],
-  },
-];
-
-const FLAT_NAV: NavItem[] = GROUPS.flatMap((g) => g.items);
+function makeAdminNavGroups(t: TFunction): { label: string; items: NavItem[] }[] {
+  return [
+    {
+      label: "الواجهة والمحتوى",
+      items: [
+        { href: "/admin", label: "لوحة التحكم", icon: LayoutDashboard },
+        { href: "/admin/cms", label: "إعدادات الموقع (CMS)", icon: LayoutPanelTop },
+        { href: "/admin/content", label: "بناء الصفحة الرئيسية", icon: LayoutGrid },
+        { href: "/admin/media", label: "مكتبة الوسائط", icon: Images },
+        { href: "/admin/design", label: "المظهر والألوان", icon: Palette },
+      ],
+    },
+    {
+      label: "المتجر والكتالوج",
+      items: [
+        { href: "/admin/products", label: "المنتجات", icon: Package },
+        { href: "/admin/categories", label: "التصنيفات", icon: FolderTree },
+        { href: "/admin/brands", label: "العلامات التجارية", icon: Tag },
+      ],
+    },
+    {
+      label: "المبيعات والتسويق",
+      items: [
+        { href: "/admin/orders", label: "الطلبات", icon: ShoppingCart },
+        { href: "/admin/coupons", label: "الكوبونات", icon: TicketPercent },
+        { href: "/admin/offers", label: t("AdminShell.navOffers"), icon: Gift },
+      ],
+    },
+    {
+      label: "النظام",
+      items: [{ href: "/admin/audit", label: "سجل التدقيق", icon: History }],
+    },
+  ];
+}
 
 const SIDEBAR_KEY = "admin-sidebar-collapsed";
 
@@ -94,15 +98,15 @@ function useSidebarCollapsed() {
   return { collapsed, toggle };
 }
 
-function breadcrumbTrail(pathname: string) {
+function breadcrumbTrail(pathname: string, flatNav: NavItem[]) {
   const normalized = pathname.replace(/\/+$/, "") || "/admin";
   const home = { href: "/admin", label: "لوحة التحكم" };
   if (normalized === "/admin") {
     return [home];
   }
-  const match = FLAT_NAV.filter(
-    (item) => item.href !== "/admin" && (normalized === item.href || normalized.startsWith(`${item.href}/`)),
-  ).sort((a, b) => b.href.length - a.href.length)[0];
+  const match = flatNav
+    .filter((item) => item.href !== "/admin" && (normalized === item.href || normalized.startsWith(`${item.href}/`)))
+    .sort((a, b) => b.href.length - a.href.length)[0];
 
   const trail: { href: string; label: string }[] = [home];
   if (match) {
@@ -121,10 +125,18 @@ function breadcrumbTrail(pathname: string) {
   return trail;
 }
 
-function AdminTopBar({ collapsed, onToggleSidebar }: { collapsed: boolean; onToggleSidebar: () => void }) {
+function AdminTopBar({
+  collapsed,
+  onToggleSidebar,
+  flatNav,
+}: {
+  collapsed: boolean;
+  onToggleSidebar: () => void;
+  flatNav: NavItem[];
+}) {
   const navigate = useNavigate();
   const pathname = useLocation().pathname ?? "";
-  const crumbs = useMemo(() => breadcrumbTrail(pathname), [pathname]);
+  const crumbs = useMemo(() => breadcrumbTrail(pathname, flatNav), [pathname, flatNav]);
 
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST", credentials: "include" });
@@ -164,9 +176,11 @@ function AdminTopBar({ collapsed, onToggleSidebar }: { collapsed: boolean; onTog
               if (e.key !== "Enter") return;
               const q = (e.target as HTMLInputElement).value.trim().toLowerCase();
               if (!q) return;
-              const hit = FLAT_NAV.find(
+              const hit = flatNav.find(
                 (item) =>
-                  item.label.includes(q) || item.href.replace("/admin", "").includes(q) || item.href.includes(q),
+                  item.label.toLowerCase().includes(q) ||
+                  item.href.replace("/admin", "").includes(q) ||
+                  item.href.includes(q),
               );
               if (hit) navigate(hit.href);
             }}
@@ -208,8 +222,12 @@ function AdminTopBar({ collapsed, onToggleSidebar }: { collapsed: boolean; onTog
 }
 
 export function AdminAppShell() {
+  const { t, i18n } = useTranslation();
   const pathname = useLocation().pathname ?? "";
   const { collapsed, toggle } = useSidebarCollapsed();
+
+  const groups = useMemo(() => makeAdminNavGroups(t), [t, i18n.language]);
+  const flatNav = useMemo(() => groups.flatMap((g) => g.items), [groups]);
 
   return (
     <div className={`admin-root ${styles.root}`}>
@@ -224,18 +242,25 @@ export function AdminAppShell() {
           </div>
         </div>
 
-        {GROUPS.map((group) => (
+        {groups.map((group) => (
           <div key={group.label} className={styles.navSection}>
             <div className={styles.navSectionLabel}>{group.label}</div>
             {group.items.map((item) => {
               const on = isNavActive(pathname, item.href);
               const Icon = item.icon;
+              const title = collapsed
+                ? item.label
+                : item.href === "/admin/offers"
+                  ? i18n.language.startsWith("ar")
+                    ? "Offers"
+                    : "العروض"
+                  : undefined;
               return (
                 <Link
                   key={item.href}
                   to={item.href}
                   className={`${styles.navLink} ${on ? styles.navLinkActive : ""}`}
-                  title={collapsed ? item.label : undefined}
+                  title={title}
                 >
                   <Icon className={styles.navIcon} size={18} strokeWidth={on ? 2.25 : 2} />
                   <span className={styles.navLinkText}>{item.label}</span>
@@ -255,7 +280,7 @@ export function AdminAppShell() {
       </aside>
 
       <div className={styles.main}>
-        <AdminTopBar collapsed={collapsed} onToggleSidebar={toggle} />
+        <AdminTopBar collapsed={collapsed} onToggleSidebar={toggle} flatNav={flatNav} />
         <div className={styles.content}>
           <Outlet />
         </div>

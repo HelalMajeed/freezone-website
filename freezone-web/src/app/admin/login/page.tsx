@@ -74,7 +74,14 @@ export default function AdminLoginPage() {
         </button>
       </form>
       <p style={{ marginTop: 20, fontSize: 13, color: "#64748b", textAlign: "center" }}>
-        <Link to="/en" style={{ color: "var(--admin-muted)" }}>
+        <Link
+          to={
+            import.meta.env.VITE_PUBLIC_STOREFRONT_URL?.trim()
+              ? `${import.meta.env.VITE_PUBLIC_STOREFRONT_URL.trim().replace(/\/+$/, "")}/en`
+              : "/en"
+          }
+          style={{ color: "var(--admin-muted)" }}
+        >
           ← العودة للموقع
         </Link>
       </p>

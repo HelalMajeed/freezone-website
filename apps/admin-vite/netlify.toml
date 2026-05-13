@@ -4,7 +4,10 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  VITE_API_BASE_URL = "https://commerce-admin-api.fly.dev/v1"
+  # Commerce Nest API (global prefix /v1). Prefer this name; `VITE_API_BASE_URL` is also read by `commerce-api.ts` as a fallback alias.
+  VITE_COMMERCE_API_BASE_URL = "https://commerce-admin-api.fly.dev/v1"
+  # Set `VITE_API_URL` in the Netlify UI to your **Freezone Express** API origin (e.g. https://your-api.fly.dev) so `/api/admin/*` works from this separate host.
+  # Optional: same-origin storefront for “back to site” from admin login: `VITE_PUBLIC_STOREFRONT_URL=https://your-store.netlify.app`
 
 [[redirects]]
   from = "/*"
