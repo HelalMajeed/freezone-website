@@ -16,20 +16,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["../../freezone-web/src/*"]
-    }
+    },
+    "types": ["vite/client"]
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "../../freezone-web/src/**/*.ts",
-    "../../freezone-web/src/**/*.tsx",
-    "vite.config.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "../../freezone-web/src/**/*.test.ts",
-    "../../freezone-web/src/**/*.test.tsx",
-    "../../freezone-web/src/**/__tests__/**"
-  ]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"],
+  "exclude": ["node_modules", "dist"]
 }

@@ -1,6 +1,7 @@
 [build]
-  # `postinstall` in apps/admin-vite installs freezone-web deps so `tsc` can resolve modules for
-  # files under ../../freezone-web/src (see scripts/ensure-freezone-web-deps.cjs).
+  # `postinstall` / `prebuild` link `freezone-web/node_modules` → this package's `node_modules` so `tsc` can resolve
+  # bare imports from shared `freezone-web/src` (TypeScript walks from the importing file's directory). Do not use
+  # `npm ci --ignore-scripts` here or the link step will be skipped.
   command = "npm run build"
   publish = "dist"
 

@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "postinstall": "node ./scripts/ensure-freezone-web-deps.cjs",
+    "postinstall": "node scripts/ensure-freezone-node-modules.cjs",
+    "prebuild": "node scripts/ensure-freezone-node-modules.cjs",
     "dev": "vite",
     "build": "tsc -p tsconfig.app.json --noEmit && vite build",
     "preview": "vite preview",
