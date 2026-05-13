@@ -9,6 +9,7 @@
     "dev": "concurrently -n api,web -c blue,green \"npm run dev:api\" \"npm run dev:web\"",
     "dev:commerce:api": "npm run dev --prefix commerce-suite/admin-api",
     "dev:commerce:web": "npm run dev --prefix commerce-suite/admin-web",
+    "dev:commerce:admin-vite": "npm run dev --prefix apps/admin-vite",
     "build:api": "npm run build --prefix freezone-api",
     "build:web": "npm run build --prefix freezone-web",
     "build": "npm run build:api && npm run build:web",
