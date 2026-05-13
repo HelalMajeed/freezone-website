@@ -10,6 +10,7 @@
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:delete-products": "tsx prisma/delete-all-products.ts",
     "db:setup": "prisma generate && prisma migrate deploy && prisma db seed",

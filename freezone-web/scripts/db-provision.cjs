@@ -146,8 +146,8 @@ async function main() {
     }
   }
 
-  run("npx prisma migrate deploy", "npx prisma migrate deploy ...", apiRoot);
-  run("npx prisma db seed", "npx prisma db seed ...", apiRoot);
+  run("npm run db:migrate:deploy", "npm run db:migrate:deploy ...", apiRoot);
+  run("npm run db:seed", "npm run db:seed ...", apiRoot);
   console.log("[db-provision] Done.");
 }
 

@@ -10,6 +10,10 @@
 app = "freezone-website"
 primary_region = "iad"
 
+[env]
+  API_HOST = "0.0.0.0"
+  API_PORT = "4000"
+
 [build]
   dockerfile = "freezone-api/Dockerfile"
   [build.args]
@@ -30,9 +34,10 @@ primary_region = "iad"
   path = "/health"
 
 [[vm]]
-  memory = "512mb"
+  # Explicit guest RAM (must not exceed 2048 MiB on typical Fly org limits). Prefer cpu/memory over `size` to avoid bad merges with scaled machines.
   cpu_kind = "shared"
   cpus = 1
+  memory = "1024mb"
 
 # Re-enable after migrations succeed from SSH:
 #   release_command = "npx prisma migrate deploy"

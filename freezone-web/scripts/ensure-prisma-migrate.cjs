@@ -26,9 +26,9 @@ function main() {
 
   const env = { ...process.env, ...getMergedEnv(), DATABASE_URL: dbUrl };
 
-  console.log("[ensure-prisma-migrate] npx prisma migrate deploy …");
+  console.log("[ensure-prisma-migrate] prisma migrate deploy (freezone-api local CLI) …");
   try {
-    execSync("npx prisma migrate deploy", {
+    execSync("npm run db:migrate:deploy", {
       cwd: apiRoot,
       stdio: "inherit",
       env,
