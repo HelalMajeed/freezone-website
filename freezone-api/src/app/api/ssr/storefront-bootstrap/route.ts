@@ -16,11 +16,19 @@ export async function GET(req: Request) {
     getPublishedHomeSections(),
     getCachedSiteTheme(),
   ]);
-  return Response.json({
+  const body = {
     site,
     home,
     catalog: { products, categories, brands },
     homeSections,
     theme,
+  };
+  /** Prevent any intermediary (browser tab restore, corporate proxy, CDN) from treating homepage payload as long-lived cache. */
+  return Response.json(body, {
+    headers: {
+      "Cache-Control": "no-store, private, max-age=0, must-revalidate",
+      Pragma: "no-cache",
+      "CDN-Cache-Control": "no-store",
+    },
   });
 }

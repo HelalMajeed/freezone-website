@@ -22,10 +22,10 @@ export function LocaleLayout() {
   const lc = locale;
 
   const { data: bundle, isLoading, isError, error } = useQuery({
-    queryKey: ["storefront-bootstrap", lc],
+    queryKey: ["storefront-bootstrap", lc, import.meta.env.VITE_API_URL ?? ""],
     queryFn: () => fetchStorefrontBootstrap(lc),
-    /** Catalog (categories, images) changes in admin — refresh when returning to this tab */
-    staleTime: 5_000,
+    /** Homepage/CMS/catalog can change in admin — avoid long-lived stale UI vs API (see Netlify cache + VITE_API_URL). */
+    staleTime: 0,
     refetchOnWindowFocus: true,
   });
 

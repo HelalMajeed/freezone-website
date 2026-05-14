@@ -10,9 +10,18 @@
   SKIP_DEV_DATABASE = "1"
   SKIP_PRISMA_MIGRATE = "1"
   SKIP_WAIT_API = "1"
+  # Production storefront must call the Fly API origin (no `/api` suffix). Override in Netlify UI for a custom API domain.
+  VITE_API_URL = "https://freezone-website.fly.dev"
 
 # SPA: serve index.html for client-side routes. Static files under /assets are still served first.
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Avoid stale HTML shell after deploys (old bundle calling wrong API or holding outdated bootstrap).
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
