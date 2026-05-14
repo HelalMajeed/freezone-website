@@ -17,6 +17,7 @@
     "db:status": "prisma migrate status",
     "db:counts": "node scripts/print-db-counts.mjs",
     "db:survey": "node scripts/survey-db-extended.mjs",
+    "db:survey-all-envs": "node scripts/survey-batch-env-candidates.mjs",
     "fly:deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/fly-deploy.ps1",
     "admin:auth-print": "node scripts/configure-admin-auth.mjs",
     "admin:auth-fly": "node scripts/configure-admin-auth.mjs --apply-fly"

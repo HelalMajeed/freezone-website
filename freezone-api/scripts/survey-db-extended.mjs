@@ -6,7 +6,6 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
 import { PrismaClient } from "@prisma/client";
 
 function loadEnvFile(p) {
@@ -14,7 +13,7 @@ function loadEnvFile(p) {
   if (!fs.existsSync(abs)) return;
   const txt = fs.readFileSync(abs, "utf8");
   for (const line of txt.split(/\r?\n/)) {
-    const m = line.match(/^\s*DATABASE_URL\s*=\s*(.*)$/);
+    const m = line.match(/^\s*(?:export\s+)?DATABASE_URL\s*=\s*(.*)$/);
     if (!m) continue;
     let v = m[1].trim();
     if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
@@ -23,7 +22,10 @@ function loadEnvFile(p) {
 }
 
 const envArg = process.argv[2];
-if (envArg && !envArg.startsWith("-")) loadEnvFile(envArg);
+if (envArg && !envArg.startsWith("-")) {
+  delete process.env.DATABASE_URL;
+  loadEnvFile(envArg);
+}
 
 if (!process.env.DATABASE_URL?.trim()) {
   console.error("Missing DATABASE_URL (set env or pass path to .env file)");
