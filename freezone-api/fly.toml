@@ -43,6 +43,11 @@ primary_region = "iad"
   cpus = 1
   memory = "1024mb"
 
+# Same as repo root: persistent admin uploads (subdir deploys).
+[[mounts]]
+  source = "uploads_data"
+  destination = "/app/public/uploads"
+
 # ─── Release command (Prisma migrations) ───────────────────────────────────
 # `release_command` is commented out so Fly does not run a one-off migrate Machine
 # before deploy (avoids deploy abort on DB/timeouts). Migrations still run on each

@@ -11,6 +11,8 @@ COPY ${SERVICE_PATH}/tsconfig.json ./
 COPY ${SERVICE_PATH}/src ./src
 COPY ${SERVICE_PATH}/scripts ./scripts
 COPY ${SERVICE_PATH}/docker-entrypoint.sh ./docker-entrypoint.sh
+# Baked upload seed (merged web+API uploads). Entrypoint copies into /app/public/uploads (Fly volume).
+COPY ${SERVICE_PATH}/public/uploads ./public/uploads.default
 RUN npx prisma generate
 RUN npm run build
 RUN npm prune --omit=dev
@@ -25,6 +27,7 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/docker-entrypoint.sh /docker-entrypoint.sh
+COPY --from=builder /app/public/uploads.default /app/public/uploads.default
 # Windows CRLF in shell scripts breaks shebang (ENOENT); normalize line endings.
 RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 EXPOSE 4000

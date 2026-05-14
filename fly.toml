@@ -39,6 +39,11 @@ primary_region = "iad"
   cpus = 1
   memory = "1024mb"
 
+# Admin uploads + static /uploads/* — persistent across deploys (seed from image on first boot).
+[[mounts]]
+  source = "uploads_data"
+  destination = "/app/public/uploads"
+
 # Re-enable after migrations succeed from SSH:
 #   release_command = "npx prisma migrate deploy"
 #   release_command_timeout = "10m"
