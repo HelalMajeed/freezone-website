@@ -152,6 +152,7 @@ npm run docker:up
 - Log in: `flyctl auth login` (or set `FLY_API_TOKEN` for non-interactive use).
 - One-shot deploy + secrets + SSH migrate: run [`freezone-api/scripts/fly-deploy.ps1`](freezone-api/scripts/fly-deploy.ps1) (Windows) or [`freezone-api/scripts/fly-deploy.sh`](freezone-api/scripts/fly-deploy.sh) (macOS/Linux). Optional: `$env:DATABASE_URL = 'postgresql://...'` before the script to push/update the Fly secret.
 - After login, health: `flyctl status -a freezone-website` and open `https://freezone-website.fly.dev/health` (replace with your app name if different).
+- **Production data lives in whatever Postgres `DATABASE_URL` points to.** Fly secret `DATABASE_URL` (see `flyctl secrets list -a freezone-website`) must match the database where you created products (often local Docker volume `freezone_pg`, a Neon/Supabase project, or a Fly Postgres app such as `freezone-website-pg`). If the live API shows empty or tiny catalogs, the app is usually connected to a **new empty cluster** or the wrong host — fix by setting `DATABASE_URL` to the real database URI, then `flyctl deploy` / restart (no seed required). Read-only counts on the API machine: `npm run db:counts --prefix freezone-api` locally with your `.env`, or after deploy run `flyctl ssh console -a freezone-website -C "sh -lc 'cd /app && node scripts/print-db-counts.mjs'"` (use PowerShell `--%` before `flyctl` if `-C` is mangled). For migration from local to Fly Postgres, take a **`pg_dump` backup** first, then `pg_restore` / `psql` — never `migrate reset` on production.
 
 ---
 

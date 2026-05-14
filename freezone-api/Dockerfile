@@ -9,6 +9,7 @@ COPY ${SERVICE_PATH}/prisma ./prisma
 RUN npm ci
 COPY ${SERVICE_PATH}/tsconfig.json ./
 COPY ${SERVICE_PATH}/src ./src
+COPY ${SERVICE_PATH}/scripts ./scripts
 COPY ${SERVICE_PATH}/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN npx prisma generate
 RUN npm run build
@@ -21,6 +22,7 @@ ENV NODE_ENV=production
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/docker-entrypoint.sh /docker-entrypoint.sh
 # Windows CRLF in shell scripts breaks shebang (ENOENT); normalize line endings.

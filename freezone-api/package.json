@@ -15,6 +15,7 @@
     "db:delete-products": "tsx prisma/delete-all-products.ts",
     "db:setup": "prisma generate && prisma migrate deploy && prisma db seed",
     "db:status": "prisma migrate status",
+    "db:counts": "node scripts/print-db-counts.mjs",
     "fly:deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/fly-deploy.ps1",
     "admin:auth-print": "node scripts/configure-admin-auth.mjs",
     "admin:auth-fly": "node scripts/configure-admin-auth.mjs --apply-fly"
