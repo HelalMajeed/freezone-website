@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import type { ButtonStyleToken, ThemeTokens } from "@/lib/theme-tokens";
 import { DEFAULT_THEME } from "@/lib/theme-tokens";
+import { freezoneApiUrl } from "@/lib/api-internal";
 
 function spacingPresetFromGap(gap: string): "compact" | "normal" | "relaxed" {
   if (gap.includes("32") || gap === "2rem") return "compact";
@@ -27,7 +28,7 @@ export default function AdminDesignPage() {
   const [err, setErr] = useState("");
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/admin/theme", { credentials: "include" });
+    const res = await fetch(freezoneApiUrl("/api/admin/theme"), { credentials: "include" });
     if (res.status === 401) {
       navigate("/admin/login", { replace: true });
       return;
@@ -47,7 +48,7 @@ export default function AdminDesignPage() {
   }, [load]);
 
   async function save() {
-    const res = await fetch("/api/admin/theme", {
+    const res = await fetch(freezoneApiUrl("/api/admin/theme"), {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },

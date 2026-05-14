@@ -4,6 +4,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { LUCIDE_ICON_PICKER_OPTIONS } from "@/lib/lucide-icon-map";
 import { parsePromoMegaSlots, promoMegaCardCount, type PromoMegaSlotDraft } from "@/lib/home-promo-mega";
+import { freezoneApiUrl } from "@/lib/api-internal";
 
 const inp: CSSProperties = {
   width: "100%",
@@ -739,7 +740,7 @@ export function PromoMegaSectionEditor({
 
   useEffect(() => {
     let cancelled = false;
-    void fetch("/api/admin/categories", { credentials: "include", cache: "no-store" })
+    void fetch(freezoneApiUrl("/api/admin/categories"), { credentials: "include", cache: "no-store" })
       .then((r) => (r.ok ? r.json() : []))
       .then((rows: unknown) => {
         if (cancelled || !Array.isArray(rows)) return;

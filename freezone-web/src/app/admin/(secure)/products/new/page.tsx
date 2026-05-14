@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AdminProductCreateForm } from "@/components/admin/products-catalog/AdminProductCreateForm";
+import { freezoneApiUrl } from "@/lib/api-internal";
 
 type Category = { id: number; slug: string; nameEn: string; nameAr?: string; facetKeys?: unknown };
 type BrandOpt = { id: number; nameEn: string; nameAr: string };
@@ -17,8 +18,8 @@ export default function AdminNewProductPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const [c, b] = await Promise.all([
-      fetch("/api/admin/categories", { credentials: "include" }),
-      fetch("/api/admin/brands", { credentials: "include" }),
+      fetch(freezoneApiUrl("/api/admin/categories"), { credentials: "include" }),
+      fetch(freezoneApiUrl("/api/admin/brands"), { credentials: "include" }),
     ]);
     if (c.status === 401 || b.status === 401) {
       navigate("/admin/login", { replace: true });

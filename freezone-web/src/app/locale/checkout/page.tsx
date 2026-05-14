@@ -9,6 +9,7 @@ import { Check, Truck, CreditCard, ClipboardList, Banknote, Smartphone, WalletCa
 import { Link, useRouter } from "@/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "@/i18n/hooks";
+import { freezoneApiUrl } from "@/lib/api-internal";
 import clsx from "clsx";
 
 type Fulfillment = "delivery" | "pickup";
@@ -154,7 +155,7 @@ export default function CheckoutPage() {
       });
 
     try {
-      const res = await fetch("/api/public/orders", {
+      const res = await fetch(freezoneApiUrl("/api/public/orders"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { uploadAdminImage } from "@/lib/admin-upload-image";
+import { freezoneApiUrl } from "@/lib/api-internal";
 
 type BrandRow = {
   id: number;
@@ -25,7 +26,7 @@ export default function AdminBrandsPage() {
   const [err, setErr] = useState("");
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/admin/brands", { credentials: "include" });
+    const res = await fetch(freezoneApiUrl("/api/admin/brands"), { credentials: "include" });
     if (res.status === 401) {
       navigate("/admin/login", { replace: true });
       return;
@@ -46,7 +47,7 @@ export default function AdminBrandsPage() {
   async function create(e: React.FormEvent) {
     e.preventDefault();
     setMsg("");
-    const res = await fetch("/api/admin/brands", {
+    const res = await fetch(freezoneApiUrl("/api/admin/brands"), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -63,7 +64,7 @@ export default function AdminBrandsPage() {
   }
 
   async function patch(id: number, patch: Partial<BrandRow>) {
-    await fetch(`/api/admin/brands/${id}`, {
+    await fetch(freezoneApiUrl(`/api/admin/brands/${id}`), {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -84,7 +85,7 @@ export default function AdminBrandsPage() {
 
   async function remove(id: number) {
     if (!confirm("حذف العلامة؟ سيتم فصل المنتجات المرتبطة.")) return;
-    const res = await fetch(`/api/admin/brands/${id}`, { method: "DELETE", credentials: "include" });
+    const res = await fetch(freezoneApiUrl(`/api/admin/brands/${id}`), { method: "DELETE", credentials: "include" });
     if (!res.ok) setErr("فشل الحذف");
     else void load();
   }

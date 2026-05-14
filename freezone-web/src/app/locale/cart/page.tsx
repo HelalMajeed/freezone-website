@@ -6,8 +6,9 @@ import { useCart, computeCartTotals } from "@/lib/store";
 import { usePublicSite } from "@/components/providers/StorefrontProvider";
 import { Link } from "@/navigation";
 import { Trash2, ShoppingBag, ShoppingCart } from "lucide-react";
-import { useTranslations } from "@/i18n/hooks";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslations } from "@/i18n/hooks";
+import { freezoneApiUrl } from "@/lib/api-internal";
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en").format(n);
@@ -37,7 +38,7 @@ export default function CartPage() {
       return;
     }
     const sub = items.reduce((s, i) => s + i.price * i.qty, 0);
-    const res = await fetch("/api/public/coupon/validate", {
+    const res = await fetch(freezoneApiUrl("/api/public/coupon/validate"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code, subtotal: sub }),

@@ -7,6 +7,7 @@ import { ExternalLink, LayoutGrid, List, Moon, Plus, RefreshCw, Sun } from "luci
 import { fetchStorefrontBootstrap } from "@/lib/storefront-bootstrap";
 import type { AdminProductRow } from "./admin-product-types";
 import { adminProductInCategory, brandLabel, parseAdminProductsFromApi } from "./admin-product-types";
+import { freezoneApiUrl } from "@/lib/api-internal";
 import { readWishlistIds, toggleWishlistId } from "./admin-wishlist";
 import { AdminProductCard } from "./AdminProductCard";
 import { AdminProductQuickView } from "./AdminProductQuickView";
@@ -109,7 +110,7 @@ export function AdminProductCatalog({ rawList, products: productsProp, categorie
     async (id: number, body: { inStock?: boolean; published?: boolean }) => {
       setMutatingId(id);
       try {
-        const res = await fetch(`/api/admin/products/${id}`, {
+        const res = await fetch(freezoneApiUrl(`/api/admin/products/${id}`), {
           method: "PATCH",
           credentials: "include",
           cache: "no-store",
@@ -129,7 +130,7 @@ export function AdminProductCatalog({ rawList, products: productsProp, categorie
       if (!window.confirm("حذف المنتج نهائياً من قاعدة البيانات؟ لا يمكن التراجع.")) return;
       setMutatingId(id);
       try {
-        const res = await fetch(`/api/admin/products/${id}`, {
+        const res = await fetch(freezoneApiUrl(`/api/admin/products/${id}`), {
           method: "DELETE",
           credentials: "include",
           cache: "no-store",

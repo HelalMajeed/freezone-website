@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { AdminProductCatalog } from "@/components/admin/products-catalog/AdminProductCatalog";
 import type { AdminProductRow } from "@/components/admin/products-catalog/admin-product-types";
 import { parseAdminProductsFromApi } from "@/components/admin/products-catalog/admin-product-types";
+import { freezoneApiUrl } from "@/lib/api-internal";
 
 type Category = { id: number; slug: string; nameEn: string; nameAr?: string; facetKeys?: unknown };
 
@@ -18,8 +19,8 @@ export default function AdminProductsPage() {
   const load = useCallback(async () => {
     setListLoading(true);
     const [c, p] = await Promise.all([
-      fetch("/api/admin/categories", { credentials: "include" }),
-      fetch("/api/admin/products", { credentials: "include" }),
+      fetch(freezoneApiUrl("/api/admin/categories"), { credentials: "include" }),
+      fetch(freezoneApiUrl("/api/admin/products"), { credentials: "include" }),
     ]);
     if (c.status === 401 || p.status === 401) {
       navigate("/admin/login", { replace: true });

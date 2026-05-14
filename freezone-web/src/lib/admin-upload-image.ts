@@ -1,5 +1,7 @@
 /** Client-side uploads to `/api/admin/upload` (admin session required). */
 
+import { freezoneApiUrl } from "./api-internal";
+
 const IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/jpg", "image/webp"]);
 const SITE_LOGO_TYPES = new Set(["image/png", "image/jpeg", "image/jpg", "application/pdf"]);
 const MODEL_TYPES = new Set([
@@ -35,7 +37,7 @@ async function postUpload(file: File): Promise<string> {
   const fd = new FormData();
   fd.set("file", file);
   fd.set("filename", file.name);
-  const res = await fetch("/api/admin/upload", { method: "POST", credentials: "include", body: fd });
+  const res = await fetch(freezoneApiUrl("/api/admin/upload"), { method: "POST", credentials: "include", body: fd });
   const j = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
   if (!res.ok) {
     throw new Error(j.error || "فشل الرفع.");

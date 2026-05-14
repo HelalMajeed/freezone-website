@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { freezoneApiUrl } from "@/lib/api-internal";
 
 type OrderRow = {
   id: number;
@@ -30,7 +31,7 @@ export default function AdminOrdersPage() {
   const [expanded, setExpanded] = useState<number | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/admin/orders", { credentials: "include" });
+    const res = await fetch(freezoneApiUrl("/api/admin/orders"), { credentials: "include" });
     if (res.status === 401) {
       navigate("/admin/login", { replace: true });
       return;
@@ -48,7 +49,7 @@ export default function AdminOrdersPage() {
   }, [load]);
 
   async function setStatus(id: number, status: string) {
-    const res = await fetch("/api/admin/orders", {
+    const res = await fetch(freezoneApiUrl("/api/admin/orders"), {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },

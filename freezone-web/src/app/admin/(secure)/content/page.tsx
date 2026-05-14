@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import { freezoneApiUrl } from "@/lib/api-internal";
 import { SECTION_TYPES } from "@/lib/cms-section-defaults";
 import {
   FeaturedProductsSectionEditor,
@@ -84,7 +85,7 @@ export default function AdminContentBuilderPage() {
   const [newType, setNewType] = useState(SECTION_TYPES[0]?.type ?? "hero");
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/admin/cms-page?slug=home", { credentials: "include" });
+    const res = await fetch(freezoneApiUrl("/api/admin/cms-page?slug=home"), { credentials: "include" });
     if (res.status === 401) {
       navigate("/admin/login", { replace: true });
       return;
@@ -122,7 +123,7 @@ export default function AdminContentBuilderPage() {
 
   async function saveDraft() {
     if (!selected) return;
-    const res = await fetch(`/api/admin/cms-page/sections/${selected.id}`, {
+    const res = await fetch(freezoneApiUrl(`/api/admin/cms-page/sections/${selected.id}`), {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -138,7 +139,7 @@ export default function AdminContentBuilderPage() {
   }
 
   async function toggleVisible(s: SectionRow) {
-    await fetch(`/api/admin/cms-page/sections/${s.id}`, {
+    await fetch(freezoneApiUrl(`/api/admin/cms-page/sections/${s.id}`), {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -155,7 +156,7 @@ export default function AdminContentBuilderPage() {
     ) {
       return;
     }
-    const res = await fetch("/api/admin/cms-page/publish", {
+    const res = await fetch(freezoneApiUrl("/api/admin/cms-page/publish"), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -171,7 +172,7 @@ export default function AdminContentBuilderPage() {
   }
 
   async function reorder(ordered: SectionRow[]) {
-    const res = await fetch("/api/admin/cms-page/reorder", {
+    const res = await fetch(freezoneApiUrl("/api/admin/cms-page/reorder"), {
       method: "PUT",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -192,7 +193,7 @@ export default function AdminContentBuilderPage() {
   }
 
   async function addSection() {
-    const res = await fetch("/api/admin/cms-page/sections", {
+    const res = await fetch(freezoneApiUrl("/api/admin/cms-page/sections"), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -207,7 +208,7 @@ export default function AdminContentBuilderPage() {
   }
 
   async function duplicateSection(id: number) {
-    const res = await fetch("/api/admin/cms-page/sections", {
+    const res = await fetch(freezoneApiUrl("/api/admin/cms-page/sections"), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -222,7 +223,7 @@ export default function AdminContentBuilderPage() {
 
   async function deleteSection(id: number) {
     if (!confirm("حذف القسم؟")) return;
-    await fetch(`/api/admin/cms-page/sections/${id}`, { method: "DELETE", credentials: "include" });
+    await fetch(freezoneApiUrl(`/api/admin/cms-page/sections/${id}`), { method: "DELETE", credentials: "include" });
     setSelectedId(null);
     await load();
   }

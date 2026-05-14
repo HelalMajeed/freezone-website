@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { draftToStorefrontValue, type AdminCmsDraft } from "@/lib/admin-draft-to-storefront";
 import type { LocaleCode } from "@/lib/layout-cms";
 import { uploadAdminImage, uploadAdminSiteLogo } from "@/lib/admin-upload-image";
+import { freezoneApiUrl } from "@/lib/api-internal";
 import { parseStoredNavItems, type StoredNavItem } from "@/lib/cms-types";
 
 type DbBlock = "static_only" | "no_database_url" | null;
@@ -57,7 +58,7 @@ export function AdminCmsDraftProvider({ children }: { children: ReactNode }) {
   const [dbBlockReason, setDbBlockReason] = useState<DbBlock>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/admin/cms", { credentials: "include" });
+    const res = await fetch(freezoneApiUrl("/api/admin/cms"), { credentials: "include" });
     if (res.status === 401) {
       navigate("/admin/login", { replace: true });
       return;
@@ -141,7 +142,7 @@ export function AdminCmsDraftProvider({ children }: { children: ReactNode }) {
       siteConfig: { ...draft.siteConfig, navItemsJson },
       heroSlides: draft.heroSlides,
     };
-    const res = await fetch("/api/admin/cms", {
+    const res = await fetch(freezoneApiUrl("/api/admin/cms"), {
       method: "PUT",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -236,7 +237,7 @@ export function AdminCmsDraftProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    await fetch("/api/admin/logout", { method: "POST", credentials: "include" });
+    await fetch(freezoneApiUrl("/api/admin/logout"), { method: "POST", credentials: "include" });
     navigate("/admin/login", { replace: true });
   }
 

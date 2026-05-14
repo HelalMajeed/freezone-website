@@ -2,6 +2,8 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_URL: string | undefined;
+  /** Optional alias for `VITE_API_URL` (same semantics: API origin only, no `/api` suffix). */
+  readonly VITE_STOREFRONT_API_URL: string | undefined;
   /** Commerce Nest API base including `/v1` (standalone admin / Netlify). */
   readonly VITE_COMMERCE_API_BASE_URL: string | undefined;
   /** Alias for commerce base (includes `/v1`) — used by some deploy scripts. */

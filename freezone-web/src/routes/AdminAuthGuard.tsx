@@ -1,13 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, Outlet } from "react-router-dom";
-import { getApiInternalBase, getInternalApiFetchSignal } from "@/lib/api-internal";
+import { freezoneApiUrl, getInternalApiFetchSignal } from "@/lib/api-internal";
 
 export function AdminAuthGuard() {
   const { data, isLoading } = useQuery({
     queryKey: ["admin-auth-check"],
     queryFn: async () => {
-      const base = getApiInternalBase();
-      const res = await fetch(`${base}/api/admin/dashboard-stats`, {
+      const res = await fetch(freezoneApiUrl("/api/admin/dashboard-stats"), {
         credentials: "include",
         cache: "no-store",
         signal: getInternalApiFetchSignal(),

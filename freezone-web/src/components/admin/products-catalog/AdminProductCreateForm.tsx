@@ -6,6 +6,7 @@ import { uploadAdminImage, uploadAdminModel3d } from "@/lib/admin-upload-image";
 import { MediaPickerModal, type MediaRow } from "@/components/admin/MediaPickerModal";
 import { facetKeysFromCategoryJson } from "@/lib/spec-validation";
 import { facetAdminLabelAr } from "@/lib/facet-admin-labels";
+import { freezoneApiUrl } from "@/lib/api-internal";
 
 type Category = { id: number; slug: string; nameEn: string; nameAr?: string; facetKeys?: unknown };
 type BrandOpt = { id: number; nameEn: string; nameAr: string };
@@ -92,7 +93,7 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId, 
       setSubmitting(false);
       return;
     }
-    const res = await fetch("/api/admin/products", {
+    const res = await fetch(freezoneApiUrl("/api/admin/products"), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },

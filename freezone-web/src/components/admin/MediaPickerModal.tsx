@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { freezoneApiUrl } from "@/lib/api-internal";
 
 export type MediaRow = {
   id: number;
@@ -24,7 +25,7 @@ export function MediaPickerModal({ open, onClose, multi = false, onSelect }: Pro
   const [selected, setSelected] = useState<Set<number>>(new Set());
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/admin/media?q=${encodeURIComponent(q)}`, {
+    const res = await fetch(freezoneApiUrl(`/api/admin/media?q=${encodeURIComponent(q)}`), {
       credentials: "include",
     });
     if (res.ok) setList(await res.json());

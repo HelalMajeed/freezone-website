@@ -1,6 +1,6 @@
 import type { Product, Category, Brand } from "./data";
 import { PRODUCTS, CATEGORIES, BRANDS } from "./data";
-import { getApiInternalBase, getInternalApiFetchSignal } from "./api-internal";
+import { freezoneApiUrl, getInternalApiFetchSignal } from "./api-internal";
 import { isDatabaseConfigured } from "./prisma";
 import { fetchStorefrontBootstrap } from "./storefront-bootstrap";
 
@@ -31,9 +31,8 @@ export async function getProductById(id: number, locale: LocaleCode): Promise<Pr
   if (!isDatabaseConfigured()) {
     return PRODUCTS.find((p) => p.id === id) ?? null;
   }
-  const base = getApiInternalBase();
   try {
-    const r = await fetch(`${base}/api/ssr/product/${id}?locale=${locale}`, {
+    const r = await fetch(freezoneApiUrl(`/api/ssr/product/${id}?locale=${locale}`), {
       signal: getInternalApiFetchSignal(),
       credentials: "omit",
     });

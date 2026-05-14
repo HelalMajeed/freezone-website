@@ -7,6 +7,7 @@ import { uploadAdminImage, uploadAdminModel3d } from "@/lib/admin-upload-image";
 import { MediaPickerModal, type MediaRow } from "@/components/admin/MediaPickerModal";
 import { facetKeysFromCategoryJson, normalizeSpecsInput } from "@/lib/spec-validation";
 import { facetAdminLabelAr } from "@/lib/facet-admin-labels";
+import { freezoneApiUrl } from "@/lib/api-internal";
 
 type Category = { id: number; slug: string; nameEn: string; facetKeys?: unknown };
 type BrandOpt = { id: number; nameEn: string; nameAr: string };
@@ -81,9 +82,9 @@ export default function AdminEditProductPage() {
     }
     setErr("");
     const [c, b, p] = await Promise.all([
-      fetch("/api/admin/categories", { credentials: "include" }),
-      fetch("/api/admin/brands", { credentials: "include" }),
-      fetch(`/api/admin/products/${productId}`, { credentials: "include" }),
+      fetch(freezoneApiUrl("/api/admin/categories"), { credentials: "include" }),
+      fetch(freezoneApiUrl("/api/admin/brands"), { credentials: "include" }),
+      fetch(freezoneApiUrl(`/api/admin/products/${productId}`), { credentials: "include" }),
     ]);
     if (c.status === 401 || b.status === 401 || p.status === 401) {
       navigate("/admin/login", { replace: true });
@@ -136,7 +137,7 @@ export default function AdminEditProductPage() {
     setSaving(true);
     setMsg("");
     setErr("");
-    const res = await fetch(`/api/admin/products/${productId}`, {
+    const res = await fetch(freezoneApiUrl(`/api/admin/products/${productId}`), {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -181,7 +182,7 @@ export default function AdminEditProductPage() {
   }
 
   async function reorder(ids: number[]) {
-    const res = await fetch(`/api/admin/products/${productId}/images`, {
+    const res = await fetch(freezoneApiUrl(`/api/admin/products/${productId}/images`), {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -205,7 +206,7 @@ export default function AdminEditProductPage() {
 
   async function deleteImage(imageId: number) {
     if (!confirm("حذف هذه الصورة؟")) return;
-    const res = await fetch(`/api/admin/product-images/${imageId}`, { method: "DELETE", credentials: "include" });
+    const res = await fetch(freezoneApiUrl(`/api/admin/product-images/${imageId}`), { method: "DELETE", credentials: "include" });
     if (!res.ok) {
       setErr("فشل حذف الصورة");
       return;
@@ -215,7 +216,7 @@ export default function AdminEditProductPage() {
 
   async function appendImages(urls: string[]): Promise<boolean> {
     if (!urls.length) return false;
-    const res = await fetch(`/api/admin/products/${productId}/images`, {
+    const res = await fetch(freezoneApiUrl(`/api/admin/products/${productId}/images`), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -272,7 +273,7 @@ export default function AdminEditProductPage() {
     if (!file || replaceImageId == null) return;
     try {
       const url = await uploadAdminImage(file);
-      const res = await fetch(`/api/admin/product-images/${replaceImageId}`, {
+      const res = await fetch(freezoneApiUrl(`/api/admin/product-images/${replaceImageId}`), {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -293,7 +294,7 @@ export default function AdminEditProductPage() {
     try {
       const url = await uploadAdminModel3d(file);
       setProduct({ ...product, model3d: url });
-      const res = await fetch(`/api/admin/products/${productId}`, {
+      const res = await fetch(freezoneApiUrl(`/api/admin/products/${productId}`), {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

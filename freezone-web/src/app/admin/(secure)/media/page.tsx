@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import { freezoneApiUrl } from "@/lib/api-internal";
 
 type Row = {
   id: number;
@@ -31,7 +32,7 @@ export default function AdminMediaPage() {
   const [meta, setMeta] = useState({ title: "", altAr: "", altEn: "", kind: "image" });
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/admin/media?q=${encodeURIComponent(q)}`, { credentials: "include" });
+    const res = await fetch(freezoneApiUrl(`/api/admin/media?q=${encodeURIComponent(q)}`), { credentials: "include" });
     if (res.status === 401) {
       navigate("/admin/login", { replace: true });
       return;
@@ -49,7 +50,7 @@ export default function AdminMediaPage() {
   }
 
   async function saveMeta(id: number) {
-    const res = await fetch(`/api/admin/media/${id}`, {
+    const res = await fetch(freezoneApiUrl(`/api/admin/media/${id}`), {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -77,7 +78,7 @@ export default function AdminMediaPage() {
     fd.append("file", file);
     fd.append("registerLibrary", "true");
     fd.append("title", file.name);
-    const res = await fetch("/api/admin/upload", { method: "POST", body: fd, credentials: "include" });
+    const res = await fetch(freezoneApiUrl("/api/admin/upload"), { method: "POST", body: fd, credentials: "include" });
     if (!res.ok) {
       setMsg("فشل الرفع");
       return;
@@ -88,7 +89,7 @@ export default function AdminMediaPage() {
 
   async function remove(id: number) {
     if (!confirm("حذف السجل من المكتبة؟ (ملف القرص يبقى كما هو حسب إعداد الخادم)")) return;
-    await fetch(`/api/admin/media/${id}`, { method: "DELETE", credentials: "include" });
+    await fetch(freezoneApiUrl(`/api/admin/media/${id}`), { method: "DELETE", credentials: "include" });
     setEditId(null);
     load();
   }

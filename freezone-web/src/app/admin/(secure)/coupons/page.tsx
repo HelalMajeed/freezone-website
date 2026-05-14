@@ -3,6 +3,7 @@
 import type { CSSProperties, FormEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { freezoneApiUrl } from "@/lib/api-internal";
 
 type CouponRow = {
   id: number;
@@ -25,7 +26,7 @@ export default function AdminCouponsPage() {
   const [msg, setMsg] = useState("");
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/admin/coupons", { credentials: "include" });
+    const res = await fetch(freezoneApiUrl("/api/admin/coupons"), { credentials: "include" });
     if (res.status === 401) {
       navigate("/admin/login", { replace: true });
       return;
@@ -40,7 +41,7 @@ export default function AdminCouponsPage() {
   async function add(e: FormEvent) {
     e.preventDefault();
     setMsg("");
-    const res = await fetch("/api/admin/coupons", {
+    const res = await fetch(freezoneApiUrl("/api/admin/coupons"), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },

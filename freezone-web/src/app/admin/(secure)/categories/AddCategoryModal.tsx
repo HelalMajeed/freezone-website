@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { uploadAdminImage } from "@/lib/admin-upload-image";
+import { freezoneApiUrl } from "@/lib/api-internal";
 import { FacetKeysPicker, type FacetImportCategoryOption } from "@/components/admin/FacetKeysPicker";
 import { facetAttributesToOrderedSelection } from "@/components/admin/facet/facet-keys-utils";
 import { validateFacetAttributesForSave } from "@/lib/facet-attributes";
@@ -57,7 +58,7 @@ export function AddCategoryModal({ open, rtl, onClose, onCreated, setMsg, import
     }
     setCreating(true);
     setMsg("");
-    const res = await fetch("/api/admin/categories", {
+    const res = await fetch(freezoneApiUrl("/api/admin/categories"), {
       method: "POST",
       credentials: "include",
       cache: "no-store",

@@ -3,7 +3,7 @@ import type { HomeCmsPayload } from "./layout-cms";
 import type { Product, Category, Brand } from "./data";
 import type { ThemeTokens } from "./theme-tokens";
 import type { StorefrontCmsSection } from "./cms-page-storefront";
-import { getApiInternalBase, getInternalApiFetchSignal } from "./api-internal";
+import { freezoneApiUrl, getInternalApiFetchSignal } from "./api-internal";
 import { PRODUCTS, CATEGORIES, BRANDS } from "./data";
 import { isDatabaseConfigured } from "./prisma";
 import { mergeThemeTokens, DEFAULT_THEME } from "./theme-tokens";
@@ -33,9 +33,8 @@ export async function fetchStorefrontBootstrap(locale: "en" | "ar"): Promise<Sto
   if (!isDatabaseConfigured()) {
     return loadFallback(locale);
   }
-  const base = getApiInternalBase();
   try {
-    const r = await fetch(`${base}/api/ssr/storefront-bootstrap?locale=${locale}`, {
+    const r = await fetch(freezoneApiUrl(`/api/ssr/storefront-bootstrap?locale=${locale}`), {
       signal: getInternalApiFetchSignal(),
       credentials: "omit",
       cache: "no-store",

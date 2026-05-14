@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { getApiInternalBase, getInternalApiFetchSignal } from "@/lib/api-internal";
+import { freezoneApiUrl, getInternalApiFetchSignal } from "@/lib/api-internal";
 import { isDatabaseConfigured } from "@/lib/prisma";
 import s from "./AdminDashboard.module.css";
 
@@ -11,7 +11,7 @@ export default function AdminDashboardPage() {
     queryKey: ["admin-dashboard-stats"],
     enabled: isDatabaseConfigured(),
     queryFn: async () => {
-      const res = await fetch(`${getApiInternalBase()}/api/admin/dashboard-stats`, {
+      const res = await fetch(freezoneApiUrl("/api/admin/dashboard-stats"), {
         credentials: "include",
         cache: "no-store",
         signal: getInternalApiFetchSignal(),

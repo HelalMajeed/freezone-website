@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { getApiInternalBase, getInternalApiFetchSignal } from "@/lib/api-internal";
+import { freezoneApiUrl, getInternalApiFetchSignal } from "@/lib/api-internal";
 import { isDatabaseConfigured } from "@/lib/prisma";
 import s from "../AdminDashboard.module.css";
 
@@ -20,7 +20,7 @@ export default function AdminAuditPage() {
     queryKey: ["admin-audit-log"],
     enabled: isDatabaseConfigured(),
     queryFn: async () => {
-      const res = await fetch(`${getApiInternalBase()}/api/admin/audit-log`, {
+      const res = await fetch(freezoneApiUrl("/api/admin/audit-log"), {
         credentials: "include",
         cache: "no-store",
         signal: getInternalApiFetchSignal(),

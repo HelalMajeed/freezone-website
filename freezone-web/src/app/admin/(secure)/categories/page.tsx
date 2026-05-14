@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, SlidersHorizontal } from "lucide-react";
 import clsx from "clsx";
+import { freezoneApiUrl } from "@/lib/api-internal";
 import { getFacetCatalogOrder, parseAdminCategoryFacetKeys } from "@/components/admin/facet/facet-keys-utils";
 import type { FacetAttributeDef } from "@/lib/data";
 import { validateFacetAttributesForSave } from "@/lib/facet-attributes";
@@ -47,7 +48,7 @@ export default function AdminCategoriesPage() {
   }, []);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/admin/categories", { credentials: "include", cache: "no-store" });
+    const res = await fetch(freezoneApiUrl("/api/admin/categories"), { credentials: "include", cache: "no-store" });
     if (res.status === 401) {
       navigate("/admin/login", { replace: true });
       return;
@@ -127,7 +128,7 @@ export default function AdminCategoriesPage() {
     }
     setSaving(row.id);
     setMsg("");
-    const res = await fetch(`/api/admin/categories/${row.id}`, {
+    const res = await fetch(freezoneApiUrl(`/api/admin/categories/${row.id}`), {
       method: "PATCH",
       credentials: "include",
       cache: "no-store",
@@ -174,7 +175,7 @@ export default function AdminCategoriesPage() {
     setRows((rs) => rs.map((r) => (r.id === na.id ? na : r.id === nb.id ? nb : r)));
     setBulkSaving(true);
     setMsg("");
-    const ok1 = await fetch(`/api/admin/categories/${na.id}`, {
+    const ok1 = await fetch(freezoneApiUrl(`/api/admin/categories/${na.id}`), {
       method: "PATCH",
       credentials: "include",
       cache: "no-store",
@@ -189,7 +190,7 @@ export default function AdminCategoriesPage() {
         facetKeys: (facetAttrsById[na.id] ?? []).length ? facetAttrsById[na.id] : null,
       }),
     });
-    const ok2 = await fetch(`/api/admin/categories/${nb.id}`, {
+    const ok2 = await fetch(freezoneApiUrl(`/api/admin/categories/${nb.id}`), {
       method: "PATCH",
       credentials: "include",
       cache: "no-store",

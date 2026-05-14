@@ -28,6 +28,7 @@ import {
   HelpCircle,
   Plus,
 } from "lucide-react";
+import { freezoneApiUrl } from "@/lib/api-internal";
 import styles from "./AdminChrome.module.css";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
@@ -139,7 +140,7 @@ function AdminTopBar({
   const crumbs = useMemo(() => breadcrumbTrail(pathname, flatNav), [pathname, flatNav]);
 
   async function logout() {
-    await fetch("/api/admin/logout", { method: "POST", credentials: "include" });
+    await fetch(freezoneApiUrl("/api/admin/logout"), { method: "POST", credentials: "include" });
     navigate("/admin/login", { replace: true });
   }
 

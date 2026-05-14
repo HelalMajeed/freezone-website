@@ -1,7 +1,21 @@
-/** Browser: same-origin `/api` (Vite proxy → Express). Production: set `VITE_API_URL` if API is on another origin. */
+/**
+ * Browser base URL for the Freezone Express API (no path suffix).
+ * - Local dev: leave empty so requests use same-origin `/api/...` (Vite proxy → port 4000).
+ * - Netlify / split hosting: set `VITE_API_URL` (or `VITE_STOREFRONT_API_URL`) to the API **origin only**,
+ *   e.g. `https://api.example.com` — no trailing slash, no `/api` suffix.
+ */
 export function getApiInternalBase(): string {
-  const raw = import.meta.env.VITE_API_URL?.trim();
+  const raw =
+    import.meta.env.VITE_API_URL?.trim() ||
+    import.meta.env.VITE_STOREFRONT_API_URL?.trim() ||
+    "";
   return raw ? raw.replace(/\/$/, "") : "";
+}
+
+/** Absolute URL for Express routes under `/api/...` (storefront + admin client fetches). */
+export function freezoneApiUrl(path: string): string {
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${getApiInternalBase()}${p}`;
 }
 
 const DEFAULT_INTERNAL_API_TIMEOUT_MS = 8000;
