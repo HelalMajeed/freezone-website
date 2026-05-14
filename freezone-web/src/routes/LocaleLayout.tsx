@@ -21,7 +21,7 @@ export function LocaleLayout() {
   const dir = locale === "ar" ? "rtl" : "ltr";
   const lc = locale;
 
-  const { data: bundle, isLoading, isError } = useQuery({
+  const { data: bundle, isLoading, isError, error } = useQuery({
     queryKey: ["storefront-bootstrap", lc],
     queryFn: () => fetchStorefrontBootstrap(lc),
     /** Catalog (categories, images) changes in admin — refresh when returning to this tab */
@@ -45,11 +45,31 @@ export function LocaleLayout() {
   }
 
   if (isError || !bundle) {
+    const msg = error instanceof Error ? error.message : String(error ?? "Unknown error");
     return (
       <>
         <SetDocumentLocale locale={locale} dir={dir} />
-        <div className="container" style={{ padding: "80px 20px", textAlign: "center" }}>
-          <p>تعذر تحميل المتجر. تحقق من تشغيل واجهة الـ API.</p>
+        <div className="container" style={{ padding: "80px 20px", textAlign: "center", maxWidth: 720, margin: "0 auto" }}>
+          <h1 style={{ fontSize: "1.25rem", marginBottom: 16 }}>Unable to load the store</h1>
+          <p style={{ marginBottom: 12, color: "#64748b" }}>تعذر تحميل المتجر.</p>
+          <p style={{ marginBottom: 20, lineHeight: 1.5, color: "#334155" }}>
+            The storefront could not load catalog data from the API. Check Netlify{" "}
+            <code style={{ fontSize: "0.85em" }}>VITE_API_URL</code> (origin only, no <code>/api</code> suffix), then
+            clear cache and redeploy.
+          </p>
+          <pre
+            style={{
+              textAlign: "left",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              padding: 16,
+              background: "#f1f5f9",
+              borderRadius: 8,
+              fontSize: "0.8rem",
+            }}
+          >
+            {msg}
+          </pre>
         </div>
       </>
     );

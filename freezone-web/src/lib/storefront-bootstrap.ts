@@ -3,7 +3,7 @@ import type { HomeCmsPayload } from "./layout-cms";
 import type { Product, Category, Brand } from "./data";
 import type { ThemeTokens } from "./theme-tokens";
 import type { StorefrontCmsSection } from "./cms-page-storefront";
-import { freezoneApiUrl, getInternalApiFetchSignal } from "./api-internal";
+import { freezoneApiUrl, getApiInternalBase, getInternalApiFetchSignal } from "./api-internal";
 import { PRODUCTS, CATEGORIES, BRANDS } from "./data";
 import { isDatabaseConfigured } from "./prisma";
 import { mergeThemeTokens, DEFAULT_THEME } from "./theme-tokens";
@@ -28,26 +28,68 @@ async function loadFallback(locale: "en" | "ar"): Promise<StorefrontBootstrapPay
   };
 }
 
-/** Client-safe fetch — no Next.js cache. */
+function bootstrapUrl(locale: "en" | "ar"): string {
+  return freezoneApiUrl(`/api/ssr/storefront-bootstrap?locale=${locale}`);
+}
+
+/**
+ * Client-safe fetch — no Next.js cache.
+ * - **Development:** optional `VITE_STATIC_STOREFRONT_ONLY=true` uses bundled static catalog; API
+ *   errors fall back to the same (products may be empty by design in `data.ts`).
+ * - **Production:** always loads from the API (see `getApiInternalBase()` default origin). Never
+ *   silently substitutes an empty static catalog on failure — throws so the UI can show an error.
+ */
 export async function fetchStorefrontBootstrap(locale: "en" | "ar"): Promise<StorefrontBootstrapPayload> {
+  const prod = import.meta.env.PROD;
+
   if (!isDatabaseConfigured()) {
-    return loadFallback(locale);
+    console.warn(
+      "[storefront-bootstrap] VITE_STATIC_STOREFRONT_ONLY=true — dev static mode; catalog products come from src/lib/data.ts.",
+    );
+    const fb = await loadFallback(locale);
+    return { ...fb, theme: mergeThemeTokens(fb.theme) };
   }
+
+  const url = bootstrapUrl(locale);
+
   try {
-    const r = await fetch(freezoneApiUrl(`/api/ssr/storefront-bootstrap?locale=${locale}`), {
+    const r = await fetch(url, {
       signal: getInternalApiFetchSignal(),
       credentials: "omit",
       cache: "no-store",
     });
     if (!r.ok) {
-      console.error("[storefront-bootstrap]", r.status);
+      const detail = `[storefront-bootstrap] ${r.status} ${r.statusText} — ${url}`;
+      console.error(detail);
+      if (prod) {
+        throw new Error(
+          `${detail}. Set VITE_API_URL in Netlify to your Freezone API origin (no /api suffix), clear cache, and redeploy.`,
+        );
+      }
       const fb = await loadFallback(locale);
       return { ...fb, theme: mergeThemeTokens(fb.theme) };
     }
     const raw = (await r.json()) as StorefrontBootstrapPayload;
+    if (!raw?.catalog || !Array.isArray(raw.catalog.products)) {
+      const msg = `[storefront-bootstrap] Invalid JSON from ${url}`;
+      console.error(msg, raw);
+      if (prod) throw new Error(`${msg}. Check API deployment.`);
+      const fb = await loadFallback(locale);
+      return { ...fb, theme: mergeThemeTokens(fb.theme) };
+    }
     return { ...raw, theme: mergeThemeTokens(raw.theme) };
   } catch (e) {
-    console.error("[storefront-bootstrap]", e);
+    if (prod) {
+      const base = getApiInternalBase();
+      console.error("[storefront-bootstrap] production fetch failed", url, e);
+      throw new Error(
+        `Could not load storefront from API (${base}). Check CORS, Fly machine health, and VITE_API_URL. ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+    console.error(
+      "[storefront-bootstrap] fetch failed — dev fallback (empty products if data.ts PRODUCTS is []). Check API on port 4000 and Vite proxy.",
+      e,
+    );
     const fb = await loadFallback(locale);
     return { ...fb, theme: mergeThemeTokens(fb.theme) };
   }

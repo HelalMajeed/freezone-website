@@ -1,7 +1,16 @@
 /**
+ * Default API origin for production builds when `VITE_API_URL` is unset (e.g. Netlify split
+ * hosting). Override with `VITE_API_URL` for a custom API domain. Never append `/api` here.
+ */
+export const DEFAULT_PRODUCTION_FREEZONE_API_ORIGIN = "https://freezone-website.fly.dev";
+
+/**
  * Browser base URL for the Freezone Express API (no path suffix).
- * - Local dev: leave empty so requests use same-origin `/api/...` (Vite proxy → port 4000).
- * - Netlify / split hosting: set `VITE_API_URL` (or `VITE_STOREFRONT_API_URL`) to the API **origin only**,
+ * - Local dev: leave `VITE_API_URL` unset so this returns `""` and requests use same-origin
+ *   `/api/...` (Vite proxy → port 4000).
+ * - Production: if env is unset, uses {@link DEFAULT_PRODUCTION_FREEZONE_API_ORIGIN} so
+ *   Netlify does not silently hit `https://<netlify-site>/api/...` (which has no API).
+ * - Custom domain: set `VITE_API_URL` (or `VITE_STOREFRONT_API_URL`) to the API origin only,
  *   e.g. `https://api.example.com` — no trailing slash, no `/api` suffix.
  */
 export function getApiInternalBase(): string {
@@ -9,7 +18,9 @@ export function getApiInternalBase(): string {
     import.meta.env.VITE_API_URL?.trim() ||
     import.meta.env.VITE_STOREFRONT_API_URL?.trim() ||
     "";
-  return raw ? raw.replace(/\/$/, "") : "";
+  if (raw) return raw.replace(/\/$/, "");
+  if (import.meta.env.PROD) return DEFAULT_PRODUCTION_FREEZONE_API_ORIGIN.replace(/\/$/, "");
+  return "";
 }
 
 /** Absolute URL for Express routes under `/api/...` (storefront + admin client fetches). */
@@ -28,7 +39,8 @@ export function getInternalApiFetchSignal(): AbortSignal {
 
 export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
   const base = getApiInternalBase();
-  const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
+  const pathPart = path.startsWith("/") ? path : `/${path}`;
+  const url = base ? `${base}${pathPart}` : pathPart;
   const res = await fetch(url, {
     ...init,
     signal: init?.signal ?? getInternalApiFetchSignal(),
