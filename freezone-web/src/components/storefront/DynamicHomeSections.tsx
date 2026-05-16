@@ -6,7 +6,6 @@ import type { StorefrontCmsSection } from "@/lib/cms-page-storefront";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import styles from "@/app/locale/page.module.css";
 import { HeroSlider } from "@/components/ui/HeroSlider";
-import { PromoMegaBlocks } from "@/components/ui/PromoMegaBlocks";
 import { CategoryIconStrip } from "@/components/ui/CategoryIconStrip";
 import { LucideByName } from "@/lib/lucide-icon-map";
 import { MotionReveal } from "@/components/motion/MotionReveal";
