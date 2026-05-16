@@ -346,7 +346,7 @@ export default function AdminEditProductPage() {
       {msg && <p style={{ color: "#86efac", marginBottom: 12 }}>{msg}</p>}
 
       <form onSubmit={saveProduct} style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 32 }}>
-        <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>التصنيف</label>
+        <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>القسم الرئيسي</label>
         <select
           value={product.categoryId}
           onChange={(e) => {
@@ -371,9 +371,9 @@ export default function AdminEditProductPage() {
           ))}
         </select>
 
-        <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>تصنيفات إضافية</label>
+        <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>أقسام إضافية</label>
         <p style={{ margin: "0 0 8px", fontSize: 12, opacity: 0.75 }}>
-          يظهر المنتج أيضاً تحت هذه الأقسام في المتجر والتصفية. المواصفات (الفلاتر التفصيلية) تبقى مرتبطة بالتصنيف الرئيسي أعلاه.
+          يظهر المنتج أيضاً تحت هذه الأقسام في المتجر والتصفية. المواصفات (الفلاتر التفصيلية) تبقى مرتبطة بالقسم الرئيسي أعلاه.
         </p>
         <div
           style={{
@@ -519,7 +519,7 @@ export default function AdminEditProductPage() {
             }}
           >
             <span style={{ color: "var(--admin-muted)", fontSize: 13, fontWeight: 600 }}>
-              مواصفات التصنيف — اختيارية ({requiredSpecKeys.length})
+              مواصفات القسم — اختيارية ({requiredSpecKeys.length})
             </span>
             {requiredSpecKeys.map((k) => (
               <label key={k} style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>

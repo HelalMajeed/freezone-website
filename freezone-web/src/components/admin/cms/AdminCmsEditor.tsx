@@ -1389,7 +1389,7 @@ export function AdminCmsEditor() {
 
           {tab === "products" && (
             <div className={styles.form}>
-              <p>إدارة المنتجات والتصنيف والصور ونموذج 3D من صفحة مخصصة.</p>
+              <p>إدارة المنتجات والأقسام والصور ونموذج 3D من صفحة مخصصة.</p>
               <Link to="/admin/products" className={styles.btn}>
                 فتح صفحة المنتجات
               </Link>

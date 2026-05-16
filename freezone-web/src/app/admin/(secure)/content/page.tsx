@@ -151,7 +151,7 @@ export default function AdminContentBuilderPage() {
   async function publishAll() {
     if (
       !confirm(
-        "سيُنسَخ محتوى «المسودة» الحالي لكل الأقسام إلى «المنشور». الزوار يرون النسخة المنشورة فقط. متابعة؟",
+        "سيُنسَخ محتوى «المسودة» الحالي لكل مكوّنات الصفحة إلى «المنشور». الزوار يرون النسخة المنشورة فقط. متابعة؟",
       )
     ) {
       return;
@@ -167,7 +167,7 @@ export default function AdminContentBuilderPage() {
       return;
     }
     setErr("");
-    setMsg("تم نشر جميع الأقسام");
+    setMsg("تم نشر جميع مكوّنات الصفحة");
     await load();
   }
 
@@ -200,10 +200,10 @@ export default function AdminContentBuilderPage() {
       body: JSON.stringify({ pageSlug: "home", type: newType }),
     });
     if (!res.ok) {
-      setErr("فشل إنشاء القسم");
+      setErr("فشل إنشاء المكوّن");
       return;
     }
-    setMsg("تمت إضافة قسم");
+    setMsg("تمت إضافة مكوّن");
     await load();
   }
 
@@ -222,7 +222,7 @@ export default function AdminContentBuilderPage() {
   }
 
   async function deleteSection(id: number) {
-    if (!confirm("حذف القسم؟")) return;
+    if (!confirm("حذف هذا المكوّن؟")) return;
     await fetch(freezoneApiUrl(`/api/admin/cms-page/sections/${id}`), { method: "DELETE", credentials: "include" });
     setSelectedId(null);
     await load();
@@ -242,13 +242,13 @@ export default function AdminContentBuilderPage() {
         </Link>
       </div>
       <p style={{ color: "var(--admin-muted)", fontSize: 14, marginBottom: 16 }}>
-        رتّب الأقسام من اليسار (↑↓). <strong>كل نوع قسم</strong> له نموذج تحرير (أو شرح واضح إن كان المحتوى من الكتالوج/الإعدادات).
-        لشرائح منتجات أفقية بعدّة فئات، أضِف قسماً من نوع «شريط منتجات أفقي» أكثر من مرة واستخدم الأزرار السريعة داخل المحرر.
+        رتّب <strong>مكوّنات الصفحة</strong> من اليسار (↑↓). <strong>كل نوع</strong> له نموذج تحرير (أو شرح واضح إن كان المحتوى من الكتالوج/الإعدادات).
+        لشرائح منتجات أفقية بعدّة فئات، أضِف مكوّناً من نوع «شريط منتجات أفقي» أكثر من مرة واستخدم الأزرار السريعة داخل المحرر.
         التحرير بالكامل من النماذج — دون JSON. روابط الصور من{" "}
         <Link to="/admin/media" style={{ color: "#0b1f3b" }}>
           مكتبة الوسائط
         </Link>
-        . انقر «نشر كل الأقسام» ليظهر المحتوى للزوار.
+        . انقر «نشر كل المكوّنات» ليظهر المحتوى للزوار.
       </p>
       {err && <div style={{ color: "#fecaca", marginBottom: 10 }}>{err}</div>}
       {msg && <div style={{ color: "#86efac", marginBottom: 10 }}>{msg}</div>}
@@ -267,7 +267,7 @@ export default function AdminContentBuilderPage() {
             cursor: "pointer",
           }}
         >
-          نشر كل الأقسام للزوار
+          نشر كل المكوّنات للزوار
         </button>
         <select
           value={newType}
@@ -285,14 +285,14 @@ export default function AdminContentBuilderPage() {
           onClick={() => void addSection()}
           style={{ padding: "10px 16px", background: "#0b1f3b", color: "#fff", border: "none", borderRadius: 8 }}
         >
-          + قسم من قالب
+          + مكوّن من قالب
         </button>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(280px, 360px) 1fr", gap: 20, alignItems: "start" }}>
         <div style={{ border: "1px solid #334155", borderRadius: 10, overflow: "hidden" }}>
           <div style={{ padding: 12, background: "var(--admin-surface)", borderBottom: "1px solid #334155", fontWeight: 700 }}>
-            الأقسام (من الأعلى للأسفل)
+            مكوّنات الصفحة (من الأعلى للأسفل)
           </div>
           <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {sections.map((s, idx) => {
@@ -359,12 +359,12 @@ export default function AdminContentBuilderPage() {
               );
             })}
           </ul>
-          {sections.length === 0 && <p style={{ padding: 16, color: "#64748b" }}>لا أقسام بعد — أضف من قالب.</p>}
+          {sections.length === 0 && <p style={{ padding: 16, color: "#64748b" }}>لا مكوّنات بعد — أضف من قالب.</p>}
         </div>
 
         <div style={{ border: "1px solid #334155", borderRadius: 10, padding: 16, minHeight: 320 }}>
           {!selected ? (
-            <p style={{ color: "#64748b" }}>اختر قسماً من القائمة لتحرير المسودة.</p>
+            <p style={{ color: "#64748b" }}>اختر مكوّناً من القائمة لتحرير المسودة.</p>
           ) : (
             <>
               <h2 style={{ marginTop: 0 }}>{typeLabelAr(selected.type)}</h2>
@@ -373,7 +373,7 @@ export default function AdminContentBuilderPage() {
               </p>
               {!SUPPORTED_HOME_SECTION_TYPES.has(selected.type) ? (
                 <p style={{ color: "#fbbf24", fontSize: 13, marginBottom: 12 }}>
-                  لا يوجد نموذج تحرير لهذا النوع ({selected.type}). يمكنك حفظ المسودة دون تغيير أو حذف القسم وإضافة نوعاً
+                  لا يوجد نموذج تحرير لهذا النوع ({selected.type}). يمكنك حفظ المسودة دون تغيير أو حذف المكوّن وإضافة نوعاً
                   من القائمة اليسرى.
                 </p>
               ) : null}

@@ -519,7 +519,7 @@ export const FacetKeysWorkspace = forwardRef<FacetKeysEditorHandle, FacetKeysWor
           <p className={styles.breadcrumb}>
             <Link to="/admin">لوحة التحكم</Link>
             <span aria-hidden> / </span>
-            <Link to="/admin/categories">التصنيفات</Link>
+            <Link to="/admin/categories">الأقسام</Link>
           </p>
           <h2 className={styles.title}>{context?.nameAr || context?.nameEn || "—"}</h2>
           {context?.nameEn && context.nameAr ? (
@@ -610,12 +610,12 @@ export const FacetKeysWorkspace = forwardRef<FacetKeysEditorHandle, FacetKeysWor
         <div className={styles.importFromCatStrip}>
           <p className={styles.importFromCatHint}>
             {isAr
-              ? "يمكنك نسخ السمات المحفوظة من أي تصنيف آخر إلى هذا التصنيف."
+              ? "يمكنك نسخ السمات المحفوظة من أي قسم آخر إلى هذا القسم."
               : "Copy saved attributes from another category into this one."}
           </p>
           <button type="button" className={styles.importFromCatBtn} onClick={openImportModal}>
             <Copy size={14} aria-hidden />
-            {isAr ? "من تصنيف آخر…" : "From another category…"}
+            {isAr ? "من قسم آخر…" : "From another category…"}
           </button>
         </div>
       ) : null}
@@ -629,7 +629,7 @@ export const FacetKeysWorkspace = forwardRef<FacetKeysEditorHandle, FacetKeysWor
             {showImportFromCategory ? (
               <button type="button" className={styles.importFromCatBtn} onClick={openImportModal}>
                 <Copy size={14} aria-hidden />
-                {isAr ? "من تصنيف آخر…" : "From another category…"}
+                {isAr ? "من قسم آخر…" : "From another category…"}
               </button>
             ) : null}
           </div>
@@ -918,14 +918,14 @@ export const FacetKeysWorkspace = forwardRef<FacetKeysEditorHandle, FacetKeysWor
         >
           <div className={styles.iconPickerHead}>
             <h4 id="facet-import-title" className={styles.iconPickerTitle}>
-              {isAr ? "نسخ سمات من تصنيف آخر" : "Copy attributes from another category"}
+              {isAr ? "نسخ سمات من قسم آخر" : "Copy attributes from another category"}
             </h4>
             <button type="button" className={styles.iconPickerClose} onClick={() => setImportModalOpen(false)} aria-label="إغلاق">
               ×
             </button>
           </div>
           <label className={styles.importModalSelectLabel}>
-            <span>{isAr ? "التصنيف" : "Category"}</span>
+            <span>{isAr ? "القسم" : "Category"}</span>
             <select
               className={styles.importModalSelect}
               value={importSourceId ?? ""}

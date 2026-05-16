@@ -127,7 +127,7 @@ export default function AdminDesignPage() {
         <label style={lab}>ظل البطاقات (CSS)</label>
         <input value={tokens.shadowCard} onChange={(e) => setTokens({ ...tokens, shadowCard: e.target.value })} style={inp} />
 
-        <label style={lab}>تباعد الأقسام (preset)</label>
+        <label style={lab}>تباعد مكوّنات الصفحة (preset)</label>
         <select
           value={preset}
           onChange={(e) => setPresetAndGap(e.target.value as "compact" | "normal" | "relaxed")}

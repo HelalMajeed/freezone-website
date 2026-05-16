@@ -49,7 +49,7 @@ function makeAdminNavGroups(t: TFunction): { label: string; items: NavItem[] }[]
       label: "المتجر والكتالوج",
       items: [
         { href: "/admin/products", label: "المنتجات", icon: Package },
-        { href: "/admin/categories", label: "التصنيفات", icon: FolderTree },
+        { href: "/admin/categories", label: "الأقسام", icon: FolderTree },
         { href: "/admin/brands", label: "العلامات التجارية", icon: Tag },
       ],
     },
@@ -171,7 +171,7 @@ function AdminTopBar({
           <input
             className={styles.searchInput}
             type="search"
-            placeholder="بحث سريع في الأقسام…"
+            placeholder="بحث سريع في القائمة…"
             aria-label="بحث في لوحة التحكم"
             onKeyDown={(e) => {
               if (e.key !== "Enter") return;

@@ -71,7 +71,7 @@ export function CategoryDetailsDrawer({
           >
             <div className={styles.panelHead}>
               <div>
-                <h2 className={styles.panelTitle}>تعديل التصنيف</h2>
+                <h2 className={styles.panelTitle}>تعديل القسم</h2>
                 <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--admin-muted)" }} dir="ltr">
                   #{cat.id} · {cat.slug}
                 </p>
@@ -158,7 +158,7 @@ export function CategoryDetailsDrawer({
                 إغلاق
               </button>
               <button type="button" className={styles.btnPrimary} disabled={savePending} onClick={() => void saveWithFlush()}>
-                {savePending ? "…" : "حفظ التصنيف"}
+                {savePending ? "…" : "حفظ القسم"}
               </button>
             </div>
           </motion.div>

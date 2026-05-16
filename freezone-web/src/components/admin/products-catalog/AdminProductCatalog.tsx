@@ -346,7 +346,7 @@ export function AdminProductCatalog({ rawList, products: productsProp, categorie
   return (
     <section className={styles.catalog} data-dark={dark ? "1" : "0"} dir="rtl">
       <div className={styles.heroBar}>
-        <nav className={styles.breadcrumb} aria-label="مسار التصنيف">
+        <nav className={styles.breadcrumb} aria-label="مسار القسم">
           <Link to="/admin">لوحة التحكم</Link>
           <span aria-hidden>/</span>
           <Link to="/admin/products">المنتجات</Link>
@@ -360,7 +360,7 @@ export function AdminProductCatalog({ rawList, products: productsProp, categorie
         <div className={styles.titleRow}>
           <div>
             <h2>كتالوج المنتجات</h2>
-            <p className={styles.sub}>تصفّح حسب التصنيف، رابط المشاركة يحدّث (?cat=&slug=)، ثم أضف منتجاً من صفحة مستقلة.</p>
+            <p className={styles.sub}>تصفّح حسب القسم، رابط المشاركة يحدّث (?cat=&slug=)، ثم أضف منتجاً من صفحة مستقلة.</p>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
             <Link className={styles.addProductBtn} to={newProductHref}>
@@ -424,7 +424,7 @@ export function AdminProductCatalog({ rawList, products: productsProp, categorie
       <div className={styles.layout}>
         <aside className={styles.sidebar} aria-label="تصفية المنتجات">
           <div className={styles.filterBlock}>
-            <span className={styles.filterLabel}>استعراض التصنيفات</span>
+            <span className={styles.filterLabel}>استعراض الأقسام</span>
             <div className={styles.catNav}>
               <button
                 type="button"
@@ -451,7 +451,7 @@ export function AdminProductCatalog({ rawList, products: productsProp, categorie
                       href={`/ar/products?cat=${encodeURIComponent(c.slug)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      title="عرض التصنيف في المتجر"
+                      title="عرض القسم في المتجر"
                       aria-label={`متجر: ${c.nameEn}`}
                     >
                       <ExternalLink size={14} />
@@ -463,14 +463,14 @@ export function AdminProductCatalog({ rawList, products: productsProp, categorie
           </div>
 
           <div className={styles.filterBlock}>
-            <span className={styles.filterLabel}>التصنيف (قائمة)</span>
+            <span className={styles.filterLabel}>القسم (قائمة)</span>
             <select
               className={styles.select}
               style={{ width: "100%" }}
               value={categoryId === "" ? "" : String(categoryId)}
               onChange={(e) => updateCategoryInUrl(e.target.value === "" ? "" : Number(e.target.value))}
             >
-              <option value="">كل التصنيفات</option>
+              <option value="">كل الأقسام</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.nameEn} ({countsByCategory.get(c.id) ?? 0})

@@ -76,10 +76,10 @@ export function AddCategoryModal({ open, rtl, onClose, onCreated, setMsg, import
     });
     setCreating(false);
     if (!res.ok) {
-      setMsg("فشل إنشاء التصنيف — ربما تعارض في الـ slug");
+      setMsg("فشل إنشاء القسم — ربما تعارض في الـ slug");
       return;
     }
-    setMsg("تم إنشاء التصنيف");
+    setMsg("تم إنشاء القسم");
     onCreated();
     onClose();
   }
@@ -107,7 +107,7 @@ export function AddCategoryModal({ open, rtl, onClose, onCreated, setMsg, import
             onClick={(e) => e.stopPropagation()}
           >
             <div className={styles.modalHead}>
-              <h2 style={{ margin: 0, fontSize: "1.1rem" }}>تصنيف جديد</h2>
+              <h2 style={{ margin: 0, fontSize: "1.1rem" }}>قسم جديد</h2>
               <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="إغلاق">
                 ×
               </button>
@@ -184,7 +184,7 @@ export function AddCategoryModal({ open, rtl, onClose, onCreated, setMsg, import
                 importCategoryOptions={importCategoryOptions}
               />
               <button type="submit" disabled={creating} className={styles.btnPrimary} style={{ alignSelf: "flex-start" }}>
-                {creating ? "…" : "إنشاء التصنيف"}
+                {creating ? "…" : "إنشاء القسم"}
               </button>
             </form>
           </motion.div>

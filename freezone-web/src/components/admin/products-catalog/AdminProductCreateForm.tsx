@@ -152,12 +152,12 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId, 
   }
 
   if (categories.length === 0) {
-    return <p style={{ color: "var(--admin-muted)" }}>لا توجد تصنيفات — أضف تصنيفاً أولاً من «التصنيفات».</p>;
+    return <p style={{ color: "var(--admin-muted)" }}>لا توجد أقسام بعد — أضف قسماً أولاً من «الأقسام».</p>;
   }
 
   return (
     <form onSubmit={(e) => void submit(e)} style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 720 }}>
-      <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>التصنيف</label>
+      <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>القسم الرئيسي</label>
       <select
         value={resolvedCategoryId}
         onChange={(e) => {
@@ -178,7 +178,7 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId, 
           </option>
         ))}
       </select>
-      <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>تصنيفات إضافية (اختياري)</label>
+      <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>أقسام إضافية (اختياري)</label>
       <div
         style={{
           ...field,
@@ -243,7 +243,7 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId, 
           }}
         >
           <span style={{ color: "var(--admin-muted)", fontSize: 13, fontWeight: 600 }}>
-            مواصفات التصنيف — اختيارية ({requiredSpecKeys.length})
+            مواصفات القسم — اختيارية ({requiredSpecKeys.length})
           </span>
           {requiredSpecKeys.map((k) => (
             <label key={k} style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>

@@ -57,7 +57,7 @@ export default function AdminProductsPage() {
       </div>
       <h1 style={{ margin: "0 0 8px", fontSize: "1.5rem" }}>المنتجات</h1>
       <p style={{ color: "var(--admin-muted)", marginBottom: 16, fontSize: 13, lineHeight: 1.5 }}>
-        تصفّح حسب التصنيف من الشريط الجانبي أو العنوان في الرابط (<code dir="ltr">?cat=id&slug=</code>)، ثم أضف منتجاً من صفحة مخصصة.
+        تصفّح حسب القسم من الشريط الجانبي أو العنوان في الرابط (<code dir="ltr">?cat=id&slug=</code>)، ثم أضف منتجاً من صفحة مخصصة.
       </p>
 
       <AdminProductCatalog products={list} categories={categoryOptions} loading={listLoading} onRefresh={() => void load()} />

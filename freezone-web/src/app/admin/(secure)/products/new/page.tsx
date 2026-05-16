@@ -64,7 +64,7 @@ export default function AdminNewProductPage() {
       </div>
       <h1 style={{ margin: "0 0 8px", fontSize: "1.5rem" }}>إضافة منتج جديد</h1>
       <p style={{ color: "var(--admin-muted)", marginBottom: 20, fontSize: 13, lineHeight: 1.55 }}>
-        اختر التصنيف والعلامة والأسعار والصور. حقول المواصفات حسب التصنيف اختيارية — اضبط facetKeys من «التصنيفات».
+        اختر القسم والعلامة والأسعار والصور. حقول المواصفات حسب القسم اختيارية — اضبط facetKeys من «الأقسام».
       </p>
 
       {loading ? (

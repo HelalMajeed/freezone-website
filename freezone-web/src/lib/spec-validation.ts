@@ -1,6 +1,6 @@
 import { facetKeysFromAttributes, parseFacetAttributesFromUnknown } from "@/lib/facet-attributes";
 
-/** استخراج مفاتيح الفلاتر من حقل التصنيف (JSON: سلسلة نصوية أو كائنات `{ key, name_en, name_ar }`). */
+/** استخراج مفاتيح الفلاتر من حقل القسم (JSON: سلسلة نصوية أو كائنات `{ key, name_en, name_ar }`). */
 export function facetKeysFromCategoryJson(facetKeys: unknown): string[] {
   return facetKeysFromAttributes(parseFacetAttributesFromUnknown(facetKeys));
 }

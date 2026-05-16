@@ -62,11 +62,11 @@ export default function AdminDashboardPage() {
 
   const links: { href: string; title: string; desc: string }[] = [
     { href: "/admin/cms", title: "إعدادات الموقع (CMS)", desc: "الشعار، الهيرو، التيكر، شريط الثقة، البقع، التنقل، والعروض." },
-    { href: "/admin/content", title: "بناء الصفحة الرئيسية", desc: "أقسام ديناميكية وترتيبها ونشرها للزائر." },
+    { href: "/admin/content", title: "بناء الصفحة الرئيسية", desc: "مكوّنات الصفحة ديناميكية وترتيبها ونشرها للزائر." },
     { href: "/admin/media", title: "مكتبة الوسائط", desc: "رفع الصور والفيديو وإعادة استخدامها في المنتجات والصفحات." },
     { href: "/admin/design", title: "المظهر والألوان", desc: "ألوان الثيم والتباعد والخطوط كما تظهر في المتجر." },
     { href: "/admin/products", title: "المنتجات", desc: "إضافة وتعديل المنتجات، الصور، والمخزون." },
-    { href: "/admin/categories", title: "التصنيفات", desc: "تصنيفات المتجر والفلاتر كما يظهر في صفحة المنتجات." },
+    { href: "/admin/categories", title: "الأقسام", desc: "أقسام المتجر (الكتالوج) والفلاتر كما تظهر في صفحة المنتجات." },
     { href: "/admin/brands", title: "العلامات التجارية", desc: "شعارات العلامات وربطها بالمنتجات وشريط العلامات." },
     { href: "/admin/orders", title: "الطلبات", desc: "متابعة الطلبات وحالات التنفيذ." },
     { href: "/admin/coupons", title: "الكوبونات", desc: "أكواد الخصم وشروطها في صفحة الدفع." },
@@ -136,10 +136,10 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
         <div className={s.statCard}>
-          <div className={s.statLabel}>تصنيفات</div>
+          <div className={s.statLabel}>أقسام المتجر</div>
           <div className={s.statValue}>{categoryCount}</div>
           <Link to="/admin/categories" className={s.statLink}>
-            تصنيفات →
+            الأقسام →
           </Link>
         </div>
         <div className={s.statCard}>
@@ -175,7 +175,7 @@ export default function AdminDashboardPage() {
           كوبون جديد
         </Link>
         <Link to="/admin/content" className={s.btnSecondary}>
-          بناء أقسام الصفحة الرئيسية
+          بناء مكوّنات الصفحة الرئيسية
         </Link>
       </div>
 
@@ -190,7 +190,7 @@ export default function AdminDashboardPage() {
       </div>
 
       <p className={s.hint}>
-        <strong style={{ color: "#e2e8f0" }}>ربط الزائر:</strong> المحتوى المنشور من CMS والمنتجات والتصنيفات والعلامات يُحمَّل في واجهة المتجر عبر{" "}
+        <strong style={{ color: "#e2e8f0" }}>ربط الزائر:</strong> المحتوى المنشور من CMS والمنتجات وأقسام المتجر والعلامات يُحمَّل في واجهة المتجر عبر{" "}
         <code>StorefrontProvider</code>.
       </p>
     </div>

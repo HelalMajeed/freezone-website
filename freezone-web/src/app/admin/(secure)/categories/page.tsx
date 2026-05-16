@@ -220,12 +220,12 @@ export default function AdminCategoriesPage() {
     <div className={clsx(styles.page, rtl && styles.pageRtl)}>
       <div className={styles.topBar}>
         <div className={styles.titleBlock}>
-          <h1 className={styles.title}>التصنيفات</h1>
+          <h1 className={styles.title}>الأقسام</h1>
           <p className={styles.subtitle}>
-            بطاقات سريعة — انقر للتعديل. صورة الخلفية واللون والترتيب يظهران في المتجر وفي{" "}
+            أقسام المتجر والكتالوج — بطاقات سريعة، انقر للتعديل. صورة الخلفية واللون والترتيب يظهران في المتجر وفي{" "}
             <strong>ميجا بلوكات</strong> الرئيسية (تلقائياً أو عبر{" "}
             <Link to="/admin/content" style={{ color: "#f87171" }}>
-              محرّر الصفحة → قسم ميجا بلوكات
+              محرّر الصفحة → مكوّن ميجا بلوكات
             </Link>
             ). (Tailwind غير مفعّل؛ تنسيقات CSS محلية.)
           </p>
@@ -234,7 +234,7 @@ export default function AdminCategoriesPage() {
           value={search}
           onChange={setSearch}
           placeholder="بحث بالاسم أو الـ slug…"
-          aria-label="بحث التصنيفات"
+          aria-label="بحث الأقسام"
         />
         <div className={styles.toolbarEnd}>
           <label className={styles.label} style={{ display: "flex", alignItems: "center", gap: 6, margin: 0 }}>
@@ -247,7 +247,7 @@ export default function AdminCategoriesPage() {
           </label>
           <button type="button" className={styles.btnPrimary} onClick={() => setCreateOpen(true)}>
             <Plus size={18} aria-hidden />
-            إضافة تصنيف
+            إضافة قسم
           </button>
         </div>
       </div>
@@ -262,7 +262,7 @@ export default function AdminCategoriesPage() {
         </div>
       ) : filteredSorted.length === 0 ? (
         <div className={styles.empty}>
-          {rows.length === 0 ? "لا توجد تصنيفات بعد — أنشئ تصنيفاً جديداً." : "لا نتائج مطابقة للبحث."}
+          {rows.length === 0 ? "لا توجد أقسام بعد — أنشئ قسماً جديداً." : "لا نتائج مطابقة للبحث."}
         </div>
       ) : (
         <CategoryGrid>
