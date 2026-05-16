@@ -2,6 +2,7 @@
 
 import type { CmsHeroSlideRow } from "@/lib/layout-cms";
 import styles from "@/app/admin/(secure)/cms/cms.module.css";
+import { HeroDestLinkEditor } from "@/components/admin/HeroDestLinkEditor";
 
 function emptySlide(n: number): CmsHeroSlideRow {
   return {
@@ -21,9 +22,11 @@ function emptySlide(n: number): CmsHeroSlideRow {
     primaryLabelEn: "Shop now",
     primaryLabelAr: "تسوق",
     primaryHref: "/products",
+    primaryLink: null,
     secondaryLabelEn: "Contact",
     secondaryLabelAr: "تواصل",
     secondaryHref: "/contact",
+    secondaryLink: null,
     active: true,
     stats: null,
   };
@@ -48,6 +51,8 @@ type Props = {
   heroNavBoxOpacityPct: number;
   onHeroNavBoxOpacityPctChange: (pct: number) => void;
   onUploadSlideImage: (slideIndex: number, file: File) => void | Promise<void>;
+  /** Labels in product/category/brand pickers follow preview language */
+  previewLocale: "en" | "ar";
 };
 
 export function HeroSlidesEditor({
@@ -66,6 +71,7 @@ export function HeroSlidesEditor({
   heroNavBoxOpacityPct,
   onHeroNavBoxOpacityPctChange,
   onUploadSlideImage,
+  previewLocale,
 }: Props) {
   const setSlide = (i: number, patch: Partial<CmsHeroSlideRow>) => {
     const next = [...slides];
@@ -251,14 +257,31 @@ export function HeroSlidesEditor({
             value={slide.descAr}
             onChange={(e) => setSlide(i, { descAr: e.target.value })}
           />
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <HeroDestLinkEditor
+              title="الزر الأساسي — الوجهة"
+              href={slide.primaryHref}
+              linkTarget={slide.primaryLink}
+              locale={previewLocale}
+              onChange={({ href, linkTarget }) =>
+                setSlide(i, { primaryHref: href, primaryLink: linkTarget ?? null })
+              }
+            />
+            <HeroDestLinkEditor
+              title="الزر الثانوي — الوجهة"
+              href={slide.secondaryHref}
+              linkTarget={slide.secondaryLink}
+              locale={previewLocale}
+              onChange={({ href, linkTarget }) =>
+                setSlide(i, { secondaryHref: href, secondaryLink: linkTarget ?? null })
+              }
+            />
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             <input placeholder="Primary btn EN" value={slide.primaryLabelEn} onChange={(e) => setSlide(i, { primaryLabelEn: e.target.value })} />
             <input placeholder="Primary btn AR" value={slide.primaryLabelAr} onChange={(e) => setSlide(i, { primaryLabelAr: e.target.value })} />
-            <input placeholder="Primary href" dir="ltr" value={slide.primaryHref} onChange={(e) => setSlide(i, { primaryHref: e.target.value })} />
-            <span />
             <input placeholder="Secondary btn EN" value={slide.secondaryLabelEn} onChange={(e) => setSlide(i, { secondaryLabelEn: e.target.value })} />
             <input placeholder="Secondary btn AR" value={slide.secondaryLabelAr} onChange={(e) => setSlide(i, { secondaryLabelAr: e.target.value })} />
-            <input placeholder="Secondary href" dir="ltr" value={slide.secondaryHref} onChange={(e) => setSlide(i, { secondaryHref: e.target.value })} />
           </div>
 
           <button

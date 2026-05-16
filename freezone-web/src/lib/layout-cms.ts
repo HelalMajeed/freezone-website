@@ -7,6 +7,7 @@ import {
   type StoredNavItem,
 } from "./cms-types";
 import { parseHomePageCopy, type HomePageCopy } from "./home-page-copy";
+import { parseHeroLinkTarget, resolveHeroLinkTargetToHref } from "./hero-link-target";
 
 export type LocaleCode = "en" | "ar";
 
@@ -180,9 +181,12 @@ export type CmsHeroSlideRow = {
   primaryLabelEn: string;
   primaryLabelAr: string;
   primaryHref: string;
+  /** Structured CTA target (JSON); when set, storefront resolves to `primaryHref` pattern */
+  primaryLink?: unknown | null;
   secondaryLabelEn: string;
   secondaryLabelAr: string;
   secondaryHref: string;
+  secondaryLink?: unknown | null;
   active: boolean;
   stats: unknown;
 };
@@ -190,6 +194,8 @@ export type CmsHeroSlideRow = {
 function mapHeroRow(row: CmsHeroSlideRow, locale: LocaleCode): PublicHeroSlide {
   const en = locale === "en";
   const layoutMode = row.layoutMode === "freeform" ? "freeform" : "structured";
+  const primaryT = parseHeroLinkTarget(row.primaryLink);
+  const secondaryT = parseHeroLinkTarget(row.secondaryLink);
   return {
     id: row.id,
     layoutMode,
@@ -201,9 +207,9 @@ function mapHeroRow(row: CmsHeroSlideRow, locale: LocaleCode): PublicHeroSlide {
     titleLine2: en ? row.titleLine2En : row.titleLine2Ar,
     desc: en ? row.descEn : row.descAr,
     primaryLabel: en ? row.primaryLabelEn : row.primaryLabelAr,
-    primaryHref: row.primaryHref,
+    primaryHref: resolveHeroLinkTargetToHref(primaryT, row.primaryHref),
     secondaryLabel: en ? row.secondaryLabelEn : row.secondaryLabelAr,
-    secondaryHref: row.secondaryHref,
+    secondaryHref: resolveHeroLinkTargetToHref(secondaryT, row.secondaryHref),
     stats: parseStats(row.stats),
   };
 }

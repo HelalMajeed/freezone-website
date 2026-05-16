@@ -107,9 +107,11 @@ export function getOfflineCmsPayload() {
       primaryLabelEn: "VIEW DETAILS",
       primaryLabelAr: "التفاصيل",
       primaryHref: "/products?cat=gaming",
+      primaryLink: null,
       secondaryLabelEn: "ALL GAMING",
       secondaryLabelAr: "كل الألعاب",
       secondaryHref: "/products?cat=gaming",
+      secondaryLink: null,
       active: true,
       stats: [
         { id: "a", value: "240Hz", label: "DISPLAY" },

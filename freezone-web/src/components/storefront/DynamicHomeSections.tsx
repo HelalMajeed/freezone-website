@@ -5,47 +5,14 @@ import { useLocale } from "@/i18n/hooks";
 import type { StorefrontCmsSection } from "@/lib/cms-page-storefront";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import styles from "@/app/locale/page.module.css";
-import { HeroSlider } from "@/components/ui/HeroSlider";
 import { LucideByName } from "@/lib/lucide-icon-map";
-import { BrandTicker } from "@/components/ui/BrandTicker";
-import { TabbedShowcase } from "@/components/ui/TabbedShowcase";
-import { CategoryIconStrip } from "@/components/ui/CategoryIconStrip";
-import { GamingCategoriesGrid } from "@/components/ui/GamingCategoriesGrid";
-import { PromoMegaBlocks } from "@/components/ui/PromoMegaBlocks";
-import { PromoBanner } from "@/components/ui/PromoBanner";
-import { StoreGallery } from "@/components/ui/StoreGallery";
-import { FAQSection } from "@/components/ui/FAQSection";
-import { ProductSlider } from "@/components/ui/ProductSlider";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 import { Link } from "@/navigation";
-import { resolveFeaturedProductList } from "@/lib/home-section-products";
-import {
-  buildCategorySpotsFromPayload,
-  buildHeroPreviewFromPayload,
-  buildTrustItemsFromPayload,
-} from "@/lib/home-section-custom-payload";
+import { buildTrustItemsFromPayload } from "@/lib/home-section-custom-payload";
 import { trustBarChromeStyle } from "@/lib/layout-cms";
 
 function asObj(p: unknown): Record<string, unknown> {
   return p && typeof p === "object" && !Array.isArray(p) ? (p as Record<string, unknown>) : {};
-}
-
-function pickTitle(payload: Record<string, unknown>, locale: string) {
-  const ar = typeof payload.titleAr === "string" ? payload.titleAr : "";
-  const en = typeof payload.titleEn === "string" ? payload.titleEn : "";
-  return locale === "ar" ? ar || en : en || ar;
-}
-
-function pickSecondary(
-  payload: Record<string, unknown>,
-  locale: string,
-  arKey: string,
-  enKey: string,
-): string | undefined {
-  const ar = typeof payload[arKey] === "string" ? (payload[arKey] as string).trim() : "";
-  const en = typeof payload[enKey] === "string" ? (payload[enKey] as string).trim() : "";
-  if (locale === "ar") return ar || en || undefined;
-  return en || ar || undefined;
 }
 
 function SectionBlock({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
@@ -54,8 +21,7 @@ function SectionBlock({ children, delay = 0 }: { children: ReactNode; delay?: nu
 
 export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSection[] }) {
   const locale = useLocale() as "en" | "ar";
-  const { home, catalog } = useStorefront();
-  const { products } = catalog;
+  const { home } = useStorefront();
 
   return (
     <div className={styles.home} style={{ paddingBottom: "var(--fz-section-gap, 48px)" }}>
@@ -64,27 +30,9 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
         const delay = Math.min(0.12, idx * 0.02);
 
         switch (sec.type) {
-          case "hero": {
-            const customHero = buildHeroPreviewFromPayload(
-              p,
-              locale,
-              home.hero.autoplayMs,
-              home.hero.scrimOpacity,
-              {
-                navArrowColor: home.hero.navArrowColor,
-                navBoxBackground: home.hero.navBoxBackground,
-              },
-            );
-            return (
-              <SectionBlock key={sec.id} delay={delay}>
-                {customHero ? (
-                  <HeroSlider previewHero={customHero} />
-                ) : (
-                  <HeroSlider />
-                )}
-              </SectionBlock>
-            );
-          }
+          /* Visitor UI: hero removed — re-enable when rebuilding homepage from CMS. */
+          case "hero":
+            return null;
           case "trust_bar": {
             const customTrust = buildTrustItemsFromPayload(p, locale);
             const trustItems = customTrust ?? home.trustBar;
@@ -108,119 +56,15 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
               </SectionBlock>
             );
           }
-          case "category_strip": {
-            const customSpots = buildCategorySpotsFromPayload(p, locale);
-            return (
-              <SectionBlock key={sec.id} delay={delay}>
-                <CategoryIconStrip previewSpots={customSpots ?? undefined} />
-              </SectionBlock>
-            );
-          }
-          case "featured_products": {
-            const title = pickTitle(p, locale) || (locale === "ar" ? "منتجات" : "Products");
-            const link = typeof p.link === "string" ? p.link : "/products";
-            const filter = typeof p.filter === "string" ? p.filter : "new";
-            const catSlug = typeof p.catSlug === "string" ? p.catSlug : undefined;
-            const limit = typeof p.limit === "number" ? p.limit : 12;
-            const productIds = Array.isArray(p.productIds)
-              ? (p.productIds as unknown[]).map((x) => Number(x)).filter((n) => Number.isFinite(n))
-              : undefined;
-            const list = resolveFeaturedProductList(products, filter, catSlug, limit, productIds);
-            const viewAllLabel = pickSecondary(p, locale, "viewAllAr", "viewAllEn");
-            const ctaVariant = p.ctaVariant === "teal" ? "teal" : "gray";
-            const bgColor = typeof p.bgColor === "string" ? p.bgColor : "var(--gray-50)";
-            return (
-              <SectionBlock key={sec.id} delay={delay}>
-                <ProductSlider
-                  title={title}
-                  link={link}
-                  products={list}
-                  viewAllLabel={viewAllLabel}
-                  ctaVariant={ctaVariant}
-                  bgColor={bgColor}
-                />
-              </SectionBlock>
-            );
-          }
-          case "brands_strip": {
-            const title = pickTitle(p, locale);
-            return (
-              <SectionBlock key={sec.id} delay={delay}>
-                {title ? (
-                  <div className="container" style={{ marginBottom: 12 }}>
-                    <h2 style={{ fontSize: "1.25rem", fontWeight: 800 }}>{title}</h2>
-                  </div>
-                ) : null}
-                <BrandTicker />
-              </SectionBlock>
-            );
-          }
-          case "banner_slider": {
-            const items = Array.isArray(p.items) ? p.items : [];
-            return (
-              <SectionBlock key={sec.id} delay={delay}>
-                <section className="container" style={{ padding: "24px 16px", overflowX: "auto" }}>
-                  <div style={{ display: "flex", gap: 16, minHeight: 200 }}>
-                    {items.map((raw, i) => {
-                      const it = asObj(raw);
-                      const img = typeof it.imageUrl === "string" ? it.imageUrl : "";
-                      const href = typeof it.href === "string" ? it.href : "/products";
-                      const tit = pickTitle(it, locale);
-                      if (!img) return null;
-                      return (
-                        <div key={i} style={{ flex: "0 0 min(85vw, 420px)" }}>
-                          <PromoBanner title={tit || "—"} link={href} image={img} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              </SectionBlock>
-            );
-          }
+          case "category_strip":
+          case "featured_products":
+          case "brands_strip":
+          case "banner_slider":
           case "categories_showcase":
-            return (
-              <SectionBlock key={sec.id} delay={delay}>
-                <GamingCategoriesGrid />
-              </SectionBlock>
-            );
           case "promo_mega":
-            return (
-              <SectionBlock key={sec.id} delay={delay}>
-                <PromoMegaBlocks payload={p} />
-              </SectionBlock>
-            );
-          case "promo_grid": {
-            const items = Array.isArray(p.items) ? p.items : [];
-            return (
-              <SectionBlock key={sec.id} delay={delay}>
-                <section
-                  className="container"
-                  style={{
-                    padding: "40px clamp(16px, 5%, 60px)",
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                    gap: 20,
-                  }}
-                >
-                  {items.map((raw, i) => {
-                    const it = asObj(raw);
-                    const img = typeof it.imageUrl === "string" ? it.imageUrl : "";
-                    const href = typeof it.href === "string" ? it.href : "/products";
-                    const tit = pickTitle(it, locale);
-                    if (!img) return null;
-                    return <PromoBanner key={i} title={tit || "—"} link={href} image={img} />;
-                  })}
-                </section>
-              </SectionBlock>
-            );
-          }
+          case "promo_grid":
           case "tabbed_products":
-            return (
-              <SectionBlock key={sec.id} delay={delay}>
-                <TabbedShowcase config={sec.payload} />
-              </SectionBlock>
-            );
+            return null;
           case "testimonials": {
             const items = Array.isArray(p.items) ? p.items : [];
             return (
@@ -264,28 +108,8 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
               </SectionBlock>
             );
           }
-          case "faq": {
-            if (p.source === "i18n" || !Array.isArray(p.items)) {
-              return (
-                <SectionBlock key={sec.id} delay={delay}>
-                  <FAQSection />
-                </SectionBlock>
-              );
-            }
-            const faqItems = (p.items as unknown[]).map((raw) => {
-              const it = asObj(raw);
-              const q =
-                locale === "ar" ? String(it.qAr ?? it.qEn ?? "") : String(it.qEn ?? it.qAr ?? "");
-              const a =
-                locale === "ar" ? String(it.aAr ?? it.aEn ?? "") : String(it.aEn ?? it.aAr ?? "");
-              return { q, a };
-            });
-            return (
-              <SectionBlock key={sec.id} delay={delay}>
-                <FAQSection mode="custom" items={faqItems.filter((x) => x.q && x.a)} />
-              </SectionBlock>
-            );
-          }
+          case "faq":
+            return null;
           case "cta": {
             const title =
               locale === "ar" ? String(p.titleAr ?? p.titleEn ?? "") : String(p.titleEn ?? p.titleAr ?? "");
@@ -358,11 +182,7 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
             );
           }
           case "showroom":
-            return (
-              <SectionBlock key={sec.id} delay={delay}>
-                <StoreGallery />
-              </SectionBlock>
-            );
+            return null;
           default:
             return null;
         }

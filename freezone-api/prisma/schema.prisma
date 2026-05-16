@@ -300,9 +300,12 @@ model HeroSlide {
   primaryLabelEn   String   @default("")
   primaryLabelAr   String   @default("")
   primaryHref      String   @default("/products")
+  /// Optional structured CTA: `{ kind:"product"|"category"|"brand"|"url", ... }` — resolved to `primaryHref` for storefront
+  primaryLink      Json?
   secondaryLabelEn String   @default("")
   secondaryLabelAr String   @default("")
   secondaryHref    String   @default("/contact")
+  secondaryLink    Json?
   active           Boolean  @default(true)
   stats            Json?
 }

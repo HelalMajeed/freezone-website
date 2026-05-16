@@ -1,4 +1,5 @@
 import type { PublicHeroSlide, PublicSpotlightItem, PublicTrustItem } from "@/lib/layout-cms";
+import { parseHeroLinkTarget, resolveHeroLinkTargetToHref } from "@/lib/hero-link-target";
 
 function asObj(p: unknown): Record<string, unknown> {
   return p && typeof p === "object" && !Array.isArray(p) ? (p as Record<string, unknown>) : {};
@@ -37,9 +38,15 @@ export function buildHeroPreviewFromPayload(
       titleLine2: en ? String(o.titleLine2En ?? "") : String(o.titleLine2Ar ?? ""),
       desc: en ? String(o.descEn ?? "") : String(o.descAr ?? ""),
       primaryLabel: en ? String(o.primaryLabelEn ?? "") : String(o.primaryLabelAr ?? ""),
-      primaryHref: typeof o.primaryHref === "string" && o.primaryHref ? o.primaryHref : "/products",
+      primaryHref: resolveHeroLinkTargetToHref(
+        parseHeroLinkTarget(o.primaryLink),
+        typeof o.primaryHref === "string" && o.primaryHref ? o.primaryHref : "/products",
+      ),
       secondaryLabel: en ? String(o.secondaryLabelEn ?? "") : String(o.secondaryLabelAr ?? ""),
-      secondaryHref: typeof o.secondaryHref === "string" && o.secondaryHref ? o.secondaryHref : "/products",
+      secondaryHref: resolveHeroLinkTargetToHref(
+        parseHeroLinkTarget(o.secondaryLink),
+        typeof o.secondaryHref === "string" && o.secondaryHref ? o.secondaryHref : "/products",
+      ),
       stats: [],
     });
     i++;

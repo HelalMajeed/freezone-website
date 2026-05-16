@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type CSSProperties } from "react";
+import { useState, useEffect, type CSSProperties, type ReactNode } from "react";
 import styles from "./HeroSlider.module.css";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -9,6 +9,36 @@ import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { useLocale } from "@/i18n/hooks";
 import type { PublicHeroSlide } from "@/lib/layout-cms";
 import type { HeroFreeformLayer } from "@/lib/cms-types";
+
+function isAbsoluteOrProtocolHref(href: string): boolean {
+  const t = href.trim();
+  return /^https?:\/\//i.test(t) || t.startsWith("//") || t.startsWith("mailto:") || t.startsWith("tel:");
+}
+
+function CtaLink({
+  href,
+  className,
+  prefetch,
+  children,
+}: {
+  href: string;
+  className?: string;
+  prefetch?: boolean;
+  children: ReactNode;
+}) {
+  if (isAbsoluteOrProtocolHref(href)) {
+    return (
+      <a className={className} href={href.trim()} target="_blank" rel="noopener noreferrer">
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link href={href} className={className} prefetch={prefetch}>
+      {children}
+    </Link>
+  );
+}
 
 type PreviewHero = {
   slides: PublicHeroSlide[];
@@ -85,9 +115,9 @@ function FreeformLayers({
               zIndex: layer.zIndex,
             }}
           >
-            <Link href={layer.href} className={btnClass}>
+            <CtaLink href={layer.href} className={btnClass}>
               {label}
-            </Link>
+            </CtaLink>
           </div>
         );
       })}
@@ -195,13 +225,13 @@ export function HeroSlider({ previewHero }: { previewHero?: PreviewHero }) {
                 transition={{ delay: 0.52, duration: 0.5 }}
                 className={styles.actions}
               >
-                <Link href={slide.primaryHref} className={styles.primaryBtn} prefetch>
+                <CtaLink href={slide.primaryHref} className={styles.primaryBtn} prefetch>
                   {slide.primaryLabel}
                   <ArrowRight size={16} />
-                </Link>
-                <Link href={slide.secondaryHref} className={styles.secondaryBtn} prefetch>
+                </CtaLink>
+                <CtaLink href={slide.secondaryHref} className={styles.secondaryBtn} prefetch>
                   {slide.secondaryLabel}
-                </Link>
+                </CtaLink>
               </motion.div>
 
               {slide.stats && slide.stats.length > 0 && (

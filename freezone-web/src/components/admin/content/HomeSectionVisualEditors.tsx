@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { LUCIDE_ICON_PICKER_OPTIONS } from "@/lib/lucide-icon-map";
 import { parsePromoMegaSlots, promoMegaCardCount, type PromoMegaSlotDraft } from "@/lib/home-promo-mega";
 import { freezoneApiUrl } from "@/lib/api-internal";
+import { HeroDestLinkEditor } from "@/components/admin/HeroDestLinkEditor";
 
 const inp: CSSProperties = {
   width: "100%",
@@ -44,18 +45,23 @@ function defaultHeroSlide(): Record<string, unknown> {
     primaryLabelEn: "Shop now",
     primaryLabelAr: "تسوق الآن",
     primaryHref: "/products",
+    primaryLink: null,
     secondaryLabelEn: "PC Builder",
     secondaryLabelAr: "بناء PC",
     secondaryHref: "/pc-builder",
+    secondaryLink: null,
   };
 }
 
 export function HeroSectionEditor({
   value,
   onChange,
+  previewLocale = "ar",
 }: {
   value: Record<string, unknown>;
   onChange: (next: Record<string, unknown>) => void;
+  /** لعرض أسماء المنتجات/الأقسام في القوائم */
+  previewLocale?: "en" | "ar";
 }) {
   const source = value.source === "custom" ? "custom" : "global";
   const autoplayMs =
@@ -260,15 +266,6 @@ export function HeroSectionEditor({
                   />
                 </div>
                 <div>
-                  <label style={labelStyle}>رابط الزر الرئيسي</label>
-                  <input
-                    style={inp}
-                    dir="ltr"
-                    value={typeof slide.primaryHref === "string" ? slide.primaryHref : "/products"}
-                    onChange={(e) => patchSlide(idx, { primaryHref: e.target.value })}
-                  />
-                </div>
-                <div>
                   <label style={labelStyle}>زر ثانوي — نص (EN)</label>
                   <input
                     style={inp}
@@ -286,12 +283,25 @@ export function HeroSectionEditor({
                   />
                 </div>
                 <div style={{ gridColumn: "1 / -1" }}>
-                  <label style={labelStyle}>رابط الزر الثانوي</label>
-                  <input
-                    style={inp}
-                    dir="ltr"
-                    value={typeof slide.secondaryHref === "string" ? slide.secondaryHref : "/products"}
-                    onChange={(e) => patchSlide(idx, { secondaryHref: e.target.value })}
+                  <HeroDestLinkEditor
+                    title="الزر الرئيسي — الوجهة"
+                    href={typeof slide.primaryHref === "string" ? slide.primaryHref : "/products"}
+                    linkTarget={slide.primaryLink}
+                    locale={previewLocale}
+                    onChange={({ href, linkTarget }) =>
+                      patchSlide(idx, { primaryHref: href, primaryLink: linkTarget })
+                    }
+                  />
+                </div>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <HeroDestLinkEditor
+                    title="الزر الثانوي — الوجهة"
+                    href={typeof slide.secondaryHref === "string" ? slide.secondaryHref : "/products"}
+                    linkTarget={slide.secondaryLink}
+                    locale={previewLocale}
+                    onChange={({ href, linkTarget }) =>
+                      patchSlide(idx, { secondaryHref: href, secondaryLink: linkTarget })
+                    }
                   />
                 </div>
               </div>

@@ -9,17 +9,14 @@ import {
   ShoppingCart,
   Search,
   Menu,
-  ChevronDown,
-  Package,
   UserRound,
   Globe2,
-  ExternalLink,
   Heart,
 } from "lucide-react";
 import { LucideByName } from "@/lib/lucide-icon-map";
 import styles from "./NavBar.module.css";
 import { useState, useRef, useEffect, useLayoutEffect, type FormEvent } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { EASE_OUT } from "@/lib/motion";
 import { MobileMenu } from "./MobileMenu";
 import { SiteLogo } from "./SiteLogo";
@@ -77,17 +74,14 @@ export function NavBar() {
   const wishCount = wishlistIds.length;
   const isLoggedIn = useStorefrontUser((s) => s.isLoggedIn);
   const count = items.reduce((acc, obj) => acc + obj.qty, 0);
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [headerSearchQuery, setHeaderSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const searchWrapRef = useRef<HTMLDivElement>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [bottomNavHidden, setBottomNavHidden] = useState(false);
   /** Tier-1 bar: hidden at page top, shown after scrolling down, hidden again when back to top */
   const [topAnnouncementVisible, setTopAnnouncementVisible] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
-  const lastScrollY = useRef(0);
   const reduceMotion = useReducedMotion();
 
   const TOP_BAR_SCROLL_PX = 12;
@@ -103,40 +97,8 @@ export function NavBar() {
   }, []);
 
   useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1024px)");
-    const onScroll = () => {
-      if (!mq.matches) {
-        setBottomNavHidden(false);
-        return;
-      }
-      const y = window.scrollY;
-      const prev = lastScrollY.current;
-      if (y < 36) {
-        setBottomNavHidden(false);
-      } else if (y > prev && y > 64) {
-        setBottomNavHidden(true);
-        setActiveMenu(null);
-      } else if (y < prev) {
-        setBottomNavHidden(false);
-      }
-      lastScrollY.current = y;
-    };
-    lastScrollY.current = window.scrollY;
-    window.addEventListener("scroll", onScroll, { passive: true });
-    const onMq = () => {
-      if (!mq.matches) setBottomNavHidden(false);
-    };
-    mq.addEventListener("change", onMq);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      mq.removeEventListener("change", onMq);
-    };
-  }, []);
-
-  useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setActiveMenu(null);
         setSearchOpen(false);
       }
     };
@@ -159,20 +121,6 @@ export function NavBar() {
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, [searchOpen]);
-
-  useEffect(() => {
-    if (!activeMenu) return;
-    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
-      const el = navRef.current;
-      if (el && !el.contains(e.target as Node)) setActiveMenu(null);
-    };
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("touchstart", handlePointerDown, { passive: true });
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("touchstart", handlePointerDown);
-    };
-  }, [activeMenu]);
 
   /** Publish header height so sticky sidebars (e.g. products filter) sit below the bar, not under it (z-index). */
   useLayoutEffect(() => {
@@ -197,7 +145,7 @@ export function NavBar() {
 
   return (
     <motion.div
-      className={`${styles.wrapper} ${bottomNavHidden ? styles.wrapperBottomNavHidden : ""}`}
+      className={styles.wrapper}
       ref={navRef}
       initial={reduceMotion ? false : { opacity: 0, y: -14 }}
       animate={{ opacity: 1, y: 0 }}
@@ -425,104 +373,6 @@ export function NavBar() {
           </div>
         </div>
       </div>
-
-      {/* ── Tier 3: Bottom Categories Nav (centered; hides on scroll down @ lg+) ── */}
-      <nav className={`${styles.bottomNav} ${bottomNavHidden ? styles.bottomNavHidden : ""}`} aria-hidden={bottomNavHidden}>
-        <div className={`container ${styles.bottomInner}`}>
-          <div className={styles.links}>
-            <div className={styles.linkItem}>
-              <Link href="/" className={styles.link}>{t('home')}</Link>
-            </div>
-
-            {navItems.map((item) => (
-              <div key={item.id} className={styles.linkItem}>
-                <Link
-                  href={item.href}
-                  className={`${styles.link} ${activeMenu === item.id ? styles.linkActive : ""}`}
-                  aria-expanded={activeMenu === item.id}
-                  aria-haspopup="true"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setActiveMenu((m) => (m === item.id ? null : item.id));
-                  }}
-                >
-                  {item.label}
-                  <ChevronDown
-                    size={14}
-                    className={`${styles.chevron} ${activeMenu === item.id ? styles.chevronOpen : ""}`}
-                  />
-                </Link>
-
-                <AnimatePresence>
-                  {activeMenu === item.id && (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, y: -6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.16, ease: "easeOut" }}
-                      className={styles.megaMenuWrapper}
-                    >
-                      <div className={styles.megaInner}>
-                        <div
-                          className={styles.megaGrid}
-                          style={{ gridTemplateColumns: `repeat(${item.columns.length}, 1fr)` }}
-                        >
-                          {item.columns.map((col, ci) => (
-                            <div key={ci} className={`${styles.megaCol} ${col.cta ? styles.megaColCta : ""}`}>
-                              <h4 className={`${styles.megaColTitle} ${col.highlight ? styles.megaColTitleHighlight : ""}`}>
-                                {col.title}
-                              </h4>
-                              <div className={styles.megaList}>
-                                {col.items.map((link, li) => (
-                                  <Link
-                                    key={li}
-                                    href={link.href}
-                                    className={`${styles.megaItem} ${col.cta && li === 0 ? styles.megaItemCta : ""}`}
-                                    onClick={() => setActiveMenu(null)}
-                                  >
-                                    {link.label}
-                                  </Link>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Bottom promo row */}
-                        <div className={styles.megaFooter}>
-                          <div className={styles.megaFooterLeft}>
-                            <Package size={16} />
-                            <span>Free delivery on orders over 100,000 IQD across safe zones.</span>
-                          </div>
-                          <Link href="/products" className={styles.megaFooterLink}>
-                            View All Products <ExternalLink size={14} />
-                          </Link>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ))}
-
-
-          </div>
-        </div>
-      </nav>
-
-      {/* ── Overlay ── */}
-      <AnimatePresence>
-        {activeMenu && (
-          <motion.div
-            className={styles.menuOverlay}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          />
-        )}
-      </AnimatePresence>
 
       <MobileMenu
         isOpen={isMobileMenuOpen}

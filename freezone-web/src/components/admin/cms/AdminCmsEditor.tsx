@@ -1334,6 +1334,7 @@ export function AdminCmsEditor() {
           {tab === "hero" && (
             <HeroSlidesEditor
               slides={draft.heroSlides}
+              previewLocale={previewLocale}
               onChange={(next) => setDraft({ ...draft, heroSlides: next })}
               heroAutoplayMs={draft.siteConfig.heroAutoplayMs ?? 7000}
               onAutoplayMsChange={(ms) =>
