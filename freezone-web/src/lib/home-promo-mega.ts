@@ -1,5 +1,8 @@
 import type { Category } from "@/lib/data";
 
+/** Max cards in promo mega grid (4×5 layout on desktop). */
+export const PROMO_MEGA_MAX_CARDS = 20;
+
 export type PromoMegaSlotDraft = { slug: string; imageUrl?: string };
 
 export function parsePromoMegaSlots(raw: unknown): PromoMegaSlotDraft[] {
@@ -17,13 +20,13 @@ export function parsePromoMegaSlots(raw: unknown): PromoMegaSlotDraft[] {
   return out;
 }
 
-/** Cards to show (1–6). Default 5 matches legacy homepage slice. */
+/** Cards to show (1–`PROMO_MEGA_MAX_CARDS`). Default fills a 4×5 grid when `count` is omitted. */
 export function promoMegaCardCount(payload: Record<string, unknown> | undefined): number {
   const c =
     payload && typeof payload.count === "number" && Number.isFinite(payload.count)
       ? Math.floor(payload.count as number)
-      : 5;
-  return Math.min(6, Math.max(1, c));
+      : PROMO_MEGA_MAX_CARDS;
+  return Math.min(PROMO_MEGA_MAX_CARDS, Math.max(1, c));
 }
 
 /**

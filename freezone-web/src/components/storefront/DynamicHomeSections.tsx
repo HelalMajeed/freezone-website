@@ -6,6 +6,7 @@ import type { StorefrontCmsSection } from "@/lib/cms-page-storefront";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import styles from "@/app/locale/page.module.css";
 import { HeroSlider } from "@/components/ui/HeroSlider";
+import { PromoMegaBlocks } from "@/components/ui/PromoMegaBlocks";
 import { LucideByName } from "@/lib/lucide-icon-map";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 import { Link } from "@/navigation";
@@ -75,12 +76,17 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
               </SectionBlock>
             );
           }
+          case "promo_mega":
+            return (
+              <SectionBlock key={sec.id} delay={delay}>
+                <PromoMegaBlocks payload={p} />
+              </SectionBlock>
+            );
           case "category_strip":
           case "featured_products":
           case "brands_strip":
           case "banner_slider":
           case "categories_showcase":
-          case "promo_mega":
           case "promo_grid":
           case "tabbed_products":
             return null;

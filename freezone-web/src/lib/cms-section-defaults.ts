@@ -144,7 +144,7 @@ export function defaultDraftPayload(type: string): Record<string, unknown> {
     case "categories_showcase":
       return { source: "gaming_grid" };
     case "promo_mega":
-      return { count: 5, slots: [] };
+      return { count: 20, slots: [] };
     case "tabbed_products":
       return {
         eyebrowAr: "المنتجات المميزة",

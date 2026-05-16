@@ -3,7 +3,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { LUCIDE_ICON_PICKER_OPTIONS } from "@/lib/lucide-icon-map";
-import { parsePromoMegaSlots, promoMegaCardCount, type PromoMegaSlotDraft } from "@/lib/home-promo-mega";
+import { parsePromoMegaSlots, promoMegaCardCount, PROMO_MEGA_MAX_CARDS, type PromoMegaSlotDraft } from "@/lib/home-promo-mega";
 import { freezoneApiUrl } from "@/lib/api-internal";
 import { HeroDestLinkEditor } from "@/components/admin/HeroDestLinkEditor";
 
@@ -773,7 +773,8 @@ export function PromoMegaSectionEditor({
     };
   }, []);
 
-  const setCount = (n: number) => onChange({ ...value, count: Math.min(6, Math.max(1, Math.floor(n))) });
+  const setCount = (n: number) =>
+    onChange({ ...value, count: Math.min(PROMO_MEGA_MAX_CARDS, Math.max(1, Math.floor(n))) });
 
   const setSlots = (next: PromoMegaSlotDraft[]) => {
     onChange({ ...value, slots: next.map((s) => (s.imageUrl ? { slug: s.slug, imageUrl: s.imageUrl } : { slug: s.slug })) });
@@ -800,14 +801,15 @@ export function PromoMegaSectionEditor({
           إدارة الأقسام
         </Link>
         ) أو تحديد فئات وصور هنا. الصورة الافتراضية لكل بطاقة: صورة الخلفية المحفوظة للفئة، وإلا صورة احتياطية من القالب.
+        على الشاشات الواسعة تُعرض <strong>4 بطاقات في كل صف</strong> (حتى 20 بطاقة؛ الصف الأخير قد يضم بطاقة واحدة حتى تكمل باقي الأقسام).
       </p>
 
       <div>
-        <label style={labelStyle}>عدد البطاقات (1–6)</label>
+        <label style={labelStyle}>{`عدد البطاقات (1–${PROMO_MEGA_MAX_CARDS})`}</label>
         <input
           type="number"
           min={1}
-          max={6}
+          max={PROMO_MEGA_MAX_CARDS}
           style={{ ...inp, maxWidth: 120 }}
           value={count}
           onChange={(e) => setCount(Number(e.target.value))}
