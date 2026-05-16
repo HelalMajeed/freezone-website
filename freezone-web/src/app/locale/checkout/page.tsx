@@ -276,7 +276,7 @@ export default function CheckoutPage() {
         <h1 style={{ fontFamily: "var(--fz-font-display)", fontSize: "3rem", fontWeight: 900, marginBottom: "16px" }}>{t("orderPlaced")}</h1>
         <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem", marginBottom: "12px" }}>{t("successMsg", { orderNumber: placedOrderNumber })}</p>
         <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", marginBottom: "32px" }}>{t("successFollowUp")}</p>
-        <Link href="/" className="btn-red">
+        <Link href="/" className="btn-primary">
           {t("returnHome")}
         </Link>
       </div>
@@ -327,7 +327,7 @@ export default function CheckoutPage() {
                   name="fulfillment"
                   checked={fulfillment === "delivery"}
                   onChange={() => setFulfillment("delivery")}
-                  style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #dc2626)" }}
+                  style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #0b1f3b)" }}
                 />
                 <Truck size={22} className={styles.paymentOptionIcon} aria-hidden />
                 <div>
@@ -341,7 +341,7 @@ export default function CheckoutPage() {
                   name="fulfillment"
                   checked={fulfillment === "pickup"}
                   onChange={() => setFulfillment("pickup")}
-                  style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #dc2626)" }}
+                  style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #0b1f3b)" }}
                 />
                 <Building2 size={22} className={styles.paymentOptionIcon} aria-hidden />
                 <div>
@@ -389,7 +389,7 @@ export default function CheckoutPage() {
             </div>
 
             <div className={styles.buttons} style={{ justifyContent: "flex-end" }}>
-              <button type="button" className="btn-red" onClick={goToPayment}>
+              <button type="button" className="btn-primary" onClick={goToPayment}>
                 {t("continueToPayment")}
               </button>
             </div>
@@ -418,7 +418,7 @@ export default function CheckoutPage() {
                             name="pay"
                             checked={active}
                             onChange={() => setPaymentMethod(m)}
-                            style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #dc2626)" }}
+                            style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #0b1f3b)" }}
                           />
                           <Icon size={22} className={styles.paymentOptionIcon} aria-hidden />
                           <div>
@@ -446,7 +446,7 @@ export default function CheckoutPage() {
                             name="pay"
                             checked={active}
                             onChange={() => setPaymentMethod(m)}
-                            style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #dc2626)" }}
+                            style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #0b1f3b)" }}
                           />
                           <Icon size={22} className={styles.paymentOptionIcon} aria-hidden />
                           <div>
@@ -472,7 +472,7 @@ export default function CheckoutPage() {
                         name="pay"
                         checked={active}
                         onChange={() => setPaymentMethod(m)}
-                        style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #dc2626)" }}
+                        style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #0b1f3b)" }}
                       />
                       <Icon size={22} className={styles.paymentOptionIcon} aria-hidden />
                       <div>
@@ -506,7 +506,7 @@ export default function CheckoutPage() {
               <button type="button" className={styles.btnBack} onClick={() => setStep(1)}>
                 {t("btnBack")}
               </button>
-              <button type="button" className="btn-red" onClick={goToReview}>
+              <button type="button" className="btn-primary" onClick={goToReview}>
                 {t("btnReview")}
               </button>
             </div>

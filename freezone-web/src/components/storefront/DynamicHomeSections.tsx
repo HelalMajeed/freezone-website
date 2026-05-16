@@ -309,7 +309,7 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
                   >
                     {title ? <h2 style={{ fontSize: "1.5rem", marginBottom: 12 }}>{title}</h2> : null}
                     {subtitle ? <p style={{ opacity: 0.9, marginBottom: 20 }}>{subtitle}</p> : null}
-                    <Link href={href} className="btn-red" style={{ display: "inline-block", padding: "12px 28px" }}>
+                    <Link href={href} className="btn-primary" style={{ display: "inline-block", padding: "12px 28px" }}>
                       {btn || href}
                     </Link>
                   </div>

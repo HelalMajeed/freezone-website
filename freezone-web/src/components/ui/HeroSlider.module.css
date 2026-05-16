@@ -62,9 +62,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: color-mix(in srgb, var(--fz-primary, #B00000) 18%, transparent);
-  color: var(--fz-primary, #B00000);
-  border: 1px solid color-mix(in srgb, var(--fz-primary, #B00000) 38%, transparent);
+  background: color-mix(in srgb, var(--fz-primary, #0b1f3b) 18%, transparent);
+  color: var(--fz-primary, #0b1f3b);
+  border: 1px solid color-mix(in srgb, var(--fz-primary, #0b1f3b) 38%, transparent);
   padding: 5px 14px;
   border-radius: var(--radius-full);
   font-weight: 700;
@@ -80,7 +80,7 @@
 .badgeDot {
   width: 6px;
   height: 6px;
-  background: var(--fz-primary, #B00000);
+  background: var(--fz-primary, #0b1f3b);
   border-radius: 50%;
   animation: pulse-glow 2s ease-in-out infinite;
 }
@@ -101,7 +101,7 @@
 }
 
 .titleAccent {
-  color: var(--fz-primary, #B00000);
+  color: var(--fz-primary, #0b1f3b);
   display: block;
   margin-top: 0.06em;
 }
@@ -132,7 +132,7 @@
 }
 
 .primaryBtn {
-  background: var(--fz-primary, #B00000);
+  background: var(--fz-primary, #0b1f3b);
   color: white;
   padding: 10px 22px;
   font-size: clamp(0.8rem, 1.2vw, 0.92rem);
@@ -151,7 +151,7 @@
 }
 .primaryBtn:hover {
   background: white;
-  color: var(--fz-primary, #B00000);
+  color: var(--fz-primary, #0b1f3b);
   transform: translateY(-3px);
   box-shadow: 0 14px 36px rgba(176, 0, 0, 0.28);
 }
@@ -261,8 +261,8 @@
   transition: all 0.25s var(--ease-smooth);
 }
 .controlBtn:hover {
-  background: var(--fz-primary, #B00000);
-  border-color: var(--fz-primary, #B00000);
+  background: var(--fz-primary, #0b1f3b);
+  border-color: var(--fz-primary, #0b1f3b);
   color: white;
   transform: scale(1.08);
 }
@@ -301,7 +301,7 @@
 
 .activeDotFill {
   height: 100%;
-  background: var(--fz-primary, #B00000);
+  background: var(--fz-primary, #0b1f3b);
   border-radius: var(--radius-full);
   animation: grow 7s linear forwards;
 }
@@ -409,7 +409,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--fz-primary, #B00000) 65%, transparent);
+  background: color-mix(in srgb, var(--fz-primary, #0b1f3b) 65%, transparent);
   flex-shrink: 0;
 }
 

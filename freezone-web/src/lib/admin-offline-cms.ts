@@ -7,7 +7,7 @@ import type { CmsHeroSlideRow } from "@/lib/layout-cms";
 export function getOfflineCmsPayload() {
   const siteConfig = {
     id: 1,
-    storeNameEn: "Store",
+    storeNameEn: "FreeZone",
     storeNameAr: "المتجر",
     taglineEn: "Iraq's trusted tech partner — CCTV, computers, gaming, smart solutions.",
     taglineAr: "شريكك التقني في العراق — كاميرات، حواسيب، ألعاب وحلول ذكية.",
@@ -41,7 +41,7 @@ export function getOfflineCmsPayload() {
     topBarSocialEnabled: true,
     topBarSocialIconSizePx: 20,
     topBarSocialGapPx: 14,
-    topBarSocialColor: "#B00000",
+    topBarSocialColor: "#6b7280",
     maintenanceMode: false,
     heroAutoplayMs: 7000,
     heroScrimOpacityPct: 25,
@@ -66,7 +66,7 @@ export function getOfflineCmsPayload() {
 
   const socialLinks = [
     { id: 1, platform: "facebook", url: "https://facebook.com", sortOrder: 0, showInTopBar: true },
-    { id: 2, platform: "instagram", url: "https://instagram.com", sortOrder: 1, showInTopBar: true },
+    { id: 2, platform: "instagram", url: "https://www.instagram.com/fzone.iq/", sortOrder: 1, showInTopBar: true },
     { id: 3, platform: "tiktok", url: "https://tiktok.com", sortOrder: 2, showInTopBar: true },
   ];
 

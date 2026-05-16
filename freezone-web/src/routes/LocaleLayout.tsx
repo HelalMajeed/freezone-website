@@ -12,6 +12,8 @@ import { AnnouncementBar } from "@/components/ui/AnnouncementBar";
 import { StorefrontPrefetch } from "@/components/storefront/StorefrontPrefetch";
 import { setLocale } from "@/i18n/i18n";
 import { LocaleRouteFallback } from "@/routes/LocaleRouteFallback";
+import { StorefrontBottomDock } from "@/components/layout/StorefrontBottomDock";
+import { StorefrontWhatsAppFab } from "@/components/layout/StorefrontWhatsAppFab";
 
 const Footer = lazy(() => import("@/components/layout/Footer").then((m) => ({ default: m.Footer })));
 
@@ -137,6 +139,8 @@ export function LocaleLayout() {
                 <Footer />
               </div>
             </Suspense>
+            <StorefrontBottomDock />
+            <StorefrontWhatsAppFab />
           </ThemeApplier>
         </StorefrontProvider>
       </div>

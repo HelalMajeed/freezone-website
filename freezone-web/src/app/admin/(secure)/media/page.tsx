@@ -118,7 +118,7 @@ export default function AdminMediaPage() {
         <button type="button" onClick={() => load()} style={{ padding: "10px 16px", background: "var(--admin-border)", color: "#fff", border: "none", borderRadius: 8 }}>
           بحث
         </button>
-        <label style={{ padding: "10px 16px", background: "#dc2626", color: "#fff", borderRadius: 8, cursor: "pointer" }}>
+        <label style={{ padding: "10px 16px", background: "#0b1f3b", color: "#fff", borderRadius: 8, cursor: "pointer" }}>
           رفع ملف
           <input type="file" hidden accept="image/png,image/jpeg,.png,.jpg,.jpeg,.glb,.gltf" onChange={(e) => void upload(e)} />
         </label>
@@ -204,7 +204,7 @@ const btnDanger: CSSProperties = {
 };
 const btnPrimary: CSSProperties = {
   padding: "8px 12px",
-  background: "#dc2626",
+  background: "#0b1f3b",
   color: "#fff",
   border: "none",
   borderRadius: 6,

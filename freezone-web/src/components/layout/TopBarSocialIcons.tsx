@@ -47,7 +47,7 @@ export function TopBarSocialIcons({
   enabled?: boolean;
   iconSizePx?: number;
   gapPx?: number;
-  /** CSS color; empty uses logo crimson (`DEFAULT_TOP_BAR_SOCIAL_COLOR`) */
+  /** CSS color; empty uses `DEFAULT_TOP_BAR_SOCIAL_COLOR` */
   color?: string;
 }) {
   if (!enabled) return null;

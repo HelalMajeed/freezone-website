@@ -85,7 +85,7 @@
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .cartItem:hover {
-  border-color: rgba(220,38,38,0.2);
+  border-color: rgba(11, 31, 59,0.2);
   box-shadow: var(--shadow-sm);
 }
 

@@ -1,0 +1,11 @@
+const fs = require("fs");
+const path = require("path");
+const p = path.join(__dirname, "../src/components/layout/NavBar.tsx");
+let s = fs.readFileSync(p, "utf8");
+const a = s.indexOf("// ─── Mega Menu Data");
+const c = s.indexOf("// ─── Component");
+if (a < 0 || c < 0) throw new Error(`markers a=${a} c=${c}`);
+const ins = 'import { DEFAULT_NAV_ITEMS } from "@/lib/default-mega-nav";\n\n';
+s = s.slice(0, a) + ins + s.slice(c);
+fs.writeFileSync(p, s, "utf8");
+console.log("OK");

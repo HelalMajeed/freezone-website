@@ -115,7 +115,7 @@ export default function AdminCouponsPage() {
             padding: "10px 18px",
             borderRadius: 8,
             border: "none",
-            background: "#dc2626",
+            background: "#0b1f3b",
             color: "#fff",
             fontWeight: 700,
             cursor: "pointer",

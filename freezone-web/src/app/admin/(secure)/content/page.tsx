@@ -245,7 +245,7 @@ export default function AdminContentBuilderPage() {
         رتّب الأقسام من اليسار (↑↓). <strong>كل نوع قسم</strong> له نموذج تحرير (أو شرح واضح إن كان المحتوى من الكتالوج/الإعدادات).
         لشرائح منتجات أفقية بعدّة فئات، أضِف قسماً من نوع «شريط منتجات أفقي» أكثر من مرة واستخدم الأزرار السريعة داخل المحرر.
         التحرير بالكامل من النماذج — دون JSON. روابط الصور من{" "}
-        <Link to="/admin/media" style={{ color: "#B00000" }}>
+        <Link to="/admin/media" style={{ color: "#0b1f3b" }}>
           مكتبة الوسائط
         </Link>
         . انقر «نشر كل الأقسام» ليظهر المحتوى للزوار.
@@ -283,7 +283,7 @@ export default function AdminContentBuilderPage() {
         <button
           type="button"
           onClick={() => void addSection()}
-          style={{ padding: "10px 16px", background: "#B00000", color: "#fff", border: "none", borderRadius: 8 }}
+          style={{ padding: "10px 16px", background: "#0b1f3b", color: "#fff", border: "none", borderRadius: 8 }}
         >
           + قسم من قالب
         </button>
@@ -458,7 +458,7 @@ export default function AdminContentBuilderPage() {
                 style={{
                   marginTop: 12,
                   padding: "10px 20px",
-                  background: "#dc2626",
+                  background: "#0b1f3b",
                   color: "#fff",
                   border: "none",
                   borderRadius: 8,

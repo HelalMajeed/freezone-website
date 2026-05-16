@@ -29,7 +29,7 @@
 /* Brand column: title comes from SiteLogo (image or FZ + name) */
 
 .tagline {
-  color: var(--red-500);
+  color: var(--color-accent, #c90000);
   font-weight: 700;
   font-size: 0.9rem;
   letter-spacing: 1px;
@@ -70,8 +70,8 @@
 }
 
 .socialIcon:hover {
-  background: var(--red-600);
-  border-color: var(--red-600);
+  background: var(--color-accent, #c90000);
+  border-color: var(--color-accent, #c90000);
   color: #ffffff;
   transform: translateY(-2px);
 }
@@ -99,7 +99,7 @@
 }
 
 .linkItem:hover {
-  color: var(--red-500);
+  color: var(--color-accent, #c90000);
   transform: translateX(4px);
 }
 
@@ -114,7 +114,7 @@
 }
 
 .contactIcon {
-  color: var(--red-600);
+  color: var(--color-accent, #c90000);
   margin-top: 2px;
 }
 
@@ -147,7 +147,7 @@
 }
 
 .inputGroup:focus-within {
-  border-color: var(--red-600);
+  border-color: var(--color-accent, #c90000);
 }
 
 .input {
@@ -164,7 +164,7 @@
 }
 
 .submitBtn {
-  background: var(--red-600);
+  background: var(--color-primary, #0a0a0a);
   color: white;
   border: none;
   padding: 0 16px;
@@ -176,7 +176,7 @@
 }
 
 .submitBtn:hover {
-  background: var(--red-700);
+  background: var(--color-accent-hover, #e11d2e);
 }
 
 /* Bottom Bar — full-width strip (matches main footer surface) */

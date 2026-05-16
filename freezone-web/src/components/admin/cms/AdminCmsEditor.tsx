@@ -267,7 +267,7 @@ export function AdminCmsEditor() {
               </p>
               <label>لون الخلفية</label>
               <input
-                value={draft.siteConfig.topBarBgColor ?? "#0a0e1a"}
+                value={draft.siteConfig.topBarBgColor ?? "#f5f5f5"}
                 onChange={(e) =>
                   setDraft({
                     ...draft,

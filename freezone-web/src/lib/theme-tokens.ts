@@ -20,12 +20,13 @@ export type ThemeTokens = {
 };
 
 export const DEFAULT_THEME: ThemeTokens = {
-  primary: "#B00000",
+  /** Storefront structure: primary black (CTAs solid); pair with red accents in CSS tokens */
+  primary: "#0A0A0A",
   primaryForeground: "#ffffff",
-  secondary: "#0f172a",
-  secondaryForeground: "#e2e8f0",
+  secondary: "#f5f5f5",
+  secondaryForeground: "#0a0a0a",
   background: "#ffffff",
-  surface: "#f8fafc",
+  surface: "#f5f5f5",
   backgroundImage: "",
   cardRadius: "12px",
   buttonRadius: "8px",
@@ -51,13 +52,14 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
 }
 
 /**
- * Replace blue/cyan saved theme primaries with brand crimson (#B00000).
- * Stored `themeTokens.primary` often overrides CSS; old blue picks still show on the storefront.
+ * Map legacy bright “Instagram / default UI” blues saved as `themeTokens.primary`
+ * to the current brand black. Dark blues (old navy) normalize to black.
  */
 export function normalizeBrandPrimary(primary: string): string {
   const BRAND = DEFAULT_THEME.primary;
   const t = primary.trim();
   if (!/^#[0-9A-Fa-f]{6}$/.test(t)) return t;
+  if (t.toLowerCase() === "#0b1f3a") return BRAND;
   const rgb = hexToRgb(t);
   if (!rgb) return t;
   const r = rgb.r / 255;
@@ -75,7 +77,9 @@ export function normalizeBrandPrimary(primary: string): string {
     if (h < 0) h += 360;
   }
   const s = max === 0 ? 0 : d / max;
-  if (s > 0.12 && h >= 165 && h <= 275) return BRAND;
+  /** perceived lightness — only replace bright blues/cyans, not navy */
+  const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  if (s > 0.12 && h >= 165 && h <= 275 && L > 0.42) return BRAND;
   return t;
 }
 

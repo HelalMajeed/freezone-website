@@ -107,7 +107,7 @@ export function MediaPickerModal({ open, onClose, multi = false, onSelect }: Pro
                 type="button"
                 onClick={() => toggle(m.id)}
                 style={{
-                  border: on ? "2px solid #dc2626" : "1px solid #334155",
+                  border: on ? "2px solid #0b1f3b" : "1px solid #334155",
                   borderRadius: 8,
                   padding: 6,
                   background: "var(--admin-surface)",
@@ -128,7 +128,7 @@ export function MediaPickerModal({ open, onClose, multi = false, onSelect }: Pro
           })}
         </div>
         <div style={{ padding: 12, borderTop: "1px solid #334155", display: "flex", justifyContent: "flex-end", gap: 8 }}>
-          <button type="button" onClick={confirmPick} style={{ padding: "10px 18px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700 }}>
+          <button type="button" onClick={confirmPick} style={{ padding: "10px 18px", background: "#0b1f3b", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700 }}>
             إدراج المحدد
           </button>
         </div>

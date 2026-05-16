@@ -19,7 +19,7 @@
   position: absolute;
   top: -120px; left: 50%; transform: translateX(-50%);
   width: 700px; height: 700px;
-  background: radial-gradient(circle, rgba(220,38,38,0.1) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(11, 31, 59,0.1) 0%, transparent 65%);
   pointer-events: none;
 }
 .hero::after {
@@ -95,14 +95,14 @@
 .cardIcon {
   width: 60px;
   height: 60px;
-  background: rgba(220,38,38,0.08);
+  background: rgba(11, 31, 59,0.08);
   color: var(--red-600);
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 20px;
-  border: 1px solid rgba(220,38,38,0.15);
+  border: 1px solid rgba(11, 31, 59,0.15);
 }
 
 .cardTitle {

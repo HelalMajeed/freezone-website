@@ -17,7 +17,7 @@
   right: -60px;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(220,38,38,0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(11, 31, 59,0.08) 0%, transparent 70%);
   pointer-events: none;
 }
 .pageHero::after {
@@ -122,7 +122,7 @@
   transition: all 0.22s var(--ease-smooth);
 }
 .row:hover {
-  border-color: rgba(220,38,38,0.2);
+  border-color: rgba(11, 31, 59,0.2);
   box-shadow: var(--shadow-sm);
 }
 @media (min-width: 640px) {
@@ -199,13 +199,13 @@
 .chooseBtn:hover {
   border-color: var(--red-600);
   color: var(--red-600);
-  background: rgba(220,38,38,0.04);
+  background: rgba(11, 31, 59,0.04);
 }
 
 .removeBtn {
   background: transparent;
   color: var(--red-600);
-  border: 1.5px solid rgba(220,38,38,0.25);
+  border: 1.5px solid rgba(11, 31, 59,0.25);
   padding: 8px 16px;
   border-radius: var(--radius-md);
   font-weight: 700;
@@ -213,7 +213,7 @@
   cursor: pointer;
   transition: all 0.2s;
 }
-.removeBtn:hover { background: rgba(220,38,38,0.06); border-color: var(--red-600); }
+.removeBtn:hover { background: rgba(11, 31, 59,0.06); border-color: var(--red-600); }
 
 /* ── Summary Column ───────────────────────────── */
 .summaryCol {
@@ -322,7 +322,7 @@
   justify-content: center;
   transition: all 0.2s;
 }
-.closeBtn:hover { color: var(--red-600); background: rgba(220,38,38,0.08); }
+.closeBtn:hover { color: var(--red-600); background: rgba(11, 31, 59,0.08); }
 
 .modalBody {
   padding: 20px;
@@ -543,7 +543,7 @@
 
 .platformCard:hover {
   border-color: var(--red-600);
-  background: rgba(220, 38, 38, 0.05);
+  background: rgba(11, 31, 59, 0.05);
 }
 
 .platformName {

@@ -319,7 +319,7 @@ export default function AdminEditProductPage() {
   if (!product) {
     return (
       <div style={{ padding: 24 }}>
-        <Link to="/admin/products" style={{ color: "#B00000" }}>
+        <Link to="/admin/products" style={{ color: "#0b1f3b" }}>
           ← المنتجات
         </Link>
         <p style={{ color: "#fecaca", marginTop: 16 }}>{err || "لا يمكن العرض"}</p>
@@ -333,7 +333,7 @@ export default function AdminEditProductPage() {
         <Link to="/admin/products" style={{ color: "var(--admin-muted)" }}>
           ← المنتجات
         </Link>
-        <a href={`/en/product/${product.id}`} target="_blank" rel="noreferrer" style={{ color: "#B00000" }}>
+        <a href={`/en/product/${product.id}`} target="_blank" rel="noreferrer" style={{ color: "#0b1f3b" }}>
           معاينة في المتجر
         </a>
       </div>
@@ -616,7 +616,7 @@ export default function AdminEditProductPage() {
             padding: "12px 20px",
             borderRadius: 8,
             border: "none",
-            background: saving ? "var(--admin-border-strong)" : "#dc2626",
+            background: saving ? "var(--admin-border-strong)" : "#0b1f3b",
             color: "#fff",
             fontWeight: 700,
             cursor: saving ? "wait" : "pointer",

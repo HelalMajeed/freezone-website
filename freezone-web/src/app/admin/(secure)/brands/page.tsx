@@ -113,7 +113,7 @@ export default function AdminBrandsPage() {
           <label style={{ fontSize: 12, color: "var(--admin-muted)", display: "block" }}>الاسم AR</label>
           <input value={nameAr} onChange={(e) => setNameAr(e.target.value)} style={field} />
         </div>
-        <button type="submit" style={{ padding: "10px 18px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8 }}>
+        <button type="submit" style={{ padding: "10px 18px", background: "#0b1f3b", color: "#fff", border: "none", borderRadius: 8 }}>
           إضافة
         </button>
       </form>

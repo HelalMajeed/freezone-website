@@ -28,7 +28,7 @@
   position: absolute;
   top: -80px; left: 50%; transform: translateX(-50%);
   width: 500px; height: 500px;
-  background: radial-gradient(circle, rgba(220,38,38,0.09) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(11, 31, 59,0.09) 0%, transparent 70%);
 }
 
 .heroInner { position: relative; z-index: 1; }
@@ -94,21 +94,21 @@
   transition: all 0.22s var(--ease-smooth);
 }
 .infoItem:hover {
-  border-color: rgba(220,38,38,0.2);
+  border-color: rgba(11, 31, 59,0.2);
   box-shadow: var(--shadow-sm);
 }
 
 .iconBox {
   width: 48px;
   height: 48px;
-  background: rgba(220,38,38,0.08);
+  background: rgba(11, 31, 59,0.08);
   color: var(--red-600);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 1px solid rgba(220,38,38,0.15);
+  border: 1px solid rgba(11, 31, 59,0.15);
 }
 
 .infoLabel {
@@ -166,7 +166,7 @@
   outline: none;
   border-color: var(--red-600) !important;
   background: white;
-  box-shadow: 0 0 0 3px rgba(220,38,38,0.1) !important;
+  box-shadow: 0 0 0 3px rgba(11, 31, 59,0.1) !important;
 }
 
 .textarea {

@@ -1,21 +1,24 @@
-/* Global styles — fonts loaded from index.html */
+/* Global styles — design tokens: src/theme/tokens.css (imported from main.tsx) */
 
 :root {
   /* Measured live in NavBar (ResizeObserver); fallback ≈ top + middle + bottom nav */
   --fz-storefront-sticky-offset: 152px;
 
-  /* Latin storefront */
-  --fz-font-display: var(--font-barlow-condensed), "Barlow Condensed", sans-serif;
-  --fz-font-body: var(--font-inter), "Inter", var(--font-barlow), "Barlow", sans-serif;
-  /* Design primary (overridden on `.fz-theme-root` by ThemeApplier — logo crimson #B00000) */
-  --fz-primary: #B00000;
+  /* Structure color (black) — set on `.fz-theme-root` by ThemeApplier from CMS */
+  --fz-primary: var(--color-primary);
   --fz-primary-fg: #ffffff;
-  /* Brand reds — derived from primary (no blue accents) */
-  --red-400: color-mix(in srgb, var(--fz-primary) 72%, white);
-  --red-500: color-mix(in srgb, var(--fz-primary) 88%, white);
-  --red-600: var(--fz-primary);
-  --red-700: color-mix(in srgb, var(--fz-primary) 72%, black);
-  --red-900: color-mix(in srgb, var(--fz-primary) 48%, black);
+  --fz-accent-deal: var(--color-deal);
+  --fz-accent-red: var(--color-accent);
+  --accent-red: var(--color-accent);
+  /**
+   * Legacy `--red-*` = brand accent ramp (true red).
+   * Decoupled from `--fz-primary` so structure stays black and accents stay red.
+   */
+  --red-400: #f87171;
+  --red-500: #ef4444;
+  --red-600: #c90000;
+  --red-700: #e11d2e;
+  --red-900: #7f0000;
 
   /* Neutral Scale */
   --gray-50:  #f9fafb;
@@ -30,37 +33,31 @@
   --gray-900: #111827;
   --gray-950: #030712;
 
-  /* Accent */
-  --accent-orange: #f97316;
-  --accent-amber:  #f59e0b;
-  --accent-cyan:   color-mix(in srgb, var(--fz-primary) 55%, #94a3b8);
-  --accent-violet: color-mix(in srgb, var(--fz-primary) 78%, black);
+  --accent-orange: var(--color-deal);
+  --accent-amber: #f59e0b;
+  --accent-cyan: var(--color-accent);
+  --accent-violet: color-mix(in srgb, var(--color-primary) 78%, white);
 
-  /* Semantic */
-  --bg-primary:   #ffffff;
-  --bg-secondary: #f8fafc;
-  --text-primary:   #0f172a;
-  --text-secondary: #475569;
-  --border-light: #e2e8f0;
-  --border-dark:  #1e293b;
+  /* Typography (LTR default — RTL overrides below) */
+  --fz-font-display: var(--font-inter), "Inter", system-ui, sans-serif;
+  --fz-font-body: var(--font-inter), "Inter", system-ui, sans-serif;
 
-  /* Glow */
-  --glow-red:  rgba(220, 38, 38, 0.25);
+  /* Glow (subtle red — gaming sections only) */
+  --glow-red: color-mix(in srgb, var(--color-accent) 22%, transparent);
   --glow-amber: rgba(245, 158, 11, 0.2);
 
-  /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.06);
-  --shadow-lg: 0 20px 40px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.06);
-  --shadow-xl: 0 32px 64px rgba(0,0,0,0.15);
-  --shadow-red: 0 8px 30px rgba(220, 38, 38, 0.35);
+  /* Semantic surfaces (align with tokens) */
+  --bg-primary:   var(--color-card);
+  --bg-secondary: var(--color-surface);
+  --text-primary:   var(--color-text);
+  --text-secondary: var(--color-text-muted);
+  --border-light: var(--color-border);
+  --border-dark: #0a0a0a;
 
-  /* Radii */
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
+  /* Legacy elevation (accent-tinted) */
+  --shadow-red: 0 8px 28px color-mix(in srgb, var(--color-accent) 22%, transparent);
+
   --radius-xl: 28px;
-  --radius-full: 9999px;
 
   /* Transitions */
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -68,21 +65,21 @@
 }
 
 /**
- * Storefront theme root: map legacy `--red-*` accents to the design primary
- * (`--fz-primary` from Admin → Design — set to match your logo / brand).
+ * Storefront theme root: keep accent red scale stable (see :root `--red-*`).
+ * `--fz-primary` from Admin should be the black structure color (#0A0A0A).
  */
 .fz-theme-root {
-  --red-400: color-mix(in srgb, var(--fz-primary) 72%, white);
-  --red-500: color-mix(in srgb, var(--fz-primary) 88%, white);
-  --red-600: var(--fz-primary);
-  --red-700: color-mix(in srgb, var(--fz-primary) 72%, black);
-  --red-900: color-mix(in srgb, var(--fz-primary) 48%, black);
+  --red-400: #f87171;
+  --red-500: #ef4444;
+  --red-600: #c90000;
+  --red-700: #e11d2e;
+  --red-900: #7f0000;
 }
 
-/* Arabic (RTL): Cairo — readable for UI & electronics retail */
+/* Arabic (RTL): IBM Plex Sans Arabic (loaded as --font-cairo alias in index.html) */
 html[dir="rtl"] {
-  --fz-font-display: var(--font-cairo), "Cairo", sans-serif;
-  --fz-font-body: var(--font-cairo), "Cairo", "Segoe UI", Tahoma, sans-serif;
+  --fz-font-display: var(--font-ibm-arabic), "IBM Plex Sans Arabic", "Segoe UI", sans-serif;
+  --fz-font-body: var(--font-ibm-arabic), "IBM Plex Sans Arabic", "Segoe UI", sans-serif;
 }
 
 /* ─── Reset ─────────────────────────────────────────────── */
@@ -108,14 +105,14 @@ html {
 
 body {
   font-family: var(--fz-font-body);
-  background-color: var(--bg-primary);
+  background-color: var(--color-surface);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
   overflow-x: clip;
   min-height: 100dvh;
-  -webkit-tap-highlight-color: rgba(220, 38, 38, 0.12);
+  -webkit-tap-highlight-color: rgba(201, 0, 0, 0.12);
 }
 
 a { text-decoration: none; color: inherit; }
@@ -134,14 +131,21 @@ img {
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
+@media (max-width: 1023px) {
+  .app-main {
+    /* Space for fixed bottom nav (StorefrontBottomDock) */
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 input, select, textarea, button {
   font-family: inherit;
   outline: none;
 }
 
 input:focus, select:focus, textarea:focus {
-  border-color: var(--red-600) !important;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--border-light)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent);
 }
 
 /* ─── Layout ─────────────────────────────────────────────── */
@@ -152,8 +156,30 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* ─── Buttons ─────────────────────────────────────────────── */
+/* Primary commerce: black → hover red */
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s var(--ease-smooth);
+  font-family: inherit;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  letter-spacing: 0.3px;
+}
+.btn-primary:hover {
+  background: var(--color-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Deal / high-emphasis red CTA */
 .btn-red {
-  background: var(--red-600);
+  background: var(--color-accent);
   color: #fff;
   border: none;
   cursor: pointer;
@@ -164,7 +190,7 @@ input:focus, select:focus, textarea:focus {
   letter-spacing: 0.3px;
 }
 .btn-red:hover {
-  background: var(--red-700);
+  background: var(--color-accent-hover);
   transform: translateY(-2px);
   box-shadow: var(--shadow-red);
 }
@@ -181,8 +207,8 @@ input:focus, select:focus, textarea:focus {
   border-radius: var(--radius-md);
 }
 .btn-outline:hover {
-  border-color: var(--red-600);
-  color: var(--red-600);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 /* ─── Glass / Blur ─────────────────────────────────────────── */
@@ -244,7 +270,7 @@ html[dir="rtl"] .section-title {
   letter-spacing: 0.8px;
   text-transform: uppercase;
 }
-.chip-red   { background: rgba(220,38,38,0.1);  color: var(--red-600);  border: 1px solid rgba(220,38,38,0.25); }
+.chip-red   { background: color-mix(in srgb, var(--color-accent) 8%, var(--color-card));  color: var(--color-accent);  border: 1px solid color-mix(in srgb, var(--color-accent) 28%, var(--color-border)); }
 .chip-amber { background: rgba(245,158,11,0.1); color: #b45309;         border: 1px solid rgba(245,158,11,0.25); }
 .chip-green { background: rgba(5,150,105,0.1);  color: #047857;         border: 1px solid rgba(5,150,105,0.25); }
 

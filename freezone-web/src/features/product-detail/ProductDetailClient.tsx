@@ -156,7 +156,7 @@ export default function ProductDetailClient({
           <div className={styles.actionStack}>
             <button
               type="button"
-              className={`btn-red ${styles.actionBtn}`}
+              className={`btn-primary ${styles.actionBtn}`}
               onClick={() => addItem(product)}
               disabled={!product.inStock}
             >

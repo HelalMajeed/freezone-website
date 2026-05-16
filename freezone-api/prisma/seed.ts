@@ -130,7 +130,7 @@ async function main() {
   await prisma.socialLink.createMany({
     data: [
       { platform: "facebook", url: "https://facebook.com", sortOrder: 0 },
-      { platform: "instagram", url: "https://instagram.com", sortOrder: 1 },
+      { platform: "instagram", url: "https://www.instagram.com/fzone.iq/", sortOrder: 1 },
       { platform: "tiktok", url: "https://tiktok.com", sortOrder: 2 },
     ],
   });

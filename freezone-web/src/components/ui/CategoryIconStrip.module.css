@@ -55,7 +55,7 @@
   background: var(--red-600);
   color: white;
   border-color: var(--red-600);
-  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.25);
+  box-shadow: 0 8px 20px rgba(11, 31, 59, 0.25);
 }
 
 .label {

@@ -113,7 +113,7 @@ export default function ContactPage() {
                   <textarea className={styles.textarea} required placeholder="How can we help you?" />
                 </div>
 
-                <motion.button type="submit" className={`btn-red ${styles.submitBtn}`} whileTap={{ scale: 0.98 }}>
+                <motion.button type="submit" className={`btn-primary ${styles.submitBtn}`} whileTap={{ scale: 0.98 }}>
                   Send Message
                 </motion.button>
               </form>

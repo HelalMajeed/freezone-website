@@ -29,7 +29,7 @@ export default function AccountPage() {
         </div>
         <button
           type="button"
-          className={`btn-red ${styles.submitBtn}`}
+          className={`btn-primary ${styles.submitBtn}`}
           onClick={() => logout()}
         >
           <LogOut size={18} style={{ display: "inline", marginRight: 8, verticalAlign: "middle" }} />

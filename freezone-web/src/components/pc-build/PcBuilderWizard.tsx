@@ -534,7 +534,7 @@ export function PcBuilderWizard() {
               </div>
             );
           })}
-          <button type="button" className={`btn-red ${styles.checkoutBtn}`} style={{ marginTop: 8 }} onClick={closeModal}>
+          <button type="button" className={`btn-outline ${styles.checkoutBtn}`} style={{ marginTop: 8 }} onClick={closeModal}>
             {tEng("next")}
           </button>
         </div>
@@ -558,7 +558,7 @@ export function PcBuilderWizard() {
               }
             );
           })}
-          <button type="button" className={`btn-red ${styles.checkoutBtn}`} style={{ marginTop: 8 }} onClick={closeModal}>
+          <button type="button" className={`btn-outline ${styles.checkoutBtn}`} style={{ marginTop: 8 }} onClick={closeModal}>
             {tEng("next")}
           </button>
         </div>
@@ -775,7 +775,7 @@ export function PcBuilderWizard() {
               <option value="gaming">{tEng("useCaseGaming")}</option>
               <option value="workstation">{tEng("useCaseWorkstation")}</option>
             </select>
-            <button type="button" className="btn-red" style={{ padding: "8px 16px", fontSize: "0.85rem" }} onClick={runAutoBuild}>
+            <button type="button" className="btn-primary" style={{ padding: "8px 16px", fontSize: "0.85rem" }} onClick={runAutoBuild}>
               {tEng("autoBuild")}
             </button>
           </div>
@@ -916,7 +916,7 @@ export function PcBuilderWizard() {
           <span>{tPb("total")}</span>
           <span>{formatMoney(totalPrice(s, acc))} IQD</span>
         </div>
-        <button type="button" className={`btn-red ${styles.checkoutBtn}`} disabled={partCount(s, acc) === 0} onClick={addToCart}>
+        <button type="button" className={`btn-primary ${styles.checkoutBtn}`} disabled={partCount(s, acc) === 0} onClick={addToCart}>
           {tPb("addBuild")}
         </button>
       </div>

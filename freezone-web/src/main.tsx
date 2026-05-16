@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { ScrollToTop } from "@/routes/ScrollToTop";
+import "./theme/tokens.css";
 import "./globals.css";
 import "@/app/admin/admin-shell.css";
 import "@/i18n/i18n";

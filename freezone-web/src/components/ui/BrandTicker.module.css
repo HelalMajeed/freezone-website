@@ -27,7 +27,7 @@
   transform: translateX(-50%);
   width: 50px;
   height: 3px;
-  background: var(--primary-color, #B00000);
+  background: var(--primary-color, #0b1f3b);
   border-radius: 2px;
 }
 

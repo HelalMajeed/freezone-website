@@ -38,7 +38,7 @@
 }
 .filterToggle:hover {
   border-color: var(--red-600);
-  background: rgba(220, 38, 38, 0.04);
+  background: rgba(11, 31, 59, 0.04);
 }
 
 .badgeCount {

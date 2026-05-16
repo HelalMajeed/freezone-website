@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Link, usePathname, useRouter } from "@/navigation";
 import { useNavigate } from "react-router-dom";
@@ -6,9 +6,15 @@ import { useTranslations, useLocale } from "@/i18n/hooks";
 import { useCart } from "@/lib/store";
 import { useStorefrontUser } from "@/lib/storefront-user";
 import {
-  ShoppingCart, Search, Menu, ChevronDown,
-  Cpu, Laptop, Printer, Headphones,
-  Package, UserRound, Globe2, ExternalLink, Star
+  ShoppingCart,
+  Search,
+  Menu,
+  ChevronDown,
+  Package,
+  UserRound,
+  Globe2,
+  ExternalLink,
+  Heart,
 } from "lucide-react";
 import { LucideByName } from "@/lib/lucide-icon-map";
 import styles from "./NavBar.module.css";
@@ -20,246 +26,11 @@ import { SiteLogo } from "./SiteLogo";
 import { TopBarSocialIcons } from "./TopBarSocialIcons";
 import { useStorefront, usePublicSite } from "@/components/providers/StorefrontProvider";
 import { storedNavToResolved } from "@/lib/nav-from-json";
-import type { NavItemResolved } from "@/lib/nav-types";
+import { DEFAULT_NAV_ITEMS } from "@/lib/default-mega-nav";
+import { useWishlist } from "@/lib/wishlist-store";
+import { filterSuggestions, pushRecentSearch, readRecentSearches, TRENDING_SEARCHES } from "@/lib/search-suggestions";
 
 export type { MegaMenuColumn, NavItemResolved } from "@/lib/nav-types";
-
-// ─── Mega Menu Data (default when CMS `navItems` is empty) ─────────────────────────────────
-const DEFAULT_NAV_ITEMS: NavItemResolved[] = [
-  {
-    id: "laptops",
-    label: "Laptops & Computers",
-    icon: Laptop,
-    href: "/products?cat=laptops",
-    columns: [
-      {
-        title: "Gaming Laptops",
-        items: [
-          { label: "All Gaming Laptops", href: "/products?cat=gaming" },
-          { label: "ASUS ROG / TUF", href: "/products?brand=ASUS&cat=gaming" },
-          { label: "MSI Gaming", href: "/products?brand=MSI&cat=gaming" },
-          { label: "Lenovo Legion", href: "/products?brand=Lenovo&cat=gaming" },
-          { label: "Acer Predator", href: "/products?brand=Acer&cat=gaming" },
-          { label: "HP Omen", href: "/products?brand=HP&cat=gaming" },
-          { label: "Dell Alienware", href: "/products?brand=Dell&cat=gaming" },
-        ],
-      },
-      {
-        title: "Laptops & Notebooks",
-        items: [
-          { label: "Business Laptops", href: "/products?cat=laptops&q=business" },
-          { label: "Ultra-thin / Slim", href: "/products?cat=laptops&q=slim" },
-          { label: "2-in-1 Convertibles", href: "/products?cat=laptops&q=2-in-1" },
-          { label: "Apple MacBook", href: "/products?brand=Apple&cat=laptops&q=MacBook" },
-          { label: "Microsoft Surface", href: "/products?brand=Microsoft&cat=laptops&q=Surface" },
-        ],
-      },
-      {
-        title: "Desktop & All-in-One",
-        items: [
-          { label: "All-in-One PCs", href: "/products?cat=all-in-one" },
-          { label: "Desktop Systems", href: "/products?cat=computers&q=desktop" },
-          { label: "Gaming Desktop Builds", href: "/pc-builder" },
-          { label: "Workstations", href: "/products?cat=computers&q=workstation" },
-          { label: "Mini PCs", href: "/products?cat=computers&q=mini" },
-        ],
-      },
-      {
-        title: "Featured Brands",
-        highlight: true,
-        items: [
-          { label: "⭐ ASUS", href: "/products?brand=ASUS" },
-          { label: "⭐ MSI", href: "/products?brand=MSI" },
-          { label: "⭐ Lenovo", href: "/products?brand=Lenovo" },
-          { label: "⭐ HP", href: "/products?brand=HP" },
-          { label: "⭐ Dell", href: "/products?brand=Dell" },
-          { label: "⭐ Acer", href: "/products?brand=Acer" },
-          { label: "⭐ Apple", href: "/products?brand=Apple" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "components",
-    label: "PC Components",
-    icon: Cpu,
-    href: "/products?cat=components",
-    columns: [
-      {
-        title: "Core Components",
-        items: [
-          { label: "Processors (CPU)", href: "/products?cat=components" },
-          { label: "Motherboards", href: "/products?cat=components" },
-          { label: "Graphics Cards (GPU)", href: "/products?cat=components" },
-          { label: "RAM Memory (DDR5/DDR4)", href: "/products?cat=components" },
-          { label: "SSD / NVMe Storage", href: "/products?cat=components" },
-          { label: "Power Supplies (PSU)", href: "/products?cat=components" },
-          { label: "PC Cases / Chassis", href: "/products?cat=components" },
-        ],
-      },
-      {
-        title: "Cooling & Upgrades",
-        items: [
-          { label: "Liquid Cooling (AIO)", href: "/products?cat=components" },
-          { label: "Air CPU Coolers", href: "/products?cat=components" },
-          { label: "Case Fans & RGB", href: "/products?cat=components" },
-          { label: "Thermal Paste", href: "/products?cat=components" },
-          { label: "Laptop Memory (SODIMM)", href: "/products?cat=components" },
-          { label: "External Storage", href: "/products?cat=storage" },
-        ],
-      },
-      {
-        title: "Displays & Audio",
-        items: [
-          { label: "Gaming Monitors 144Hz+", href: "/products?cat=monitors" },
-          { label: "IPS / Creative Monitors", href: "/products?cat=monitors" },
-          { label: "Curved UltraWide", href: "/products?cat=monitors" },
-          { label: "4K / OLED Monitors", href: "/products?cat=monitors" },
-          { label: "Gaming Headsets", href: "/products?cat=accessories" },
-          { label: "Speakers", href: "/products?cat=accessories" },
-        ],
-      },
-      {
-        title: "🔧 Build Your PC",
-        highlight: true,
-        cta: true,
-        items: [
-          { label: "🛠 PC Builder Wizard", href: "/pc-builder" },
-          { label: "Gaming Builds", href: "/products?cat=components" },
-          { label: "Workstation Builds", href: "/products?cat=components" },
-          { label: "Budget Builds", href: "/products?cat=components" },
-          { label: "High-End Builds", href: "/products?cat=components" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "accessories",
-    label: "Accessories",
-    icon: Headphones,
-    href: "/products?cat=accessories",
-    columns: [
-      {
-        title: "Keyboards & Mice",
-        items: [
-          { label: "Mechanical Keyboards", href: "/products?cat=accessories" },
-          { label: "Gaming Keyboards", href: "/products?cat=accessories" },
-          { label: "Office Keyboards", href: "/products?cat=accessories" },
-          { label: "Gaming Mice", href: "/products?cat=accessories" },
-          { label: "Office Mice", href: "/products?cat=accessories" },
-          { label: "Mouse Pads / Desk Mats", href: "/products?cat=accessories" },
-        ],
-      },
-      {
-        title: "Audio & Streaming",
-        items: [
-          { label: "Gaming Headsets", href: "/products?cat=accessories" },
-          { label: "Studio Microphones", href: "/products?cat=accessories" },
-          { label: "Webcams & Cameras", href: "/products?cat=accessories" },
-          { label: "Stream Gear", href: "/products?cat=accessories" },
-          { label: "Speakers", href: "/products?cat=accessories" },
-          { label: "Earbuds / HiFi", href: "/products?cat=accessories" },
-        ],
-      },
-      {
-        title: "Tablets & Mobile",
-        items: [
-          { label: "All Tablets", href: "/products?cat=accessories" },
-          { label: "Drawing Tablets", href: "/products?cat=accessories" },
-          { label: "Smart Tablets", href: "/products?cat=accessories" },
-          { label: "Stylus & Pens", href: "/products?cat=accessories" },
-          { label: "Laptop Bags & Cases", href: "/products?cat=accessories" },
-        ],
-      },
-      {
-        title: "Cables & Controllers",
-        items: [
-          { label: "Gaming Controllers", href: "/products?cat=accessories" },
-          { label: "Cables & Adapters", href: "/products?cat=accessories" },
-          { label: "Gaming Chairs", href: "/products?cat=accessories" },
-          { label: "USB Hubs & Docks", href: "/products?cat=accessories" },
-          { label: "Software & OS", href: "/products?cat=accessories" },
-          { label: "Tools & Maintenance", href: "/products?cat=accessories" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "network",
-    label: "Printers & Network",
-    icon: Printer,
-    href: "/products?cat=printers",
-    columns: [
-      {
-        title: "Printers",
-        items: [
-          { label: "All Printers", href: "/products?cat=printers" },
-          { label: "HP Printers", href: "/products?cat=printers&brand=HP" },
-          { label: "Canon Printers", href: "/products?cat=printers&brand=Canon" },
-          { label: "Epson Printers", href: "/products?cat=printers&brand=Epson" },
-          { label: "Brother Printers", href: "/products?cat=printers&brand=Brother" },
-          { label: "Laser Printers", href: "/products?cat=printers" },
-          { label: "Scanners", href: "/products?cat=printers" },
-        ],
-      },
-      {
-        title: "Networking",
-        items: [
-          { label: "Routers & Access Points", href: "/products?cat=network" },
-          { label: "Switches & Hubs", href: "/products?cat=network" },
-          { label: "Network Cables (CAT6/7)", href: "/products?cat=network" },
-          { label: "Modems", href: "/products?cat=network" },
-          { label: "Network Adapters", href: "/products?cat=network" },
-          { label: "UPS & Surge Protectors", href: "/products?cat=network" },
-        ],
-      },
-      {
-        title: "Security & Surveillance",
-        items: [
-          { label: "IP Cameras (CCTV)", href: "/products?cat=security" },
-          { label: "DVR / NVR Systems", href: "/products?cat=security" },
-          { label: "Door Access Control", href: "/products?cat=security" },
-          { label: "Alarm Systems", href: "/products?cat=security" },
-          { label: "Servers & NAS", href: "/products?cat=network" },
-          { label: "Racks & Mounts", href: "/products?cat=network" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "deals",
-    label: "Deals & New",
-    icon: Star,
-    href: "/products",
-    columns: [
-      {
-        title: "🔥 Hot Deals",
-        items: [
-          { label: "Today's Offers", href: "/products" },
-          { label: "Clearance Sale", href: "/products" },
-          { label: "Bundle Offers", href: "/products" },
-          { label: "Open Box", href: "/products" },
-        ],
-      },
-      {
-        title: "🆕 New Arrivals",
-        items: [
-          { label: "Latest Laptops", href: "/products?isNew=true&cat=gaming" },
-          { label: "New Components", href: "/products?isNew=true" },
-          { label: "New Accessories", href: "/products?isNew=true&cat=accessories" },
-        ],
-      },
-      {
-        title: "⭐ Top Rated",
-        items: [
-          { label: "Best Sellers", href: "/products?featured=true" },
-          { label: "Customer Favorites", href: "/products?featured=true" },
-          { label: "Award Winners", href: "/products" },
-        ],
-      },
-    ],
-  },
-];
 
 // ─── Component ──────────────────────────────────────
 export function NavBar() {
@@ -278,11 +49,20 @@ export function NavBar() {
   const submitHeaderSearch = (e: FormEvent) => {
     e.preventDefault();
     const q = headerSearchQuery.trim();
+    setSearchOpen(false);
     if (!q) {
       router.push("/products");
       return;
     }
+    pushRecentSearch(q);
     router.push(`/products?q=${encodeURIComponent(q)}`);
+  };
+
+  const applySuggestion = (q: string) => {
+    setHeaderSearchQuery(q);
+    pushRecentSearch(q);
+    setSearchOpen(false);
+    router.push(`/products?q=${encodeURIComponent(q.trim())}`);
   };
 
   const toggleLanguage = () => {
@@ -293,10 +73,15 @@ export function NavBar() {
   };
 
   const { items } = useCart();
+  const wishlistIds = useWishlist((s) => s.ids);
+  const wishCount = wishlistIds.length;
   const isLoggedIn = useStorefrontUser((s) => s.isLoggedIn);
   const count = items.reduce((acc, obj) => acc + obj.qty, 0);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [headerSearchQuery, setHeaderSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const searchWrapRef = useRef<HTMLDivElement>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [bottomNavHidden, setBottomNavHidden] = useState(false);
   /** Tier-1 bar: hidden at page top, shown after scrolling down, hidden again when back to top */
@@ -350,11 +135,30 @@ export function NavBar() {
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setActiveMenu(null);
+      if (e.key === "Escape") {
+        setActiveMenu(null);
+        setSearchOpen(false);
+      }
     };
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
   }, []);
+
+  useEffect(() => {
+    const openMenu = () => setIsMobileMenuOpen(true);
+    window.addEventListener("fz:open-mobile-menu", openMenu as EventListener);
+    return () => window.removeEventListener("fz:open-mobile-menu", openMenu as EventListener);
+  }, []);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      const el = searchWrapRef.current;
+      if (el && !el.contains(e.target as Node)) setSearchOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [searchOpen]);
 
   useEffect(() => {
     if (!activeMenu) return;
@@ -495,8 +299,8 @@ export function NavBar() {
             <SiteLogo variant="navbar" />
           </div>
 
-          {/* Central Search Bar */}
-          <div className={styles.searchBarWrapper}>
+          {/* Central Search Bar + suggestions (desktop / tablet) */}
+          <div className={styles.searchBarWrapper} ref={searchWrapRef}>
             <form className={styles.searchBar} onSubmit={submitHeaderSearch} role="search">
               <label className={styles.searchBarLeft}>
                 <span className={styles.visuallyHidden}>{t("search")}</span>
@@ -506,9 +310,19 @@ export function NavBar() {
                   className={styles.searchInput}
                   placeholder={t("search")}
                   value={headerSearchQuery}
-                  onChange={(e) => setHeaderSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setHeaderSearchQuery(e.target.value);
+                    setSearchOpen(true);
+                  }}
+                  onFocus={() => {
+                    setRecentSearches(readRecentSearches());
+                    setSearchOpen(true);
+                  }}
                   autoComplete="off"
                   enterKeyHint="search"
+                  aria-expanded={searchOpen}
+                  aria-controls="fz-header-search-panel"
+                  aria-autocomplete="list"
                 />
               </label>
               <button type="submit" className={styles.searchBtnInside}>
@@ -516,9 +330,57 @@ export function NavBar() {
                 {t("searchBtn")}
               </button>
             </form>
+            {searchOpen ? (
+              <div id="fz-header-search-panel" className={styles.searchPanel} role="listbox" aria-label={t("search")}>
+                <div className={styles.searchPanelSection}>
+                  <div className={styles.searchPanelTitle}>Trending</div>
+                  {TRENDING_SEARCHES.slice(0, 6).map((row) => (
+                    <button
+                      key={row.q}
+                      type="button"
+                      className={styles.searchSuggestion}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => applySuggestion(row.q)}
+                    >
+                      {row.label}
+                    </button>
+                  ))}
+                </div>
+                {recentSearches.length > 0 ? (
+                  <div className={styles.searchPanelSection}>
+                    <div className={styles.searchPanelTitle}>Recent</div>
+                    {recentSearches.map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        className={styles.searchSuggestion}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applySuggestion(q)}
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                <div className={styles.searchPanelSection}>
+                  <div className={styles.searchPanelTitle}>Suggestions</div>
+                  {filterSuggestions(headerSearchQuery).map((row) => (
+                    <button
+                      key={`${row.q}-${row.label}`}
+                      type="button"
+                      className={styles.searchSuggestion}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => applySuggestion(row.q)}
+                    >
+                      {row.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
 
-          {/* Actions */}
+          {/* Actions: LOGO left already | SEARCH center | actions right */}
           <div className={styles.actions}>
             <button className={`${styles.actionIcon} ${styles.menuToggle}`} onClick={() => setIsMobileMenuOpen(true)}>
               <Menu size={24} />
@@ -533,9 +395,20 @@ export function NavBar() {
               <span className={styles.actionLabel}>{isLoggedIn ? t("myAccount") : t("signIn")}</span>
             </Link>
 
+            <Link href="/account" className={styles.actionIcon} title="Wishlist" aria-label="Wishlist">
+              <Heart
+                size={22}
+                strokeWidth={1.75}
+                aria-hidden
+                fill={wishCount > 0 ? "currentColor" : "none"}
+              />
+              <span className={styles.actionLabel}>Wishlist</span>
+              {wishCount > 0 ? <span className={styles.cartBadge}>{wishCount}</span> : null}
+            </Link>
+
             <button
               type="button"
-              className={styles.actionIcon}
+              className={`${styles.actionIcon} ${styles.langDesktopOnly}`}
               onClick={toggleLanguage}
               title={t("languageToggle")}
               aria-label={t("languageToggle")}
@@ -544,10 +417,10 @@ export function NavBar() {
               <span className={styles.actionLabel}>{locale === "ar" ? "عربي" : "EN"}</span>
             </button>
 
-            <Link href="/cart" className={styles.actionIcon} title={t('cart')}>
+            <Link href="/cart" className={styles.actionIcon} title={t("cart")}>
               <ShoppingCart size={22} />
-              <span className={styles.actionLabel}>{t('cart')}</span>
-              {count > 0 && <span className={styles.cartBadge}>{count}</span>}
+              <span className={styles.actionLabel}>{t("cart")}</span>
+              {count > 0 ? <span className={styles.cartBadge}>{count}</span> : null}
             </Link>
           </div>
         </div>
@@ -651,7 +524,13 @@ export function NavBar() {
         )}
       </AnimatePresence>
 
-      <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
+      <MobileMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        megaNavItems={navItems}
+        onToggleLocale={toggleLanguage}
+        locale={locale}
+      />
     </motion.div>
   );
 }

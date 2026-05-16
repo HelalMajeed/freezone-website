@@ -305,7 +305,22 @@
     "buyNow": "شراء",
     "buyNowAria": "الشراء والانتقال مباشرة إلى الدفع",
     "inStock": "متوفر",
-    "outOfStock": "غير متوفر"
+    "outOfStock": "غير متوفر",
+    "wishlistAdd": "أضف إلى المفضلة",
+    "wishlistRemove": "إزالة من المفضلة",
+    "compareAdd": "أضف للمقارنة",
+    "compareRemove": "إزالة من المقارنة",
+    "reviewsShort": "{{count}} مراجعة",
+    "ratingAria": "التقييم {{rating}} من 5"
+  },
+  "BottomDock": {
+    "ariaLabel": "التنقل الرئيسي",
+    "home": "الرئيسية",
+    "categories": "التصنيفات",
+    "deals": "العروض",
+    "cart": "السلة",
+    "account": "الحساب",
+    "whatsappAria": "محادثة واتساب"
   },
   "ProductDetail": {
     "home": "الرئيسية",

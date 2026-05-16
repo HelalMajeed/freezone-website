@@ -84,7 +84,7 @@ export default function CartPage() {
             <ShoppingBag size={64} color="var(--gray-300)" />
             <h2>{t("emptyTitle")}</h2>
             <p>{t("emptySub")}</p>
-            <Link href="/products" className="btn-red" style={{ display: "inline-block", marginTop: "8px", padding: "12px 28px" }}>
+            <Link href="/products" className="btn-primary" style={{ display: "inline-block", marginTop: "8px", padding: "12px 28px" }}>
               {t("continueShopping")}
             </Link>
           </motion.div>
@@ -164,7 +164,7 @@ export default function CartPage() {
                       border: "1px solid var(--border-light, #e2e8f0)",
                     }}
                   />
-                  <button type="button" className="btn-red" onClick={() => void applyCoupon()} style={{ padding: "10px 16px" }}>
+                  <button type="button" className="btn-outline" onClick={() => void applyCoupon()} style={{ padding: "10px 16px" }}>
                     تطبيق
                   </button>
                   {(couponCode || couponDiscount > 0) && (
@@ -216,7 +216,7 @@ export default function CartPage() {
                 <span>{formatMoney(grandTotal)} IQD</span>
               </div>
 
-              <Link href="/checkout" className={`btn-red ${styles.actionBtn}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "14px 20px", fontSize: "1rem", fontWeight: "800", marginBottom: "10px" }}>
+              <Link href="/checkout" className={`btn-primary ${styles.actionBtn}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "14px 20px", fontSize: "1rem", fontWeight: "800", marginBottom: "10px" }}>
                 {t("proceedToCheckout")}
               </Link>
               <Link href="/products" style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "12px 20px", background: "var(--bg-secondary)", color: "var(--text-primary)", border: "1.5px solid var(--border-light)", borderRadius: "var(--radius-md)", fontWeight: 600, fontSize: "0.9rem", transition: "all 0.2s", width: "100%", textDecoration: "none" }}>

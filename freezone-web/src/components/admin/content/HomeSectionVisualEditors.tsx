@@ -87,7 +87,7 @@ export function HeroSectionEditor({
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <p style={{ fontSize: 13, color: "var(--admin-muted)", margin: 0 }}>
         اختر <strong>عالمي</strong> لاستخدام شرائح الهيرو من{" "}
-        <Link to="/admin/cms" style={{ color: "#B00000" }}>
+        <Link to="/admin/cms" style={{ color: "#0b1f3b" }}>
           إعدادات الموقع → تبويب الهيرو
         </Link>
         ، أو <strong>مخصص</strong> لتحرير الشرائح هنا (صور وعناوين عربي/إنجليزي).
@@ -123,7 +123,7 @@ export function HeroSectionEditor({
           </div>
           <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>
             الصور: الصق رابطاً من{" "}
-            <Link to="/admin/media" style={{ color: "#B00000" }}>
+            <Link to="/admin/media" style={{ color: "#0b1f3b" }}>
               مكتبة الوسائط
             </Link>{" "}
             أو أي URL عام.
@@ -888,7 +888,7 @@ export function ShowroomSectionEditor() {
     <div style={{ fontSize: 13, color: "var(--admin-muted)", lineHeight: 1.6 }}>
       <p style={{ margin: "0 0 8px" }}>
         <strong>معرض الصور</strong> يستخدم وسائط المعرض من{" "}
-        <Link to="/admin/cms" style={{ color: "#B00000" }}>
+        <Link to="/admin/cms" style={{ color: "#0b1f3b" }}>
           إعدادات الموقع → معرض الصور
         </Link>{" "}
         والعناوين من نسخ الصفحة. المسودة الافتراضية <code style={{ color: "#cbd5e1" }}>source: global</code> تكفي.

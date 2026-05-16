@@ -1,7 +1,7 @@
 import { isDatabaseConfigured } from "./prisma";
 
-/** Deep crimson from brand logo — default for tier-1 social icons */
-export const DEFAULT_TOP_BAR_SOCIAL_COLOR = "#B00000";
+/** Brand accent for tier-1 social icons (electric cyan — pairs with navy primary) */
+export const DEFAULT_TOP_BAR_SOCIAL_COLOR = "#6b7280";
 
 export type PublicSocialLink = {
   platform: string;
@@ -49,13 +49,13 @@ export type PublicSite = {
 };
 
 const FB = "https://facebook.com";
-const IG = "https://instagram.com";
+const IG = "https://www.instagram.com/fzone.iq/";
 const TT = "https://tiktok.com";
 
 export function staticPublicSite(locale: "en" | "ar"): PublicSite {
   const en = locale === "en";
   return {
-    storeName: "Store",
+    storeName: "FreeZone",
     tagline: en
       ? "Iraq's trusted tech partner — CCTV, computers, gaming, smart solutions."
       : "شريكك التقني في العراق — كاميرات، حواسيب، ألعاب وحلول ذكية.",

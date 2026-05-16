@@ -174,7 +174,7 @@ export default function AdminDesignPage() {
         style={{
           marginTop: 24,
           padding: "12px 24px",
-          background: "#dc2626",
+          background: "#0b1f3b",
           color: "#fff",
           border: "none",
           borderRadius: 8,

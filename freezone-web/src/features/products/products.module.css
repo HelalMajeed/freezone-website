@@ -78,7 +78,7 @@
   transition: border-color 0.15s, background 0.15s;
 }
 .queryChip:hover {
-  border-color: rgba(220, 38, 38, 0.45);
+  border-color: rgba(11, 31, 59, 0.45);
   background: #fef2f2;
 }
 .queryChipIcon {

@@ -305,7 +305,22 @@
     "buyNow": "Buy",
     "buyNowAria": "Buy now and go to checkout",
     "inStock": "In stock",
-    "outOfStock": "Out of Stock"
+    "outOfStock": "Out of Stock",
+    "wishlistAdd": "Add to wishlist",
+    "wishlistRemove": "Remove from wishlist",
+    "compareAdd": "Add to compare",
+    "compareRemove": "Remove from compare",
+    "reviewsShort": "{{count}} reviews",
+    "ratingAria": "Rated {{rating}} out of 5"
+  },
+  "BottomDock": {
+    "ariaLabel": "Primary navigation",
+    "home": "Home",
+    "categories": "Categories",
+    "deals": "Deals",
+    "cart": "Cart",
+    "account": "Account",
+    "whatsappAria": "Chat on WhatsApp"
   },
   "ProductDetail": {
     "home": "Home",

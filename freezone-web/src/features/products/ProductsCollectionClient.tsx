@@ -388,7 +388,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
                   </span>
                 </h3>
                 <p>{t("noResultsSub")}</p>
-                <button type="button" className="btn-red" onClick={clearFilters}>
+                <button type="button" className="btn-outline" onClick={clearFilters}>
                   {t("clearFilters")}
                 </button>
               </div>

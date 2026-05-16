@@ -109,7 +109,7 @@ export function FAQSection({
                 <p className={styles.description}>{descOv || t("description")}</p>
                 <motion.button
                   type="button"
-                  className={`btn-red ${styles.contactBtn}`}
+                  className={`btn-primary ${styles.contactBtn}`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >

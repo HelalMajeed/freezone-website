@@ -67,7 +67,7 @@ export default function LoginPage() {
             <p className={styles.hint}>{t("otpHint")}</p>
           </div>
 
-          <button type="submit" className={`btn-red ${styles.submitBtn}`}>
+          <button type="submit" className={`btn-primary ${styles.submitBtn}`}>
             <LogIn size={20} style={{ display: "inline", marginRight: 8, verticalAlign: "middle" }} />
             {t("signIn")}
           </button>

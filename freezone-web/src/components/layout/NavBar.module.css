@@ -13,12 +13,12 @@
 
 /* ── Tier 1: Top Bar ────────────────────────── */
 .topBar {
-  background: #0a0e1a; /* Dark sleek */
-  color: rgba(255,255,255,0.65);
+  background: var(--color-surface, #f5f5f5);
+  color: var(--color-text-muted, #6b7280);
   font-size: 0.72rem;
   padding: 2px 0;
   font-weight: 500;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
   max-height: 120px;
   overflow: hidden;
   transition:
@@ -63,14 +63,16 @@
   transition: color 0.2s;
   cursor: pointer;
   text-decoration: none;
-  color: rgba(255,255,255,0.65);
+  color: var(--color-text-muted, #6b7280);
 }
-.contactItem:hover { color: white; }
+.contactItem:hover {
+  color: var(--color-text, #0a0a0a);
+}
 
 .topPromo {
   min-width: 0;
   font-weight: 700;
-  color: #10b981; /* teal-ish or green for Promo */
+  color: var(--color-accent, #c90000);
   letter-spacing: 0.5px;
   display: flex;
   align-items: center;
@@ -86,7 +88,7 @@
   gap: 8px;
   justify-self: end;
   flex-shrink: 0;
-  color: rgba(255,255,255,0.88);
+  color: var(--color-text-muted, #6b7280);
 }
 
 .topSocialLink {
@@ -101,7 +103,7 @@
 }
 .topSocialLink:hover {
   opacity: 1;
-  color: #fff;
+  color: var(--color-accent, #c90000);
   transform: scale(1.06);
 }
 
@@ -140,7 +142,7 @@
   font-family: var(--fz-font-display);
   font-size: 2.2rem;
   font-weight: 900;
-  color: #111827;
+  color: var(--color-text, #0a0a0a);
   letter-spacing: -1px;
   text-transform: uppercase;
   text-decoration: none;
@@ -152,7 +154,7 @@
 .logoMark {
   width: 40px;
   height: 40px;
-  background: var(--red-600);
+  background: var(--color-primary, #0a0a0a);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -167,6 +169,8 @@
   flex: 1;
   max-width: 740px;
   display: none;
+  position: relative;
+  z-index: 30;
 }
 @media (min-width: 768px) { .searchBarWrapper { display: flex; } }
 @media (min-width: 1200px) {
@@ -177,13 +181,13 @@
 
 /* Outer pill: soft grey with a hint of brand red — same family at rest, hover, and while typing */
 .searchBar {
-  --search-pill-border: color-mix(in srgb, var(--red-600) 12%, var(--border-light));
+  --search-pill-border: color-mix(in srgb, var(--color-border) 88%, var(--color-text) 12%);
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  background: #f8fafc;
+  background: var(--color-surface, #f5f5f5);
   border: 1.5px solid var(--search-pill-border);
   border-radius: 9999px;
   padding: 0 8px 0 20px;
@@ -193,14 +197,14 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), inset 0 -1px 0 rgba(0, 0, 0, 0.03);
 }
 .searchBar:hover {
-  border-color: color-mix(in srgb, var(--red-600) 15%, var(--border-light));
+  border-color: color-mix(in srgb, var(--color-accent) 22%, var(--border-light));
   background: #fff;
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 /* Active (typing): ~50% stronger red than resting border (12% → 18%) */
 .searchBar:focus-within {
-  border-color: color-mix(in srgb, var(--red-600) 18%, var(--border-light));
+  border-color: color-mix(in srgb, var(--color-accent) 35%, var(--border-light));
   background: #fff;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), inset 0 -1px 0 rgba(0, 0, 0, 0.03);
   outline: none;
@@ -216,7 +220,7 @@
 }
 
 .searchBarIcon {
-  color: var(--red-600);
+  color: var(--color-text-muted, #6b7280);
   flex-shrink: 0;
   opacity: 0.67;
   transition: opacity 0.2s ease;
@@ -224,6 +228,7 @@
 
 .searchBar:focus-within .searchBarIcon {
   opacity: 1;
+  color: var(--color-accent, #c90000);
 }
 
 .searchInput {
@@ -264,7 +269,7 @@
 }
 
 .searchBtnInside {
-  background: var(--fz-primary, #B00000);
+  background: var(--color-primary, #0a0a0a);
   color: white;
   border: none;
   border-radius: 9999px;
@@ -277,10 +282,74 @@
   flex-shrink: 0;
 }
 .searchBtnInside:hover {
-  background: color-mix(in srgb, var(--fz-primary, #B00000) 82%, black);
+  background: var(--color-accent-hover, #e11d2e);
 }
 .searchBtnInside:active {
   transform: scale(0.98);
+}
+
+/* Live suggestions panel (desktop search) */
+.searchPanel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  right: 0;
+  background: var(--color-card, #fff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 12px);
+  box-shadow: var(--shadow-lg, 0 16px 40px rgba(15, 23, 42, 0.12));
+  padding: var(--space-3) 0;
+  max-height: min(70vh, 420px);
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.searchPanelSection {
+  padding: 0 var(--space-4);
+  margin-bottom: var(--space-3);
+}
+.searchPanelSection:last-child {
+  margin-bottom: 0;
+}
+
+.searchPanelTitle {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #6b7280);
+  margin-bottom: var(--space-2);
+}
+
+.searchSuggestion {
+  display: block;
+  width: 100%;
+  text-align: start;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text, #111827);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm, 8px);
+  cursor: pointer;
+  transition: background 0.15s var(--ease-smooth), color 0.15s;
+}
+.searchSuggestion:hover,
+.searchSuggestion:focus-visible {
+  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface, #f5f5f5));
+  color: var(--color-text, #0a0a0a);
+  outline: none;
+}
+
+.langDesktopOnly {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .langDesktopOnly {
+    display: flex;
+  }
 }
 
 /* Actions Right */
@@ -306,7 +375,10 @@
   text-decoration: none;
   position: relative;
 }
-.actionIcon:hover { background: #f1f5f9; color: var(--red-600); }
+.actionIcon:hover {
+  background: var(--color-surface, #f5f5f5);
+  color: var(--color-accent, #c90000);
+}
 
 .actionLabel {
   font-size: 0.7rem;
@@ -409,16 +481,20 @@
 
 /* PC Builder Badge */
 .pcBuilderLink {
-  color: var(--red-600) !important;
+  color: var(--color-accent, #c90000) !important;
   font-weight: 800 !important;
-  background: rgba(220, 38, 38, 0.08) !important;
+  background: color-mix(in srgb, var(--color-text) 5%, var(--color-card)) !important;
   border-radius: 8px;
   height: 38px !important;
   margin: auto 0 auto auto; /* Push to right */
   padding: 0 16px !important;
-  border: 1.5px solid rgba(220, 38, 38, 0.2);
+  border: 1.5px solid var(--color-border, #e5e7eb);
 }
-.pcBuilderLink:hover { background: var(--red-600) !important; color: white !important; }
+.pcBuilderLink:hover {
+  background: var(--color-accent, #c90000) !important;
+  color: #fff !important;
+  border-color: var(--color-accent, #c90000) !important;
+}
 
 /* ══════════════════════════════════════════════
    MEGA MENU
@@ -428,8 +504,8 @@
   top: 135px; /* Tier1+2+3; see .wrapperBottomNavHidden when tier 3 is collapsed */
   left: 0;
   width: 100%;
-  background: white;
-  border-top: 3px solid var(--red-600);
+  background: var(--color-card, #fff);
+  border-top: 3px solid var(--color-accent, #c90000);
   box-shadow: 0 24px 60px rgba(0,0,0,0.12);
   z-index: 999;
 }
@@ -459,7 +535,7 @@
 .megaCol:first-child { padding-left: 0; }
 
 .megaColCta {
-  background: rgba(220,38,38,0.02);
+  background: var(--color-surface, #f5f5f5);
   border-radius: 12px;
   padding: 16px 20px;
   border-right: none !important;
@@ -480,8 +556,8 @@
 }
 
 .megaColTitleHighlight {
-  color: var(--red-600);
-  border-bottom-color: rgba(220,38,38,0.2);
+  color: var(--color-accent, #c90000);
+  border-bottom-color: color-mix(in srgb, var(--color-accent) 25%, var(--color-border));
 }
 
 .megaList {
@@ -509,16 +585,16 @@
 }
 
 .megaItemCta {
-  background: var(--red-600) !important;
+  background: var(--color-accent, #c90000) !important;
   color: white !important;
   font-weight: 800 !important;
   padding: 12px 16px !important;
   border-radius: 10px !important;
   margin-bottom: 8px;
-  box-shadow: 0 4px 14px rgba(220,38,38,0.25);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-accent) 28%, transparent);
 }
 .megaItemCta:hover {
-  background: var(--red-700) !important;
+  background: var(--color-accent-hover, #e11d2e) !important;
   transform: translateY(-2px) !important;
 }
 
