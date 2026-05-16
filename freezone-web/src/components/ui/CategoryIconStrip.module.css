@@ -4,21 +4,75 @@
   border-bottom: 1px solid var(--border-light);
 }
 
-.stripInner {
+.carousel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.navBtn {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border-light);
+  border-radius: 50%;
+  background: white;
+  color: var(--gray-700);
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.navBtn:hover:not(:disabled) {
+  background: var(--red-600);
+  color: white;
+  border-color: var(--red-600);
+}
+
+.navBtn:focus-visible {
+  outline: 2px solid var(--red-600);
+  outline-offset: 2px;
+}
+
+.scroller {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 2px 8px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  cursor: grab;
+  touch-action: pan-x;
+  user-select: none;
+}
+
+.scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollerDragging {
+  cursor: grabbing;
+}
+
+.track {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: flex-start;
-  justify-content: flex-start;
   gap: clamp(12px, 1.8vw, 28px);
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 4px 4px 14px;
-  scroll-snap-type: x proximity;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  width: 100%;
-  max-width: 100%;
+  width: max-content;
 }
 
 .itemOuter {
@@ -37,6 +91,7 @@
   gap: 12px;
   text-decoration: none;
   transition: transform 0.2s var(--ease-spring);
+  user-select: none;
 }
 .item:hover {
   transform: translateY(-4px);
@@ -53,7 +108,7 @@
   color: var(--gray-700);
   border: 1.5px solid var(--border-light);
   transition: all 0.25s;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
   overflow: hidden;
 }
 
@@ -82,4 +137,15 @@
 
 .item:hover .label {
   color: var(--red-600);
+}
+
+@media (max-width: 640px) {
+  .navBtn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .carousel {
+    gap: 4px;
+  }
 }
