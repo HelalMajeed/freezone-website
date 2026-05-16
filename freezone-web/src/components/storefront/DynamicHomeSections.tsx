@@ -12,7 +12,7 @@ import { LucideByName } from "@/lib/lucide-icon-map";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 import { Link } from "@/navigation";
 import { HomeCatalogShowcase } from "@/components/storefront/HomeCatalogShowcase";
-import { HomeHotItemsRail } from "@/components/storefront/HomeHotItemsRail";
+import { HomeCommerceStack } from "@/components/storefront/HomeCommerceStack";
 import { ProductSlider } from "@/components/ui/ProductSlider";
 import { resolveFeaturedProductList } from "@/lib/home-section-products";
 import { BrandTicker } from "@/components/ui/BrandTicker";
@@ -93,9 +93,12 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
             const stripSpots = resolveCategoryStripItems(catalog.categories, locale, undefined, home.spotlights);
             return (
               <SectionBlock key={sec.id} delay={delay}>
-                {!hasCategoryStrip ? <CategoryIconStrip previewSpots={stripSpots} /> : null}
-                <HomeHotItemsRail />
-                <PromoMegaBlocks payload={p} />
+                <HomeCommerceStack
+                  stripSpots={stripSpots}
+                  showStrip={!hasCategoryStrip}
+                  showBrands={!hasBrandsStrip}
+                  megaPayload={p}
+                />
               </SectionBlock>
             );
           }
@@ -299,24 +302,17 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
           <HomeCatalogShowcase />
         </SectionBlock>
       ) : !hasPromoMega ? (
-        <>
-          <SectionBlock delay={0.07}>
-            <HomeHotItemsRail />
-          </SectionBlock>
-          <SectionBlock delay={0.08}>
-            <PromoMegaBlocks />
-          </SectionBlock>
-        </>
+        <SectionBlock delay={0.07}>
+          <HomeCommerceStack
+            showStrip={false}
+            showBrands={!hasBrandsStrip}
+          />
+        </SectionBlock>
       ) : !hasCategoryStrip ? (
         <SectionBlock delay={0.08}>
           <CategoryIconStrip
             previewSpots={resolveCategoryStripItems(catalog.categories, locale, undefined, home.spotlights)}
           />
-        </SectionBlock>
-      ) : null}
-      {!hasBrandsStrip && (hasCategoryStrip || hasPromoMega) ? (
-        <SectionBlock delay={0.1}>
-          <BrandTicker />
         </SectionBlock>
       ) : null}
     </div>

@@ -6,37 +6,24 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Link } from "@/navigation";
 import styles from "./BrandTicker.module.css";
 import { BRANDS } from "@/lib/data";
+import { buildBrandLogoCandidates } from "@/lib/brand-logo-urls";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { EASE_OUT } from "@/lib/motion";
+
+/** Render size ×2 for retina-sharp SVG/raster logos */
+const LOGO_RENDER_W = 160;
+const LOGO_RENDER_H = 48;
 
 type BrandRow = { name: string; img: string | null };
 
 type BrandTickerProps = {
   title?: string;
+  /** Tighter spacing when placed between hot items and mega cards */
+  compact?: boolean;
 };
 
-/** Slug for /public/brands/{slug}.svg and Simple Icons CDN (lowercase a-z0-9). */
-function brandSlug(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, "");
-}
-
-function logoCandidateUrls(name: string, explicitImg: string | null): string[] {
-  const out: string[] = [];
-  const push = (u: string) => {
-    const t = u.trim();
-    if (t && !out.includes(t)) out.push(t);
-  };
-  if (explicitImg?.trim()) push(explicitImg.trim());
-  const slug = brandSlug(name);
-  if (slug.length >= 2) {
-    push(`/brands/${slug}.svg`);
-    push(`https://cdn.simpleicons.org/${slug}/374151`);
-  }
-  return out;
-}
-
 function BrandLogo({ name, explicitImg }: { name: string; explicitImg: string | null }) {
-  const candidates = useMemo(() => logoCandidateUrls(name, explicitImg), [name, explicitImg]);
+  const candidates = useMemo(() => buildBrandLogoCandidates(name, explicitImg), [name, explicitImg]);
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -47,13 +34,18 @@ function BrandLogo({ name, explicitImg }: { name: string; explicitImg: string | 
     return <span className={styles.brandName}>{name}</span>;
   }
 
+  const src = candidates[index];
+
   return (
     <img
-      src={candidates[index]}
+      src={src}
       alt={name}
       className={styles.brandImg}
+      width={LOGO_RENDER_W}
+      height={LOGO_RENDER_H}
       loading="lazy"
       decoding="async"
+      draggable={false}
       onError={() => setIndex((i) => i + 1)}
     />
   );
@@ -139,7 +131,7 @@ export function useBrandTickerRows() {
   }, [catalog.brands, catalog.products]);
 }
 
-export function BrandTicker({ title }: BrandTickerProps = {}) {
+export function BrandTicker({ title, compact = false }: BrandTickerProps = {}) {
   const t = useTranslations("Home");
   const reduceMotion = useReducedMotion();
   const brands = useBrandTickerRows();
@@ -153,7 +145,7 @@ export function BrandTicker({ title }: BrandTickerProps = {}) {
 
   return (
     <motion.section
-      className={styles.section}
+      className={compact ? `${styles.section} ${styles.sectionCompact}` : styles.section}
       initial={reduceMotion ? false : { opacity: 0, y: 20 }}
       whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-48px" }}

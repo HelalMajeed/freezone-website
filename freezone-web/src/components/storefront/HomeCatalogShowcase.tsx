@@ -5,12 +5,9 @@ import { useLocale } from "@/i18n/hooks";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { buildCategorySpotlightsFromCatalog } from "@/lib/category-icon-auto";
 import { MotionReveal } from "@/components/motion/MotionReveal";
-import { CategoryIconStrip } from "@/components/ui/CategoryIconStrip";
-import { PromoMegaBlocks } from "@/components/ui/PromoMegaBlocks";
-import { HomeHotItemsRail } from "@/components/storefront/HomeHotItemsRail";
-import { BrandTicker } from "@/components/ui/BrandTicker";
+import { HomeCommerceStack } from "@/components/storefront/HomeCommerceStack";
 
-/** Icon strip + mega cards from the same catalog order (homepage default). */
+/** Icon strip → hot items → brands → mega cards (homepage default). */
 export function HomeCatalogShowcase(props: { megaPayload?: Record<string, unknown> } = {}) {
   const { megaPayload } = props;
   const locale = useLocale() as "en" | "ar";
@@ -21,19 +18,8 @@ export function HomeCatalogShowcase(props: { megaPayload?: Record<string, unknow
   );
 
   return (
-    <>
-      <MotionReveal delay={0.03}>
-        <CategoryIconStrip previewSpots={spots} />
-      </MotionReveal>
-      <MotionReveal delay={0.04}>
-        <HomeHotItemsRail />
-      </MotionReveal>
-      <MotionReveal delay={0.05}>
-        <PromoMegaBlocks payload={megaPayload} />
-      </MotionReveal>
-      <MotionReveal delay={0.06}>
-        <BrandTicker />
-      </MotionReveal>
-    </>
+    <MotionReveal delay={0.03}>
+      <HomeCommerceStack stripSpots={spots} megaPayload={megaPayload} />
+    </MotionReveal>
   );
 }

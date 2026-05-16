@@ -318,6 +318,9 @@ export function CmsVisitorPreview({ activeTab }: { activeTab: CmsEditorTab }) {
         <MotionReveal delay={0.03}>
           <HomeHotItemsRail />
         </MotionReveal>
+        <MotionReveal delay={0.035}>
+          <BrandTicker compact />
+        </MotionReveal>
         <MotionReveal>
           <GamingCategoriesGrid />
         </MotionReveal>
