@@ -79,8 +79,8 @@ export function NavBar() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const searchWrapRef = useRef<HTMLDivElement>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  /** Tier-1 bar: hidden at page top, shown after scrolling down, hidden again when back to top */
-  const [topAnnouncementVisible, setTopAnnouncementVisible] = useState(false);
+  /** Tier-1 bar: visible at page top, collapses when user scrolls down, returns when back to top */
+  const [topAnnouncementVisible, setTopAnnouncementVisible] = useState(true);
   const navRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
 
@@ -89,7 +89,7 @@ export function NavBar() {
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY || document.documentElement.scrollTop;
-      setTopAnnouncementVisible(y > TOP_BAR_SCROLL_PX);
+      setTopAnnouncementVisible(y <= TOP_BAR_SCROLL_PX);
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
