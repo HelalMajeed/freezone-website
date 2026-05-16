@@ -7,8 +7,9 @@ import { LucideByName } from "@/lib/lucide-icon-map";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 import { HeroSlider } from "@/components/ui/HeroSlider";
 import { HomeCatalogShowcase } from "@/components/storefront/HomeCatalogShowcase";
+import { StoreGallery } from "@/components/ui/StoreGallery";
 
-/** Homepage when no published CMS sections: hero + trust + أيقونات الأقسام + شبكة البطاقات. */
+/** Homepage when no published CMS sections: hero + trust + commerce stack + معرضنا. */
 export function HomeLegacyContent() {
   const { home } = useStorefront();
 
@@ -33,6 +34,9 @@ export function HomeLegacyContent() {
         </div>
       </MotionReveal>
       <HomeCatalogShowcase />
+      <MotionReveal delay={0.08}>
+        <StoreGallery />
+      </MotionReveal>
     </div>
   );
 }

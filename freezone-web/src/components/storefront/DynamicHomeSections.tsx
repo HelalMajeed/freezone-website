@@ -15,6 +15,7 @@ import { HomeCommerceStack } from "@/components/storefront/HomeCommerceStack";
 import { ProductSlider } from "@/components/ui/ProductSlider";
 import { resolveFeaturedProductList } from "@/lib/home-section-products";
 import { BrandTicker } from "@/components/ui/BrandTicker";
+import { StoreGallery } from "@/components/ui/StoreGallery";
 import {
   buildHeroPreviewFromPayload,
   buildTrustItemsFromPayload,
@@ -36,6 +37,7 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
   const hasPromoMega = sections.some((s) => s.type === "promo_mega");
   const hasCategoryStrip = sections.some((s) => s.type === "category_strip");
   const hasBrandsStrip = sections.some((s) => s.type === "brands_strip");
+  const hasShowroom = sections.some((s) => s.type === "showroom");
 
   return (
     <div className={styles.home} style={{ paddingBottom: "var(--fz-section-gap, 48px)" }}>
@@ -291,7 +293,11 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
             );
           }
           case "showroom":
-            return null;
+            return (
+              <SectionBlock key={sec.id} delay={delay}>
+                <StoreGallery />
+              </SectionBlock>
+            );
           default:
             return null;
         }
@@ -312,6 +318,11 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
           <CategoryIconStrip
             previewSpots={resolveCategoryStripItems(catalog.categories, locale, undefined, home.spotlights)}
           />
+        </SectionBlock>
+      ) : null}
+      {!hasShowroom ? (
+        <SectionBlock delay={0.1}>
+          <StoreGallery />
         </SectionBlock>
       ) : null}
     </div>
