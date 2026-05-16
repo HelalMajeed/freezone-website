@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { ProductSlider } from "@/components/ui/ProductSlider";
-import { resolveNewProducts } from "@/lib/home-section-products";
+import { resolveNewArrivalsViewAllLink, resolveNewProducts } from "@/lib/home-section-products";
 import type { Product } from "@/lib/data";
 
 const NEW_ARRIVALS_LIMIT = 16;
@@ -26,6 +26,11 @@ export function HomeNewArrivalsRail({ products, title, link }: HomeNewArrivalsRa
     [products, catalog.products],
   );
 
+  const viewAllLink = useMemo(
+    () => link ?? resolveNewArrivalsViewAllLink(catalog.products),
+    [link, catalog.products],
+  );
+
   const pc = home.pageCopy;
   const copyTitle =
     locale === "ar"
@@ -35,7 +40,7 @@ export function HomeNewArrivalsRail({ products, title, link }: HomeNewArrivalsRa
   return (
     <ProductSlider
       title={title ?? copyTitle ?? t("newArrivals")}
-      link={link ?? "/products?isNew=true"}
+      link={viewAllLink}
       products={list}
       bgColor="#fff"
       compact

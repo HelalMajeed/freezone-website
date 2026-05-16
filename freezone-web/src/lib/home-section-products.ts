@@ -129,18 +129,26 @@ export function resolveHotProducts(products: Product[], limit = 16): Product[] {
     .slice(0, lim);
 }
 
+function sortProductsNewestFirst(products: Product[]): Product[] {
+  return [...products].sort((a, b) => {
+    const da = Date.parse(a.date) || 0;
+    const db = Date.parse(b.date) || 0;
+    if (db !== da) return db - da;
+    return b.id - a.id;
+  });
+}
+
 /** Products flagged `isNew`, newest first — for homepage new-arrivals rail. */
 export function resolveNewProducts(products: Product[], limit = 16): Product[] {
   const lim = Math.min(48, Math.max(1, limit));
-  return products
-    .filter((p) => p.isNew)
-    .sort((a, b) => {
-      const da = Date.parse(a.date) || 0;
-      const db = Date.parse(b.date) || 0;
-      if (db !== da) return db - da;
-      return b.id - a.id;
-    })
-    .slice(0, lim);
+  const flagged = products.filter((p) => p.isNew);
+  const pool = flagged.length > 0 ? flagged : products;
+  return sortProductsNewestFirst(pool).slice(0, lim);
+}
+
+/** View-all link: strict new filter only when some products are flagged `isNew`. */
+export function resolveNewArrivalsViewAllLink(products: Product[]): string {
+  return products.some((p) => p.isNew) ? "/products?isNew=true" : "/products";
 }
 
 export function resolveFeaturedProductList(
