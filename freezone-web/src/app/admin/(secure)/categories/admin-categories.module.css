@@ -290,6 +290,65 @@
   margin-inline-end: auto;
 }
 
+.confirmPanel {
+  width: min(460px, 94vw);
+  max-height: min(88vh, 640px);
+}
+
+.confirmHeadIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  flex-shrink: 0;
+}
+
+.confirmSubtitle {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--admin-muted);
+}
+
+.confirmLead {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--admin-text);
+}
+
+.confirmList {
+  margin: 0 0 1rem;
+  padding-inline-start: 1.15rem;
+  color: var(--admin-muted);
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+
+.confirmWarn {
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.65rem;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.confirmLink {
+  color: #b91c1c;
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.confirmLink:hover {
+  text-decoration: underline;
+}
+
 .empty {
   text-align: center;
   padding: 3rem 1.5rem;

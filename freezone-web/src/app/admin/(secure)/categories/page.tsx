@@ -14,12 +14,15 @@ import { CategoryGrid } from "./CategoryGrid";
 import { CategorySearchBar } from "./CategorySearchBar";
 import { CategoryDetailsDrawer, type DrawerCategory } from "./CategoryDetailsDrawer";
 import { AddCategoryModal } from "./AddCategoryModal";
+import { DeleteCategoryModal } from "./DeleteCategoryModal";
 import styles from "./admin-categories.module.css";
 
 type Cat = CategoryCardData & {
   backgroundImageUrl: string | null;
   /** Present on API responses; used for baseline parsing only. */
   facetKeys?: unknown;
+  primaryProductCount?: number;
+  secondaryLinkCount?: number;
 };
 
 const CATALOG_FIELD_TOTAL = getFacetCatalogOrder().length;
@@ -41,6 +44,7 @@ export default function AdminCategoriesPage() {
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Cat | null>(null);
   const [draggingId, setDraggingId] = useState<number | null>(null);
 
   const [rtl, setRtl] = useState(false);
@@ -166,15 +170,13 @@ export default function AdminCategoriesPage() {
     setSelectedId(null);
   }
 
-  async function removeCategory(row: Cat) {
-    const label = row.nameAr?.trim() || row.nameEn?.trim() || row.slug;
-    if (
-      !confirm(
-        `حذف القسم «${label}»؟\n\n• يُحذف الربط الثانوي للمنتجات بهذا القسم.\n• لا يمكن الحذف إذا وُجدت منتجات تستخدمه كقسم رئيسي — انقلها من صفحة المنتجات أولاً.`,
-      )
-    ) {
-      return;
-    }
+  function requestDelete(row: Cat) {
+    setDeleteTarget(row);
+  }
+
+  async function executeDelete() {
+    const row = deleteTarget;
+    if (!row) return;
     setDeletingId(row.id);
     setMsg("");
     const res = await fetch(freezoneApiUrl(`/api/admin/categories/${row.id}`), {
@@ -194,6 +196,7 @@ export default function AdminCategoriesPage() {
       return;
     }
     if (selectedId === row.id) setSelectedId(null);
+    setDeleteTarget(null);
     void queryClient.invalidateQueries({ queryKey: ["storefront-bootstrap"] });
     setMsg("تم حذف القسم");
     void load();
@@ -328,7 +331,7 @@ export default function AdminCategoriesPage() {
                 setDraggingId(null);
                 if (Number.isFinite(sid) && sid !== r.id) void swapSortOrder(sid, r.id);
               }}
-              onDelete={() => void removeCategory(r)}
+              onDelete={() => requestDelete(r)}
               deletePending={deletingId === r.id}
             />
           ))}
@@ -351,7 +354,7 @@ export default function AdminCategoriesPage() {
         onSave={() => saveSelected()}
         savePending={selected != null && saving === selected.id}
         deletePending={selected != null && deletingId === selected.id}
-        onDelete={selected ? () => void removeCategory(selected) : undefined}
+        onDelete={selected ? () => requestDelete(selected) : undefined}
         importCategoryOptions={importCategoryOptions}
       />
 
@@ -365,6 +368,20 @@ export default function AdminCategoriesPage() {
         }}
         setMsg={setMsg}
         importCategoryOptions={importCategoryOptions}
+      />
+
+      <DeleteCategoryModal
+        open={deleteTarget != null}
+        rtl={rtl}
+        cat={deleteTarget}
+        primaryProductCount={deleteTarget?.primaryProductCount ?? 0}
+        secondaryLinkCount={deleteTarget?.secondaryLinkCount ?? 0}
+        pending={deleteTarget != null && deletingId === deleteTarget.id}
+        onClose={() => {
+          if (deletingId != null) return;
+          setDeleteTarget(null);
+        }}
+        onConfirm={() => void executeDelete()}
       />
     </div>
   );

@@ -24,8 +24,19 @@ export async function GET(req: Request) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
   try {
-    const rows = await prisma.category.findMany({ orderBy: { sortOrder: "asc" } });
-    return Response.json(rows);
+    const rows = await prisma.category.findMany({
+      orderBy: { sortOrder: "asc" },
+      include: {
+        _count: { select: { products: true, secondaryProductLinks: true } },
+      },
+    });
+    return Response.json(
+      rows.map(({ _count, ...row }) => ({
+        ...row,
+        primaryProductCount: _count.products,
+        secondaryLinkCount: _count.secondaryProductLinks,
+      })),
+    );
   } catch (e) {
     return handleRouteDbError(e);
   }
