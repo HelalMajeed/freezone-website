@@ -1,6 +1,10 @@
 import type { Category } from "@/lib/data";
 import type { PublicHeroSlide, PublicSpotlightItem, PublicTrustItem } from "@/lib/layout-cms";
-import { buildCategorySpotlightsFromCatalog, inferCategoryIconKey } from "@/lib/category-icon-auto";
+import {
+  buildCategorySpotlightsFromCatalog,
+  CATEGORY_ICON_STRIP_MAX,
+  inferCategoryIconKey,
+} from "@/lib/category-icon-auto";
 import { parseHeroLinkTarget, resolveHeroLinkTargetToHref } from "@/lib/hero-link-target";
 
 function asObj(p: unknown): Record<string, unknown> {
@@ -135,9 +139,9 @@ export function resolveCategoryStripItems(
   globalSpotlights: PublicSpotlightItem[],
 ): PublicSpotlightItem[] {
   const custom = payload ? buildCategorySpotsFromPayload(payload, locale) : null;
-  if (custom?.length) return custom;
+  if (custom?.length) return custom.slice(0, CATEGORY_ICON_STRIP_MAX);
   if (categories.length > 0) {
     return buildCategorySpotlightsFromCatalog(categories, locale);
   }
-  return globalSpotlights;
+  return globalSpotlights.slice(0, CATEGORY_ICON_STRIP_MAX);
 }

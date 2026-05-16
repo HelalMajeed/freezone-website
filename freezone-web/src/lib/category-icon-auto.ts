@@ -1,6 +1,7 @@
 import type { Category } from "@/lib/data";
 import type { PublicSpotlightItem } from "@/lib/layout-cms";
-import { PROMO_MEGA_MAX_CARDS } from "@/lib/home-promo-mega";
+/** Max icons in the fixed homepage category strip (single row, no scroll). */
+export const CATEGORY_ICON_STRIP_MAX = 12;
 
 /**
  * Pick a Lucide icon key from category slug + display names (EN/AR).
@@ -61,7 +62,7 @@ export function inferCategoryIconKey(slug: string, nameEn: string, nameAr = ""):
 export function buildCategorySpotlightsFromCatalog(
   categories: Category[],
   locale: "en" | "ar",
-  max = PROMO_MEGA_MAX_CARDS,
+  max = CATEGORY_ICON_STRIP_MAX,
 ): PublicSpotlightItem[] {
   const limit = Math.min(max, categories.length);
   return categories.slice(0, limit).map((cat, i) => ({
