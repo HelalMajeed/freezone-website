@@ -2,23 +2,24 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useTranslations } from "@/i18n/hooks";
-import { useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Link } from "@/navigation";
 import styles from "./BrandTicker.module.css";
 import { BRANDS } from "@/lib/data";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
+import { EASE_OUT } from "@/lib/motion";
 
 type BrandRow = { name: string; img: string | null };
+
+type BrandTickerProps = {
+  title?: string;
+};
 
 /** Slug for /public/brands/{slug}.svg and Simple Icons CDN (lowercase a-z0-9). */
 function brandSlug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
-/**
- * URLs to try in order: admin URL, local SVG, then Simple Icons (when slug is known).
- * DB rows often omit `img`; product-derived names still get logos via local/CDN.
- */
 function logoCandidateUrls(name: string, explicitImg: string | null): string[] {
   const out: string[] = [];
   const push = (u: string) => {
@@ -29,7 +30,6 @@ function logoCandidateUrls(name: string, explicitImg: string | null): string[] {
   const slug = brandSlug(name);
   if (slug.length >= 2) {
     push(`/brands/${slug}.svg`);
-    // Grayscale wordmark; works for most tech brands when no local asset exists
     push(`https://cdn.simpleicons.org/${slug}/374151`);
   }
   return out;
@@ -59,15 +59,27 @@ function BrandLogo({ name, explicitImg }: { name: string; explicitImg: string | 
   );
 }
 
+function buildMarqueeSequence(brands: BrandRow[], reduceMotion: boolean): BrandRow[] {
+  if (reduceMotion || brands.length === 0) return brands;
+  const copies = brands.length < 8 ? 3 : 2;
+  return Array.from({ length: copies }, () => brands).flat();
+}
+
 function MarqueeRow({
   brands,
   direction,
+  durationSec,
+  reduceMotion,
 }: {
   brands: BrandRow[];
   direction: "left" | "right";
+  durationSec: number;
+  reduceMotion: boolean;
 }) {
-  const reduceMotion = useReducedMotion();
-  const sequence = reduceMotion ? brands : [...brands, ...brands];
+  const sequence = buildMarqueeSequence(brands, reduceMotion);
+  const copies = reduceMotion ? 1 : brands.length < 8 ? 3 : 2;
+  const shiftPct = copies === 3 ? 33.333 : 50;
+
   const trackClass = reduceMotion
     ? styles.marqueeTrackStatic
     : direction === "left"
@@ -75,28 +87,43 @@ function MarqueeRow({
       : styles.marqueeTrackRight;
 
   return (
-    <div className={styles.marqueeViewport}>
-      <div className={trackClass}>
+    <motion.div
+      className={styles.marqueeViewport}
+      initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+      whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.45, ease: EASE_OUT }}
+    >
+      <div
+        className={trackClass}
+        style={
+          reduceMotion
+            ? undefined
+            : ({
+                ["--brand-marquee-duration" as string]: `${durationSec}s`,
+                ["--brand-marquee-shift" as string]: `${shiftPct}%`,
+              } as React.CSSProperties)
+        }
+      >
         {sequence.map((brand, i) => (
           <Link
             href={`/products?brand=${encodeURIComponent(brand.name)}`}
             key={`${brand.name}-${i}`}
-            className={styles.brandCircle}
+            className={styles.brandTile}
+            draggable={false}
           >
             <BrandLogo name={brand.name} explicitImg={brand.img} />
           </Link>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
-export function BrandTicker() {
-  const t = useTranslations("Home");
+export function useBrandTickerRows() {
   const { catalog } = useStorefront();
-  const brands = useMemo<BrandRow[]>(() => {
+  return useMemo<BrandRow[]>(() => {
     if (catalog.brands.length > 0) {
-      // `img` may be null in DB — BrandLogo still tries /brands/{slug}.svg + CDN
       return catalog.brands.map((b) => ({ name: b.name, img: b.img }));
     }
     const seen = new Set<string>();
@@ -110,23 +137,43 @@ export function BrandTicker() {
     if (out.length > 0) return out;
     return BRANDS.map((b) => ({ name: b.name, img: b.img }));
   }, [catalog.brands, catalog.products]);
+}
+
+export function BrandTicker({ title }: BrandTickerProps = {}) {
+  const t = useTranslations("Home");
+  const reduceMotion = useReducedMotion();
+  const brands = useBrandTickerRows();
+
+  if (brands.length === 0) return null;
 
   const mid = Math.ceil(brands.length / 2);
   const rowA = brands.slice(0, mid);
   const rowB = brands.slice(mid);
+  const displayTitle = title?.trim() || t("popularBrands");
 
   return (
-    <section className={styles.section}>
+    <motion.section
+      className={styles.section}
+      initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+      whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-48px" }}
+      transition={{ duration: 0.55, ease: EASE_OUT }}
+    >
       <div className="container">
-        <div className={styles.header}>
-          <h2 className={styles.title}>{t("popularBrands")}</h2>
-        </div>
+        <header className={styles.header}>
+          <p className={styles.eyebrow}>{t("brandsEyebrow")}</p>
+          <h2 className={styles.title}>{displayTitle}</h2>
+        </header>
       </div>
 
       <div className={styles.tickerSection}>
-        {rowA.length > 0 && <MarqueeRow brands={rowA} direction="left" />}
-        {rowB.length > 0 && <MarqueeRow brands={rowB} direction="right" />}
+        {rowA.length > 0 && (
+          <MarqueeRow brands={rowA} direction="left" durationSec={52} reduceMotion={!!reduceMotion} />
+        )}
+        {rowB.length > 0 && (
+          <MarqueeRow brands={rowB} direction="right" durationSec={38} reduceMotion={!!reduceMotion} />
+        )}
       </div>
-    </section>
+    </motion.section>
   );
 }

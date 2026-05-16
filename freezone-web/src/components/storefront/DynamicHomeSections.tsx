@@ -15,6 +15,7 @@ import { HomeCatalogShowcase } from "@/components/storefront/HomeCatalogShowcase
 import { HomeHotItemsRail } from "@/components/storefront/HomeHotItemsRail";
 import { ProductSlider } from "@/components/ui/ProductSlider";
 import { resolveFeaturedProductList } from "@/lib/home-section-products";
+import { BrandTicker } from "@/components/ui/BrandTicker";
 import {
   buildHeroPreviewFromPayload,
   buildTrustItemsFromPayload,
@@ -35,6 +36,7 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
   const { home, catalog } = useStorefront();
   const hasPromoMega = sections.some((s) => s.type === "promo_mega");
   const hasCategoryStrip = sections.some((s) => s.type === "category_strip");
+  const hasBrandsStrip = sections.some((s) => s.type === "brands_strip");
 
   return (
     <div className={styles.home} style={{ paddingBottom: "var(--fz-section-gap, 48px)" }}>
@@ -151,7 +153,20 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
               </SectionBlock>
             );
           }
-          case "brands_strip":
+          case "brands_strip": {
+            const stripTitle =
+              (locale === "ar"
+                ? (typeof p.titleAr === "string" ? p.titleAr : "")
+                : (typeof p.titleEn === "string" ? p.titleEn : "")) ||
+              (locale === "ar"
+                ? (typeof p.titleEn === "string" ? p.titleEn : "")
+                : (typeof p.titleAr === "string" ? p.titleAr : ""));
+            return (
+              <SectionBlock key={sec.id} delay={delay}>
+                <BrandTicker title={stripTitle.trim() || undefined} />
+              </SectionBlock>
+            );
+          }
           case "banner_slider":
           case "categories_showcase":
           case "promo_grid":
@@ -297,6 +312,11 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
           <CategoryIconStrip
             previewSpots={resolveCategoryStripItems(catalog.categories, locale, undefined, home.spotlights)}
           />
+        </SectionBlock>
+      ) : null}
+      {!hasBrandsStrip && (hasCategoryStrip || hasPromoMega) ? (
+        <SectionBlock delay={0.1}>
+          <BrandTicker />
         </SectionBlock>
       ) : null}
     </div>

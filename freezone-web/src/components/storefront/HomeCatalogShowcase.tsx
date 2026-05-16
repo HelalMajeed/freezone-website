@@ -8,6 +8,7 @@ import { MotionReveal } from "@/components/motion/MotionReveal";
 import { CategoryIconStrip } from "@/components/ui/CategoryIconStrip";
 import { PromoMegaBlocks } from "@/components/ui/PromoMegaBlocks";
 import { HomeHotItemsRail } from "@/components/storefront/HomeHotItemsRail";
+import { BrandTicker } from "@/components/ui/BrandTicker";
 
 /** Icon strip + mega cards from the same catalog order (homepage default). */
 export function HomeCatalogShowcase(props: { megaPayload?: Record<string, unknown> } = {}) {
@@ -29,6 +30,9 @@ export function HomeCatalogShowcase(props: { megaPayload?: Record<string, unknow
       </MotionReveal>
       <MotionReveal delay={0.05}>
         <PromoMegaBlocks payload={megaPayload} />
+      </MotionReveal>
+      <MotionReveal delay={0.06}>
+        <BrandTicker />
       </MotionReveal>
     </>
   );
