@@ -129,6 +129,20 @@ export function resolveHotProducts(products: Product[], limit = 16): Product[] {
     .slice(0, lim);
 }
 
+/** Products flagged `isNew`, newest first — for homepage new-arrivals rail. */
+export function resolveNewProducts(products: Product[], limit = 16): Product[] {
+  const lim = Math.min(48, Math.max(1, limit));
+  return products
+    .filter((p) => p.isNew)
+    .sort((a, b) => {
+      const da = Date.parse(a.date) || 0;
+      const db = Date.parse(b.date) || 0;
+      if (db !== da) return db - da;
+      return b.id - a.id;
+    })
+    .slice(0, lim);
+}
+
 export function resolveFeaturedProductList(
   products: Product[],
   filter: string,

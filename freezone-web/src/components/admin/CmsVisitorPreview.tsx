@@ -1,16 +1,16 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useLocale, useTranslations } from "@/i18n/hooks";
+import { useTranslations } from "@/i18n/hooks";
 import { HeroSlider } from "@/components/ui/HeroSlider";
 import { CategoryIconStrip } from "@/components/ui/CategoryIconStrip";
 import { HomeHotItemsRail } from "@/components/storefront/HomeHotItemsRail";
+import { HomeNewArrivalsRail } from "@/components/storefront/HomeNewArrivalsRail";
 import { GamingCategoriesGrid } from "@/components/ui/GamingCategoriesGrid";
 import { PromoMegaBlocks } from "@/components/ui/PromoMegaBlocks";
 import { PromoBanner } from "@/components/ui/PromoBanner";
 import { StoreGallery } from "@/components/ui/StoreGallery";
 import { FAQSection } from "@/components/ui/FAQSection";
-import { ProductSlider } from "@/components/ui/ProductSlider";
 import { CategoryPromoBlock } from "@/components/ui/CategoryPromoBlock";
 import { BrandTicker } from "@/components/ui/BrandTicker";
 import { TabbedShowcase } from "@/components/ui/TabbedShowcase";
@@ -211,12 +211,6 @@ export function CmsVisitorPreview({ activeTab }: { activeTab: CmsEditorTab }) {
   const { home, catalog } = useStorefront();
   const { products } = catalog;
   const t = useTranslations("Home");
-  const locale = useLocale();
-  const pc = home.pageCopy;
-  const ar = locale === "ar";
-  const newArrivalsTitle =
-    (ar ? pc?.newArrivalsTitleAr?.trim() : pc?.newArrivalsTitleEn?.trim()) ||
-    (ar ? pc?.newArrivalsTitleEn?.trim() : pc?.newArrivalsTitleAr?.trim());
   const promoRow1 = home.promoBanners.length >= 3 ? home.promoBanners.slice(0, 3) : null;
   const promoRow2 = home.promoBanners.length >= 6 ? home.promoBanners.slice(3, 6) : null;
 
@@ -318,6 +312,9 @@ export function CmsVisitorPreview({ activeTab }: { activeTab: CmsEditorTab }) {
         <MotionReveal delay={0.03}>
           <HomeHotItemsRail />
         </MotionReveal>
+        <MotionReveal delay={0.032}>
+          <HomeNewArrivalsRail />
+        </MotionReveal>
         <MotionReveal delay={0.035}>
           <BrandTicker compact />
         </MotionReveal>
@@ -326,13 +323,6 @@ export function CmsVisitorPreview({ activeTab }: { activeTab: CmsEditorTab }) {
         </MotionReveal>
         <MotionReveal delay={0.04}>
           <PromoMegaBlocks />
-        </MotionReveal>
-        <MotionReveal delay={0.06}>
-          <ProductSlider
-            title={newArrivalsTitle || t("newArrivals")}
-            link="/products?isNew=true"
-            products={products.filter((p) => p.isNew)}
-          />
         </MotionReveal>
         <MotionReveal delay={0.08}>
           <CategoryPromoBlock
