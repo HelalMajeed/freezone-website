@@ -462,7 +462,7 @@ export function CategoryStripSectionEditor({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <p style={{ fontSize: 13, color: "var(--admin-muted)", margin: 0 }}>
-        أيقونات الأقسام: عالمي من بيانات الموقع، أو مخصص (اسم، رابط، أيقونة، وصورة اختيارية بدل الأيقونة).
+        أيقونات الأقسام: في المتجر تُبنى تلقائياً من <strong>كتالوج الأقسام</strong> (نفس ترتيب بطاقات الميجا) مع اختيار أيقونة Lucide حسب الاسم/slug. أو «مخصص» لتحديد العناصر يدوياً.
       </p>
       <div>
         <label style={labelStyle}>المصدر</label>

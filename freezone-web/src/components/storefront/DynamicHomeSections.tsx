@@ -7,10 +7,16 @@ import { useStorefront } from "@/components/providers/StorefrontProvider";
 import styles from "@/app/locale/page.module.css";
 import { HeroSlider } from "@/components/ui/HeroSlider";
 import { PromoMegaBlocks } from "@/components/ui/PromoMegaBlocks";
+import { CategoryIconStrip } from "@/components/ui/CategoryIconStrip";
 import { LucideByName } from "@/lib/lucide-icon-map";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 import { Link } from "@/navigation";
-import { buildHeroPreviewFromPayload, buildTrustItemsFromPayload } from "@/lib/home-section-custom-payload";
+import { HomeCatalogShowcase } from "@/components/storefront/HomeCatalogShowcase";
+import {
+  buildHeroPreviewFromPayload,
+  buildTrustItemsFromPayload,
+  resolveCategoryStripItems,
+} from "@/lib/home-section-custom-payload";
 import { trustBarChromeStyle } from "@/lib/layout-cms";
 
 function asObj(p: unknown): Record<string, unknown> {
@@ -23,8 +29,9 @@ function SectionBlock({ children, delay = 0 }: { children: ReactNode; delay?: nu
 
 export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSection[] }) {
   const locale = useLocale() as "en" | "ar";
-  const { home } = useStorefront();
+  const { home, catalog } = useStorefront();
   const hasPromoMega = sections.some((s) => s.type === "promo_mega");
+  const hasCategoryStrip = sections.some((s) => s.type === "category_strip");
 
   return (
     <div className={styles.home} style={{ paddingBottom: "var(--fz-section-gap, 48px)" }}>
@@ -77,13 +84,23 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
               </SectionBlock>
             );
           }
-          case "promo_mega":
+          case "promo_mega": {
+            const stripSpots = resolveCategoryStripItems(catalog.categories, locale, undefined, home.spotlights);
             return (
               <SectionBlock key={sec.id} delay={delay}>
+                {!hasCategoryStrip ? <CategoryIconStrip previewSpots={stripSpots} /> : null}
                 <PromoMegaBlocks payload={p} />
               </SectionBlock>
             );
-          case "category_strip":
+          }
+          case "category_strip": {
+            const stripSpots = resolveCategoryStripItems(catalog.categories, locale, p, home.spotlights);
+            return (
+              <SectionBlock key={sec.id} delay={delay}>
+                <CategoryIconStrip previewSpots={stripSpots} />
+              </SectionBlock>
+            );
+          }
           case "featured_products":
           case "brands_strip":
           case "banner_slider":
@@ -213,9 +230,19 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
             return null;
         }
       })}
-      {!hasPromoMega ? (
+      {!hasCategoryStrip && !hasPromoMega ? (
+        <SectionBlock delay={0.06}>
+          <HomeCatalogShowcase />
+        </SectionBlock>
+      ) : !hasPromoMega ? (
         <SectionBlock delay={0.08}>
           <PromoMegaBlocks />
+        </SectionBlock>
+      ) : !hasCategoryStrip ? (
+        <SectionBlock delay={0.08}>
+          <CategoryIconStrip
+            previewSpots={resolveCategoryStripItems(catalog.categories, locale, undefined, home.spotlights)}
+          />
         </SectionBlock>
       ) : null}
     </div>

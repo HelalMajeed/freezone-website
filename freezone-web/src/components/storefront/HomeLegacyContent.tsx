@@ -6,9 +6,9 @@ import { trustBarChromeStyle } from "@/lib/layout-cms";
 import { LucideByName } from "@/lib/lucide-icon-map";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 import { HeroSlider } from "@/components/ui/HeroSlider";
-import { PromoMegaBlocks } from "@/components/ui/PromoMegaBlocks";
+import { HomeCatalogShowcase } from "@/components/storefront/HomeCatalogShowcase";
 
-/** Homepage when no published CMS sections: hero + trust + شبكة أقسام الكتالوج. */
+/** Homepage when no published CMS sections: hero + trust + أيقونات الأقسام + شبكة البطاقات. */
 export function HomeLegacyContent() {
   const { home } = useStorefront();
 
@@ -32,9 +32,7 @@ export function HomeLegacyContent() {
           </div>
         </div>
       </MotionReveal>
-      <MotionReveal delay={0.04}>
-        <PromoMegaBlocks />
-      </MotionReveal>
+      <HomeCatalogShowcase />
     </div>
   );
 }

@@ -1,4 +1,6 @@
+import type { Category } from "@/lib/data";
 import type { PublicHeroSlide, PublicSpotlightItem, PublicTrustItem } from "@/lib/layout-cms";
+import { buildCategorySpotlightsFromCatalog, inferCategoryIconKey } from "@/lib/category-icon-auto";
 import { parseHeroLinkTarget, resolveHeroLinkTargetToHref } from "@/lib/hero-link-target";
 
 function asObj(p: unknown): Record<string, unknown> {
@@ -106,8 +108,13 @@ export function buildCategorySpotsFromPayload(
     if (!label) continue;
     const imageUrl =
       typeof o.imageUrl === "string" && o.imageUrl.trim() ? o.imageUrl.trim() : null;
+    const labelEn = String(o.labelEn ?? "").trim();
+    const labelAr = String(o.labelAr ?? "").trim();
+    const slugGuess = href.match(/[?&]cat=([^&]+)/)?.[1] ?? "";
     const iconKey =
-      typeof o.iconKey === "string" && o.iconKey.trim() ? o.iconKey.trim() : "laptop";
+      typeof o.iconKey === "string" && o.iconKey.trim()
+        ? o.iconKey.trim()
+        : inferCategoryIconKey(slugGuess, labelEn, labelAr);
     out.push({
       id: typeof o.id === "number" ? o.id : i + 1,
       label,
@@ -118,4 +125,19 @@ export function buildCategorySpotsFromPayload(
     i++;
   }
   return out.length ? out : null;
+}
+
+/** Storefront icon strip: custom CMS spots, else catalog (synced with mega grid). */
+export function resolveCategoryStripItems(
+  categories: Category[],
+  locale: "en" | "ar",
+  payload: Record<string, unknown> | undefined,
+  globalSpotlights: PublicSpotlightItem[],
+): PublicSpotlightItem[] {
+  const custom = payload ? buildCategorySpotsFromPayload(payload, locale) : null;
+  if (custom?.length) return custom;
+  if (categories.length > 0) {
+    return buildCategorySpotlightsFromCatalog(categories, locale);
+  }
+  return globalSpotlights;
 }

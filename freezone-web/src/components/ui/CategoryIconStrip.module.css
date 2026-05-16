@@ -6,15 +6,32 @@
 
 .stripInner {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(16px, 4vw, 48px);
-  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: clamp(14px, 2.5vw, 32px);
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 2px 12px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+@media (min-width: 1100px) {
+  .stripInner {
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow-x: visible;
+  }
 }
 
 .itemOuter {
   display: flex;
   justify-content: center;
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  min-width: 88px;
 }
 
 .item {
