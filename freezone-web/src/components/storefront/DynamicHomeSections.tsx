@@ -24,6 +24,7 @@ function SectionBlock({ children, delay = 0 }: { children: ReactNode; delay?: nu
 export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSection[] }) {
   const locale = useLocale() as "en" | "ar";
   const { home } = useStorefront();
+  const hasPromoMega = sections.some((s) => s.type === "promo_mega");
 
   return (
     <div className={styles.home} style={{ paddingBottom: "var(--fz-section-gap, 48px)" }}>
@@ -212,6 +213,11 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
             return null;
         }
       })}
+      {!hasPromoMega ? (
+        <SectionBlock delay={0.08}>
+          <PromoMegaBlocks />
+        </SectionBlock>
+      ) : null}
     </div>
   );
 }

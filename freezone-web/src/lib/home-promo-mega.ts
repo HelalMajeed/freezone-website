@@ -3,6 +3,12 @@ import type { Category } from "@/lib/data";
 /** Max cards in promo mega grid (4×5 layout on desktop). */
 export const PROMO_MEGA_MAX_CARDS = 20;
 
+/** Default storefront payload — all catalog categories up to {@link PROMO_MEGA_MAX_CARDS}. */
+export const PROMO_MEGA_DEFAULT_PAYLOAD: Record<string, unknown> = {
+  count: PROMO_MEGA_MAX_CARDS,
+  slots: [],
+};
+
 export type PromoMegaSlotDraft = { slug: string; imageUrl?: string };
 
 export function parsePromoMegaSlots(raw: unknown): PromoMegaSlotDraft[] {
@@ -34,13 +40,27 @@ export function promoMegaCardCount(payload: Record<string, unknown> | undefined)
  * otherwise first `count` categories by catalog order. Images prefer slot override,
  * then `category.img`, then stock fallbacks.
  */
+/** How many cards to render: all catalog categories (≤ max) unless custom `slots` are set. */
+export function resolvePromoMegaCardLimit(
+  categories: Category[],
+  payload: Record<string, unknown> | undefined,
+): number {
+  const slots = parsePromoMegaSlots(payload?.slots);
+  if (slots.length > 0) {
+    return promoMegaCardCount(payload);
+  }
+  if (categories.length === 0) return 0;
+  return Math.min(PROMO_MEGA_MAX_CARDS, categories.length);
+}
+
 export function resolvePromoMegaCards(
   categories: Category[],
   payload: Record<string, unknown> | undefined,
   stockImages: string[],
 ): { cat: Category; imageUrl: string }[] {
-  const count = promoMegaCardCount(payload);
   const slots = parsePromoMegaSlots(payload?.slots);
+  const count = resolvePromoMegaCardLimit(categories, payload);
+  if (count === 0) return [];
   const bySlug = new Map(categories.map((c) => [c.id, c]));
 
   if (slots.length > 0) {
