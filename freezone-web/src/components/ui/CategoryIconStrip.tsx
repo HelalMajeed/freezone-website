@@ -5,8 +5,15 @@ import styles from "./CategoryIconStrip.module.css";
 import { motion, useReducedMotion } from "framer-motion";
 import { EASE_OUT } from "@/lib/motion";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
+import { inferCategoryIconKey } from "@/lib/category-icon-auto";
 import { LucideByName } from "@/lib/lucide-icon-map";
 import type { PublicSpotlightItem } from "@/lib/layout-cms";
+
+function iconKeyForSpot(cat: PublicSpotlightItem): string {
+  if (cat.iconKey?.trim()) return cat.iconKey.trim();
+  const slug = decodeURIComponent(cat.href.match(/[?&]cat=([^&]+)/)?.[1] ?? "");
+  return inferCategoryIconKey(slug, cat.label, cat.label);
+}
 
 const containerV = {
   hidden: {},
@@ -47,12 +54,8 @@ export function CategoryIconStrip({ previewSpots }: { previewSpots?: PublicSpotl
             transition={{ type: "spring", stiffness: 400, damping: 22 }}
           >
             <Link href={cat.href} className={styles.item}>
-              <div className={styles.iconCircle}>
-                {cat.imageUrl ? (
-                  <img src={cat.imageUrl} alt="" className={styles.spotImg} />
-                ) : (
-                  <LucideByName name={cat.iconKey ?? undefined} size={26} strokeWidth={1.5} />
-                )}
+              <div className={styles.iconCircle} aria-hidden>
+                <LucideByName name={iconKeyForSpot(cat)} size={26} strokeWidth={1.5} />
               </div>
               <span className={styles.label}>{cat.label}</span>
             </Link>

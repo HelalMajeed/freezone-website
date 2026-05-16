@@ -7,7 +7,30 @@ import { PROMO_MEGA_MAX_CARDS } from "@/lib/home-promo-mega";
  * Used for the homepage icon strip when no manual icon is set.
  */
 export function inferCategoryIconKey(slug: string, nameEn: string, nameAr = ""): string {
+  const s = slug.toLowerCase().trim();
   const hay = `${slug} ${nameEn} ${nameAr}`.toLowerCase();
+
+  const bySlug: Record<string, string> = {
+    gaming: "gamepad-2",
+    security: "shield-check",
+    cctv: "camera",
+    computers: "laptop",
+    laptops: "laptop",
+    monitors: "monitor",
+    printers: "printer",
+    electric: "plug",
+    software: "hard-drive",
+    hardware: "cpu",
+    components: "cpu",
+    accessories: "headphones",
+    "all-in-one": "tv",
+    "smart-home": "plug",
+    phones: "smartphone",
+    tablets: "tablet",
+    "power-solutions": "zap",
+    network: "network",
+  };
+  if (bySlug[s]) return bySlug[s];
 
   if (/\b(gaming|game|playstation|xbox|ألعاب|العاب)\b/.test(hay)) return "gamepad-2";
   if (/\b(cctv|surveillance|nvr|dvr|مراقبة|كاميرا)\b/.test(hay)) return "camera";
@@ -29,7 +52,7 @@ export function inferCategoryIconKey(slug: string, nameEn: string, nameAr = ""):
   if (/\b(software|برمج|سوفت)\b/.test(hay)) return "hard-drive";
   if (/\b(smart[\s-]?home|منزل ذكي)\b/.test(hay)) return "plug";
   if (/\b(all[\s-]?in[\s-]?one)\b/.test(hay)) return "tv";
-  if (/\b(computer|pc|حاسوب|كمبيوتر)\b/.test(hay)) return "laptop";
+  if (/\b(computers?|pc|حاسوب|كمبيوتر)\b/.test(hay)) return "laptop";
 
   return "package";
 }
@@ -45,7 +68,7 @@ export function buildCategorySpotlightsFromCatalog(
     id: i + 1,
     label: locale === "ar" ? (cat.nameAr?.trim() || cat.name) : cat.name,
     href: `/products?cat=${encodeURIComponent(cat.id)}`,
-    imageUrl: cat.img?.trim() ? cat.img.trim() : null,
+    imageUrl: null,
     iconKey: inferCategoryIconKey(cat.id, cat.name, cat.nameAr ?? ""),
   }));
 }
