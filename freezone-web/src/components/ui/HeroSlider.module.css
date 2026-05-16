@@ -4,7 +4,9 @@
 .wrapper {
   position: relative;
   width: 100%;
-  height: clamp(340px, 52vh, 520px);
+  /* ارتفاع متناسق عبر الشاشات — لا يعتمد على صور عشوائية */
+  height: clamp(320px, min(52vh, 56vw), 540px);
+  max-height: min(540px, 85vh);
   overflow: hidden;
   background: var(--gray-950);
 }

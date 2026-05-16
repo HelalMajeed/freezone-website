@@ -5,10 +5,11 @@ import { useLocale } from "@/i18n/hooks";
 import type { StorefrontCmsSection } from "@/lib/cms-page-storefront";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import styles from "@/app/locale/page.module.css";
+import { HeroSlider } from "@/components/ui/HeroSlider";
 import { LucideByName } from "@/lib/lucide-icon-map";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 import { Link } from "@/navigation";
-import { buildTrustItemsFromPayload } from "@/lib/home-section-custom-payload";
+import { buildHeroPreviewFromPayload, buildTrustItemsFromPayload } from "@/lib/home-section-custom-payload";
 import { trustBarChromeStyle } from "@/lib/layout-cms";
 
 function asObj(p: unknown): Record<string, unknown> {
@@ -30,9 +31,27 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
         const delay = Math.min(0.12, idx * 0.02);
 
         switch (sec.type) {
-          /* Visitor UI: hero removed — re-enable when rebuilding homepage from CMS. */
-          case "hero":
-            return null;
+          case "hero": {
+            const customHero = buildHeroPreviewFromPayload(
+              p,
+              locale,
+              home.hero.autoplayMs,
+              home.hero.scrimOpacity,
+              {
+                navArrowColor: home.hero.navArrowColor,
+                navBoxBackground: home.hero.navBoxBackground,
+              },
+            );
+            return (
+              <SectionBlock key={sec.id} delay={delay}>
+                {customHero ? (
+                  <HeroSlider previewHero={customHero} />
+                ) : (
+                  <HeroSlider />
+                )}
+              </SectionBlock>
+            );
+          }
           case "trust_bar": {
             const customTrust = buildTrustItemsFromPayload(p, locale);
             const trustItems = customTrust ?? home.trustBar;

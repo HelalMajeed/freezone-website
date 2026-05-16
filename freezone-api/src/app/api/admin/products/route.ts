@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   }
   const adminListIncludeBase = {
     category: { select: { slug: true, nameEn: true, nameAr: true } },
-    brandRef: { select: { nameEn: true, nameAr: true } },
+    brandRef: { select: { slug: true, nameEn: true, nameAr: true } },
     images: { orderBy: { sortOrder: "asc" } as const },
   };
 

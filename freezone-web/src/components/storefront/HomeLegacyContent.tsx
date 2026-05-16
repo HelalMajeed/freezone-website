@@ -5,17 +5,15 @@ import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { trustBarChromeStyle } from "@/lib/layout-cms";
 import { LucideByName } from "@/lib/lucide-icon-map";
 import { MotionReveal } from "@/components/motion/MotionReveal";
+import { HeroSlider } from "@/components/ui/HeroSlider";
 
-/**
- * Minimal homepage when no CMS `homeSections` are published.
- * Marketing blocks (hero, strips, showcases, FAQ, etc.) were removed from the visitor UI by request;
- * rebuild the page from Admin → بناء الصفحة الرئيسية / إعدادات الموقع when ready.
- */
+/** Homepage when no published CMS sections: hero (من إعدادات الموقع) + شريط الثقة. */
 export function HomeLegacyContent() {
   const { home } = useStorefront();
 
   return (
     <div className={styles.home}>
+      <HeroSlider />
       <MotionReveal>
         <div className={styles.featuresBar} style={trustBarChromeStyle(home)}>
           <div

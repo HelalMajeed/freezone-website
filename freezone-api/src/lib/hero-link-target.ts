@@ -1,10 +1,18 @@
 /**
  * Structured hero CTA targets (stored as JSON on `HeroSlide.primaryLink` / `secondaryLink`).
- * Legacy rows use only `primaryHref` / `secondaryHref` strings.
+ * Prefer `kind: "catalog"` (قسم → صنف/علامة → منتج). Legacy: `product` | `category` | `brand` + `url`.
  */
+
+export type HeroCatalogLink = {
+  kind: "catalog";
+  categorySlug: string;
+  brandSlug?: string | null;
+  productId?: number | null;
+};
 
 export type HeroLinkTarget =
   | { kind: "url"; href: string }
+  | HeroCatalogLink
   | { kind: "product"; productId: number }
   | { kind: "category"; slug: string }
   | { kind: "brand"; slug: string };
@@ -15,6 +23,17 @@ export function parseHeroLinkTarget(raw: unknown): HeroLinkTarget | null {
   const kind = o.kind;
   if (kind === "url" && typeof o.href === "string" && o.href.trim()) {
     return { kind: "url", href: o.href.trim() };
+  }
+  if (kind === "catalog" && typeof o.categorySlug === "string" && o.categorySlug.trim()) {
+    const categorySlug = o.categorySlug.trim();
+    const brandSlug =
+      typeof o.brandSlug === "string" && o.brandSlug.trim() ? o.brandSlug.trim() : null;
+    let productId: number | null = null;
+    if (o.productId != null) {
+      const id = typeof o.productId === "number" ? o.productId : Number(o.productId);
+      if (Number.isFinite(id) && id > 0) productId = Math.round(id);
+    }
+    return { kind: "catalog", categorySlug, brandSlug, productId };
   }
   if (kind === "product") {
     const id = typeof o.productId === "number" ? o.productId : Number(o.productId);
@@ -35,6 +54,13 @@ function normalizeFallback(fallbackHref: string): string {
   return fb.startsWith("/") ? fb : `/${fb}`;
 }
 
+function buildProductsQuery(cat: string, brand?: string | null): string {
+  const q = new URLSearchParams();
+  q.set("cat", cat);
+  if (brand && brand.trim()) q.set("brand", brand.trim());
+  return `/products?${q.toString()}`;
+}
+
 export function resolveHeroLinkTargetToHref(
   target: HeroLinkTarget | null | undefined,
   fallbackHref: string,
@@ -48,6 +74,12 @@ export function resolveHeroLinkTargetToHref(
       if (/^https?:\/\//i.test(h) || h.startsWith("//")) return h;
       return h.startsWith("/") ? h : `/${h}`;
     }
+    case "catalog": {
+      if (target.productId != null && target.productId > 0) {
+        return `/product/${target.productId}`;
+      }
+      return buildProductsQuery(target.categorySlug, target.brandSlug);
+    }
     case "product":
       return `/product/${target.productId}`;
     case "category":
@@ -59,8 +91,8 @@ export function resolveHeroLinkTargetToHref(
   }
 }
 
-export function inferHeroLinkModeFromTarget(target: unknown): "url" | "product" | "category" | "brand" {
+export function inferHeroLinkModeFromTarget(target: unknown): "url" | "catalog" {
   const t = parseHeroLinkTarget(target);
-  if (!t) return "url";
-  return t.kind;
+  if (!t || t.kind === "url") return "url";
+  return "catalog";
 }
