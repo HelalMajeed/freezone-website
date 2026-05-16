@@ -1,4 +1,5 @@
 import { type PublicSite, DEFAULT_TOP_BAR_SOCIAL_COLOR } from "@/lib/site-public";
+import { buildMarqueeStrips } from "@/lib/marquee-strips";
 import {
   composeHomeCmsFromParts,
   type CmsHeroSlideRow,
@@ -37,6 +38,8 @@ export type AdminCmsDraft = {
     promoBarTextEn: string;
     promoBarTextAr: string;
     promoBarEnabled: boolean;
+    tickerDirection?: string | null;
+    tickerDurationSec?: number | null;
     topBarBgColor?: string | null;
     topBarContactColor?: string | null;
     topBarPhoneLabelEn?: string | null;
@@ -162,6 +165,16 @@ export function draftToStorefrontValue(
       sortOrder: s.sortOrder,
       showInTopBar: s.showInTopBar !== false,
     })),
+    marqueeStrips: buildMarqueeStrips(
+      locale,
+      {
+        tickerDirection: cfg.tickerDirection,
+        tickerDurationSec: cfg.tickerDurationSec,
+        whatsappHref: cfg.topBarWhatsappHref,
+        phone: cfg.phone,
+      },
+      [],
+    ),
   };
 
   const baseHome = composeHomeCmsFromParts(

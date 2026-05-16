@@ -1,4 +1,8 @@
 import { isDatabaseConfigured } from "./prisma";
+import type { PublicMarqueeStrip } from "./marquee-strips";
+import { staticMarqueeStrips } from "./marquee-strips";
+
+export type { PublicMarqueeStrip, PublicTickerSegment } from "./marquee-strips";
 
 /** Brand accent for tier-1 social icons (electric cyan — pairs with navy primary) */
 export const DEFAULT_TOP_BAR_SOCIAL_COLOR = "#6b7280";
@@ -46,6 +50,8 @@ export type PublicSite = {
   metaDescription?: string | null;
   seoKeywords?: string | null;
   social: PublicSocialLink[];
+  /** Scrolling promo + info strips above the navbar */
+  marqueeStrips: PublicMarqueeStrip[];
 };
 
 const FB = "https://facebook.com";
@@ -99,6 +105,7 @@ export function staticPublicSite(locale: "en" | "ar"): PublicSite {
       { platform: "instagram", url: IG, sortOrder: 1, showInTopBar: true },
       { platform: "tiktok", url: TT, sortOrder: 2, showInTopBar: true },
     ],
+    marqueeStrips: staticMarqueeStrips(locale),
   };
 }
 

@@ -1,4 +1,7 @@
 import { prisma, isDatabaseConfigured } from "./prisma";
+import { buildMarqueeStrips, type PublicMarqueeStrip } from "./marquee-strips";
+
+export type { PublicMarqueeStrip, PublicTickerSegment } from "./marquee-strips";
 
 /** Deep crimson from brand logo — default for tier-1 social icons */
 export const DEFAULT_TOP_BAR_SOCIAL_COLOR = "#B00000";
@@ -51,6 +54,7 @@ export type PublicSite = {
   metaDescription?: string | null;
   seoKeywords?: string | null;
   social: PublicSocialLink[];
+  marqueeStrips: PublicMarqueeStrip[];
 };
 
 const FB = "https://facebook.com";
@@ -104,6 +108,7 @@ function staticPublicSite(locale: "en" | "ar"): PublicSite {
       { platform: "instagram", url: IG, sortOrder: 1, showInTopBar: true },
       { platform: "tiktok", url: TT, sortOrder: 2, showInTopBar: true },
     ],
+    marqueeStrips: buildMarqueeStrips(locale, {}, []),
   };
 }
 
@@ -114,9 +119,10 @@ export async function getPublicSite(locale: "en" | "ar"): Promise<PublicSite> {
   }
 
   try {
-    const [cfg, socialRows] = await Promise.all([
+    const [cfg, socialRows, tickerRows] = await Promise.all([
       prisma.siteConfig.findUnique({ where: { id: 1 } }),
       prisma.socialLink.findMany({ orderBy: { sortOrder: "asc" } }),
+      prisma.tickerItem.findMany({ orderBy: { sortOrder: "asc" } }),
     ]);
 
     if (!cfg) {
@@ -159,8 +165,14 @@ export async function getPublicSite(locale: "en" | "ar"): Promise<PublicSite> {
           { platform: "instagram", url: IG, sortOrder: 1, showInTopBar: true },
           { platform: "tiktok", url: TT, sortOrder: 2, showInTopBar: true },
         ],
+        marqueeStrips: buildMarqueeStrips(locale, {}, []),
       };
     }
+
+    const tickerInput = tickerRows.map((r) => ({
+      text: en ? r.textEn : r.textAr,
+      suffix: r.iconSuffix,
+    }));
 
     return {
       storeName: en ? cfg.storeNameEn : cfg.storeNameAr,
@@ -207,6 +219,16 @@ export async function getPublicSite(locale: "en" | "ar"): Promise<PublicSite> {
         sortOrder: s.sortOrder,
         showInTopBar: s.showInTopBar !== false,
       })),
+      marqueeStrips: buildMarqueeStrips(
+        locale,
+        {
+          tickerDirection: cfg.tickerDirection,
+          tickerDurationSec: cfg.tickerDurationSec,
+          whatsappHref: cfg.topBarWhatsappHref,
+          phone: cfg.phone,
+        },
+        tickerInput,
+      ),
     };
   } catch {
     return staticPublicSite(locale);

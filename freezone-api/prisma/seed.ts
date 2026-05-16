@@ -135,6 +135,32 @@ async function main() {
     ],
   });
 
+  await prisma.tickerItem.createMany({
+    data: [
+      {
+        textAr: "للتواصل مع ارقام المبيعات على مدار الساعة",
+        textEn: "Contact our sales team 24/7",
+        sortOrder: 0,
+      },
+      {
+        textAr: "الموقع يتحدث يومياً على مدار الساعة",
+        textEn: "Our catalog updates daily",
+        sortOrder: 1,
+      },
+      {
+        textAr: "الطلب حصراً من خلال الموقع الإلكتروني وتوصيل مجاني على المنتجات فوق 100,000 دينار عراقي",
+        textEn: "Order online only — free delivery on orders over 100,000 IQD",
+        sortOrder: 2,
+      },
+      {
+        textAr: "للتواصل مع ارقام المبيعات على الواتساب (اضغط هنا)",
+        textEn: "Chat with sales on WhatsApp",
+        iconSuffix: "💬",
+        sortOrder: 3,
+      },
+    ],
+  });
+
   await prisma.showroomMedia.create({
     data: {
       kind: "image",
