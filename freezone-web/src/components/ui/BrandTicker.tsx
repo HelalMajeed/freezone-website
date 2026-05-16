@@ -6,7 +6,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Link } from "@/navigation";
 import styles from "./BrandTicker.module.css";
 import { BRANDS } from "@/lib/data";
-import { buildBrandLogoCandidates } from "@/lib/brand-logo-urls";
+import { buildBrandLogoCandidates, resolveBrandIconSlug } from "@/lib/brand-logo-urls";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { EASE_OUT } from "@/lib/motion";
 
@@ -31,7 +31,18 @@ function BrandLogo({ name, explicitImg }: { name: string; explicitImg: string | 
   }, [name, explicitImg]);
 
   if (candidates.length === 0 || index >= candidates.length) {
-    return <span className={styles.brandName}>{name}</span>;
+    return (
+      <img
+        src={`/brands/${resolveBrandIconSlug(name)}.svg`}
+        alt={name}
+        className={styles.brandImg}
+        width={LOGO_RENDER_W}
+        height={LOGO_RENDER_H}
+        loading="lazy"
+        decoding="async"
+        draggable={false}
+      />
+    );
   }
 
   const src = candidates[index];

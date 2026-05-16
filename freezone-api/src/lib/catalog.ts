@@ -173,9 +173,11 @@ export async function getBrandsCatalog(locale: LocaleCode): Promise<Brand[]> {
     }
     return rows.map((r) => {
       const name = locale === "ar" ? r.nameAr : r.nameEn;
+      const slugClean = r.slug.replace(/[^a-z0-9-]/gi, "").toLowerCase();
+      const logo = r.logoUrl?.trim();
       const img =
-        r.logoUrl?.trim() ||
-        (r.slug.length >= 2 ? `/brands/${r.slug.replace(/[^a-z0-9-]/gi, "").toLowerCase()}.svg` : null);
+        (logo && !/^\/brands\/b\d+-/i.test(logo) ? logo : null) ||
+        (slugClean.length >= 2 ? `/brands/${slugClean}.svg` : null);
       return { name, img };
     });
   } catch (e) {

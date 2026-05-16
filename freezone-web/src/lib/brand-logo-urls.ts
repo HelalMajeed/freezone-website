@@ -1,3 +1,5 @@
+import { getApiInternalBase } from "@/lib/api-internal";
+
 /** Simple Icons slug + optional hex color for crisp SVG wordmarks. */
 const BRAND_ICON_ALIASES: Record<string, { slug: string; color?: string }> = {
   adata: { slug: "adata" },
@@ -19,11 +21,12 @@ const BRAND_ICON_ALIASES: Record<string, { slug: string; color?: string }> = {
   razer: { slug: "razer", color: "00FF00" },
   steelseries: { slug: "steelseries", color: "FF5200" },
   nzxt: { slug: "nzxt", color: "5A2D82" },
-  hikvision: { slug: "hikvision", color: "E60012" },
-  dahua: { slug: "dahua", color: "E60012" },
-  secretlab: { slug: "secretlab", color: "111827" },
-  ducky: { slug: "ducky", color: "111827" },
-  eureka: { slug: "eureka", color: "111827" },
+  corsair: { slug: "corsair", color: "000000" },
+  hikvision: { slug: "hikvision" },
+  dahua: { slug: "dahua" },
+  secretlab: { slug: "secretlab" },
+  ducky: { slug: "ducky" },
+  eureka: { slug: "eureka" },
   cisco: { slug: "cisco", color: "1BA0D7" },
   microsoft: { slug: "microsoft", color: "5E5E5E" },
   canon: { slug: "canon", color: "BC0024" },
@@ -45,18 +48,32 @@ function simpleIconsSvgUrl(slug: string, color = "1f2937"): string {
   return `https://cdn.simpleicons.org/${slug}/${hex}`;
 }
 
-function isSvgUrl(url: string): boolean {
-  const u = url.split("?")[0]?.toLowerCase() ?? "";
-  return u.endsWith(".svg") || u.includes("simpleicons.org");
+/** Legacy DB seed paths like `/brands/b12-nzxt.svg` are not deployed on the API host. */
+function isLegacySeededBrandPath(url: string): boolean {
+  return /^\/brands\/b\d+-/i.test(url.trim());
+}
+
+/** Resolve `/uploads/...` to API origin in production; keep same-origin in dev. */
+export function resolveBrandAssetUrl(url: string): string {
+  const t = url.trim();
+  if (!t || isLegacySeededBrandPath(t)) return "";
+  if (t.startsWith("http://") || t.startsWith("https://")) return t;
+  if (t.startsWith("/uploads/")) {
+    const base = getApiInternalBase();
+    return base ? `${base}${t}` : t;
+  }
+  if (t.startsWith("/")) return t;
+  return t;
 }
 
 /**
- * Logo sources in priority order — SVG first for sharp rendering on retina.
+ * Logo sources in priority order — bundled SVG in /public/brands first (works on Netlify),
+ * then CDN, then admin upload URL.
  */
 export function buildBrandLogoCandidates(name: string, explicitImg: string | null): string[] {
   const out: string[] = [];
   const push = (u: string) => {
-    const t = u.trim();
+    const t = resolveBrandAssetUrl(u);
     if (t && !out.includes(t)) out.push(t);
   };
 
@@ -64,18 +81,12 @@ export function buildBrandLogoCandidates(name: string, explicitImg: string | nul
   const alias = BRAND_ICON_ALIASES[key];
   const slug = alias?.slug ?? key;
 
-  if (explicitImg?.trim()) {
-    const img = explicitImg.trim();
-    if (isSvgUrl(img)) push(img);
-    else push(img);
-  }
-
   if (slug.length >= 2) {
     push(`/brands/${slug}.svg`);
     push(simpleIconsSvgUrl(slug, alias?.color ?? "1f2937"));
   }
 
-  if (explicitImg?.trim() && !isSvgUrl(explicitImg)) {
+  if (explicitImg?.trim()) {
     push(explicitImg.trim());
   }
 
