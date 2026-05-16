@@ -1,6 +1,6 @@
 "use client";
 
-import { GripVertical } from "lucide-react";
+import { GripVertical, Trash2 } from "lucide-react";
 import clsx from "clsx";
 import styles from "./admin-categories.module.css";
 import { facetAttributesToOrderedSelection } from "@/components/admin/facet/facet-keys-utils";
@@ -26,6 +26,8 @@ type Props = {
   onDragOver?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent) => void;
   isDragging?: boolean;
+  onDelete?: () => void;
+  deletePending?: boolean;
 };
 
 export function CategoryCard({
@@ -38,6 +40,8 @@ export function CategoryCard({
   onDragOver,
   onDrop,
   isDragging,
+  onDelete,
+  deletePending,
 }: Props) {
   const n = facetAttributes.length;
   const ratioLabel = `${n} / ${catalogFieldTotal}`;
@@ -62,6 +66,20 @@ export function CategoryCard({
       }}
     >
       <div className={styles.cardMenu}>
+        {onDelete ? (
+          <button
+            type="button"
+            className={clsx(styles.iconBtn, styles.iconBtnDanger)}
+            disabled={deletePending}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            aria-label="حذف القسم"
+          >
+            <Trash2 size={16} />
+          </button>
+        ) : null}
         <button
           type="button"
           className={styles.iconBtn}

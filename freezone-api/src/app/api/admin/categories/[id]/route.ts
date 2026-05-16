@@ -77,3 +77,39 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     return handleRouteDbError(e);
   }
 }
+
+export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  if (!isAdminAuthenticatedFromRequest(req)) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!isDatabaseConfigured()) {
+    return Response.json({ error: "No database" }, { status: 503 });
+  }
+
+  const id = parseInt((await ctx.params).id, 10);
+  if (!Number.isFinite(id)) {
+    return Response.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  try {
+    const primaryCount = await prisma.product.count({ where: { categoryId: id } });
+    if (primaryCount > 0) {
+      return Response.json(
+        {
+          error: `لا يمكن حذف القسم: ${primaryCount} منتج مرتبط به كقسم رئيسي. انقل المنتجات إلى قسم آخر من صفحة المنتجات أولاً.`,
+          productCount: primaryCount,
+        },
+        { status: 409 },
+      );
+    }
+
+    await prisma.productSecondaryCategory.deleteMany({ where: { categoryId: id } });
+    await prisma.category.delete({ where: { id } });
+
+    revalidateStorefrontData();
+    await logAdminAction("category.delete", "Category", { entityId: id });
+    return Response.json({ ok: true });
+  } catch (e) {
+    return handleRouteDbError(e);
+  }
+}

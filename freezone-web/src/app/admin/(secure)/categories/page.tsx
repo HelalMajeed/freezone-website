@@ -33,6 +33,7 @@ export default function AdminCategoriesPage() {
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [bulkSaving, setBulkSaving] = useState(false);
 
   const [search, setSearch] = useState("");
@@ -165,6 +166,39 @@ export default function AdminCategoriesPage() {
     setSelectedId(null);
   }
 
+  async function removeCategory(row: Cat) {
+    const label = row.nameAr?.trim() || row.nameEn?.trim() || row.slug;
+    if (
+      !confirm(
+        `حذف القسم «${label}»؟\n\n• يُحذف الربط الثانوي للمنتجات بهذا القسم.\n• لا يمكن الحذف إذا وُجدت منتجات تستخدمه كقسم رئيسي — انقلها من صفحة المنتجات أولاً.`,
+      )
+    ) {
+      return;
+    }
+    setDeletingId(row.id);
+    setMsg("");
+    const res = await fetch(freezoneApiUrl(`/api/admin/categories/${row.id}`), {
+      method: "DELETE",
+      credentials: "include",
+      cache: "no-store",
+    });
+    setDeletingId(null);
+    if (res.status === 409) {
+      const errBody = (await res.json().catch(() => null)) as { error?: string } | null;
+      setMsg(errBody?.error ?? "لا يمكن حذف القسم — يوجد منتجات مرتبطة به كقسم رئيسي");
+      return;
+    }
+    if (!res.ok) {
+      const errBody = (await res.json().catch(() => null)) as { error?: string } | null;
+      setMsg(errBody?.error ? `فشل الحذف: ${errBody.error}` : "فشل الحذف");
+      return;
+    }
+    if (selectedId === row.id) setSelectedId(null);
+    void queryClient.invalidateQueries({ queryKey: ["storefront-bootstrap"] });
+    setMsg("تم حذف القسم");
+    void load();
+  }
+
   async function swapSortOrder(sourceId: number, targetId: number) {
     if (sourceId === targetId) return;
     const ra = rows.find((r) => r.id === sourceId);
@@ -294,6 +328,8 @@ export default function AdminCategoriesPage() {
                 setDraggingId(null);
                 if (Number.isFinite(sid) && sid !== r.id) void swapSortOrder(sid, r.id);
               }}
+              onDelete={() => void removeCategory(r)}
+              deletePending={deletingId === r.id}
             />
           ))}
         </CategoryGrid>
@@ -314,6 +350,8 @@ export default function AdminCategoriesPage() {
         }
         onSave={() => saveSelected()}
         savePending={selected != null && saving === selected.id}
+        deletePending={selected != null && deletingId === selected.id}
+        onDelete={selected ? () => void removeCategory(selected) : undefined}
         importCategoryOptions={importCategoryOptions}
       />
 

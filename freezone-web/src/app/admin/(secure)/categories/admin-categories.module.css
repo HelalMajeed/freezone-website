@@ -251,6 +251,45 @@
   cursor: grabbing;
 }
 
+.iconBtnDanger {
+  cursor: pointer;
+  color: #b91c1c;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.iconBtnDanger:hover {
+  background: rgba(239, 68, 68, 0.18);
+  color: #991b1b;
+}
+
+.btnDanger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.btnDanger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.18);
+}
+
+.btnDanger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.panelFootDanger {
+  margin-inline-end: auto;
+}
+
 .empty {
   text-align: center;
   padding: 3rem 1.5rem;

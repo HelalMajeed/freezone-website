@@ -2,6 +2,7 @@
 
 import { useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Trash2 } from "lucide-react";
 import { FacetKeysPicker, type FacetImportCategoryOption, type FacetKeysEditorHandle } from "@/components/admin/FacetKeysPicker";
 import styles from "./admin-categories.module.css";
 import type { CategoryCardData } from "./CategoryCard";
@@ -22,6 +23,8 @@ type Props = {
   onFacetAttributesChange: (next: FacetAttributeDef[]) => void;
   onSave: () => void | Promise<void>;
   savePending: boolean;
+  deletePending?: boolean;
+  onDelete?: () => void;
   importCategoryOptions?: FacetImportCategoryOption[];
 };
 
@@ -37,6 +40,8 @@ export function CategoryDetailsDrawer({
   onFacetAttributesChange,
   onSave,
   savePending,
+  deletePending = false,
+  onDelete,
   importCategoryOptions,
 }: Props) {
   const facetEditorRef = useRef<FacetKeysEditorHandle>(null);
@@ -154,10 +159,26 @@ export function CategoryDetailsDrawer({
               </div>
             </div>
             <div className={styles.panelFoot}>
+              {onDelete ? (
+                <button
+                  type="button"
+                  className={`${styles.btnDanger} ${styles.panelFootDanger}`}
+                  disabled={deletePending || savePending}
+                  onClick={onDelete}
+                >
+                  <Trash2 size={16} aria-hidden />
+                  {deletePending ? "جاري الحذف…" : "حذف القسم"}
+                </button>
+              ) : null}
               <button type="button" className={styles.btnGhost} onClick={onClose}>
                 إغلاق
               </button>
-              <button type="button" className={styles.btnPrimary} disabled={savePending} onClick={() => void saveWithFlush()}>
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                disabled={savePending || deletePending}
+                onClick={() => void saveWithFlush()}
+              >
                 {savePending ? "…" : "حفظ القسم"}
               </button>
             </div>
