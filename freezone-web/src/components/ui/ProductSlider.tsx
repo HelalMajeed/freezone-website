@@ -1,13 +1,13 @@
 "use client";
 
-import { useRef } from "react";
 import { Link } from "@/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { ProductCard } from "./ProductCard";
 import { Product } from "@/lib/data";
 import styles from "./ProductSlider.module.css";
 import { motion } from "framer-motion";
 import { useTranslations } from "@/i18n/hooks";
+import { ProductCarouselRow, useCarouselDragGuard } from "./ProductCarouselRow";
 
 interface ProductSliderProps {
   title: string;
@@ -18,6 +18,17 @@ interface ProductSliderProps {
   viewAllLabel?: string;
   /** `teal` matches reference promo buttons */
   ctaVariant?: "gray" | "teal";
+  /** Compact padding for homepage hot-items row */
+  compact?: boolean;
+}
+
+function ProductSlide({ product, index }: { product: Product; index: number }) {
+  const blockClickIfDragged = useCarouselDragGuard();
+  return (
+    <div className={styles.slide} onClickCapture={blockClickIfDragged}>
+      <ProductCard product={product} delay={index * 50} />
+    </div>
+  );
 }
 
 export function ProductSlider({
@@ -27,25 +38,17 @@ export function ProductSlider({
   bgColor = "var(--gray-50)",
   viewAllLabel,
   ctaVariant = "gray",
+  compact = false,
 }: ProductSliderProps) {
   const t = useTranslations("Home");
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const step = typeof window !== "undefined" && window.innerWidth < 768 ? 260 : 320;
-
-  const scrollLeft = () => {
-    if (scrollRef.current) scrollRef.current.scrollBy({ left: -step, behavior: "smooth" });
-  };
-
-  const scrollRight = () => {
-    if (scrollRef.current) scrollRef.current.scrollBy({ left: step, behavior: "smooth" });
-  };
 
   if (products.length === 0) return null;
 
+  const scrollStep = typeof window !== "undefined" && window.innerWidth < 768 ? 260 : 320;
+
   return (
     <motion.section
-      className={styles.section}
+      className={compact ? `${styles.section} ${styles.sectionCompact}` : styles.section}
       style={{ backgroundColor: bgColor }}
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -53,13 +56,11 @@ export function ProductSlider({
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className={styles.shell}>
-        
-        {/* Header Block */}
         <div className={styles.header}>
           <div className={styles.titleBlock}>
             <h3 className={styles.title}>{title}</h3>
           </div>
-          
+
           <div className={styles.actions}>
             <Link
               href={link}
@@ -67,29 +68,14 @@ export function ProductSlider({
             >
               {viewAllLabel ?? t("viewAllProducts")} <ChevronRight size={16} />
             </Link>
-            <div className={styles.navButtons}>
-              <motion.button type="button" className={styles.navBtn} onClick={scrollLeft} aria-label="Scroll Left" whileTap={{ scale: 0.92 }}>
-                <ChevronLeft size={20} />
-              </motion.button>
-              <motion.button type="button" className={styles.navBtn} onClick={scrollRight} aria-label="Scroll Right" whileTap={{ scale: 0.92 }}>
-                <ChevronRight size={20} />
-              </motion.button>
-            </div>
           </div>
         </div>
 
-        {/* Scroll Track */}
-        <div className={styles.trackWrapper}>
-          <div className={styles.track} ref={scrollRef}>
-            {products.map((product, idx) => (
-              <div key={product.id} className={styles.slide}>
-                {/* Reusing our previously perfected ProductCard */}
-                <ProductCard product={product} delay={idx * 50} />
-              </div>
-            ))}
-          </div>
-        </div>
-        
+        <ProductCarouselRow itemCount={products.length} scrollStep={scrollStep}>
+          {products.map((product, idx) => (
+            <ProductSlide key={product.id} product={product} index={idx} />
+          ))}
+        </ProductCarouselRow>
       </div>
     </motion.section>
   );

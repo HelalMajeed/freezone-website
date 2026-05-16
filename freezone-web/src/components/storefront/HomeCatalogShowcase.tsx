@@ -7,6 +7,7 @@ import { buildCategorySpotlightsFromCatalog } from "@/lib/category-icon-auto";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 import { CategoryIconStrip } from "@/components/ui/CategoryIconStrip";
 import { PromoMegaBlocks } from "@/components/ui/PromoMegaBlocks";
+import { HomeHotItemsRail } from "@/components/storefront/HomeHotItemsRail";
 
 /** Icon strip + mega cards from the same catalog order (homepage default). */
 export function HomeCatalogShowcase(props: { megaPayload?: Record<string, unknown> } = {}) {
@@ -22,6 +23,9 @@ export function HomeCatalogShowcase(props: { megaPayload?: Record<string, unknow
     <>
       <MotionReveal delay={0.03}>
         <CategoryIconStrip previewSpots={spots} />
+      </MotionReveal>
+      <MotionReveal delay={0.04}>
+        <HomeHotItemsRail />
       </MotionReveal>
       <MotionReveal delay={0.05}>
         <PromoMegaBlocks payload={megaPayload} />

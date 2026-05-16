@@ -12,6 +12,9 @@ import { LucideByName } from "@/lib/lucide-icon-map";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 import { Link } from "@/navigation";
 import { HomeCatalogShowcase } from "@/components/storefront/HomeCatalogShowcase";
+import { HomeHotItemsRail } from "@/components/storefront/HomeHotItemsRail";
+import { ProductSlider } from "@/components/ui/ProductSlider";
+import { resolveFeaturedProductList } from "@/lib/home-section-products";
 import {
   buildHeroPreviewFromPayload,
   buildTrustItemsFromPayload,
@@ -89,6 +92,7 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
             return (
               <SectionBlock key={sec.id} delay={delay}>
                 {!hasCategoryStrip ? <CategoryIconStrip previewSpots={stripSpots} /> : null}
+                <HomeHotItemsRail />
                 <PromoMegaBlocks payload={p} />
               </SectionBlock>
             );
@@ -101,7 +105,52 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
               </SectionBlock>
             );
           }
-          case "featured_products":
+          case "featured_products": {
+            const title =
+              (locale === "ar"
+                ? (typeof p.titleAr === "string" ? p.titleAr : "")
+                : (typeof p.titleEn === "string" ? p.titleEn : "")) ||
+              (locale === "ar"
+                ? (typeof p.titleEn === "string" ? p.titleEn : "")
+                : (typeof p.titleAr === "string" ? p.titleAr : ""));
+            const link = typeof p.link === "string" && p.link.trim() ? p.link.trim() : "/products";
+            const filter = typeof p.filter === "string" ? p.filter : "featured";
+            const limit = typeof p.limit === "number" ? p.limit : 16;
+            const catSlug = typeof p.catSlug === "string" ? p.catSlug : undefined;
+            const productIds = Array.isArray(p.productIds)
+              ? p.productIds.map((x) => Number(x)).filter((n) => Number.isFinite(n))
+              : undefined;
+            const viewAllRaw =
+              locale === "ar"
+                ? typeof p.viewAllAr === "string"
+                  ? p.viewAllAr
+                  : ""
+                : typeof p.viewAllEn === "string"
+                  ? p.viewAllEn
+                  : "";
+            const products = resolveFeaturedProductList(
+              catalog.products,
+              filter,
+              catSlug,
+              limit,
+              productIds,
+            );
+            const bgColor = typeof p.bgColor === "string" ? p.bgColor : "#fff";
+            const ctaVariant = p.ctaVariant === "teal" ? "teal" : "gray";
+            return (
+              <SectionBlock key={sec.id} delay={delay}>
+                <ProductSlider
+                  title={title || (locale === "ar" ? "منتجات مميزة" : "Featured products")}
+                  link={link}
+                  products={products}
+                  bgColor={bgColor}
+                  viewAllLabel={viewAllRaw.trim() || undefined}
+                  ctaVariant={ctaVariant}
+                  compact
+                />
+              </SectionBlock>
+            );
+          }
           case "brands_strip":
           case "banner_slider":
           case "categories_showcase":
@@ -235,9 +284,14 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
           <HomeCatalogShowcase />
         </SectionBlock>
       ) : !hasPromoMega ? (
-        <SectionBlock delay={0.08}>
-          <PromoMegaBlocks />
-        </SectionBlock>
+        <>
+          <SectionBlock delay={0.07}>
+            <HomeHotItemsRail />
+          </SectionBlock>
+          <SectionBlock delay={0.08}>
+            <PromoMegaBlocks />
+          </SectionBlock>
+        </>
       ) : !hasCategoryStrip ? (
         <SectionBlock delay={0.08}>
           <CategoryIconStrip

@@ -121,6 +121,14 @@ export function parseTabbedProductsPayload(raw: unknown): TabbedProductsPayload 
   };
 }
 
+/** Best-selling / hot picks for homepage rail between category icons and mega cards. */
+export function resolveHotProducts(products: Product[], limit = 16): Product[] {
+  const lim = Math.min(48, Math.max(1, limit));
+  return [...products]
+    .sort((a, b) => b.sales - a.sales || b.reviews - a.reviews || b.id - a.id)
+    .slice(0, lim);
+}
+
 export function resolveFeaturedProductList(
   products: Product[],
   filter: string,
@@ -138,6 +146,7 @@ export function resolveFeaturedProductList(
   let list = products;
   if (filter === "new") list = products.filter((p) => p.isNew);
   else if (filter === "featured") list = products.filter((p) => p.featured);
+  else if (filter === "hot" || filter === "bestsellers") list = resolveHotProducts(products, lim);
   else if (filter === "cat" && catSlug) {
     const slugs = catSlug
       .split(/[,،\s]+/)

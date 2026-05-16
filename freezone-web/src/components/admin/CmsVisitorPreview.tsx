@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import { HeroSlider } from "@/components/ui/HeroSlider";
 import { CategoryIconStrip } from "@/components/ui/CategoryIconStrip";
+import { HomeHotItemsRail } from "@/components/storefront/HomeHotItemsRail";
 import { GamingCategoriesGrid } from "@/components/ui/GamingCategoriesGrid";
 import { PromoMegaBlocks } from "@/components/ui/PromoMegaBlocks";
 import { PromoBanner } from "@/components/ui/PromoBanner";
@@ -314,6 +315,9 @@ export function CmsVisitorPreview({ activeTab }: { activeTab: CmsEditorTab }) {
       </PreviewRegion>
 
       <PreviewRegion tabKey="products" activeTab={activeTab} label="شبكة الأقسام، وصل حديثاً، مكوّنات PC">
+        <MotionReveal delay={0.03}>
+          <HomeHotItemsRail />
+        </MotionReveal>
         <MotionReveal>
           <GamingCategoriesGrid />
         </MotionReveal>

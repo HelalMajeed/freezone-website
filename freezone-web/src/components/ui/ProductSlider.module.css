@@ -5,6 +5,11 @@
   overflow: hidden;
 }
 
+.sectionCompact {
+  padding: 28px 0 36px;
+  border-top: none;
+}
+
 /**
  * Wider than the global 1320px `.container`. Track shows 4½ cards at 300px + 20px gaps:
  * 4×300 + 4×20 + 150 = 1430px visible row + horizontal padding (max 120px) → max-width 1550px.
@@ -92,55 +97,6 @@
 .viewAllBtnTeal:hover {
   background: var(--red-700);
   color: #fff;
-}
-
-.navButtons {
-  display: flex;
-  gap: 8px;
-}
-
-.navBtn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid var(--gray-300);
-  background: white;
-  color: var(--gray-600);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.navBtn:hover {
-  background: var(--gray-900);
-  color: white;
-  border-color: var(--gray-900);
-}
-
-/* Track scrolling */
-.trackWrapper {
-  width: 100%;
-}
-
-.track {
-  display: flex;
-  align-items: stretch;
-  gap: 20px;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  scroll-snap-type: x mandatory;
-  padding-bottom: 24px; /* for shadow clipping */
-  padding-top: 10px;
-  
-  /* Hide scrollbar for cleaner look */
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}
-
-.track::-webkit-scrollbar {
-  display: none;
 }
 
 .slide {
