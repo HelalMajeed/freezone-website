@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 import { CategoryIconStrip } from "@/components/ui/CategoryIconStrip";
 import { PromoMegaBlocks } from "@/components/ui/PromoMegaBlocks";
+import { HomePromoStrip } from "@/components/storefront/HomePromoStrip";
+import { HomeFlashDealsRail } from "@/components/storefront/HomeFlashDealsRail";
 import { HomeHotItemsRail } from "@/components/storefront/HomeHotItemsRail";
 import { HomeNewArrivalsRail } from "@/components/storefront/HomeNewArrivalsRail";
 import { BrandTicker } from "@/components/ui/BrandTicker";
@@ -11,6 +13,8 @@ import type { PublicSpotlightItem } from "@/lib/layout-cms";
 type HomeCommerceStackProps = {
   stripSpots?: PublicSpotlightItem[];
   showStrip?: boolean;
+  showPromoStrip?: boolean;
+  showFlashDeals?: boolean;
   showHotItems?: boolean;
   showNewArrivals?: boolean;
   showBrands?: boolean;
@@ -21,6 +25,8 @@ type HomeCommerceStackProps = {
 export function HomeCommerceStack({
   stripSpots,
   showStrip = true,
+  showPromoStrip = true,
+  showFlashDeals = true,
   showHotItems = true,
   showNewArrivals = true,
   showBrands = true,
@@ -30,6 +36,12 @@ export function HomeCommerceStack({
 
   if (showStrip) {
     nodes.push(<CategoryIconStrip key="strip" previewSpots={stripSpots} />);
+  }
+  if (showPromoStrip) {
+    nodes.push(<HomePromoStrip key="promo-strip" />);
+  }
+  if (showFlashDeals) {
+    nodes.push(<HomeFlashDealsRail key="flash" />);
   }
   if (showHotItems) {
     nodes.push(<HomeHotItemsRail key="hot" />);

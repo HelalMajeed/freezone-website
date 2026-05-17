@@ -121,6 +121,19 @@ export function parseTabbedProductsPayload(raw: unknown): TabbedProductsPayload 
   };
 }
 
+/** Products with compare-at price (on sale) for flash-deals rail. */
+export function resolveSaleProducts(products: Product[], limit = 12): Product[] {
+  const lim = Math.min(48, Math.max(1, limit));
+  return products
+    .filter((p) => p.oldPrice != null && p.oldPrice > p.price)
+    .sort((a, b) => {
+      const da = a.oldPrice && a.price ? 1 - a.price / a.oldPrice : 0;
+      const db = b.oldPrice && b.price ? 1 - b.price / b.oldPrice : 0;
+      return db - da || b.sales - a.sales;
+    })
+    .slice(0, lim);
+}
+
 /** Best-selling / hot picks for homepage rail between category icons and mega cards. */
 export function resolveHotProducts(products: Product[], limit = 16): Product[] {
   const lim = Math.min(48, Math.max(1, limit));
@@ -169,6 +182,7 @@ export function resolveFeaturedProductList(
   if (filter === "new") list = products.filter((p) => p.isNew);
   else if (filter === "featured") list = products.filter((p) => p.featured);
   else if (filter === "hot" || filter === "bestsellers") list = resolveHotProducts(products, lim);
+  else if (filter === "sale" || filter === "onSale") list = resolveSaleProducts(products, lim);
   else if (filter === "cat" && catSlug) {
     const slugs = catSlug
       .split(/[,،\s]+/)

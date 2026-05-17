@@ -1,0 +1,54 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+  margin-bottom: var(--space-4, 16px);
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  min-width: 0;
+}
+
+.title {
+  font-family: var(--fz-font-display);
+  font-size: clamp(1.125rem, 2vw, 1.35rem);
+  font-weight: 700;
+  color: var(--color-text-primary, var(--color-text, #1c1917));
+  margin: 0;
+}
+
+.timer {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: 6px 12px;
+  border-radius: var(--radius-md, 8px);
+  background: color-mix(in srgb, var(--color-brand-600, #dc2626) 10%, #fff);
+  border: 1px solid color-mix(in srgb, var(--color-brand-600, #dc2626) 22%, transparent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-brand-700, #b91c1c);
+  font-variant-numeric: tabular-nums;
+}
+
+.timerLabel {
+  opacity: 0.85;
+  font-weight: 500;
+}
+
+.headerEnd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3, 12px);
+}
+
+.wrap {
+  padding-block: var(--space-6, 24px);
+  background: var(--color-bg-card, #fff);
+}
