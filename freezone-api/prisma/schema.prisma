@@ -36,6 +36,9 @@ model ProductSecondaryCategory {
 
 model Category {
   id        Int       @id @default(autoincrement())
+  parentId  Int?
+  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Category[] @relation("CategoryTree")
   slug      String    @unique
   nameEn    String
   nameAr    String
@@ -45,12 +48,58 @@ model Category {
   /// Hero / category tile background (https URL, same-origin upload, or external)
   backgroundImageUrl String?
   sortOrder Int       @default(0)
-  /// JSON array of facet keys for product filters, e.g. ["cpu","gpu","ram"]
+  /// Legacy JSON facet list — kept in sync with `categoryAttributes` for backward compatibility
   facetKeys Json?
+  categoryAttributes CategoryAttribute[]
   products  Product[]
   secondaryProductLinks ProductSecondaryCategory[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  @@index([parentId, sortOrder])
+}
+
+/// Per-category attribute schema (source of truth for filters + product spec fields).
+model CategoryAttribute {
+  id           Int      @id @default(autoincrement())
+  categoryId   Int
+  category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  key          String
+  nameEn       String
+  nameAr       String
+  /// SELECT | MULTI_SELECT | RANGE | BOOLEAN | TEXT | COLOR
+  type         String   @default("SELECT")
+  options      Json?
+  filterable   Boolean  @default(true)
+  searchable   Boolean  @default(false)
+  comparable   Boolean  @default(false)
+  displayGroup String   @default("specs")
+  sortOrder    Int      @default(0)
+  required     Boolean  @default(false)
+  unit         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([categoryId, key])
+  @@index([categoryId, sortOrder])
+}
+
+/// Typed product spec values (normalized EAV); synced to `Product.specs` JSON for legacy clients.
+model ProductAttributeValue {
+  id           Int      @id @default(autoincrement())
+  productId    Int
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attributeKey String
+  valueString  String?
+  valueNumber  Float?
+  valueBoolean Boolean?
+  valueJson    Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([productId, attributeKey])
+  @@index([productId])
+  @@index([attributeKey])
 }
 
 model Product {
@@ -63,6 +112,8 @@ model Product {
   brandRef    Brand?          @relation(fields: [brandId], references: [id], onDelete: SetNull)
   /// Optional SKU / internal code
   sku         String          @default("")
+  /// Product model name (e.g. ROG Strix G16) — identity alongside brand
+  model       String          @default("")
   /// Stock count; treat 0 as out of stock when inStock is true
   quantity    Int             @default(100)
   nameEn      String
@@ -91,6 +142,7 @@ model Product {
   orderLines  OrderLineItem[]
   variants    ProductVariant[]
   secondaryCategories ProductSecondaryCategory[]
+  attributeValues ProductAttributeValue[]
 
   @@index([published])
   @@index([categoryId])

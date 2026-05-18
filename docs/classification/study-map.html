@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Free Zone - خريطة متقدمة للتصنيفات والفلترة</title>
+    <style>
+      :root {
+        --bg: #f3f4f6;
+        --card: #ffffff;
+        --text: #111827;
+        --muted: #4b5563;
+        --line: #d1d5db;
+        --brand: #0a84ff;
+        --ok: #059669;
+        --warn: #b45309;
+        --c1: #d7e8f7;
+        --c2: #bfd8ef;
+        --c3: #9ec1e3;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.65;
+      }
+      .container {
+        max-width: 1220px;
+        margin: 0 auto;
+        padding: 28px 18px 40px;
+      }
+      h1 { margin: 0 0 8px; font-size: 34px; }
+      h2 { margin: 0 0 12px; font-size: 22px; }
+      h3 { margin: 0 0 10px; font-size: 18px; }
+      .lead { margin: 0 0 20px; color: var(--muted); }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+        margin-bottom: 16px;
+      }
+      .tag {
+        display: inline-block;
+        border: 1px solid #bfdbfe;
+        background: #eff6ff;
+        color: #1e40af;
+        border-radius: 999px;
+        padding: 2px 9px;
+        margin: 2px;
+        font-size: 12px;
+      }
+      .diagram-wrap {
+        position: relative;
+        min-height: 580px;
+        overflow: hidden;
+      }
+      .circle {
+        position: absolute;
+        border-radius: 999px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.8);
+      }
+      .circle h2 { margin: 0 0 8px; font-size: 38px; }
+      .circle p { margin: 0; max-width: 82%; font-size: 20px; }
+      .c1 { width: 840px; height: 840px; background: var(--c1); top: -140px; right: -40px; }
+      .c2 { width: 580px; height: 580px; background: var(--c2); top: 60px; right: 130px; }
+      .c3 { width: 370px; height: 370px; background: var(--c3); top: 190px; right: 230px; }
+      .flow {
+        position: absolute;
+        left: 16px;
+        bottom: 16px;
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+      .flow strong { color: var(--brand); }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+      ul { margin: 8px 0; padding-right: 20px; }
+      li { margin-bottom: 5px; }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      th, td {
+        border: 1px solid var(--line);
+        padding: 9px;
+        vertical-align: top;
+      }
+      th { background: #f9fafb; }
+      code {
+        background: #eef2ff;
+        border-radius: 6px;
+        padding: 1px 6px;
+        font-family: Consolas, monospace;
+      }
+      .note { color: var(--muted); font-size: 13px; }
+      .ok { color: var(--ok); font-weight: 600; }
+      .warn { color: var(--warn); font-weight: 600; }
+      details {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px 12px;
+        margin-top: 8px;
+        background: #fcfcfd;
+      }
+      summary { cursor: pointer; font-weight: 600; }
+      .steps {
+        counter-reset: step;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .steps li {
+        counter-increment: step;
+        margin: 10px 0;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+      }
+      .steps li::before {
+        content: counter(step);
+        display: inline-flex;
+        width: 24px;
+        height: 24px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: #e0ecff;
+        color: #1e40af;
+        margin-left: 8px;
+        font-weight: 700;
+      }
+      @media (max-width: 1040px) {
+        .grid, .grid-3 { grid-template-columns: 1fr; }
+        .diagram-wrap { min-height: 500px; }
+        .c1 { width: 640px; height: 640px; top: -85px; right: -95px; }
+        .c2 { width: 440px; height: 440px; top: 85px; right: 15px; }
+        .c3 { width: 280px; height: 280px; top: 165px; right: 95px; }
+        .circle h2 { font-size: 28px; }
+        .circle p { font-size: 16px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>خريطة متقدمة للتصنيفات والمواصفات والفلترة</h1>
+      <p class="lead">
+        هذا الملف يشرح <strong>كيف تفكر وتُصنّف</strong>، وليس فقط ماذا تكتب. الهدف أن تصل إلى نتائج دقيقة
+        عند إضافة منتجات جديدة في Free Zone أو أي مشروع مستقبلي.
+      </p>
+
+      <section class="card diagram-wrap">
+        <div class="circle c1">
+          <h2>التصنيفات</h2>
+          <p>تحدد "مكان" المنتج داخل الشجرة: قسم رئيسي ← قسم فرعي ← نوع فرعي.</p>
+        </div>
+        <div class="circle c2">
+          <h2>المواصفات</h2>
+          <p>تحدد "هوية" المنتج التقنية بقيم معيارية ثابتة وقابلة للمقارنة.</p>
+        </div>
+        <div class="circle c3">
+          <h2>الفلترة</h2>
+          <p>تستخدم المواصفات كـ Facets لإخراج نتائج دقيقة وسريعة ومفهومة للمستخدم.</p>
+        </div>
+        <div class="flow">
+          <strong>التدفق المعتمد:</strong> تصنيف صحيح → مواصفات صحيحة → فلاتر صحيحة → نتائج شراء أفضل
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>1) قاعدة القرار الذهبي</h2>
+          <p>
+            إذا اختلف عليك تصنيف منتج، اسأل نفسك: <strong>"ما أهم سبب يدفع العميل لشراء هذا المنتج؟"</strong>.
+          </p>
+          <ul>
+            <li>إذا السبب الأساسي هو الحوسبة المحمولة → <span class="tag">Laptops</span></li>
+            <li>إذا السبب الأساسي هو الاتصال والتنقل → <span class="tag">Smartphones</span></li>
+            <li>إذا السبب الأساسي هو العرض البصري → <span class="tag">Monitors</span></li>
+            <li>إذا السبب الأساسي هو التصوير → <span class="tag">Cameras</span></li>
+          </ul>
+          <p class="note">لا تصنّف حسب الوصف التسويقي، صنّف حسب الوظيفة الأساسية للمنتج.</p>
+        </article>
+
+        <article class="card">
+          <h2>2) شجرة التصنيفات الأساسية</h2>
+          <div>
+            <span class="tag">Smartphones</span>
+            <span class="tag">Laptops</span>
+            <span class="tag">Monitors</span>
+            <span class="tag">Cameras</span>
+            <span class="tag">Audio</span>
+            <span class="tag">Tablets</span>
+            <span class="tag">Gaming</span>
+            <span class="tag">Networking</span>
+            <span class="tag">Storage</span>
+            <span class="tag">Printers</span>
+            <span class="tag">Smart Home</span>
+            <span class="tag">Security & Safety</span>
+            <span class="tag">Power & Charging</span>
+          </div>
+          <p class="note">
+            كل فئة رئيسية يمكن أن تحتوي فئات فرعية، لكن لا تغيّر القاعدة: كل منتج له Category أساسية واحدة فقط.
+          </p>
+        </article>
+      </section>
+
+      <section class="card">
+        <h2>3) كيف تُصنّف منتج جديد (Workflow عملي)</h2>
+        <ol class="steps">
+          <li><strong>حدد الفئة الأساسية:</strong> category.</li>
+          <li><strong>حدد الفئة الفرعية:</strong> subcategory بدقة (Gaming Laptop / Mirrorless / ...).</li>
+          <li><strong>استخرج الهوية:</strong> brand + model + release_year.</li>
+          <li><strong>املأ المواصفات:</strong> باستخدام مفاتيح معيارية <code>snake_case</code>.</li>
+          <li><strong>حدد نوع كل خاصية:</strong> SELECT / RANGE / BOOLEAN ...</li>
+          <li><strong>أنشئ variants:</strong> عند اختلاف RAM/Storage/Color أو أي خيار شراء فعلي.</li>
+          <li><strong>اختبر الفلترة:</strong> عبر URL مثل <code>?brand=apple&ram=8,12</code>.</li>
+        </ol>
+      </section>
+
+      <section class="card">
+        <h2>4) مصفوفة أنواع الخصائص (Attributes Types Matrix)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>النوع</th>
+              <th>متى نستخدمه</th>
+              <th>مثال</th>
+              <th>خطأ شائع</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>SELECT</code></td>
+              <td>عندما القيمة خيار واحد من قائمة</td>
+              <td><code>resolution = QHD+</code></td>
+              <td>كتابة القيمة كنص حر بدون قائمة ثابتة</td>
+            </tr>
+            <tr>
+              <td><code>MULTI_SELECT</code></td>
+              <td>عندما المنتج يدعم عدة خيارات</td>
+              <td><code>wifi = Wi-Fi 6, Wi-Fi 7</code></td>
+              <td>وضعها SELECT فتفقد خيارات صحيحة</td>
+            </tr>
+            <tr>
+              <td><code>RANGE</code></td>
+              <td>عندما القيمة رقمية قابلة للمدى</td>
+              <td><code>battery_capacity = 5000</code></td>
+              <td>تخزين الرقم داخل TEXT</td>
+            </tr>
+            <tr>
+              <td><code>BOOLEAN</code></td>
+              <td>عندما القيمة نعم/لا</td>
+              <td><code>network_5g = true</code></td>
+              <td>تخزين yes/no كنصوص غير موحدة</td>
+            </tr>
+            <tr>
+              <td><code>COLOR</code></td>
+              <td>ألوان الشراء/العرض</td>
+              <td><code>color = Black</code></td>
+              <td>خلط اللون مع اسم variant كامل</td>
+            </tr>
+            <tr>
+              <td><code>TEXT</code></td>
+              <td>وصف تقني غير قابل للتقييس بسهولة</td>
+              <td><code>screen_protection = Gorilla Glass</code></td>
+              <td>استخدام TEXT لخصائص كان يمكن فلترتها</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>4.1) المواصفات الموسعة vs الفلاتر الظاهرة (قاعدة الاعتماد)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>المستوى</th>
+              <th>الغرض</th>
+              <th>هل يظهر في الفلاتر؟</th>
+              <th>قاعدة القرار</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Extended Specs</td>
+              <td>عرض تقني كامل + مقارنة تفصيلية</td>
+              <td>ليس دائما</td>
+              <td>يحفظ كل تفاصيل المنتج حتى لو لم تكن مناسبة كفلتر رئيسي</td>
+            </tr>
+            <tr>
+              <td>Visible Filters</td>
+              <td>تصفية سريعة للمستخدم</td>
+              <td>نعم</td>
+              <td>subset من المواصفات الموسعة (مشتركة + مهمة للشراء + سهلة الفهم)</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">
+          عمليا: الفلاتر الظاهرة تبنى من الجزء المشترك والمهم فقط من المواصفات الموسعة، وليس من كل الحقول.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>5) أمثلة Facets قوية حسب الفئة</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>الفئة</th>
+              <th>أهم مفاتيح الفلترة</th>
+              <th>أمثلة URL</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Smartphones</td>
+              <td>brand, ram, storage, chipset, network_5g, battery_capacity, refresh_rate</td>
+              <td><code>?brand=apple,samsung&ram=8,12&network_5g=true&price=400-1200</code></td>
+            </tr>
+            <tr>
+              <td>Laptops</td>
+              <td>processor_family, ram_size, storage_type, gpu_model, screen_size, refresh_rate</td>
+              <td><code>?processor_family=Core i7,Ryzen 7&ram_size=16,32&gpu_model=RTX 4060</code></td>
+            </tr>
+            <tr>
+              <td>Monitors</td>
+              <td>panel_type, resolution, refresh_rate, size_inch, hdr, response_time_ms</td>
+              <td><code>?panel_type=IPS,OLED&refresh_rate=120-240&size_inch=27-34</code></td>
+            </tr>
+            <tr>
+              <td>Cameras</td>
+              <td>camera_type, sensor_type, resolution_mp, ibis, max_video_resolution, mount</td>
+              <td><code>?camera_type=Mirrorless&sensor_type=Full-Frame&ibis=true</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="grid-3">
+        <article class="card">
+          <h3>6) أخطاء تسبب نتائج سيئة</h3>
+          <ul>
+            <li>إدخال RAM كـ <code>eight</code> بدل <code>8</code></li>
+            <li>تكرار نفس المعنى بمفتاحين مختلفين</li>
+            <li>اختيار Category خاطئة للمنتج</li>
+            <li>عدم توحيد الوحدات (GB, inch, Hz...)</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>7) قواعد جودة البيانات</h3>
+          <ul>
+            <li><span class="ok">مسموح:</span> <code>ram_size</code>, <code>battery_capacity</code></li>
+            <li><span class="warn">مرفوض:</span> مفاتيح عشوائية مثل <code>myRamField</code></li>
+            <li>كل رقم يجب أن يكون رقما فعليا وليس نصا</li>
+            <li>القيم الفارغة تسجل <code>null</code> وليس تخمينا</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>8) هدفك النهائي</h3>
+          <ul>
+            <li>المستخدم يجد المنتج بسرعة</li>
+            <li>المقارنة بين المنتجات تكون عادلة</li>
+            <li>صفحات الفئة تبقى نظيفة حتى مع آلاف المنتجات</li>
+            <li>إضافة فئة جديدة بدون كسر النظام</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="card">
+        <h2>9) مثال كامل من الإدخال إلى الفلترة</h2>
+        <details open>
+          <summary>مثال: Laptop Gaming جديد</summary>
+          <ul>
+            <li><strong>Category:</strong> Laptops</li>
+            <li><strong>Subcategory:</strong> Gaming Laptops</li>
+            <li><strong>Brand/Model:</strong> ASUS / ROG Strix G16</li>
+            <li>
+              <strong>Attributes:</strong>
+              processor_family=Core i7, ram_size=16, storage_type=SSD NVMe, gpu_model=RTX 4060,
+              refresh_rate=165, screen_size=16
+            </li>
+            <li>
+              <strong>URL Filter test:</strong>
+              <code>?processor_family=Core i7&ram_size=16&gpu_model=RTX 4060&refresh_rate=144-240</code>
+            </li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="card">
+        <h2>10) Checklist قبل اعتماد أي تصنيف</h2>
+        <ul>
+          <li>[ ] هل category صحيحة 100%؟</li>
+          <li>[ ] هل subcategory أدق خيار متاح؟</li>
+          <li>[ ] هل attributes الأساسية مكتملة؟</li>
+          <li>[ ] هل النوع لكل attribute صحيح؟</li>
+          <li>[ ] هل الوحدات موحدة؟</li>
+          <li>[ ] هل اختبرت فلترة URL وظهرت نتائج منطقية؟</li>
+        </ul>
+        <p class="note">
+          إذا جاوبت "نعم" على كل النقاط، غالبا التصنيف جاهز للاعتماد ويعطي نتائج ممتازة.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>11) ربط Admin Panel بواجهة المستخدم (الجزء الأهم تشغيليا)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>ما يتم في Admin</th>
+              <th>أين يحفظ في النظام</th>
+              <th>أثره المباشر في واجهة المستخدم</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>إنشاء فئة رئيسية/فرعية</td>
+              <td><code>Category</code></td>
+              <td>ظهور صفحة فئة ومسار واضح للمنتجات</td>
+            </tr>
+            <tr>
+              <td>تعريف خصائص الفئة</td>
+              <td><code>CategoryAttribute</code></td>
+              <td>توليد الفلاتر ديناميكيا في Sidebar</td>
+            </tr>
+            <tr>
+              <td>إضافة المنتج الأساسي</td>
+              <td><code>Product</code></td>
+              <td>ظهور بطاقة المنتج في نتائج الفئة</td>
+            </tr>
+            <tr>
+              <td>إدخال قيم المواصفات</td>
+              <td><code>ProductAttributeValue</code></td>
+              <td>دخول المنتج فعليا في نتائج الفلترة</td>
+            </tr>
+            <tr>
+              <td>إضافة خيارات شراء (رام/تخزين/لون)</td>
+              <td><code>ProductVariant</code></td>
+              <td>اختيارات شراء دقيقة في صفحة المنتج</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">
+          القاعدة: إذا لم تُدخل المواصفات بشكل صحيح في Admin، فالفلترة في الواجهة لن تكون منطقية حتى لو التصميم ممتاز.
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>12) التشغيل اليومي المقترح (Daily Workflow)</h2>
+          <ol class="steps">
+            <li>مراجعة المنتجات الجديدة المطلوب إضافتها اليوم.</li>
+            <li>التأكد أن الفئة وخصائصها موجودة قبل إدخال المنتج.</li>
+            <li>إدخال المنتج + المواصفات + variants.</li>
+            <li>اختبار فلاتر URL للفئة بعد الإضافة مباشرة.</li>
+            <li>تسجيل أي key جديد في دليل التصنيف لمنع العشوائية.</li>
+          </ol>
+        </article>
+        <article class="card">
+          <h2>13) توزيع المسؤوليات داخل الفريق</h2>
+          <ul>
+            <li><strong>Admin Manager:</strong> إدارة taxonomy وattribute schemas.</li>
+            <li><strong>Catalog Operator:</strong> إدخال المنتجات والمواصفات اليومية.</li>
+            <li><strong>QA:</strong> اختبار ظهور المنتج وصحة نتائج الفلاتر.</li>
+            <li><strong>Frontend:</strong> عرض الفلاتر والنتائج فقط (بدون hardcode).</li>
+            <li><strong>Backend:</strong> ضمان صحة التخزين والتحقق والindexes.</li>
+          </ul>
+          <p class="note">
+            هذا الفصل بين الأدوار يمنع تضارب القرارات ويحافظ على منطق ثابت مع نمو عدد المنتجات.
+          </p>
+        </article>
+      </section>
+
+      <section class="card">
+        <h2>14) سيناريو تحقق سريع بعد أي تحديث Admin</h2>
+        <ul>
+          <li>1) افتح صفحة الفئة (مثال: <code>/c/smartphones</code>).</li>
+          <li>2) تأكد أن الفلتر الجديد ظاهر بالاسم الصحيح.</li>
+          <li>3) فعّل الفلتر وتحقق من عدد النتائج.</li>
+          <li>4) انسخ URL وأعد فتحه في تبويب جديد للتأكد من ثبات الحالة.</li>
+          <li>5) إذا ظهرت نتائج غير منطقية: راجع نوع الحقل وقيمه في Admin.</li>
+        </ul>
+      </section>
+    </div>
+  </body>
+</html>

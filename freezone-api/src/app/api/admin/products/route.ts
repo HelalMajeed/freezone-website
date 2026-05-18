@@ -3,7 +3,7 @@ import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
-import { validateProductSpecsAgainstCategory } from "@/lib/admin-product-specs";
+import { persistProductSpecsForProduct, validateProductSpecsAgainstCategory } from "@/lib/admin-product-specs";
 import { replaceProductSecondaryCategories } from "@/lib/sync-product-secondary-categories";
 import { productQueryMissingSecondarySupport } from "@/lib/prisma-product-secondary-fallback";
 
@@ -58,6 +58,7 @@ export async function POST(req: Request) {
     brand?: string;
     brandId?: number | null;
     sku?: string;
+    model?: string;
     quantity?: number;
     nameEn?: string;
     nameAr?: string;
@@ -77,6 +78,9 @@ export async function POST(req: Request) {
   }
 
   const specCheck = await validateProductSpecsAgainstCategory(body.categoryId, body.specs);
+  if (!specCheck.ok) {
+    return Response.json({ error: specCheck.error }, { status: 400 });
+  }
 
   const images = Array.isArray(body.images) ? body.images.filter(Boolean) : [];
 
@@ -87,6 +91,7 @@ export async function POST(req: Request) {
         brand: body.brand || "—",
         brandId: body.brandId != null && Number.isFinite(body.brandId) ? body.brandId : null,
         sku: (body.sku ?? "").trim() || "—",
+        model: typeof body.model === "string" ? body.model.trim() : "",
         quantity: typeof body.quantity === "number" && Number.isFinite(body.quantity) ? body.quantity : 0,
         nameEn: body.nameEn,
         nameAr: body.nameAr || body.nameEn,
@@ -100,6 +105,14 @@ export async function POST(req: Request) {
         published: true,
       },
     });
+
+    const persisted = await persistProductSpecsForProduct(product.id, body.categoryId, body.specs);
+    if (persisted.ok && Object.keys(persisted.specs).length) {
+      await prisma.product.update({
+        where: { id: product.id },
+        data: { specs: persisted.specs as object },
+      });
+    }
 
     if (Array.isArray(body.secondaryCategoryIds)) {
       await replaceProductSecondaryCategories(product.id, product.categoryId, body.secondaryCategoryIds);

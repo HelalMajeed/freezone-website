@@ -344,7 +344,8 @@
     "buyNowAria": "Buy now and go to checkout",
     "unavailable": "Currently Unavailable",
     "relatedTitle": "You Might Also Like",
-    "specificationsAria": "Key specifications"
+    "specificationsAria": "Key specifications",
+    "extendedSpecsTitle": "Full technical specifications"
   },
   "Cart": {
     "title": "Shopping Cart",

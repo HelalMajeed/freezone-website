@@ -5,6 +5,7 @@ import { handleRouteDbError } from "@/lib/db-route-error";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { logAdminAction } from "@/lib/admin-audit";
 import { facetAttributesFromAdminFacetKeysBody } from "@/lib/facet-attributes";
+import { categoryAttributeRowsToFacetDefs, syncCategoryAttributesFromFacetKeys } from "@/lib/classification/sync";
 
 function slugify(s: string) {
   return (
@@ -24,18 +25,37 @@ export async function GET(req: Request) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
   try {
-    const rows = await prisma.category.findMany({
-      orderBy: { sortOrder: "asc" },
-      include: {
-        _count: { select: { products: true, secondaryProductLinks: true } },
-      },
-    });
+    let rows;
+    try {
+      rows = await prisma.category.findMany({
+        orderBy: { sortOrder: "asc" },
+        include: {
+          _count: { select: { products: true, secondaryProductLinks: true } },
+          categoryAttributes: { orderBy: { sortOrder: "asc" } },
+        },
+      });
+    } catch {
+      rows = await prisma.category.findMany({
+        orderBy: { sortOrder: "asc" },
+        include: { _count: { select: { products: true, secondaryProductLinks: true } } },
+      });
+    }
     return Response.json(
-      rows.map(({ _count, ...row }) => ({
-        ...row,
-        primaryProductCount: _count.products,
-        secondaryLinkCount: _count.secondaryProductLinks,
-      })),
+      rows.map(({ _count, ...row }) => {
+        const catAttrs =
+          "categoryAttributes" in row &&
+          Array.isArray((row as { categoryAttributes?: unknown }).categoryAttributes)
+            ? (row as { categoryAttributes: Parameters<typeof categoryAttributeRowsToFacetDefs>[0] })
+                .categoryAttributes
+            : [];
+        const attrs = catAttrs.length ? categoryAttributeRowsToFacetDefs(catAttrs) : null;
+        return {
+          ...row,
+          facetKeys: attrs?.length ? attrs : row.facetKeys,
+          primaryProductCount: _count.products,
+          secondaryLinkCount: _count.secondaryProductLinks,
+        };
+      }),
     );
   } catch (e) {
     return handleRouteDbError(e);
@@ -101,6 +121,14 @@ export async function POST(req: Request) {
         ...(facetKeys !== undefined ? { facetKeys } : {}),
       },
     });
+    if (facetKeys !== undefined) {
+      try {
+        const facetPayload = facetKeys === Prisma.JsonNull ? [] : (body?.facetKeys ?? []);
+        await syncCategoryAttributesFromFacetKeys(prisma, row.id, facetPayload);
+      } catch (syncErr) {
+        console.warn("[admin/categories] CategoryAttribute sync on create skipped:", syncErr);
+      }
+    }
     revalidateStorefrontData();
     await logAdminAction("category.create", "Category", { entityId: row.id, payload: { slug: row.slug } });
     return Response.json(row);

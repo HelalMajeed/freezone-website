@@ -1,5 +1,6 @@
-import type { FacetAttributeDef, Product } from "./data";
+import type { AttributeType, FacetAttributeDef, Product } from "./data";
 import { productBelongsToCategory } from "./productCategoryMembership";
+import { productValueMatchesFilterSelection } from "@/lib/classification/product-filter";
 
 export type FacetDefinition = {
   key: string;
@@ -7,6 +8,9 @@ export type FacetDefinition = {
   /** When set (from `Category.facetAttributes`), overrides i18n for this facet. */
   name_en?: string;
   name_ar?: string;
+  type?: AttributeType;
+  filterable?: boolean;
+  unit?: string;
 };
 
 /** Title for filters / PDP — uses DB names when present, else `Products.*` i18n. */
@@ -337,14 +341,20 @@ export function facetDefinitionsForCategory(
       return (dynamic as string[]).map((key) => ({
         key,
         labelKey: FACET_KEY_TO_LABEL[key] ?? "facetGeneric",
+        filterable: true,
       }));
     }
-    return (dynamic as FacetAttributeDef[]).map((a) => ({
-      key: a.key,
-      labelKey: FACET_KEY_TO_LABEL[a.key] ?? "facetGeneric",
-      name_en: a.name_en,
-      name_ar: a.name_ar,
-    }));
+    return (dynamic as FacetAttributeDef[])
+      .filter((a) => a.filterable !== false)
+      .map((a) => ({
+        key: a.key,
+        labelKey: FACET_KEY_TO_LABEL[a.key] ?? "facetGeneric",
+        name_en: a.name_en,
+        name_ar: a.name_ar,
+        type: a.type,
+        filterable: a.filterable ?? true,
+        unit: a.unit,
+      }));
   }
   return CATEGORY_FACETS[resolveCatalogFacetSlug(catId)] ?? [];
 }
@@ -402,11 +412,16 @@ export function productMatchesFacetSelections(
   dynamicFacetKeys?: string[] | FacetAttributeDef[] | null,
 ): boolean {
   const defs = facetDefinitionsForCategory(catId, dynamicFacetKeys);
-  for (const { key } of defs) {
-    const selected = selections[key];
+  for (const def of defs) {
+    const selected = selections[def.key];
     if (!selected?.length) continue;
-    const val = getProductFacetValue(product, key);
-    if (!val || !selected.includes(val)) return false;
+    const val = getProductFacetValue(product, def.key);
+    if (!productValueMatchesFilterSelection(val, def.type, selected)) return false;
   }
   return true;
+}
+
+/** Visible filter facets only (extended specs with `filterable: false` stay on PDP). */
+export function filterableFacetDefinitions(defs: FacetDefinition[]): FacetDefinition[] {
+  return defs.filter((d) => d.filterable !== false);
 }

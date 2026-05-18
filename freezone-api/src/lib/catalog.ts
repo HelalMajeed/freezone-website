@@ -3,6 +3,9 @@ import { PRODUCTS, CATEGORIES, BRANDS } from "./data";
 import { prisma, isDatabaseConfigured, isDbConnectionError } from "./prisma";
 import { productQueryMissingSecondarySupport } from "./prisma-product-secondary-fallback";
 import { facetKeysFromAttributes, parseFacetAttributesFromUnknown } from "./facet-attributes";
+import { categoryAttributeRowsToFacetDefs } from "./classification/sync";
+import { productAttributeValuesToSpecs } from "./classification/values";
+import type { CategoryAttributeRow, ProductAttributeValueRow } from "./classification/types";
 
 export type LocaleCode = "en" | "ar";
 
@@ -19,6 +22,8 @@ function mapDbToProduct(
     oldPrice: number | null;
     storage: string;
     specs: unknown;
+    attributeValues?: ProductAttributeValueRow[];
+    categoryAttributes?: CategoryAttributeRow[];
     inStock: boolean;
     featured: boolean;
     isNew: boolean;
@@ -28,8 +33,9 @@ function mapDbToProduct(
     sales: number;
     model3d: string | null;
     sku: string;
+    model?: string;
     createdAt: Date;
-    category: { slug: string };
+    category: { slug: string; categoryAttributes?: CategoryAttributeRow[] };
     images: { url: string; sortOrder: number }[];
     secondaryCategories?: { category: { slug: string } }[];
   },
@@ -64,11 +70,25 @@ function mapDbToProduct(
     images: imgs,
     model3d: row.model3d,
     sku: row.sku?.trim() || undefined,
-    specs:
-      row.specs && typeof row.specs === "object" && !Array.isArray(row.specs)
-        ? (row.specs as Record<string, string>)
-        : undefined,
+    model: row.model?.trim() || undefined,
+    specs: resolveProductSpecs(row),
   };
+}
+
+function resolveProductSpecs(row: {
+  specs: unknown;
+  attributeValues?: ProductAttributeValueRow[];
+  category?: { categoryAttributes?: CategoryAttributeRow[] };
+}): Record<string, string> | undefined {
+  const schema = row.category?.categoryAttributes ?? [];
+  if (row.attributeValues?.length) {
+    const fromEav = productAttributeValuesToSpecs(row.attributeValues, schema);
+    if (Object.keys(fromEav).length) return fromEav;
+  }
+  if (row.specs && typeof row.specs === "object" && !Array.isArray(row.specs)) {
+    return row.specs as Record<string, string>;
+  }
+  return undefined;
 }
 
 function mapDbToCategory(
@@ -79,11 +99,14 @@ function mapDbToCategory(
     icon: string;
     color: string;
     facetKeys: unknown;
+    categoryAttributes?: CategoryAttributeRow[];
     backgroundImageUrl: string | null;
   },
   locale: LocaleCode,
 ): Category {
-  const facetAttributes: FacetAttributeDef[] = parseFacetAttributesFromUnknown(row.facetKeys);
+  const facetAttributes: FacetAttributeDef[] = row.categoryAttributes?.length
+    ? categoryAttributeRowsToFacetDefs(row.categoryAttributes)
+    : parseFacetAttributesFromUnknown(row.facetKeys);
   const facetKeys = facetAttributes.length ? facetKeysFromAttributes(facetAttributes) : undefined;
   const img = row.backgroundImageUrl?.trim() || null;
   return {
@@ -97,10 +120,27 @@ function mapDbToCategory(
 }
 
 const storefrontProductIncludeBase = {
+  category: {
+    select: {
+      slug: true,
+      categoryAttributes: { orderBy: { sortOrder: "asc" as const } },
+    },
+  },
+  attributeValues: true,
+  images: { select: { url: true, sortOrder: true } },
+  brandRef: { select: { nameEn: true, nameAr: true } },
+} as const;
+
+const storefrontProductIncludeLegacy = {
   category: { select: { slug: true } },
   images: { select: { url: true, sortOrder: true } },
   brandRef: { select: { nameEn: true, nameAr: true } },
 } as const;
+
+function catalogQueryMissingClassificationSupport(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e);
+  return /CategoryAttribute|ProductAttributeValue|categoryAttributes|attributeValues/i.test(msg);
+}
 
 export async function getProductsCatalog(locale: LocaleCode): Promise<Product[]> {
   if (!isDatabaseConfigured()) {
@@ -118,13 +158,23 @@ export async function getProductsCatalog(locale: LocaleCode): Promise<Product[]>
         orderBy: { id: "asc" },
       });
     } catch (e) {
-      if (!productQueryMissingSecondarySupport(e)) throw e;
-      console.warn("[catalog] loading products without secondaryCategories (run `npx prisma generate` + migrate).");
-      rows = await prisma.product.findMany({
-        where: { published: true },
-        include: { ...storefrontProductIncludeBase },
-        orderBy: { id: "asc" },
-      });
+      if (catalogQueryMissingClassificationSupport(e)) {
+        console.warn("[catalog] loading products without classification tables (run migrate).");
+        rows = await prisma.product.findMany({
+          where: { published: true },
+          include: { ...storefrontProductIncludeLegacy },
+          orderBy: { id: "asc" },
+        });
+      } else if (!productQueryMissingSecondarySupport(e)) {
+        throw e;
+      } else {
+        console.warn("[catalog] loading products without secondaryCategories.");
+        rows = await prisma.product.findMany({
+          where: { published: true },
+          include: { ...storefrontProductIncludeLegacy },
+          orderBy: { id: "asc" },
+        });
+      }
     }
     return rows.map((r) => mapDbToProduct(r, locale));
   } catch (e) {
@@ -138,7 +188,16 @@ export async function getCategoriesCatalog(locale: LocaleCode): Promise<Category
     return CATEGORIES;
   }
   try {
-    const rows = await prisma.category.findMany({ orderBy: { sortOrder: "asc" } });
+    let rows;
+    try {
+      rows = await prisma.category.findMany({
+        orderBy: { sortOrder: "asc" },
+        include: { categoryAttributes: { orderBy: { sortOrder: "asc" } } },
+      });
+    } catch (e) {
+      if (!catalogQueryMissingClassificationSupport(e)) throw e;
+      rows = await prisma.category.findMany({ orderBy: { sortOrder: "asc" } });
+    }
     return rows.map((r) =>
       mapDbToCategory(
         {
@@ -148,6 +207,7 @@ export async function getCategoriesCatalog(locale: LocaleCode): Promise<Category
           icon: r.icon,
           color: r.color,
           facetKeys: r.facetKeys,
+          categoryAttributes: "categoryAttributes" in r ? (r as { categoryAttributes: CategoryAttributeRow[] }).categoryAttributes : undefined,
           backgroundImageUrl: r.backgroundImageUrl,
         },
         locale,

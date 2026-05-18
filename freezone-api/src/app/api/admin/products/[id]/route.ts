@@ -4,7 +4,7 @@ import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 import { normalizeSpecsInput } from "@/lib/spec-validation";
-import { validateProductSpecsAgainstCategory } from "@/lib/admin-product-specs";
+import { persistProductSpecsForProduct, validateProductSpecsAgainstCategory } from "@/lib/admin-product-specs";
 import {
   replaceProductSecondaryCategories,
   stripSecondaryMatchingPrimary,
@@ -66,6 +66,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     brand?: string;
     brandId?: number | null;
     sku?: string;
+    model?: string;
     quantity?: number;
     nameEn?: string;
     nameAr?: string;
@@ -97,6 +98,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       body.specs !== undefined ? body.specs : existing.specs,
     );
     const specCheck = await validateProductSpecsAgainstCategory(nextCategoryId, mergedSpecs);
+    if (!specCheck.ok) {
+      return Response.json({ error: specCheck.error }, { status: 400 });
+    }
+
+    const persisted = await persistProductSpecsForProduct(id, nextCategoryId, mergedSpecs);
+    const finalSpecs = persisted.ok ? persisted.specs : specCheck.specs;
 
     await prisma.product.update({
       where: { id },
@@ -107,6 +114,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
           ? { brandId: body.brandId != null && Number.isFinite(body.brandId) ? body.brandId : null }
           : {}),
         ...(body.sku !== undefined ? { sku: body.sku.trim() || "—" } : {}),
+        ...(body.model !== undefined ? { model: body.model.trim() } : {}),
         ...(typeof body.quantity === "number" ? { quantity: body.quantity } : {}),
         ...(body.nameEn !== undefined ? { nameEn: body.nameEn } : {}),
         ...(body.nameAr !== undefined ? { nameAr: body.nameAr } : {}),
@@ -116,7 +124,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
         ...(body.oldPrice !== undefined ? { oldPrice: body.oldPrice } : {}),
         ...(body.storage !== undefined ? { storage: body.storage } : {}),
         ...(body.model3d !== undefined ? { model3d: body.model3d?.trim() || null } : {}),
-        specs: specCheck.specs as object,
+        specs: finalSpecs as object,
         ...(body.inStock !== undefined ? { inStock: body.inStock } : {}),
         ...(body.featured !== undefined ? { featured: body.featured } : {}),
         ...(body.isNew !== undefined ? { isNew: body.isNew } : {}),

@@ -1,8 +1,19 @@
-/** Bilingual facet/attribute definition stored in DB `Category.facetKeys` JSON. */
+/** Attribute types (Universal Product Classification Framework). */
+export type AttributeType = "SELECT" | "MULTI_SELECT" | "RANGE" | "BOOLEAN" | "TEXT" | "COLOR";
+
+/** Bilingual attribute — `CategoryAttribute` table or legacy `Category.facetKeys` JSON. */
 export type FacetAttributeDef = {
   key: string;
   name_en: string;
   name_ar: string;
+  type?: AttributeType;
+  options?: string[];
+  filterable?: boolean;
+  searchable?: boolean;
+  comparable?: boolean;
+  displayGroup?: string;
+  required?: boolean;
+  unit?: string;
 };
 
 export interface Category {
@@ -47,6 +58,8 @@ export interface Product {
   model3d: string | null;
   /** SKU / part number — shown as «Model» on the product page when set. */
   sku?: string;
+  /** Product model name (identity with brand). */
+  model?: string;
   /** Display strings for category-specific filters (CPU, GPU, screen size, etc.). */
   specs?: Record<string, string>;
 }

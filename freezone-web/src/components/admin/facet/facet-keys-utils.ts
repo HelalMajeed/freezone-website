@@ -1,5 +1,5 @@
 import type { FacetAttributeDef } from "@/lib/data";
-import { defaultFacetNamesForKey, parseFacetAttributesFromUnknown } from "@/lib/facet-attributes";
+import { defaultFacetNamesForKey, makeCustomFacetAttribute, parseFacetAttributesFromUnknown } from "@/lib/facet-attributes";
 import { getAllFacetCatalogKeysOrdered } from "@/lib/facet-admin-labels";
 import { CATEGORY_FACETS, resolveCatalogFacetSlug } from "@/lib/productFacetConfig";
 
@@ -23,11 +23,11 @@ export function parseAdminCategoryFacetKeys(slug: string, raw: unknown): FacetAt
   if (!defs?.length) return [];
   return defs.map((d) => {
     const fb = defaultFacetNamesForKey(d.key);
-    return {
-      key: d.key,
-      name_en: (d.name_en?.trim() || fb.name_en).trim(),
-      name_ar: (d.name_ar?.trim() || fb.name_ar).trim(),
-    };
+    return makeCustomFacetAttribute(
+      (d.name_en?.trim() || fb.name_en).trim(),
+      (d.name_ar?.trim() || fb.name_ar).trim(),
+      d.key,
+    );
   });
 }
 

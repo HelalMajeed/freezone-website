@@ -344,7 +344,8 @@
     "buyNowAria": "اشتري الآن والانتقال لإتمام الطلب",
     "unavailable": "غير متوفر حالياً",
     "relatedTitle": "قد يعجبك أيضاً",
-    "specificationsAria": "المواصفات الرئيسية"
+    "specificationsAria": "المواصفات الرئيسية",
+    "extendedSpecsTitle": "المواصفات التقنية الكاملة"
   },
   "Cart": {
     "title": "سلة المشتريات",

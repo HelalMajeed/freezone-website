@@ -13,6 +13,12 @@ import {
   makeCustomFacetAttribute,
   validateFacetAttributesForSave,
 } from "@/lib/facet-attributes";
+import {
+  applyMetaToAttribute,
+  facetMetaFromAttribute,
+  FacetAttributeMetaFields,
+  type FacetMetaDraft,
+} from "./FacetAttributeMetaFields";
 import { AttributeGroupCard } from "./AttributeGroupCard";
 import { FacetAttributeToolbar } from "./FacetAttributeToolbar";
 import { facetAttributesToOrderedSelection, getFacetCatalogOrder } from "./facet-keys-utils";
@@ -30,10 +36,7 @@ function matchesSearch(key: string, q: string): boolean {
 }
 
 function attrsSignature(attrs: FacetAttributeDef[]): string {
-  return [...attrs]
-    .map((a) => `${a.key}\t${a.name_en}\t${a.name_ar}`)
-    .sort()
-    .join("\n");
+  return JSON.stringify(attrs);
 }
 
 /** Categories whose saved `facetKeys` can be copied into the editor (e.g. admin categories list). */
@@ -105,6 +108,16 @@ export const FacetKeysWorkspace = forwardRef<FacetKeysEditorHandle, FacetKeysWor
   const [renameEn, setRenameEn] = useState("");
   const [renameAr, setRenameAr] = useState("");
   const [renameError, setRenameError] = useState("");
+  const [renameMeta, setRenameMeta] = useState<FacetMetaDraft>({
+    type: "SELECT",
+    filterable: true,
+    searchable: false,
+    comparable: false,
+    required: false,
+    unit: "",
+    options: [],
+    displayGroup: "specs",
+  });
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importSourceId, setImportSourceId] = useState<number | null>(null);
   const [importChecks, setImportChecks] = useState<Record<string, boolean>>({});
@@ -384,6 +397,7 @@ export const FacetKeysWorkspace = forwardRef<FacetKeysEditorHandle, FacetKeysWor
     setRenameKey(a.key);
     setRenameEn(a.name_en);
     setRenameAr(a.name_ar);
+    setRenameMeta(facetMetaFromAttribute(a));
     setRenameError("");
   }, []);
 
@@ -402,7 +416,10 @@ export const FacetKeysWorkspace = forwardRef<FacetKeysEditorHandle, FacetKeysWor
       setRenameError(isAr ? "أدخل الاسم بالإنجليزية والعربية." : "Enter both English and Arabic names.");
       return;
     }
-    const next = value.map((x) => (x.key === renameKey ? { ...x, name_en, name_ar } : x));
+    const next = value.map((x) => {
+      if (x.key !== renameKey) return x;
+      return applyMetaToAttribute({ ...x, name_en, name_ar }, renameMeta);
+    });
     const v = validateFacetAttributesForSave(next);
     if (!v.ok) {
       setRenameError(v.error);
@@ -410,7 +427,7 @@ export const FacetKeysWorkspace = forwardRef<FacetKeysEditorHandle, FacetKeysWor
     }
     onChange(next);
     cancelRename();
-  }, [renameKey, renameEn, renameAr, value, onChange, cancelRename, isAr]);
+  }, [renameKey, renameEn, renameAr, renameMeta, value, onChange, cancelRename, isAr]);
 
   const removeQuick = useCallback(
     (key: string) => {
@@ -716,6 +733,7 @@ export const FacetKeysWorkspace = forwardRef<FacetKeysEditorHandle, FacetKeysWor
                         />
                       </label>
                     </div>
+                    <FacetAttributeMetaFields value={renameMeta} onChange={setRenameMeta} localeUi={localeUi} />
                     {renameError ? <p className={styles.renameError}>{renameError}</p> : null}
                     <div className={styles.quickRenameActions}>
                       <button type="button" className={styles.renameSaveBtn} onClick={() => saveRename()}>

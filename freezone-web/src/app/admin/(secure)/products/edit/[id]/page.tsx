@@ -5,8 +5,9 @@ import { Link } from "react-router-dom";
 import { useNavigate, useParams } from "react-router-dom";
 import { uploadAdminImage, uploadAdminModel3d } from "@/lib/admin-upload-image";
 import { MediaPickerModal, type MediaRow } from "@/components/admin/MediaPickerModal";
-import { facetKeysFromCategoryJson, normalizeSpecsInput } from "@/lib/spec-validation";
-import { facetAdminLabelAr } from "@/lib/facet-admin-labels";
+import { normalizeSpecsInput } from "@/lib/spec-validation";
+import { parseFacetAttributesFromUnknown } from "@/lib/facet-attributes";
+import { AdminProductSpecFields } from "@/components/admin/products/AdminProductSpecFields";
 import { freezoneApiUrl } from "@/lib/api-internal";
 
 type Category = { id: number; slug: string; nameEn: string; facetKeys?: unknown };
@@ -21,6 +22,7 @@ type ProductRow = {
   brand: string;
   brandId: number | null;
   sku: string;
+  model: string;
   quantity: number;
   nameEn: string;
   nameAr: string;
@@ -108,12 +110,12 @@ export default function AdminEditProductPage() {
         raw.secondaryCategories?.map((x) => x.categoryId).filter((n) => Number.isFinite(n)) ?? [];
       const { secondaryCategories, ...rest } = raw;
       void secondaryCategories;
-      setProduct({ ...rest, secondaryCategoryIds });
+      setProduct({ ...rest, secondaryCategoryIds, model: (raw as { model?: string }).model ?? "" });
       const cat = cats.find((x) => x.id === raw.categoryId);
-      const keys = facetKeysFromCategoryJson(cat?.facetKeys);
+      const attrs = parseFacetAttributesFromUnknown(cat?.facetKeys);
       const base = normalizeSpecsInput(raw.specs);
       const s: Record<string, string> = {};
-      for (const k of keys) s[k] = base[k] ?? "";
+      for (const a of attrs) s[a.key] = base[a.key] ?? "";
       setSpecs(s);
     } else {
       setErr(p.status === 503 ? "قاعدة البيانات غير متاحة" : "تعذّر تحميل المنتج");
@@ -125,10 +127,10 @@ export default function AdminEditProductPage() {
     void loadAll();
   }, [loadAll]);
 
-  const requiredSpecKeys = useMemo(() => {
+  const categoryAttributes = useMemo(() => {
     if (!product || categories.length === 0) return [];
     const cat = categories.find((c) => c.id === product.categoryId);
-    return facetKeysFromCategoryJson(cat?.facetKeys);
+    return parseFacetAttributesFromUnknown(cat?.facetKeys);
   }, [product, categories]);
 
   async function saveProduct(e: React.FormEvent) {
@@ -163,7 +165,8 @@ export default function AdminEditProductPage() {
         reviews: product.reviews,
         sales: product.sales,
         published: product.published,
-        specs: requiredSpecKeys.length ? specs : {},
+        model: product.model ?? "",
+        specs: categoryAttributes.length ? specs : {},
         secondaryCategoryIds: product.secondaryCategoryIds,
       }),
     });
@@ -357,9 +360,9 @@ export default function AdminEditProductPage() {
               secondaryCategoryIds: product.secondaryCategoryIds.filter((id) => id !== categoryId),
             });
             const cat = categories.find((c) => c.id === categoryId);
-            const keys = facetKeysFromCategoryJson(cat?.facetKeys);
+            const attrs = parseFacetAttributesFromUnknown(cat?.facetKeys);
             const next: Record<string, string> = {};
-            for (const k of keys) next[k] = specs[k] ?? "";
+            for (const a of attrs) next[a.key] = specs[a.key] ?? "";
             setSpecs(next);
           }}
           style={field}
@@ -505,37 +508,19 @@ export default function AdminEditProductPage() {
           onChange={(e) => setProduct({ ...product, storage: e.target.value })}
           style={field}
         />
+        <input
+          placeholder="الموديل (مثل ROG Strix G16)"
+          value={product.model ?? ""}
+          onChange={(e) => setProduct({ ...product, model: e.target.value })}
+          style={field}
+        />
 
-        {requiredSpecKeys.length > 0 && (
-          <div
-            style={{
-              padding: 14,
-              borderRadius: 10,
-              border: "1px solid #334155",
-              background: "var(--admin-surface-muted)",
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            <span style={{ color: "var(--admin-muted)", fontSize: 13, fontWeight: 600 }}>
-              مواصفات القسم — اختيارية ({requiredSpecKeys.length})
-            </span>
-            {requiredSpecKeys.map((k) => (
-              <label key={k} style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
-                <span style={{ color: "var(--admin-muted)" }}>
-                  {facetAdminLabelAr(k)} <code style={{ fontSize: 11, opacity: 0.8 }}>{k}</code>
-                </span>
-                <input
-                  value={specs[k] ?? ""}
-                  onChange={(e) => setSpecs((prev) => ({ ...prev, [k]: e.target.value }))}
-                  placeholder={`${facetAdminLabelAr(k)} (اختياري)`}
-                  style={field}
-                />
-              </label>
-            ))}
-          </div>
-        )}
+        <AdminProductSpecFields
+          attributes={categoryAttributes}
+          specs={specs}
+          onChange={(key, value) => setSpecs((prev) => ({ ...prev, [key]: value }))}
+          fieldStyle={field}
+        />
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" }}>
           <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14 }}>

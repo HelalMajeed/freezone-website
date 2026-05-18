@@ -9,6 +9,7 @@ import type { Product } from "@/lib/data";
 import {
   facetDefinitionsForCategory,
   facetDefinitionDisplayTitle,
+  filterableFacetDefinitions,
   collectFacetValueCounts,
   collectBrandCounts,
 } from "@/lib/productFacetConfig";
@@ -84,9 +85,11 @@ export function FilterSidebar({ filters, setFilters, clearFilters, products, cat
 
   const activeCat = filters.cat;
   const categoryMeta = categories.find((c) => c.id === activeCat);
-  const facetDefs = facetDefinitionsForCategory(
-    activeCat,
-    categoryMeta?.facetAttributes?.length ? categoryMeta.facetAttributes : categoryMeta?.facetKeys ?? null,
+  const facetDefs = filterableFacetDefinitions(
+    facetDefinitionsForCategory(
+      activeCat,
+      categoryMeta?.facetAttributes?.length ? categoryMeta.facetAttributes : categoryMeta?.facetKeys ?? null,
+    ),
   );
 
   const brandOptions = collectBrandCounts(products, activeCat);
@@ -127,11 +130,80 @@ export function FilterSidebar({ filters, setFilters, clearFilters, products, cat
       {!activeCat ? <p className={styles.hint}>{t("filterSpecsHint")}</p> : null}
 
       {facetDefs.map((def) => {
-        const options = collectFacetValueCounts(products, activeCat, def.key);
-        if (options.length === 0) return null;
         const selected = filters.specSelections[def.key] ?? [];
         const facetTitle = facetDefinitionDisplayTitle(def, locale, (k, o) => t(k, o));
         const open = openSections[`spec-${def.key}`] ?? false;
+
+        if (def.type === "RANGE") {
+          const rangeSel = selected[0] ?? "";
+          const [rMin = "", rMax = ""] = rangeSel.includes("-") ? rangeSel.split("-") : ["", ""];
+          const applyRange = (min: string, max: string) => {
+            const a = min.trim();
+            const b = max.trim();
+            setFilters((prev) => {
+              const nextSpecs = { ...prev.specSelections };
+              if (!a && !b) delete nextSpecs[def.key];
+              else nextSpecs[def.key] = [`${a || "0"}-${b || "999999"}`];
+              return { ...prev, specSelections: nextSpecs };
+            });
+          };
+          return (
+            <AccordionSection
+              key={def.key}
+              id={`spec-${def.key}`}
+              title={facetTitle}
+              isOpen={open}
+              onToggle={() => toggleSection(`spec-${def.key}`)}
+            >
+              <div className={styles.priceInputs}>
+                <input
+                  type="number"
+                  placeholder={t("priceMin")}
+                  value={rMin}
+                  onChange={(e) => applyRange(e.target.value, rMax)}
+                />
+                <input
+                  type="number"
+                  placeholder={t("priceMax")}
+                  value={rMax}
+                  onChange={(e) => applyRange(rMin, e.target.value)}
+                />
+              </div>
+            </AccordionSection>
+          );
+        }
+
+        if (def.type === "BOOLEAN") {
+          const boolOpts = [
+            { value: "true", label: locale === "ar" ? "نعم" : "Yes" },
+            { value: "false", label: locale === "ar" ? "لا" : "No" },
+          ];
+          return (
+            <AccordionSection
+              key={def.key}
+              id={`spec-${def.key}`}
+              title={facetTitle}
+              isOpen={open}
+              onToggle={() => toggleSection(`spec-${def.key}`)}
+            >
+              <div className={styles.facetList}>
+                {boolOpts.map(({ value: opt, label }) => {
+                  const isOn = selected.includes(opt);
+                  return (
+                    <label key={opt} className={styles.facetRow}>
+                      <input type="checkbox" checked={isOn} onChange={() => toggleSpecValue(def.key, opt)} />
+                      <span className={styles.facetLabel}>{label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </AccordionSection>
+          );
+        }
+
+        const options = collectFacetValueCounts(products, activeCat, def.key);
+        if (options.length === 0) return null;
+
         return (
           <AccordionSection
             key={def.key}
@@ -143,6 +215,7 @@ export function FilterSidebar({ filters, setFilters, clearFilters, products, cat
             <div className={styles.facetList}>
               {options.map(({ value: opt, count }) => {
                 const isOn = selected.includes(opt);
+                const label = def.unit && /^\d/.test(opt) ? `${opt} ${def.unit}` : opt;
                 return (
                   <label key={opt} className={styles.facetRow}>
                     <input
@@ -150,7 +223,7 @@ export function FilterSidebar({ filters, setFilters, clearFilters, products, cat
                       checked={isOn}
                       onChange={() => toggleSpecValue(def.key, opt)}
                     />
-                    <span className={styles.facetLabel}>{opt}</span>
+                    <span className={styles.facetLabel}>{label}</span>
                     <span className={styles.facetCount}>{count}</span>
                   </label>
                 );

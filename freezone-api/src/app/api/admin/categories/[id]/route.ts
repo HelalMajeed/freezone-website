@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 import { facetAttributesFromAdminFacetKeysBody } from "@/lib/facet-attributes";
+import { syncCategoryAttributesFromFacetKeys } from "@/lib/classification/sync";
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   if (!isAdminAuthenticatedFromRequest(req)) {
@@ -69,6 +70,18 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
         ...(facetKeysJson !== undefined ? { facetKeys: facetKeysJson } : {}),
       },
     });
+
+    if (facetKeysJson !== undefined) {
+      try {
+        const facetPayload =
+          facetKeysJson === Prisma.JsonNull
+            ? []
+            : (body.facetKeys as unknown);
+        await syncCategoryAttributesFromFacetKeys(prisma, id, facetPayload ?? []);
+      } catch (syncErr) {
+        console.warn("[admin/categories] CategoryAttribute sync skipped:", syncErr);
+      }
+    }
 
     revalidateStorefrontData();
     await logAdminAction("category.update", "Category", { entityId: id });

@@ -4,8 +4,8 @@ import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { uploadAdminImage, uploadAdminModel3d } from "@/lib/admin-upload-image";
 import { MediaPickerModal, type MediaRow } from "@/components/admin/MediaPickerModal";
-import { facetKeysFromCategoryJson } from "@/lib/spec-validation";
-import { facetAdminLabelAr } from "@/lib/facet-admin-labels";
+import { parseFacetAttributesFromUnknown } from "@/lib/facet-attributes";
+import { AdminProductSpecFields } from "@/components/admin/products/AdminProductSpecFields";
 import { freezoneApiUrl } from "@/lib/api-internal";
 
 type Category = { id: number; slug: string; nameEn: string; nameAr?: string; facetKeys?: unknown };
@@ -46,6 +46,7 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId, 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [fromLibraryUrls, setFromLibraryUrls] = useState<string[]>([]);
   const [specs, setSpecs] = useState<Record<string, string>>({});
+  const [model, setModel] = useState("");
   const [secondaryCategoryIds, setSecondaryCategoryIds] = useState<number[]>([]);
 
   useEffect(() => {
@@ -67,9 +68,9 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId, 
     setSecondaryCategoryIds((prev) => prev.filter((id) => id !== resolvedCategoryId));
   }, [resolvedCategoryId]);
 
-  const requiredSpecKeys = useMemo(() => {
+  const categoryAttributes = useMemo(() => {
     const c = categories.find((x) => x.id === resolvedCategoryId);
-    return facetKeysFromCategoryJson(c?.facetKeys);
+    return parseFacetAttributesFromUnknown(c?.facetKeys);
   }, [categories, resolvedCategoryId]);
 
   async function submit(e: FormEvent) {
@@ -108,9 +109,10 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId, 
         price: parseInt(price.replace(/\D/g, ""), 10) || 0,
         oldPrice: oldPrice ? parseInt(oldPrice.replace(/\D/g, ""), 10) : null,
         storage,
+        model: model.trim(),
         model3d: model3dUrl,
         images: imageUrls,
-        specs: requiredSpecKeys.length ? specs : undefined,
+        specs: categoryAttributes.length ? specs : undefined,
         secondaryCategoryIds: secondaryCategoryIds.length ? secondaryCategoryIds : undefined,
       }),
     });
@@ -230,36 +232,13 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId, 
       <input placeholder="السعر (IQD)" value={price} onChange={(e) => setPrice(e.target.value)} required style={field} />
       <input placeholder="سعر قبل الخصم (اختياري)" value={oldPrice} onChange={(e) => setOldPrice(e.target.value)} style={field} />
       <input placeholder="مواصفات مختصرة (سطر واحد للعرض)" value={storage} onChange={(e) => setStorage(e.target.value)} style={field} />
-      {requiredSpecKeys.length > 0 && (
-        <div
-          style={{
-            padding: 14,
-            borderRadius: 10,
-            border: "1px solid var(--admin-border)",
-            background: "var(--admin-surface)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-          }}
-        >
-          <span style={{ color: "var(--admin-muted)", fontSize: 13, fontWeight: 600 }}>
-            مواصفات القسم — اختيارية ({requiredSpecKeys.length})
-          </span>
-          {requiredSpecKeys.map((k) => (
-            <label key={k} style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
-              <span style={{ color: "var(--admin-muted)" }}>
-                {facetAdminLabelAr(k)} <code style={{ fontSize: 11, opacity: 0.8 }}>{k}</code>
-              </span>
-              <input
-                value={specs[k] ?? ""}
-                onChange={(e) => setSpecs((prev) => ({ ...prev, [k]: e.target.value }))}
-                placeholder={`${facetAdminLabelAr(k)} (اختياري)`}
-                style={field}
-              />
-            </label>
-          ))}
-        </div>
-      )}
+      <input placeholder="الموديل (مثل ROG Strix G16)" value={model} onChange={(e) => setModel(e.target.value)} style={field} />
+      <AdminProductSpecFields
+        attributes={categoryAttributes}
+        specs={specs}
+        onChange={(key, value) => setSpecs((prev) => ({ ...prev, [key]: value }))}
+        fieldStyle={field}
+      />
       <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>نموذج ثلاثي الأبعاد (اختياري — ملف .glb أو .gltf)</label>
       <input
         type="file"

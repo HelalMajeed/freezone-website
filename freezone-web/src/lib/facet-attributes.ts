@@ -1,5 +1,7 @@
-import type { FacetAttributeDef } from "@/lib/data";
+import type { AttributeType, FacetAttributeDef } from "@/lib/data";
 import { FACET_ADMIN_LABEL_AR, FACET_ADMIN_LABEL_EN } from "@/lib/facet-admin-labels";
+import { defaultAttributeMetaForKey, isAttributeType } from "@/lib/classification/presets";
+import { normalizeAttributeKey, parseOptionsJson } from "@/lib/classification/values";
 
 export type { FacetAttributeDef } from "@/lib/data";
 
@@ -12,17 +14,59 @@ function slugFromNameEn(nameEn: string): string {
   return s || "attribute";
 }
 
-/** Default bilingual labels for known catalog keys (used when DB has legacy string[]). */
 export function defaultFacetNamesForKey(key: string): { name_en: string; name_ar: string } {
   const name_ar = (FACET_ADMIN_LABEL_AR[key] ?? key).trim();
   const name_en = (FACET_ADMIN_LABEL_EN[key] ?? key).trim();
   return { name_en, name_ar };
 }
 
-/**
- * Parse `Category.facetKeys` JSON: legacy `["cpu","gpu"]` or
- * `[{ "key": "cpu", "name_en": "…", "name_ar": "…" }]`.
- */
+function parseFacetMetaFromObject(o: Record<string, unknown>, key: string): Partial<FacetAttributeDef> {
+  const preset = defaultAttributeMetaForKey(key);
+  let type: AttributeType | undefined;
+  if (typeof o.type === "string" && isAttributeType(o.type.trim().toUpperCase())) {
+    type = o.type.trim().toUpperCase() as AttributeType;
+  }
+  const options = parseOptionsJson(o.options);
+  const filterable = typeof o.filterable === "boolean" ? o.filterable : preset.filterable;
+  const searchable = typeof o.searchable === "boolean" ? o.searchable : preset.searchable;
+  const comparable = typeof o.comparable === "boolean" ? o.comparable : preset.comparable;
+  const required = typeof o.required === "boolean" ? o.required : preset.required;
+  const displayGroup = typeof o.displayGroup === "string" ? o.displayGroup.trim() : preset.displayGroup;
+  const unit = typeof o.unit === "string" ? o.unit.trim() : preset.unit;
+  return {
+    ...(type ? { type } : preset.type ? { type: preset.type } : {}),
+    ...(options ? { options } : preset.options ? { options: preset.options } : {}),
+    ...(filterable !== undefined ? { filterable } : {}),
+    ...(searchable !== undefined ? { searchable } : {}),
+    ...(comparable !== undefined ? { comparable } : {}),
+    ...(required !== undefined ? { required } : {}),
+    ...(displayGroup ? { displayGroup } : {}),
+    ...(unit ? { unit } : {}),
+  };
+}
+
+function enrichFacetDef(
+  key: string,
+  name_en: string,
+  name_ar: string,
+  partial?: Partial<FacetAttributeDef>,
+): FacetAttributeDef {
+  const preset = defaultAttributeMetaForKey(key);
+  return {
+    key: normalizeAttributeKey(key),
+    name_en,
+    name_ar,
+    type: partial?.type ?? preset.type ?? "SELECT",
+    options: partial?.options ?? preset.options,
+    filterable: partial?.filterable ?? preset.filterable ?? true,
+    searchable: partial?.searchable ?? preset.searchable ?? false,
+    comparable: partial?.comparable ?? preset.comparable ?? false,
+    displayGroup: partial?.displayGroup ?? preset.displayGroup ?? "specs",
+    required: partial?.required ?? preset.required ?? false,
+    unit: partial?.unit ?? preset.unit,
+  };
+}
+
 export function parseFacetAttributesFromUnknown(raw: unknown): FacetAttributeDef[] {
   if (!Array.isArray(raw) || raw.length === 0) return [];
   const out: FacetAttributeDef[] = [];
@@ -31,7 +75,7 @@ export function parseFacetAttributesFromUnknown(raw: unknown): FacetAttributeDef
       const key = item.trim();
       if (!key) continue;
       const { name_en, name_ar } = defaultFacetNamesForKey(key);
-      out.push({ key, name_en, name_ar });
+      out.push(enrichFacetDef(key, name_en, name_ar));
       continue;
     }
     if (item && typeof item === "object" && !Array.isArray(item)) {
@@ -47,7 +91,7 @@ export function parseFacetAttributesFromUnknown(raw: unknown): FacetAttributeDef
         if (!name_en) name_en = d.name_en;
         if (!name_ar) name_ar = d.name_ar;
       }
-      out.push({ key, name_en, name_ar });
+      out.push(enrichFacetDef(key, name_en, name_ar, parseFacetMetaFromObject(o, key)));
     }
   }
   return dedupeByKey(out);
@@ -68,14 +112,12 @@ export function facetKeysFromAttributes(attrs: FacetAttributeDef[]): string[] {
   return attrs.map((a) => a.key);
 }
 
-/** Storefront / admin: pick display name with cross-language fallback. */
 export function facetAttributeDisplayName(attr: FacetAttributeDef, locale: "en" | "ar"): string {
   const primary = locale === "ar" ? attr.name_ar.trim() : attr.name_en.trim();
   const fallback = locale === "ar" ? attr.name_en.trim() : attr.name_ar.trim();
   return primary || fallback || attr.key;
 }
 
-/** Validate before persisting: every entry must have non-empty key, name_en, name_ar. */
 export function validateFacetAttributesForSave(attrs: FacetAttributeDef[]): { ok: true } | { ok: false; error: string } {
   for (let i = 0; i < attrs.length; i++) {
     const a = attrs[i];
@@ -86,19 +128,25 @@ export function validateFacetAttributesForSave(attrs: FacetAttributeDef[]): { ok
   return { ok: true };
 }
 
-/** Normalize key for custom attributes (slug). */
+export function facetAttributesFromAdminFacetKeysBody(
+  raw: unknown,
+): { ok: true; attrs: FacetAttributeDef[] } | { ok: false; error: string } {
+  if (!Array.isArray(raw)) {
+    return { ok: false, error: "facetKeys must be a JSON array of attribute objects or legacy string keys" };
+  }
+  const attrs = parseFacetAttributesFromUnknown(raw);
+  const v = validateFacetAttributesForSave(attrs);
+  if (!v.ok) return v;
+  return { ok: true, attrs };
+}
+
 export function normalizeFacetKeyInput(raw: string): string {
-  return raw
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "_")
-    .replace(/[^a-z0-9_\u0600-\u06FF-]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+  return normalizeAttributeKey(raw);
 }
 
 export function makeCustomFacetAttribute(nameEn: string, nameAr: string, keyOverride?: string): FacetAttributeDef {
   const name_en = nameEn.trim();
   const name_ar = nameAr.trim();
   const key = keyOverride?.trim() ? normalizeFacetKeyInput(keyOverride) : normalizeFacetKeyInput(slugFromNameEn(name_en));
-  return { key, name_en, name_ar };
+  return enrichFacetDef(key, name_en, name_ar);
 }

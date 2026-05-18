@@ -9,6 +9,7 @@ import { PrismaClient } from "@prisma/client";
 import { CATEGORIES } from "../src/lib/data";
 import { CATEGORY_FACETS } from "../src/lib/productFacetConfig";
 import { defaultFacetNamesForKey } from "../src/lib/facet-attributes";
+import { syncCategoryAttributesFromFacetKeys } from "../src/lib/classification/sync";
 
 const prisma = new PrismaClient();
 
@@ -22,6 +23,8 @@ async function main() {
   await prisma.mediaAsset.deleteMany();
   await prisma.productVariant.deleteMany();
   await prisma.productImage.deleteMany();
+  await prisma.productAttributeValue.deleteMany().catch(() => undefined);
+  await prisma.categoryAttribute.deleteMany().catch(() => undefined);
   await prisma.product.deleteMany();
   await prisma.brand.deleteMany();
   await prisma.category.deleteMany();
@@ -41,7 +44,7 @@ async function main() {
       const { name_en, name_ar } = defaultFacetNamesForKey(key);
       return { key, name_en, name_ar };
     });
-    await prisma.category.create({
+    const created = await prisma.category.create({
       data: {
         slug: c.id,
         nameEn: c.name,
@@ -52,6 +55,11 @@ async function main() {
         facetKeys,
       },
     });
+    try {
+      await syncCategoryAttributesFromFacetKeys(prisma, created.id, facetKeys);
+    } catch {
+      /* classification tables not migrated yet */
+    }
   }
 
   await prisma.siteConfig.create({

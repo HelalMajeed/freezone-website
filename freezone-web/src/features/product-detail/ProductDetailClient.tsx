@@ -36,12 +36,19 @@ export default function ProductDetailClient({
   const related = useMemo(() => relatedProducts, [relatedProducts]);
 
   const modelDisplay = useMemo(() => {
+    const fromProduct = product.model?.trim();
+    if (fromProduct) return fromProduct;
     const fromSpec = product.specs?.model?.trim();
     if (fromSpec) return fromSpec;
     const s = product.sku?.trim();
     if (s && s !== "—") return s;
     return "";
   }, [product]);
+
+  const filterableKeys = useMemo(
+    () => new Set((category?.facetAttributes ?? []).filter((a) => a.filterable !== false).map((a) => a.key)),
+    [category?.facetAttributes],
+  );
 
   const specAttributeRows = useMemo(
     () =>
@@ -60,6 +67,16 @@ export default function ProductDetailClient({
       ),
     [product, tProducts, modelDisplay, category?.facetAttributes, locale],
   );
+
+  const filterSpecRows = useMemo(() => {
+    if (!category?.facetAttributes?.length) return specAttributeRows;
+    return specAttributeRows.filter((r) => filterableKeys.has(r.specKey));
+  }, [specAttributeRows, filterableKeys, category?.facetAttributes]);
+
+  const extendedSpecRows = useMemo(() => {
+    if (!category?.facetAttributes?.length) return [];
+    return specAttributeRows.filter((r) => !filterableKeys.has(r.specKey));
+  }, [specAttributeRows, filterableKeys, category?.facetAttributes]);
 
   const legacyStorage = product.storage?.trim() ?? "";
   const hasStorageInSpecs =
@@ -139,12 +156,23 @@ export default function ProductDetailClient({
                 <span className={styles.attrValue}>{modelDisplay}</span>
               </div>
             ) : null}
-            {specAttributeRows.map((row) => (
+            {filterSpecRows.map((row) => (
               <div key={row.specKey} className={styles.attrRow}>
                 <span className={styles.attrLabel}>{row.label}</span>
                 <span className={styles.attrValue}>{row.value}</span>
               </div>
             ))}
+            {extendedSpecRows.length > 0 ? (
+              <>
+                <p className={styles.specSectionTitle}>{t("extendedSpecsTitle")}</p>
+                {extendedSpecRows.map((row) => (
+                  <div key={row.specKey} className={styles.attrRow}>
+                    <span className={styles.attrLabel}>{row.label}</span>
+                    <span className={styles.attrValue}>{row.value}</span>
+                  </div>
+                ))}
+              </>
+            ) : null}
             {showLegacyStorageRow ? (
               <div className={styles.attrRow}>
                 <span className={styles.attrLabel}>{t("storageSpecs")}</span>

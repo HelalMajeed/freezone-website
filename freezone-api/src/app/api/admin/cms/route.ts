@@ -243,14 +243,14 @@ export async function PUT(req: Request) {
               primaryLink:
                 (h as { primaryLink?: unknown | null }).primaryLink != null
                   ? ((h as { primaryLink?: unknown }).primaryLink as Prisma.InputJsonValue)
-                  : null,
+                  : Prisma.JsonNull,
               secondaryLabelEn: h.secondaryLabelEn,
               secondaryLabelAr: h.secondaryLabelAr,
               secondaryHref: h.secondaryHref,
               secondaryLink:
                 (h as { secondaryLink?: unknown | null }).secondaryLink != null
                   ? ((h as { secondaryLink?: unknown }).secondaryLink as Prisma.InputJsonValue)
-                  : null,
+                  : Prisma.JsonNull,
               active: h.active,
               stats: (h.stats ?? undefined) as Prisma.InputJsonValue | undefined,
             },

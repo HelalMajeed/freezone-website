@@ -1,5 +1,8 @@
 import type { FacetAttributeDef } from "@/lib/data";
 import { FACET_ADMIN_LABEL_AR, FACET_ADMIN_LABEL_EN } from "@/lib/facet-admin-labels";
+import { defaultAttributeMetaForKey } from "@/lib/classification/presets";
+import { isAttributeType, type AttributeType } from "@/lib/classification/types";
+import { normalizeAttributeKey, parseOptionsJson } from "@/lib/classification/values";
 
 export type { FacetAttributeDef } from "@/lib/data";
 
@@ -18,6 +21,49 @@ export function defaultFacetNamesForKey(key: string): { name_en: string; name_ar
   return { name_en, name_ar };
 }
 
+function parseFacetMetaFromObject(o: Record<string, unknown>, key: string): Partial<FacetAttributeDef> {
+  const preset = defaultAttributeMetaForKey(key);
+  let type: AttributeType | undefined;
+  if (typeof o.type === "string" && isAttributeType(o.type.trim().toUpperCase())) {
+    type = o.type.trim().toUpperCase() as AttributeType;
+  }
+  const options = parseOptionsJson(o.options);
+  const filterable = typeof o.filterable === "boolean" ? o.filterable : preset.filterable;
+  const searchable = typeof o.searchable === "boolean" ? o.searchable : preset.searchable;
+  const comparable = typeof o.comparable === "boolean" ? o.comparable : preset.comparable;
+  const required = typeof o.required === "boolean" ? o.required : preset.required;
+  const displayGroup =
+    typeof o.displayGroup === "string" ? o.displayGroup.trim() : preset.displayGroup;
+  const unit = typeof o.unit === "string" ? o.unit.trim() : preset.unit;
+  return {
+    ...(type ? { type } : preset.type ? { type: preset.type } : {}),
+    ...(options ? { options } : preset.options ? { options: preset.options } : {}),
+    ...(filterable !== undefined ? { filterable } : {}),
+    ...(searchable !== undefined ? { searchable } : {}),
+    ...(comparable !== undefined ? { comparable } : {}),
+    ...(required !== undefined ? { required } : {}),
+    ...(displayGroup ? { displayGroup } : {}),
+    ...(unit ? { unit } : {}),
+  };
+}
+
+function enrichFacetDef(key: string, name_en: string, name_ar: string, partial?: Partial<FacetAttributeDef>): FacetAttributeDef {
+  const preset = defaultAttributeMetaForKey(key);
+  return {
+    key: normalizeAttributeKey(key),
+    name_en,
+    name_ar,
+    type: partial?.type ?? preset.type ?? "SELECT",
+    options: partial?.options ?? preset.options,
+    filterable: partial?.filterable ?? preset.filterable ?? true,
+    searchable: partial?.searchable ?? preset.searchable ?? false,
+    comparable: partial?.comparable ?? preset.comparable ?? false,
+    displayGroup: partial?.displayGroup ?? preset.displayGroup ?? "specs",
+    required: partial?.required ?? preset.required ?? false,
+    unit: partial?.unit ?? preset.unit,
+  };
+}
+
 export function parseFacetAttributesFromUnknown(raw: unknown): FacetAttributeDef[] {
   if (!Array.isArray(raw) || raw.length === 0) return [];
   const out: FacetAttributeDef[] = [];
@@ -26,7 +72,7 @@ export function parseFacetAttributesFromUnknown(raw: unknown): FacetAttributeDef
       const key = item.trim();
       if (!key) continue;
       const { name_en, name_ar } = defaultFacetNamesForKey(key);
-      out.push({ key, name_en, name_ar });
+      out.push(enrichFacetDef(key, name_en, name_ar));
       continue;
     }
     if (item && typeof item === "object" && !Array.isArray(item)) {
@@ -42,7 +88,7 @@ export function parseFacetAttributesFromUnknown(raw: unknown): FacetAttributeDef
         if (!name_en) name_en = d.name_en;
         if (!name_ar) name_ar = d.name_ar;
       }
-      out.push({ key, name_en, name_ar });
+      out.push(enrichFacetDef(key, name_en, name_ar, parseFacetMetaFromObject(o, key)));
     }
   }
   return dedupeByKey(out);
@@ -123,5 +169,5 @@ export function makeCustomFacetAttribute(nameEn: string, nameAr: string, keyOver
   const name_en = nameEn.trim();
   const name_ar = nameAr.trim();
   const key = keyOverride?.trim() ? normalizeFacetKeyInput(keyOverride) : normalizeFacetKeyInput(slugFromNameEn(name_en));
-  return { key, name_en, name_ar };
+  return enrichFacetDef(key, name_en, name_ar);
 }
