@@ -346,7 +346,7 @@ export function facetDefinitionsForCategory(
       name_ar: a.name_ar,
     }));
   }
-  return CATEGORY_FACETS[resolveCatalogFacetSlug(catId)] ?? [];
+  return [];
 }
 
 export function getProductFacetValue(product: Product, facetKey: string): string | undefined {

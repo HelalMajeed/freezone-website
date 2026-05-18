@@ -10,6 +10,7 @@ import { CATEGORIES } from "../src/lib/data";
 import { CATEGORY_FACETS } from "../src/lib/productFacetConfig";
 import { defaultFacetNamesForKey } from "../src/lib/facet-attributes";
 import { syncCategoryAttributesFromFacetKeys } from "../src/lib/classification/sync";
+import { CLASSIFICATION_SEED_BY_SLUG } from "../src/lib/classification/seed-presets";
 
 const prisma = new PrismaClient();
 
@@ -39,11 +40,13 @@ async function main() {
 
   for (let i = 0; i < CATEGORIES.length; i++) {
     const c = CATEGORIES[i];
-    const facetKeyList = CATEGORY_FACETS[c.id]?.map((f) => f.key) ?? [];
-    const facetKeys = facetKeyList.map((key) => {
-      const { name_en, name_ar } = defaultFacetNamesForKey(key);
-      return { key, name_en, name_ar };
-    });
+    const presetAttrs = CLASSIFICATION_SEED_BY_SLUG[c.id];
+    const facetKeys = presetAttrs?.length
+      ? presetAttrs
+      : (CATEGORY_FACETS[c.id]?.map((f) => f.key) ?? []).map((key) => {
+          const { name_en, name_ar } = defaultFacetNamesForKey(key);
+          return { key, name_en, name_ar };
+        });
     const created = await prisma.category.create({
       data: {
         slug: c.id,

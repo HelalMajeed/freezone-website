@@ -11,6 +11,7 @@ export type FacetDefinition = {
   type?: AttributeType;
   filterable?: boolean;
   unit?: string;
+  options?: string[];
 };
 
 /** Title for filters / PDP — uses DB names when present, else `Products.*` i18n. */
@@ -354,9 +355,10 @@ export function facetDefinitionsForCategory(
         type: a.type,
         filterable: a.filterable ?? true,
         unit: a.unit,
+        options: a.options,
       }));
   }
-  return CATEGORY_FACETS[resolveCatalogFacetSlug(catId)] ?? [];
+  return [];
 }
 
 export function getProductFacetValue(product: Product, facetKey: string): string | undefined {

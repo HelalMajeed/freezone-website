@@ -9,7 +9,7 @@ import type { CategoryAttributeRow, ProductAttributeValueRow } from "./classific
 
 export type LocaleCode = "en" | "ar";
 
-function mapDbToProduct(
+export function mapDbToProduct(
   row: {
     id: number;
     brand: string;
@@ -119,7 +119,7 @@ function mapDbToCategory(
   };
 }
 
-const storefrontProductIncludeBase = {
+export const storefrontProductIncludeBase = {
   category: {
     select: {
       slug: true,

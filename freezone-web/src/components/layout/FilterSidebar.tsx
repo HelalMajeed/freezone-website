@@ -6,6 +6,7 @@ import styles from "./FilterSidebar.module.css";
 import { Filter, ChevronDown } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import type { Product } from "@/lib/data";
+import type { FacetCount } from "@/lib/catalog-products-api";
 import {
   facetDefinitionsForCategory,
   facetDefinitionDisplayTitle,
@@ -36,6 +37,25 @@ interface FilterSidebarProps {
   clearFilters: () => void;
   products: Product[];
   categories: Category[];
+  /** Server-computed facet counts (optional). */
+  serverFacets?: Record<string, FacetCount[]>;
+}
+
+function resolveFacetOptions(
+  def: { key: string; options?: string[]; unit?: string },
+  activeCat: string,
+  products: Product[],
+  categoryMeta: Category | undefined,
+  serverFacets?: Record<string, FacetCount[]>,
+): { value: string; count: number }[] {
+  const fromServer = serverFacets?.[def.key];
+  if (fromServer?.length) return fromServer;
+  const counts = collectFacetValueCounts(products, activeCat, def.key);
+  const countMap = new Map(counts.map((c) => [c.value, c.count]));
+  if (def.options?.length) {
+    return def.options.map((value) => ({ value, count: countMap.get(value) ?? 0 }));
+  }
+  return counts;
 }
 
 function AccordionSection({
@@ -70,7 +90,14 @@ function AccordionSection({
   );
 }
 
-export function FilterSidebar({ filters, setFilters, clearFilters, products, categories }: FilterSidebarProps) {
+export function FilterSidebar({
+  filters,
+  setFilters,
+  clearFilters,
+  products,
+  categories,
+  serverFacets,
+}: FilterSidebarProps) {
   const t = useTranslations("Products");
   const locale = useLocale();
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
@@ -201,8 +228,10 @@ export function FilterSidebar({ filters, setFilters, clearFilters, products, cat
           );
         }
 
-        const options = collectFacetValueCounts(products, activeCat, def.key);
-        if (options.length === 0) return null;
+        const options = resolveFacetOptions(def, activeCat, products, categoryMeta, serverFacets).filter(
+          (o) => o.count > 0 || (def.options?.includes(o.value) ?? false),
+        );
+        if (options.length === 0 && !def.options?.length) return null;
 
         return (
           <AccordionSection

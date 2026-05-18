@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { Trans } from "react-i18next";
 import type { Product, Category } from "@/lib/data";
@@ -22,6 +23,11 @@ import productsStyles from "./products.module.css";
 import collStyles from "./collection.module.css";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/hooks";
+import {
+  catalogUsesFilteredApi,
+  fetchCatalogProducts,
+  type CatalogProductsQuery,
+} from "@/lib/catalog-products-api";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 export type SortOption = "featured" | "relevant" | "price-asc" | "price-desc" | "date-new" | "date-old";
 
@@ -135,6 +141,10 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
   const catParam = searchParams.get("cat") ?? initialCat;
   const brandParams = parseCsvValues(searchParams.getAll("brand"));
   const featuredParam = searchParams.get("featured") === "true" || initialFeatured;
+  const inStockParam = searchParams.get("inStock") === "true";
+  const onSaleParam = searchParams.get("onSale") === "true";
+  const isNewParam = searchParams.get("isNew") === "true";
+  const listingAgeParam = (searchParams.get("listingAge") as FilterState["listingAge"] | null) ?? (isNewParam ? "new" : "all");
   const qParam = searchParams.get("q") ?? "";
   const { pMin: pMinParam, pMax: pMaxParam } = parsePriceParam(searchParams.get("price"));
 
@@ -164,9 +174,9 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
     brands: initialBrands,
     pMin: pMinParam,
     pMax: pMaxParam,
-    inStock: false,
-    listingAge: "all",
-    onSale: false,
+    inStock: inStockParam,
+    listingAge: listingAgeParam === "new" || listingAgeParam === "older" ? listingAgeParam : "all",
+    onSale: onSaleParam,
     featured: featuredParam,
     specSelections: initialSpecSelections,
   });
@@ -189,6 +199,24 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
           if (filters.featured) next.set("featured", "true");
           else next.delete("featured");
 
+          if (filters.inStock) next.set("inStock", "true");
+          else next.delete("inStock");
+          if (filters.onSale) next.set("onSale", "true");
+          else next.delete("onSale");
+          if (filters.listingAge === "new") {
+            next.set("isNew", "true");
+            next.set("listingAge", "new");
+          } else if (filters.listingAge === "older") {
+            next.delete("isNew");
+            next.set("listingAge", "older");
+          } else {
+            next.delete("isNew");
+            next.delete("listingAge");
+          }
+
+          if (sortBy !== "featured" && sortBy !== "relevant") next.set("sort", sortBy);
+          else next.delete("sort");
+
           const pMin = filters.pMin.trim();
           const pMax = filters.pMax.trim();
           if (pMin || pMax) next.set("price", `${pMin || "0"}-${pMax || ""}`);
@@ -207,7 +235,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
       );
     }, 300);
     return () => window.clearTimeout(id);
-  }, [query, filters, facetDefs, setSearchParams]);
+  }, [query, filters, facetDefs, sortBy, setSearchParams]);
 
   const clearFilters = () => {
     setFilters({
@@ -232,7 +260,47 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
     );
   };
 
+  const catalogQuery: CatalogProductsQuery = useMemo(
+    () => ({
+      locale,
+      cat: filters.cat || undefined,
+      brands: filters.brands.length ? filters.brands : undefined,
+      priceMin: filters.pMin.trim() || undefined,
+      priceMax: filters.pMax.trim() || undefined,
+      inStock: filters.inStock || undefined,
+      onSale: filters.onSale || undefined,
+      featured: filters.featured || undefined,
+      isNew: filters.listingAge === "new" ? true : undefined,
+      listingAge: filters.listingAge,
+      q: query.trim() || undefined,
+      sort: sortBy,
+      facets: filters.specSelections,
+    }),
+    [locale, filters, query, sortBy],
+  );
+
+  const useServerCatalog = catalogUsesFilteredApi(catalogQuery) || Boolean(filters.cat);
+
+  const serverCatalog = useQuery({
+    queryKey: ["catalog-products", catalogQuery],
+    queryFn: () => fetchCatalogProducts(catalogQuery),
+    enabled: useServerCatalog,
+    staleTime: 30_000,
+    placeholderData: (prev) => prev,
+  });
+
   const { filtered, searchMatchById } = useMemo(() => {
+    if (useServerCatalog && serverCatalog.data) {
+      const r = serverCatalog.data.products;
+      const matchById = new Map<number, ProductCatalogSearchMatch>();
+      if (query.trim()) {
+        for (const p of r) {
+          const ev = evaluateProductCatalogSearch(p, categories, query);
+          if (ev?.matches) matchById.set(p.id, ev);
+        }
+      }
+      return { filtered: r, searchMatchById: matchById };
+    }
     let r = [...allProducts];
     const q = query.trim();
     const matchById = new Map<number, ProductCatalogSearchMatch>();
@@ -275,7 +343,11 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
     }
 
     return { filtered: r, searchMatchById: matchById };
-  }, [query, filters, sortBy, allProducts, categories]);
+  }, [query, filters, sortBy, allProducts, categories, useServerCatalog, serverCatalog.data]);
+
+  const displayCount = useServerCatalog && serverCatalog.data ? serverCatalog.data.total : filtered.length;
+  const serverFacets = serverCatalog.data?.facets;
+  const catalogLoading = useServerCatalog && serverCatalog.isFetching && !serverCatalog.data;
 
   const queryChips = useMemo(() => tokenizeSearchQueryDisplay(query), [query]);
 
@@ -291,8 +363,9 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
       filters={filters}
       setFilters={setFilters}
       clearFilters={clearFilters}
-      products={allProducts}
+      products={useServerCatalog && serverCatalog.data ? serverCatalog.data.products : allProducts}
       categories={categories}
+      serverFacets={serverFacets}
     />
   );
 
@@ -331,7 +404,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
           <span className={collStyles.resultInline}>
             <Trans
               i18nKey="Products.showingResults"
-              values={{ count: filtered.length }}
+              values={{ count: displayCount }}
               components={{ b: <strong /> }}
             />
           </span>
@@ -378,7 +451,12 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
               </div>
             </div>
 
-            {filtered.length === 0 ? (
+            {catalogLoading ? (
+              <div className={productsStyles.noResults}>
+                <p>{t("loadingResults", { defaultValue: "Loading…" })}</p>
+              </div>
+            ) : null}
+            {!catalogLoading && filtered.length === 0 ? (
               <div className={productsStyles.noResults}>
                 <span style={{ fontSize: "2.5rem" }}>🔍</span>
                 <h3 className={productsStyles.noResultsTitleBilingual}>

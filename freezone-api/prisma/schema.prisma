@@ -48,6 +48,7 @@ model Category {
   /// Hero / category tile background (https URL, same-origin upload, or external)
   backgroundImageUrl String?
   sortOrder Int       @default(0)
+  active    Boolean   @default(true)
   /// Legacy JSON facet list — kept in sync with `categoryAttributes` for backward compatibility
   facetKeys Json?
   categoryAttributes CategoryAttribute[]
@@ -77,11 +78,13 @@ model CategoryAttribute {
   sortOrder    Int      @default(0)
   required     Boolean  @default(false)
   unit         String?
+  active       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@unique([categoryId, key])
   @@index([categoryId, sortOrder])
+  @@index([categoryId, filterable, active])
 }
 
 /// Typed product spec values (normalized EAV); synced to `Product.specs` JSON for legacy clients.
@@ -100,6 +103,9 @@ model ProductAttributeValue {
   @@unique([productId, attributeKey])
   @@index([productId])
   @@index([attributeKey])
+  @@index([attributeKey, valueNumber])
+  @@index([attributeKey, valueBoolean])
+  @@index([attributeKey, valueString])
 }
 
 model Product {
