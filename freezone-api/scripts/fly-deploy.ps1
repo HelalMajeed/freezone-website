@@ -24,8 +24,10 @@ $ErrorActionPreference = "Stop"
 function Get-Flyctl {
   $cmd = Get-Command flyctl -ErrorAction SilentlyContinue
   if ($cmd) { return $cmd.Source }
-  $winget = "$env:LOCALAPPDATA\Microsoft\WinGet\Links\flyctl.exe"
-  if (Test-Path $winget) { return $winget }
+  $wingetLink = "$env:LOCALAPPDATA\Microsoft\WinGet\Links\flyctl.exe"
+  if (Test-Path $wingetLink) { return $wingetLink }
+  $wingetPkg = Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Filter "flyctl.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+  if ($wingetPkg) { return $wingetPkg }
   throw "flyctl not found. Install: winget install Fly-io.flyctl -e --accept-source-agreements --accept-package-agreements"
 }
 
