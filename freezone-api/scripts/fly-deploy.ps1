@@ -61,4 +61,7 @@ Invoke-Fly deploy -a $app
 Write-Host "==> prisma migrate deploy via SSH ($app)" -ForegroundColor Cyan
 Invoke-Fly ssh console -a $app -C "cd /app && npx prisma migrate deploy"
 
+Write-Host "==> sync classification attributes (no product wipe) via SSH ($app)" -ForegroundColor Cyan
+Invoke-Fly ssh console -a $app -C "cd /app && npx tsx scripts/seed-classification-only.ts"
+
 Write-Host "==> done" -ForegroundColor Green
