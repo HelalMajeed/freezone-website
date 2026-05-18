@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import { CategoryIconStrip } from "@/components/ui/CategoryIconStrip";
 import { PromoMegaBlocks } from "@/components/ui/PromoMegaBlocks";
-import { HomePromoStrip } from "@/components/storefront/HomePromoStrip";
 import { HomeFlashDealsRail } from "@/components/storefront/HomeFlashDealsRail";
 import { HomeHotItemsRail } from "@/components/storefront/HomeHotItemsRail";
 import { HomeNewArrivalsRail } from "@/components/storefront/HomeNewArrivalsRail";
@@ -13,7 +12,6 @@ import type { PublicSpotlightItem } from "@/lib/layout-cms";
 type HomeCommerceStackProps = {
   stripSpots?: PublicSpotlightItem[];
   showStrip?: boolean;
-  showPromoStrip?: boolean;
   showFlashDeals?: boolean;
   showHotItems?: boolean;
   showNewArrivals?: boolean;
@@ -25,7 +23,6 @@ type HomeCommerceStackProps = {
 export function HomeCommerceStack({
   stripSpots,
   showStrip = true,
-  showPromoStrip = true,
   showFlashDeals = true,
   showHotItems = true,
   showNewArrivals = true,
@@ -36,9 +33,6 @@ export function HomeCommerceStack({
 
   if (showStrip) {
     nodes.push(<CategoryIconStrip key="strip" previewSpots={stripSpots} />);
-  }
-  if (showPromoStrip) {
-    nodes.push(<HomePromoStrip key="promo-strip" />);
   }
   if (showFlashDeals) {
     nodes.push(<HomeFlashDealsRail key="flash" />);
