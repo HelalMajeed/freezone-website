@@ -63,10 +63,13 @@ Invoke-Fly deploy -a $app
 Write-Host "==> prisma migrate deploy via SSH ($app)" -ForegroundColor Cyan
 Invoke-Fly ssh console -a $app -C "cd /app && npx prisma migrate deploy"
 
-Write-Host "==> sync classification attributes (no product wipe) via SSH ($app)" -ForegroundColor Cyan
-Invoke-Fly ssh console -a $app -C "sh -lc 'cd /app && npx tsx scripts/seed-classification-only.ts'"
-
-Write-Host "==> full classification sync (attributes + product specs) via SSH ($app)" -ForegroundColor Cyan
-Invoke-Fly ssh console -a $app -C "sh -lc 'cd /app && npx tsx scripts/sync-all-classification.ts'"
+if ($env:FLY_RUN_CLASSIFICATION_REPAIR -eq "1") {
+  Write-Host "==> classification:repair via SSH ($app) [manual opt-in]" -ForegroundColor Cyan
+  Write-Host "    (seed attributes + sync legacy specs — does NOT run prisma db seed)" -ForegroundColor DarkGray
+  Invoke-Fly ssh console -a $app -C "sh -lc 'cd /app && npm run classification:repair'"
+} else {
+  Write-Host "==> skip classification:repair (set FLY_RUN_CLASSIFICATION_REPAIR=1 to run after deploy)" -ForegroundColor Yellow
+  Write-Host "    See freezone-api/scripts/README-classification-sync.md" -ForegroundColor DarkGray
+}
 
 Write-Host "==> done" -ForegroundColor Green

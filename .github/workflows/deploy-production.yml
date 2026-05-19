@@ -33,10 +33,10 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-      - name: Sync classification attributes (safe)
-        run: flyctl ssh console -a freezone-website -C "cd /app && npx tsx scripts/seed-classification-only.ts"
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      # Classification repair is manual only (does not run prisma db seed).
+      # After deploy, run when intended:
+      #   flyctl ssh console -a freezone-website -C "cd /app && npm run classification:repair"
+      # See freezone-api/scripts/README-classification-sync.md
 
   deploy-web:
     name: Netlify storefront

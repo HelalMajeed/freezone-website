@@ -1,36 +1,40 @@
 /**
  * Map legacy product.specs → ProductAttributeValue with displayValue + normalized filter tokens.
  * Safe to re-run (idempotent per product). Does not delete products.
+ *
+ * Run: npm run classification:sync-legacy
+ * Dry-run: npx tsx scripts/sync-legacy-product-specs.ts --dry-run
  */
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, "..", ".env") });
-import { loadCategoryAttributeSchema, saveProductSpecsNormalized } from "../src/lib/classification/persist";
 import {
-  readLegacyRawDisplay,
-  remapLegacySpecsForCategory,
-} from "../src/lib/classification/legacy-spec-map";
-import { normalizeFilterValue } from "../src/lib/classification/filter-value";
-import { deriveFilterFacetsFromDisplay } from "../src/lib/classification/derive-filter-facets";
-import { ensureCategorySchemaComplete } from "../src/lib/classification/ensure-category-schema";
-import { sanitizeFacetFilterToken } from "../src/lib/classification/facet-filter-token";
+  loadClassificationScriptEnv,
+  maskDatabaseUrl,
+  parseClassificationScriptArgs,
+} from "./classification-script-env";
+import {
+  buildLegacyProductSpecsPayload,
+  persistLegacyProductSpecs,
+  type LegacySyncPreview,
+} from "./lib/legacy-spec-sync";
+
+const { dryRun } = parseClassificationScriptArgs(process.argv.slice(2));
+loadClassificationScriptEnv();
+
+console.log(`[sync-legacy-specs] DATABASE_URL=${maskDatabaseUrl(process.env.DATABASE_URL!)}`);
+if (dryRun) {
+  console.log("[sync-legacy-specs] DRY-RUN — no database writes.\n");
+}
 
 const prisma = new PrismaClient();
 
-function isDisplaySpecKey(key: string): boolean {
-  return key.endsWith("_full") || key.endsWith("_display");
-}
-
-function applySanitizedFilters(filterByKey: Record<string, string>): void {
-  for (const [key, raw] of Object.entries(filterByKey)) {
-    const token = sanitizeFacetFilterToken(key, raw);
-    if (token) filterByKey[key] = token;
-    else delete filterByKey[key];
-  }
+function formatPreview(p: LegacySyncPreview): string {
+  const parts = [
+    p.processor_family != null ? `processor_family=${p.processor_family}` : null,
+    p.gpu_model != null ? `gpu_model=${p.gpu_model}` : null,
+    p.ram_size != null ? `ram_size=${p.ram_size}` : null,
+    p.storage_size != null ? `storage_size=${p.storage_size}` : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(", ") : "(no filter facets derived)";
 }
 
 async function main() {
@@ -43,107 +47,58 @@ async function main() {
     },
   });
 
-  let ok = 0;
-  let skip = 0;
-  let fail = 0;
+  let synced = 0;
+  const skipped: { id: number; slug: string; reason: string }[] = [];
+  const failed: { id: number; slug: string; reason: string }[] = [];
 
   for (const p of products) {
-    const specs =
-      p.specs && typeof p.specs === "object" && !Array.isArray(p.specs)
-        ? (p.specs as Record<string, string>)
-        : null;
-    if (!specs || !Object.keys(specs).length) {
-      skip++;
+    const built = await buildLegacyProductSpecsPayload(prisma, p);
+    if (!built.ok) {
+      skipped.push({ id: p.id, slug: p.category.slug, reason: built.reason });
       continue;
     }
 
-    let schema = await loadCategoryAttributeSchema(
-      (args) => prisma.categoryAttribute.findMany(args),
-      p.categoryId,
+    if (dryRun) {
+      console.log(
+        `product ${p.id} (${p.category.slug}) preview: ${formatPreview(built.preview)} [${built.attrCount} attrs]`,
+      );
+      synced++;
+      continue;
+    }
+
+    const saved = await persistLegacyProductSpecs(prisma, p.id, p.categoryId, built.payload);
+    if (!saved.ok) {
+      failed.push({ id: p.id, slug: p.category.slug, reason: saved.error });
+      continue;
+    }
+
+    console.log(
+      `product ${p.id} (${p.category.slug}): synced ${built.attrCount} attrs — ${formatPreview(built.preview)}`,
     );
-    schema = await ensureCategorySchemaComplete(prisma, p.categoryId, p.category.slug, schema);
-    if (!schema.length) {
-      skip++;
-      continue;
-    }
-
-    const remapped = remapLegacySpecsForCategory(
-      p.category.slug,
-      specs,
-      schema.map((a) => a.key),
-    );
-
-    const displayByKey: Record<string, string> = {};
-    const filterByKey: Record<string, string> = {};
-
-    const cpuLegacy = specs.cpu?.trim() || specs.processor?.trim();
-    if (cpuLegacy && p.category.slug === "laptops") {
-      if (schema.some((a) => a.key === "processor_full")) displayByKey.processor_full = cpuLegacy;
-    }
-    const ramLegacy = specs.ram?.trim();
-    if (ramLegacy && p.category.slug === "laptops") displayByKey.ram_display = ramLegacy;
-    const storageLegacy = specs.storage?.trim();
-    if (storageLegacy && p.category.slug === "laptops") displayByKey.storage_display = storageLegacy;
-    const gpuLegacy = specs.gpu?.trim();
-    if (gpuLegacy && p.category.slug === "laptops") displayByKey.gpu_full = gpuLegacy;
-
-    for (const attr of schema) {
-      const rawDisplay = readLegacyRawDisplay(specs, p.category.slug, attr.key);
-      const normalized =
-        remapped[attr.key] ??
-        (rawDisplay ? normalizeFilterValue(attr.key, rawDisplay) : "");
-
-      if (attr.filterable) {
-        const filterToken = normalized ? sanitizeFacetFilterToken(attr.key, normalized) : undefined;
-        if (filterToken) filterByKey[attr.key] = filterToken;
-        if (rawDisplay && (isDisplaySpecKey(attr.key) || rawDisplay.length > 48)) {
-          displayByKey[attr.key] = rawDisplay;
-        }
-      } else if (rawDisplay) {
-        displayByKey[attr.key] = rawDisplay;
-      }
-    }
-
-    const derived = deriveFilterFacetsFromDisplay(schema, displayByKey, filterByKey);
-    Object.assign(filterByKey, derived);
-    applySanitizedFilters(filterByKey);
-
-    const payload: Record<string, { display: string; filter?: string }> = {};
-    const keys = new Set([...Object.keys(displayByKey), ...Object.keys(filterByKey)]);
-    for (const key of keys) {
-      const display = displayByKey[key]?.trim() ?? "";
-      const filter = filterByKey[key]?.trim();
-      const attr = schema.find((a) => a.key === key);
-      if (!display && !filter) continue;
-      if (attr?.filterable) {
-        if (!display && !filter) continue;
-        payload[key] = { display, ...(filter ? { filter } : {}) };
-      } else if (display) {
-        payload[key] = display;
-      }
-    }
-
-    if (!Object.keys(payload).length) {
-      skip++;
-      continue;
-    }
-
-    const schemaRelaxed = schema.map((a) => ({ ...a, options: null }));
-    const r = await saveProductSpecsNormalized(prisma, p.id, schemaRelaxed, payload);
-    if (!r.ok) {
-      console.warn(`product ${p.id} (${p.category.slug}): ${"error" in r ? r.error : "failed"}`);
-      fail++;
-      continue;
-    }
-    await prisma.product.update({
-      where: { id: p.id },
-      data: { specs: r.specs as object },
-    });
-    console.log(`product ${p.id} (${p.category.slug}): synced ${Object.keys(payload).length} attrs`);
-    ok++;
+    synced++;
   }
 
-  console.log(`done: ok=${ok} skip=${skip} fail=${fail}`);
+  console.log("\n--- summary ---");
+  console.log(`total products: ${products.length}`);
+  console.log(dryRun ? `would sync: ${synced}` : `synced: ${synced}`);
+  console.log(`skipped: ${skipped.length}`);
+  console.log(dryRun ? `failed: 0 (dry-run)` : `failed: ${failed.length}`);
+
+  if (skipped.length) {
+    console.log("\nSkipped products (first 20):");
+    for (const s of skipped.slice(0, 20)) {
+      console.log(`  #${s.id} [${s.slug}]: ${s.reason}`);
+    }
+    if (skipped.length > 20) console.log(`  ... and ${skipped.length - 20} more`);
+  }
+
+  if (!dryRun && failed.length) {
+    console.log("\nFailed products:");
+    for (const f of failed) {
+      console.log(`  #${f.id} [${f.slug}]: ${f.reason}`);
+    }
+    process.exitCode = 1;
+  }
 }
 
 main()
