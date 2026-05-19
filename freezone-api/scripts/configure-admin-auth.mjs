@@ -56,6 +56,7 @@ const args = [
   "ADMIN_REQUIRE_PASSWORD=true",
   `ADMIN_PASSWORD=${adminPassword}`,
   `ADMIN_SESSION_SECRET=${adminSessionSecret}`,
+  "ADMIN_SESSION_SAMESITE=none",
   "-a",
   app,
 ];

@@ -44,13 +44,21 @@ export function isAdminAuthenticatedFromRequest(request: Request): boolean {
   return verifyAdminSessionToken(token);
 }
 
+function adminSessionSameSite(): "Lax" | "Strict" | "None" {
+  const raw = process.env.ADMIN_SESSION_SAMESITE?.trim().toLowerCase();
+  if (raw === "none") return "None";
+  if (raw === "strict") return "Strict";
+  return "Lax";
+}
+
 function sessionCookieHeader(token: string, maxAgeSec: number): string {
-  const secure = process.env.NODE_ENV === "production";
+  const sameSite = adminSessionSameSite();
+  const secure = process.env.NODE_ENV === "production" || sameSite === "None";
   const parts = [
     `${COOKIE_NAME}=${encodeURIComponent(token)}`,
     "Path=/",
     "HttpOnly",
-    "SameSite=Lax",
+    `SameSite=${sameSite}`,
     `Max-Age=${maxAgeSec}`,
   ];
   if (secure) parts.push("Secure");
@@ -58,7 +66,11 @@ function sessionCookieHeader(token: string, maxAgeSec: number): string {
 }
 
 function clearCookieHeader(): string {
-  return `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+  const sameSite = adminSessionSameSite();
+  const secure = process.env.NODE_ENV === "production" || sameSite === "None";
+  const parts = [`${COOKIE_NAME}=`, "Path=/", "HttpOnly", `SameSite=${sameSite}`, "Max-Age=0"];
+  if (secure) parts.push("Secure");
+  return parts.join("; ");
 }
 
 export function jsonWithSessionCookie(body: unknown, token: string): Response {

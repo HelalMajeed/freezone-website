@@ -69,8 +69,7 @@ export default function AdminLoginPage() {
       <h1 className={styles.title}>دخول الإدارة</h1>
       <p className={styles.sub}>
         لوحة التحكم والمحتوى
-        {!requirePassword &&
-          " (دخول مباشر — للإنتاج فعّل كلمة المرور عبر ADMIN_REQUIRE_PASSWORD أو عطّل الاختبار عبر ADMIN_SKIP_AUTH=false)"}
+        {!requirePassword && " — اضغط «دخول» للمتابعة (دخول مباشر بدون كلمة مرور)."}
       </p>
       <form onSubmit={submit}>
         {requirePassword && (
