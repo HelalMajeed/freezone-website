@@ -4,8 +4,8 @@ import { PRODUCTS } from "./data";
 import { prisma, isDatabaseConfigured, isDbConnectionError } from "./prisma";
 import { mapDbToProduct, storefrontProductIncludeBase, type LocaleCode } from "./catalog";
 import { categoryAttributeRowsToFacetDefs } from "./classification/sync";
-import { readLegacySpecValue } from "./classification/legacy-spec-map";
-import { normalizeAttributeType, productValueMatchesFilterSelection } from "./classification/values";
+import { facetValueForFilter, FUZZY_SELECT_FILTER_KEYS, readLegacySpecValue } from "./classification/legacy-spec-map";
+import { normalizeAttributeType, productValueMatchesFilterSelectionForKey } from "./classification/values";
 import type { AttributeType, CategoryAttributeRow } from "./classification/types";
 
 export type CatalogSort =
@@ -213,6 +213,19 @@ function facetAttributeValueWhere(
     };
   }
 
+  if (FUZZY_SELECT_FILTER_KEYS.has(key)) {
+    return {
+      attributeKey: key,
+      OR: selected.flatMap((v) => {
+        const needle = facetValueForFilter(key, v) ?? v;
+        return [
+          { valueString: { contains: needle, mode: "insensitive" } },
+          { valueString: { contains: v, mode: "insensitive" } },
+        ];
+      }),
+    };
+  }
+
   return {
     attributeKey: key,
     OR: selected.flatMap((v) => {
@@ -228,8 +241,10 @@ function facetAttributeValueWhere(
 
 function facetDisplayForProduct(product: Product, catSlug: string, facetKey: string): string | undefined {
   const direct = product.specs?.[facetKey]?.trim();
-  if (direct) return direct;
-  return readLegacySpecValue(product.specs, catSlug, facetKey);
+  if (direct) return facetValueForFilter(facetKey, direct);
+  const legacy = readLegacySpecValue(product.specs, catSlug, facetKey);
+  if (legacy) return legacy;
+  return undefined;
 }
 
 function productMatchesFacetsInMemory(
@@ -243,7 +258,7 @@ function productMatchesFacetsInMemory(
     if (!selected?.length) continue;
     const display = facetDisplayForProduct(product, catSlug, def.key);
     const type = def.type ?? "SELECT";
-    if (!productValueMatchesFilterSelection(display, type, selected)) return false;
+    if (!productValueMatchesFilterSelectionForKey(def.key, display, type, selected)) return false;
   }
   return true;
 }
@@ -280,7 +295,8 @@ function computeFacetCounts(
     for (const p of products) {
       const v = facetDisplayForProduct(p, catSlug || p.cat, def.key);
       if (!v?.trim()) continue;
-      map.set(v.trim(), (map.get(v.trim()) ?? 0) + 1);
+      const bucket = facetValueForFilter(def.key, v) ?? v.trim();
+      map.set(bucket, (map.get(bucket) ?? 0) + 1);
     }
     out[def.key] = Array.from(map.entries())
       .map(([value, count]) => ({ value, count }))

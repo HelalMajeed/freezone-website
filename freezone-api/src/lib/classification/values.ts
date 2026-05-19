@@ -1,5 +1,6 @@
 import type { AttributeType, CategoryAttributeRow, ProductAttributeValueRow } from "./types";
 import { isAttributeType } from "./types";
+import { FUZZY_SELECT_FILTER_KEYS, fuzzySelectFilterMatch } from "./legacy-spec-map";
 
 /** Normalize admin/storefront input key to snake_case. */
 export function normalizeAttributeKey(raw: string): string {
@@ -182,4 +183,19 @@ export function productValueMatchesFilterSelection(
   }
 
   return selected.includes(displayValue.trim());
+}
+
+export function productValueMatchesFilterSelectionForKey(
+  attributeKey: string,
+  displayValue: string | undefined,
+  type: AttributeType,
+  selected: string[],
+): boolean {
+  if (
+    (type === "SELECT" || type === "TEXT") &&
+    FUZZY_SELECT_FILTER_KEYS.has(attributeKey)
+  ) {
+    return fuzzySelectFilterMatch(attributeKey, displayValue, selected);
+  }
+  return productValueMatchesFilterSelection(displayValue, type, selected);
 }

@@ -7,6 +7,7 @@ import { Filter, ChevronDown } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import type { Product } from "@/lib/data";
 import type { FacetCount } from "@/lib/catalog-products-api";
+import { facetValueForFilter } from "@/lib/classification/legacy-spec-map";
 import {
   facetDefinitionsForCategory,
   facetDefinitionDisplayTitle,
@@ -51,11 +52,18 @@ function resolveFacetOptions(
   const fromServer = serverFacets?.[def.key];
   if (fromServer?.length) return fromServer;
   const counts = collectFacetValueCounts(products, activeCat, def.key);
-  const countMap = new Map(counts.map((c) => [c.value, c.count]));
-  if (def.options?.length) {
-    return def.options.map((value) => ({ value, count: countMap.get(value) ?? 0 }));
+  const countMap = new Map<string, number>();
+  for (const { value, count } of counts) {
+    const bucket = facetValueForFilter(def.key, value) ?? value;
+    countMap.set(bucket, (countMap.get(bucket) ?? 0) + count);
   }
-  return counts;
+  if (def.options?.length) {
+    return def.options.map((value) => ({
+      value: facetValueForFilter(def.key, value) ?? value,
+      count: countMap.get(facetValueForFilter(def.key, value) ?? value) ?? 0,
+    }));
+  }
+  return Array.from(countMap.entries()).map(([value, count]) => ({ value, count }));
 }
 
 function AccordionSection({
@@ -122,10 +130,11 @@ export function FilterSidebar({
   const brandOptions = collectBrandCounts(products, activeCat);
 
   const toggleSpecValue = (facetKey: string, value: string) => {
+    const urlValue = facetValueForFilter(facetKey, value) ?? value;
     setFilters((prev) => {
       const cur = prev.specSelections[facetKey] ?? [];
-      const has = cur.includes(value);
-      const nextVals = has ? cur.filter((x) => x !== value) : [...cur, value];
+      const has = cur.includes(urlValue);
+      const nextVals = has ? cur.filter((x) => x !== urlValue) : [...cur, urlValue];
       const nextSpecs = { ...prev.specSelections };
       if (nextVals.length === 0) delete nextSpecs[facetKey];
       else nextSpecs[facetKey] = nextVals;
@@ -215,7 +224,8 @@ export function FilterSidebar({
             >
               <div className={styles.facetList}>
                 {boolOpts.map(({ value: opt, label }) => {
-                  const isOn = selected.includes(opt);
+                  const urlOpt = facetValueForFilter(def.key, opt) ?? opt;
+                const isOn = selected.includes(urlOpt);
                   return (
                     <label key={opt} className={styles.facetRow}>
                       <input type="checkbox" checked={isOn} onChange={() => toggleSpecValue(def.key, opt)} />
@@ -243,7 +253,8 @@ export function FilterSidebar({
           >
             <div className={styles.facetList}>
               {options.map(({ value: opt, count }) => {
-                const isOn = selected.includes(opt);
+                const urlOpt = facetValueForFilter(def.key, opt) ?? opt;
+                const isOn = selected.includes(urlOpt);
                 const label = def.unit && /^\d/.test(opt) ? `${opt} ${def.unit}` : opt;
                 return (
                   <label key={opt} className={styles.facetRow}>

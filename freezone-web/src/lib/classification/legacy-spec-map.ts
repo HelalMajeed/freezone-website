@@ -81,14 +81,19 @@ export function normalizeLegacySpecDisplay(attributeKey: string, raw: string): s
     const mah = s.match(/(\d+)\s*mAh/i);
     if (mah) return mah[1];
   }
-  if (attributeKey === "processor_family") {
+  if (attributeKey === "processor_family" || attributeKey === "cpu" || attributeKey === "chipset") {
     const fam =
+      s.match(/Core\s*Ultra\s*\d+/i)?.[0] ??
       s.match(/Core\s*i[3579]/i)?.[0] ??
+      s.match(/Ryzen\s*AI\s*\d+/i)?.[0] ??
       s.match(/Ryzen\s*\d+/i)?.[0] ??
-      s.match(/Ultra\s*\d+/i)?.[0] ??
+      s.match(/Intel\s*Core/i)?.[0] ??
+      s.match(/Snapdragon\s*\d+/i)?.[0] ??
       s.match(/Apple\s*M\d/i)?.[0];
     if (fam) return fam.replace(/\s+/g, " ").trim();
-    return s.length > 72 ? `${s.slice(0, 72)}…` : s;
+    const amd = s.match(/AMD\s+Ryzen[^,;|]*/i)?.[0];
+    if (amd) return amd.replace(/\s+/g, " ").trim().slice(0, 48);
+    return s.length > 48 ? `${s.slice(0, 48)}…` : s;
   }
   if (attributeKey === "gpu_model" || attributeKey === "gpu") {
     const m = s.match(/RTX\s*\d+/i) ?? s.match(/GTX\s*\d+/i) ?? s.match(/RX\s*\d+/i);
@@ -101,6 +106,36 @@ export function normalizeLegacySpecDisplay(attributeKey: string, raw: string): s
   }
 
   return s.length > 96 ? `${s.slice(0, 96)}…` : s;
+}
+
+export const FUZZY_SELECT_FILTER_KEYS = new Set([
+  "processor_family",
+  "cpu",
+  "chipset",
+  "gpu_model",
+  "gpu",
+]);
+
+export function facetValueForFilter(attributeKey: string, raw: string | undefined): string | undefined {
+  if (!raw?.trim()) return undefined;
+  const norm = normalizeLegacySpecDisplay(attributeKey, raw);
+  return norm || raw.trim();
+}
+
+export function fuzzySelectFilterMatch(
+  attributeKey: string,
+  displayValue: string | undefined,
+  selected: string[],
+): boolean {
+  if (!selected.length) return true;
+  if (!displayValue?.trim()) return false;
+  const d = facetValueForFilter(attributeKey, displayValue)?.toLowerCase() ?? "";
+  return selected.some((sel) => {
+    const s = facetValueForFilter(attributeKey, sel)?.toLowerCase() ?? sel.trim().toLowerCase();
+    if (!s || !d) return false;
+    if (d === s) return true;
+    return d.includes(s) || s.includes(d);
+  });
 }
 
 export function readLegacySpecValue(

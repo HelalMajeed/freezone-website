@@ -1,7 +1,12 @@
 import type { AttributeType, FacetAttributeDef, Product } from "./data";
 import { productBelongsToCategory } from "./productCategoryMembership";
 import { productValueMatchesFilterSelection } from "@/lib/classification/product-filter";
-import { readLegacySpecValue } from "@/lib/classification/legacy-spec-map";
+import {
+  facetValueForFilter,
+  fuzzySelectFilterMatch,
+  FUZZY_SELECT_FILTER_KEYS,
+  readLegacySpecValue,
+} from "@/lib/classification/legacy-spec-map";
 
 export type FacetDefinition = {
   key: string;
@@ -365,7 +370,7 @@ export function facetDefinitionsForCategory(
 export function getProductFacetValue(product: Product, facetKey: string): string | undefined {
   const fromSpecs = product.specs?.[facetKey];
   if (fromSpecs !== undefined && String(fromSpecs).trim() !== "") {
-    return String(fromSpecs).trim();
+    return facetValueForFilter(facetKey, String(fromSpecs)) ?? String(fromSpecs).trim();
   }
 
   const legacy = readLegacySpecValue(product.specs, product.cat, facetKey);
@@ -422,7 +427,12 @@ export function productMatchesFacetSelections(
     const selected = selections[def.key];
     if (!selected?.length) continue;
     const val = getProductFacetValue(product, def.key);
-    if (!productValueMatchesFilterSelection(val, def.type, selected)) return false;
+    const type = def.type ?? "SELECT";
+    const matches =
+      (type === "SELECT" || type === "TEXT") && FUZZY_SELECT_FILTER_KEYS.has(def.key)
+        ? fuzzySelectFilterMatch(def.key, val, selected)
+        : productValueMatchesFilterSelection(val, type, selected);
+    if (!matches) return false;
   }
   return true;
 }
