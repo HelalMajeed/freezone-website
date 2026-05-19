@@ -53,9 +53,8 @@ async function main() {
       continue;
     }
 
-    const merged = { ...specs, ...remapped };
     const schemaRelaxed = schema.map((a) => ({ ...a, options: null }));
-    const r = await saveProductSpecsNormalized(prisma, p.id, schemaRelaxed, merged);
+    const r = await saveProductSpecsNormalized(prisma, p.id, schemaRelaxed, remapped);
     if (!r.ok) {
       console.warn(`product ${p.id} (${p.category.slug}): ${"error" in r ? r.error : "failed"}`);
       fail++;
@@ -63,7 +62,7 @@ async function main() {
     }
     await prisma.product.update({
       where: { id: p.id },
-      data: { specs: r.specs as object },
+      data: { specs: { ...specs, ...r.specs } as object },
     });
     console.log(`product ${p.id} (${p.category.slug}): synced ${Object.keys(remapped).length} attrs`);
     ok++;
