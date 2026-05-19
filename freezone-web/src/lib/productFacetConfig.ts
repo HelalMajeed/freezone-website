@@ -1,6 +1,7 @@
 import type { AttributeType, FacetAttributeDef, Product } from "./data";
 import { productBelongsToCategory } from "./productCategoryMembership";
 import { productValueMatchesFilterSelection } from "@/lib/classification/product-filter";
+import { readLegacySpecValue } from "@/lib/classification/legacy-spec-map";
 
 export type FacetDefinition = {
   key: string;
@@ -366,6 +367,9 @@ export function getProductFacetValue(product: Product, facetKey: string): string
   if (fromSpecs !== undefined && String(fromSpecs).trim() !== "") {
     return String(fromSpecs).trim();
   }
+
+  const legacy = readLegacySpecValue(product.specs, product.cat, facetKey);
+  if (legacy) return legacy;
 
   if (facetKey === "componentType" && productBelongsToCategory(product, "components")) {
     const raw = product.storage?.toLowerCase() ?? "";

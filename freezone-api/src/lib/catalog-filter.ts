@@ -4,6 +4,7 @@ import { PRODUCTS } from "./data";
 import { prisma, isDatabaseConfigured, isDbConnectionError } from "./prisma";
 import { mapDbToProduct, storefrontProductIncludeBase, type LocaleCode } from "./catalog";
 import { categoryAttributeRowsToFacetDefs } from "./classification/sync";
+import { readLegacySpecValue } from "./classification/legacy-spec-map";
 import { normalizeAttributeType, productValueMatchesFilterSelection } from "./classification/values";
 import type { AttributeType, CategoryAttributeRow } from "./classification/types";
 
@@ -225,15 +226,22 @@ function facetAttributeValueWhere(
   };
 }
 
+function facetDisplayForProduct(product: Product, catSlug: string, facetKey: string): string | undefined {
+  const direct = product.specs?.[facetKey]?.trim();
+  if (direct) return direct;
+  return readLegacySpecValue(product.specs, catSlug, facetKey);
+}
+
 function productMatchesFacetsInMemory(
   product: Product,
+  catSlug: string,
   facetDefs: FacetAttributeDef[],
   facets: Record<string, string[]>,
 ): boolean {
   for (const def of facetDefs) {
     const selected = facets[def.key];
     if (!selected?.length) continue;
-    const display = product.specs?.[def.key];
+    const display = facetDisplayForProduct(product, catSlug, def.key);
     const type = def.type ?? "SELECT";
     if (!productValueMatchesFilterSelection(display, type, selected)) return false;
   }
@@ -262,6 +270,7 @@ function sortProducts(products: Product[], sort: CatalogSort | undefined, hasQue
 
 function computeFacetCounts(
   products: Product[],
+  catSlug: string,
   facetDefs: FacetAttributeDef[],
 ): Record<string, FacetCount[]> {
   const out: Record<string, FacetCount[]> = {};
@@ -269,7 +278,7 @@ function computeFacetCounts(
     if (def.filterable === false) continue;
     const map = new Map<string, number>();
     for (const p of products) {
-      const v = p.specs?.[def.key];
+      const v = facetDisplayForProduct(p, catSlug || p.cat, def.key);
       if (!v?.trim()) continue;
       map.set(v.trim(), (map.get(v.trim()) ?? 0) + 1);
     }
@@ -327,13 +336,19 @@ export async function queryCatalogProducts(input: CatalogFilterInput): Promise<C
     }
     const facetDefs: FacetAttributeDef[] = [];
     if (input.facets && input.cat) {
-      list = list.filter((p) => productMatchesFacetsInMemory(p, facetDefs, input.facets!));
+      list = list.filter((p) => productMatchesFacetsInMemory(p, input.cat ?? p.cat, facetDefs, input.facets!));
     }
     list = sortProducts(list, input.sort, Boolean(input.q));
     const total = list.length;
     const start = (page - 1) * pageSize;
     const products = list.slice(start, start + pageSize);
-    return { products, total, page, pageSize, facets: computeFacetCounts(list, facetDefs) };
+    return {
+      products,
+      total,
+      page,
+      pageSize,
+      facets: computeFacetCounts(list, input.cat ?? "", facetDefs),
+    };
   }
 
   try {
@@ -385,11 +400,13 @@ export async function queryCatalogProducts(input: CatalogFilterInput): Promise<C
               type: typeByKey.get(key) ?? ("SELECT" as AttributeType),
               filterable: true,
             }));
-      products = products.filter((p) => productMatchesFacetsInMemory(p, defsForMem, input.facets!));
+      products = products.filter((p) =>
+        productMatchesFacetsInMemory(p, input.cat ?? p.cat, defsForMem, input.facets!),
+      );
     }
 
     products = sortProducts(products, input.sort, Boolean(input.q));
-    const facetCounts = computeFacetCounts(products, facetDefs);
+    const facetCounts = computeFacetCounts(products, input.cat ?? "", facetDefs);
     const total = products.length;
     const start = (page - 1) * pageSize;
     const pageProducts = products.slice(start, start + pageSize);
