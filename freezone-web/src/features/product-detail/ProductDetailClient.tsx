@@ -11,6 +11,11 @@ import { Link, useRouter } from "@/navigation";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 import { buildProductSpecAttributeRows } from "@/lib/productSpecCardChips";
+import {
+  formatSpecValueForDisplay,
+  groupSpecRowsByDisplayGroup,
+  humanizeDisplayGroup,
+} from "@/lib/classification/spec-display";
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en").format(n);
@@ -45,11 +50,6 @@ export default function ProductDetailClient({
     return "";
   }, [product]);
 
-  const filterableKeys = useMemo(
-    () => new Set((category?.facetAttributes ?? []).filter((a) => a.filterable !== false).map((a) => a.key)),
-    [category?.facetAttributes],
-  );
-
   const specAttributeRows = useMemo(
     () =>
       buildProductSpecAttributeRows(
@@ -68,15 +68,14 @@ export default function ProductDetailClient({
     [product, tProducts, modelDisplay, category?.facetAttributes, locale],
   );
 
-  const filterSpecRows = useMemo(() => {
-    if (!category?.facetAttributes?.length) return specAttributeRows;
-    return specAttributeRows.filter((r) => filterableKeys.has(r.specKey));
-  }, [specAttributeRows, filterableKeys, category?.facetAttributes]);
-
-  const extendedSpecRows = useMemo(() => {
-    if (!category?.facetAttributes?.length) return [];
-    return specAttributeRows.filter((r) => !filterableKeys.has(r.specKey));
-  }, [specAttributeRows, filterableKeys, category?.facetAttributes]);
+  const specGroups = useMemo(() => {
+    const attrByKey = new Map((category?.facetAttributes ?? []).map((a) => [a.key, a]));
+    const rows = specAttributeRows.map((row) => ({
+      ...row,
+      value: formatSpecValueForDisplay(row.value, attrByKey.get(row.specKey), locale),
+    }));
+    return groupSpecRowsByDisplayGroup(rows, category?.facetAttributes);
+  }, [specAttributeRows, category?.facetAttributes, locale]);
 
   const legacyStorage = product.storage?.trim() ?? "";
   const hasStorageInSpecs =
@@ -156,23 +155,17 @@ export default function ProductDetailClient({
                 <span className={styles.attrValue}>{modelDisplay}</span>
               </div>
             ) : null}
-            {filterSpecRows.map((row) => (
-              <div key={row.specKey} className={styles.attrRow}>
-                <span className={styles.attrLabel}>{row.label}</span>
-                <span className={styles.attrValue}>{row.value}</span>
-              </div>
-            ))}
-            {extendedSpecRows.length > 0 ? (
-              <>
-                <p className={styles.specSectionTitle}>{t("extendedSpecsTitle")}</p>
-                {extendedSpecRows.map((row) => (
+            {specGroups.map(({ group, rows }) => (
+              <div key={group}>
+                <p className={styles.specSectionTitle}>{humanizeDisplayGroup(group, locale)}</p>
+                {rows.map((row) => (
                   <div key={row.specKey} className={styles.attrRow}>
                     <span className={styles.attrLabel}>{row.label}</span>
                     <span className={styles.attrValue}>{row.value}</span>
                   </div>
                 ))}
-              </>
-            ) : null}
+              </div>
+            ))}
             {showLegacyStorageRow ? (
               <div className={styles.attrRow}>
                 <span className={styles.attrLabel}>{t("storageSpecs")}</span>

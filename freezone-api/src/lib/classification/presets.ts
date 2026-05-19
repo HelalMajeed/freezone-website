@@ -48,5 +48,5 @@ const KEY_PRESETS: Record<string, AttributePresetMeta> = {
 
 export function defaultAttributeMetaForKey(key: string): AttributePresetMeta {
   const k = key.trim().toLowerCase();
-  return KEY_PRESETS[k] ?? { type: "SELECT", filterable: true };
+  return KEY_PRESETS[k] ?? { type: "TEXT", filterable: false, displayGroup: "specs" };
 }

@@ -239,7 +239,7 @@ async function loadCategoryFacetDefs(catSlug: string): Promise<FacetAttributeDef
     where: { slug: catSlug },
     include: {
       categoryAttributes: {
-        where: { filterable: true },
+        where: { filterable: true, active: true },
         orderBy: { sortOrder: "asc" },
       },
     },

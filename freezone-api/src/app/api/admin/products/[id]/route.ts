@@ -4,7 +4,14 @@ import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 import { normalizeSpecsInput } from "@/lib/spec-validation";
-import { persistProductSpecsForProduct, validateProductSpecsAgainstCategory } from "@/lib/admin-product-specs";
+import {
+  adminProductSpecsForEdit,
+  persistProductSpecsForProduct,
+  validateProductSpecsAgainstCategory,
+} from "@/lib/admin-product-specs";
+import { loadCategoryAttributeSchema } from "@/lib/classification/persist";
+import { categoryAttributeRowsToFacetDefs } from "@/lib/classification/sync";
+import { partitionFacetAttributes } from "@/lib/classification/attribute-sets";
 import {
   replaceProductSecondaryCategories,
   stripSecondaryMatchingPrimary,
@@ -22,7 +29,15 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   if (!Number.isFinite(id)) return Response.json({ error: "bad id" }, { status: 400 });
 
   const adminOneIncludeBase = {
-    category: { select: { id: true, slug: true, nameEn: true } },
+    category: {
+      select: {
+        id: true,
+        slug: true,
+        nameEn: true,
+        categoryAttributes: { orderBy: { sortOrder: "asc" as const } },
+      },
+    },
+    attributeValues: true,
     images: { orderBy: { sortOrder: "asc" } as const },
     brandRef: { select: { id: true, nameEn: true, nameAr: true } },
   };
@@ -45,7 +60,24 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
       });
     }
     if (!row) return Response.json({ error: "not found" }, { status: 404 });
-    return Response.json(row);
+
+    const schema = await loadCategoryAttributeSchema(
+      (args) => prisma.categoryAttribute.findMany(args),
+      row.categoryId,
+    );
+    const attrs = schema.length
+      ? categoryAttributeRowsToFacetDefs(schema)
+      : [];
+    const specs = await adminProductSpecsForEdit(row.id, row.categoryId, row.specs);
+    const parts = partitionFacetAttributes(attrs);
+
+    return Response.json({
+      ...row,
+      specs,
+      categoryAttributes: attrs,
+      filterableAttributes: parts.filterableSpecs,
+      extendedAttributes: parts.extendedSpecs,
+    });
   } catch (e) {
     return handleRouteDbError(e);
   }

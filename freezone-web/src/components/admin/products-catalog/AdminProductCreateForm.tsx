@@ -8,7 +8,14 @@ import { parseFacetAttributesFromUnknown } from "@/lib/facet-attributes";
 import { AdminProductSpecFields } from "@/components/admin/products/AdminProductSpecFields";
 import { freezoneApiUrl } from "@/lib/api-internal";
 
-type Category = { id: number; slug: string; nameEn: string; nameAr?: string; facetKeys?: unknown };
+type Category = {
+  id: number;
+  slug: string;
+  nameEn: string;
+  nameAr?: string;
+  facetKeys?: unknown;
+  facetAttributes?: import("@/lib/data").FacetAttributeDef[];
+};
 type BrandOpt = { id: number; nameEn: string; nameAr: string };
 
 const field: React.CSSProperties = {
@@ -70,7 +77,7 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId, 
 
   const categoryAttributes = useMemo(() => {
     const c = categories.find((x) => x.id === resolvedCategoryId);
-    return parseFacetAttributesFromUnknown(c?.facetKeys);
+    return parseFacetAttributesFromUnknown(c?.facetAttributes ?? c?.facetKeys);
   }, [categories, resolvedCategoryId]);
 
   async function submit(e: FormEvent) {

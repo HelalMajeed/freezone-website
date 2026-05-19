@@ -335,7 +335,8 @@ const STORAGE_TO_COMPONENT: Record<string, string> = {
 };
 
 /**
- * @param dynamic إن وُجد (من قاعدة البيانات `Category.facetKeys` كسلسلة مفاتيح أو كائنات ثنائية اللغة) يُستخدم بدل الجدول الثابت.
+ * Visible sidebar filters only (`filterable === true`). Extended specs never appear here.
+ * @param dynamic من `Category.facetAttributes` — يُصفّى إلى الفلاتر فقط.
  */
 export function facetDefinitionsForCategory(
   catId: string,
@@ -352,7 +353,7 @@ export function facetDefinitionsForCategory(
       }));
     }
     return (dynamic as FacetAttributeDef[])
-      .filter((a) => a.filterable !== false)
+      .filter((a) => a.filterable === true)
       .map((a) => ({
         key: a.key,
         labelKey: FACET_KEY_TO_LABEL[a.key] ?? "facetGeneric",
@@ -439,5 +440,5 @@ export function productMatchesFacetSelections(
 
 /** Visible filter facets only (extended specs with `filterable: false` stay on PDP). */
 export function filterableFacetDefinitions(defs: FacetDefinition[]): FacetDefinition[] {
-  return defs.filter((d) => d.filterable !== false);
+  return defs.filter((d) => d.filterable === true);
 }

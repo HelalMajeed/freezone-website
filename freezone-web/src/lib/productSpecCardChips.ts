@@ -246,7 +246,13 @@ function truncate(s: string, max: number): string {
   return `${t.slice(0, Math.max(0, max - 1))}…`;
 }
 
-function sortSpecKeys(keys: string[]): string[] {
+function sortSpecKeys(keys: string[], facetAttributes?: import("@/lib/data").FacetAttributeDef[]): string[] {
+  if (facetAttributes?.length) {
+    const order = new Map(facetAttributes.map((a, i) => [a.key, i]));
+    return [...keys].sort(
+      (a, b) => (order.get(a) ?? 9999) - (order.get(b) ?? 9999) || a.localeCompare(b),
+    );
+  }
   const rank = (k: string) => {
     const i = FACET_ORDER.indexOf(k);
     return i === -1 ? FACET_ORDER.length + 1 : i;
@@ -275,7 +281,10 @@ export function buildProductSpecAttributeRows(
   );
   if (entries.length === 0) return [];
 
-  const ordered = sortSpecKeys(entries.map(([k]) => k));
+  const ordered = sortSpecKeys(
+    entries.map(([k]) => k),
+    options?.facetAttributes,
+  );
   const entryByKey = new Map(entries);
   const rows: ProductSpecAttributeRow[] = [];
 

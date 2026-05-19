@@ -29,6 +29,7 @@ export type CategoryAttributeRow = {
   sortOrder: number;
   required: boolean;
   unit: string | null;
+  active?: boolean;
 };
 
 export type ProductAttributeValueRow = {

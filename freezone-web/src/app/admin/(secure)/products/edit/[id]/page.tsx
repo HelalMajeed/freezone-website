@@ -10,7 +10,13 @@ import { parseFacetAttributesFromUnknown } from "@/lib/facet-attributes";
 import { AdminProductSpecFields } from "@/components/admin/products/AdminProductSpecFields";
 import { freezoneApiUrl } from "@/lib/api-internal";
 
-type Category = { id: number; slug: string; nameEn: string; facetKeys?: unknown };
+type Category = {
+  id: number;
+  slug: string;
+  nameEn: string;
+  facetKeys?: unknown;
+  facetAttributes?: import("@/lib/data").FacetAttributeDef[];
+};
 type BrandOpt = { id: number; nameEn: string; nameAr: string };
 type ImgRow = { id: number; url: string; sortOrder: number };
 
@@ -111,8 +117,11 @@ export default function AdminEditProductPage() {
       const { secondaryCategories, ...rest } = raw;
       void secondaryCategories;
       setProduct({ ...rest, secondaryCategoryIds, model: (raw as { model?: string }).model ?? "" });
+      const apiAttrs = (raw as { categoryAttributes?: import("@/lib/data").FacetAttributeDef[] })
+        .categoryAttributes;
       const cat = cats.find((x) => x.id === raw.categoryId);
-      const attrs = parseFacetAttributesFromUnknown(cat?.facetKeys);
+      const attrs =
+        apiAttrs?.length ? apiAttrs : parseFacetAttributesFromUnknown(cat?.facetKeys);
       const base = normalizeSpecsInput(raw.specs);
       const s: Record<string, string> = {};
       for (const a of attrs) s[a.key] = base[a.key] ?? "";
@@ -130,7 +139,7 @@ export default function AdminEditProductPage() {
   const categoryAttributes = useMemo(() => {
     if (!product || categories.length === 0) return [];
     const cat = categories.find((c) => c.id === product.categoryId);
-    return parseFacetAttributesFromUnknown(cat?.facetKeys);
+    return parseFacetAttributesFromUnknown(cat?.facetAttributes ?? cat?.facetKeys);
   }, [product, categories]);
 
   async function saveProduct(e: React.FormEvent) {

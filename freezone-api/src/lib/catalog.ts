@@ -123,7 +123,7 @@ export const storefrontProductIncludeBase = {
   category: {
     select: {
       slug: true,
-      categoryAttributes: { orderBy: { sortOrder: "asc" as const } },
+      categoryAttributes: { where: { active: true }, orderBy: { sortOrder: "asc" as const } },
     },
   },
   attributeValues: true,
