@@ -13,6 +13,7 @@ import * as adminBrands from "./app/api/admin/brands/route";
 import * as adminBrandsId from "./app/api/admin/brands/[id]/route";
 import * as adminCategories from "./app/api/admin/categories/route";
 import * as adminCategoriesId from "./app/api/admin/categories/[id]/route";
+import * as adminCategoriesAttributes from "./app/api/admin/categories/[id]/attributes/route";
 import * as adminCms from "./app/api/admin/cms/route";
 import * as adminCmsPage from "./app/api/admin/cms-page/route";
 import * as adminCmsPagePublish from "./app/api/admin/cms-page/publish/route";
@@ -39,6 +40,7 @@ import * as publicSite from "./app/api/public/site/route";
 import * as ssrBrands from "./app/api/ssr/catalog/brands/route";
 import * as ssrCategories from "./app/api/ssr/catalog/categories/route";
 import * as ssrProducts from "./app/api/ssr/catalog/products/route";
+import * as ssrCatalogFacets from "./app/api/ssr/catalog/facets/route";
 import * as ssrHomeCms from "./app/api/ssr/home-cms/route";
 import * as ssrHomeSections from "./app/api/ssr/home-sections/route";
 import * as ssrProductId from "./app/api/ssr/product/[id]/route";
@@ -155,6 +157,9 @@ async function main() {
   app.get("/api/ssr/catalog/products", async (req, res) => {
     await sendWebResponse(res, await ssrProducts.GET(webRequestFromExpress(req)));
   });
+  app.get("/api/ssr/catalog/facets", async (req, res) => {
+    await sendWebResponse(res, await ssrCatalogFacets.GET(webRequestFromExpress(req)));
+  });
   app.get("/api/ssr/catalog/categories", async (req, res) => {
     await sendWebResponse(res, await ssrCategories.GET(webRequestFromExpress(req)));
   });
@@ -231,6 +236,12 @@ async function main() {
   });
   app.patch("/api/admin/categories/:id", async (req, res) => {
     await sendWebResponse(res, await adminCategoriesId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+  app.get("/api/admin/categories/:id/attributes", async (req, res) => {
+    await sendWebResponse(
+      res,
+      await adminCategoriesAttributes.GET(webRequestFromExpress(req), ctxId(req.params.id)),
+    );
   });
 
   app.get("/api/admin/products", async (req, res) => {

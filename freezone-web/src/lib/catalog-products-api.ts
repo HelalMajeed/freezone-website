@@ -73,3 +73,39 @@ export async function fetchCatalogProducts(q: CatalogProductsQuery): Promise<Cat
   if (!res.ok) throw new Error(`catalog products ${res.status}`);
   return res.json() as Promise<CatalogProductsResponse>;
 }
+
+export type FacetFilterOption = { label: string; value: string; count: number };
+
+export type FacetFilterDefinition = {
+  key: string;
+  label: string;
+  type: string;
+  unit?: string;
+  options: FacetFilterOption[];
+};
+
+export type CatalogFacetsResponse = {
+  filters: FacetFilterDefinition[];
+};
+
+function buildCatalogFacetsUrl(q: CatalogProductsQuery): string {
+  const sp = new URLSearchParams();
+  sp.set("locale", q.locale);
+  if (q.cat) sp.set("cat", q.cat);
+  if (q.brands?.length) for (const b of q.brands) sp.append("brand", b);
+  if (q.priceMin || q.priceMax) sp.set("price", `${q.priceMin || "0"}-${q.priceMax || ""}`);
+  if (q.inStock) sp.set("inStock", "true");
+  if (q.onSale) sp.set("onSale", "true");
+  if (q.featured) sp.set("featured", "true");
+  if (q.isNew) sp.set("isNew", "true");
+  if (q.listingAge && q.listingAge !== "all") sp.set("listingAge", q.listingAge);
+  if (q.q?.trim()) sp.set("q", q.q.trim());
+  return freezoneApiUrl(`/api/ssr/catalog/facets?${sp.toString()}`);
+}
+
+export async function fetchCatalogFacets(q: CatalogProductsQuery): Promise<CatalogFacetsResponse> {
+  if (!q.cat) return { filters: [] };
+  const res = await fetch(buildCatalogFacetsUrl(q), { credentials: "include" });
+  if (!res.ok) throw new Error(`catalog facets ${res.status}`);
+  return res.json() as Promise<CatalogFacetsResponse>;
+}

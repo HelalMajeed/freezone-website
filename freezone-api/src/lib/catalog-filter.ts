@@ -1,11 +1,20 @@
 import type { Prisma } from "@prisma/client";
 import type { Product, FacetAttributeDef } from "./data";
 import { PRODUCTS } from "./data";
+import { CLASSIFICATION_SEED_BY_SLUG } from "./classification/seed-presets";
+import { ensureCategorySchemaComplete } from "./classification/ensure-category-schema";
 import { prisma, isDatabaseConfigured, isDbConnectionError } from "./prisma";
 import { mapDbToProduct, storefrontProductIncludeBase, type LocaleCode } from "./catalog";
 import { categoryAttributeRowsToFacetDefs } from "./classification/sync";
-import { facetValueForFilter, readLegacySpecValue } from "./classification/legacy-spec-map";
-import { normalizeAttributeType, productValueMatchesFilterSelectionForKey } from "./classification/values";
+import { FUZZY_SELECT_FILTER_KEYS, facetValueForFilter } from "./classification/legacy-spec-map";
+import {
+  getProductFilterToken,
+  sanitizeFacetFilterToken,
+} from "./classification/facet-filter-token";
+import {
+  normalizeAttributeType,
+  productValueMatchesFilterSelectionForKey,
+} from "./classification/values";
 import type { AttributeType, CategoryAttributeRow } from "./classification/types";
 
 export type CatalogSort =
@@ -81,10 +90,10 @@ export function parseCatalogFilterFromUrl(url: string): CatalogFilterInput {
     const vals = value
       .split(",")
       .map((v) => v.trim())
-      .filter(Boolean);
-    if (vals.length) {
-      facets[key] = vals.map((v) => facetValueForFilter(key, v) ?? v);
-    }
+      .filter(Boolean)
+      .map((v) => sanitizeFacetFilterToken(key, facetValueForFilter(key, v) ?? v))
+      .filter((v): v is string => Boolean(v));
+    if (vals.length) facets[key] = Array.from(new Set(vals));
   });
   const sort = (sp.get("sort") as CatalogSort | null) ?? undefined;
   const page = Math.max(1, parseInt(sp.get("page") ?? "1", 10) || 1);
@@ -168,26 +177,103 @@ function buildBaseWhere(input: CatalogFilterInput): Prisma.ProductWhereInput {
   return and.length === 1 ? and[0] : { AND: and };
 }
 
-function facetDisplayForProduct(product: Product, catSlug: string, facetKey: string): string | undefined {
-  const direct = product.specs?.[facetKey]?.trim();
-  if (direct) return facetValueForFilter(facetKey, direct);
-  const legacy = readLegacySpecValue(product.specs, catSlug, facetKey);
-  if (legacy) return legacy;
-  return undefined;
+function buildAttributeValueCondition(
+  attributeKey: string,
+  selectedValue: string,
+  type: AttributeType,
+): Prisma.ProductAttributeValueWhereInput | null {
+  const sel = selectedValue.trim();
+  if (!sel) return null;
+
+  if (type === "RANGE") {
+    const range = sel.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)$/);
+    if (range) {
+      const min = parseFloat(range[1]);
+      const max = parseFloat(range[2]);
+      if (Number.isFinite(min) && Number.isFinite(max)) {
+        return {
+          attributeKey,
+          valueNumber: { gte: min, lte: max },
+        };
+      }
+    }
+    const exact = parseFloat(sel);
+    if (Number.isFinite(exact)) {
+      return {
+        attributeKey,
+        OR: [{ valueNumber: exact }, { valueString: { equals: String(exact), mode: "insensitive" } }],
+      };
+    }
+    return null;
+  }
+
+  if (type === "BOOLEAN") {
+    const wantTrue = sel === "true" || sel === "1" || sel === "yes";
+    return {
+      attributeKey,
+      valueBoolean: wantTrue,
+    };
+  }
+
+  if (type === "MULTI_SELECT") {
+    return {
+      attributeKey,
+      OR: [
+        { valueString: { equals: sel, mode: "insensitive" } },
+        { valueJson: { array_contains: sel } },
+      ],
+    };
+  }
+
+  if (FUZZY_SELECT_FILTER_KEYS.has(attributeKey)) {
+    return {
+      attributeKey,
+      valueString: { contains: sel, mode: "insensitive" },
+    };
+  }
+
+  return {
+    attributeKey,
+    valueString: { equals: sel, mode: "insensitive" },
+  };
+}
+
+function buildFacetProductWhere(
+  facetEntries: [string, string[]][],
+  facetDefs: FacetAttributeDef[],
+): Prisma.ProductWhereInput | null {
+  const andClauses: Prisma.ProductWhereInput[] = [];
+
+  for (const [key, selected] of facetEntries) {
+    if (!selected.length) continue;
+    const def = facetDefs.find((d) => d.key === key);
+    const type = normalizeAttributeType(def?.type ?? "SELECT");
+    const orAttr: Prisma.ProductAttributeValueWhereInput[] = [];
+
+    for (const sel of selected) {
+      const cond = buildAttributeValueCondition(key, sel, type);
+      if (cond) orAttr.push(cond);
+    }
+    if (orAttr.length) {
+      andClauses.push({ attributeValues: { some: { OR: orAttr } } });
+    }
+  }
+
+  if (!andClauses.length) return null;
+  return andClauses.length === 1 ? andClauses[0] : { AND: andClauses };
 }
 
 function productMatchesFacetsInMemory(
   product: Product,
-  catSlug: string,
   facetDefs: FacetAttributeDef[],
   facets: Record<string, string[]>,
 ): boolean {
   for (const def of facetDefs) {
     const selected = facets[def.key];
     if (!selected?.length) continue;
-    const display = facetDisplayForProduct(product, catSlug, def.key);
+    const filterVal = getProductFilterToken(product, def.key);
     const type = def.type ?? "SELECT";
-    if (!productValueMatchesFilterSelectionForKey(def.key, display, type, selected)) return false;
+    if (!productValueMatchesFilterSelectionForKey(def.key, filterVal, type, selected)) return false;
   }
   return true;
 }
@@ -212,20 +298,15 @@ function sortProducts(products: Product[], sort: CatalogSort | undefined, hasQue
   }
 }
 
-function computeFacetCounts(
-  products: Product[],
-  catSlug: string,
-  facetDefs: FacetAttributeDef[],
-): Record<string, FacetCount[]> {
+function computeFacetCounts(products: Product[], facetDefs: FacetAttributeDef[]): Record<string, FacetCount[]> {
   const out: Record<string, FacetCount[]> = {};
   for (const def of facetDefs) {
     if (def.filterable === false) continue;
     const map = new Map<string, number>();
     for (const p of products) {
-      const v = facetDisplayForProduct(p, catSlug || p.cat, def.key);
-      if (!v?.trim()) continue;
-      const bucket = facetValueForFilter(def.key, v) ?? v.trim();
-      map.set(bucket, (map.get(bucket) ?? 0) + 1);
+      const v = getProductFilterToken(p, def.key);
+      if (!v) continue;
+      map.set(v, (map.get(v) ?? 0) + 1);
     }
     out[def.key] = Array.from(map.entries())
       .map(([value, count]) => ({ value, count }))
@@ -239,19 +320,45 @@ async function loadCategoryFacetDefs(catSlug: string): Promise<FacetAttributeDef
     where: { slug: catSlug },
     include: {
       categoryAttributes: {
-        where: { filterable: true, active: true },
+        where: { active: true },
         orderBy: { sortOrder: "asc" },
       },
     },
   });
   if (!cat) return [];
-  const attrs = (cat.categoryAttributes ?? []).filter(
-    (a) => (a as CategoryAttributeRow & { active?: boolean }).active !== false,
-  );
-  if (attrs.length) {
-    return categoryAttributeRowsToFacetDefs(attrs as CategoryAttributeRow[]);
+  let rows = (cat.categoryAttributes ?? []) as CategoryAttributeRow[];
+  rows = await ensureCategorySchemaComplete(prisma, cat.id, catSlug, rows);
+  const filterable = rows.filter((a) => a.filterable === true && a.active !== false);
+  if (filterable.length) {
+    return categoryAttributeRowsToFacetDefs(filterable);
   }
   return [];
+}
+
+/** Facet option counts for the current base filters (facet selections excluded). */
+export async function queryCatalogFacetCounts(
+  input: CatalogFilterInput,
+  facetDefs?: FacetAttributeDef[],
+  baseWhere?: Prisma.ProductWhereInput,
+): Promise<Record<string, FacetCount[]>> {
+  if (!isDatabaseConfigured() || !input.cat) return {};
+
+  const defs = facetDefs ?? (await loadCategoryFacetDefs(input.cat));
+  if (!defs.length) return {};
+
+  const poolInput = { ...input, facets: undefined };
+  const where = baseWhere ?? buildBaseWhere(poolInput);
+  try {
+    const poolRows = await prisma.product.findMany({
+      where,
+      include: storefrontProductIncludeBase,
+    });
+    const poolProducts = poolRows.map((r) => mapDbToProduct(r, input.locale));
+    return computeFacetCounts(poolProducts, defs);
+  } catch (e) {
+    if (!isDbConnectionError(e)) console.error("[catalog-filter] facet counts", e);
+    return {};
+  }
 }
 
 export async function queryCatalogProducts(input: CatalogFilterInput): Promise<CatalogProductsResult> {
@@ -279,78 +386,58 @@ export async function queryCatalogProducts(input: CatalogFilterInput): Promise<C
           p.desc.toLowerCase().includes(q),
       );
     }
-    const facetDefs: FacetAttributeDef[] = [];
-    if (input.facets && input.cat) {
-      list = list.filter((p) => productMatchesFacetsInMemory(p, input.cat ?? p.cat, facetDefs, input.facets!));
+    const facetDefs = input.cat
+      ? (CLASSIFICATION_SEED_BY_SLUG[input.cat] ?? []).filter((a) => a.filterable === true)
+      : [];
+    if (input.facets && input.cat && facetDefs.length) {
+      list = list.filter((p) => productMatchesFacetsInMemory(p, facetDefs, input.facets!));
     }
     list = sortProducts(list, input.sort, Boolean(input.q));
     const total = list.length;
     const start = (page - 1) * pageSize;
-    const products = list.slice(start, start + pageSize);
     return {
-      products,
+      products: list.slice(start, start + pageSize),
       total,
       page,
       pageSize,
-      facets: computeFacetCounts(list, input.cat ?? "", facetDefs),
+      facets: computeFacetCounts(list, facetDefs),
     };
   }
 
   try {
     const facetDefs = input.cat ? await loadCategoryFacetDefs(input.cat) : [];
-    const typeByKey = new Map(facetDefs.map((d) => [d.key, normalizeAttributeType(d.type ?? "SELECT")]));
-
-    const baseWhere = buildBaseWhere(input);
     const facetEntries = Object.entries(input.facets ?? {}).filter(([, v]) => v.length);
+    const baseWhere = buildBaseWhere(input);
+    const facetWhere = facetEntries.length ? buildFacetProductWhere(facetEntries, facetDefs) : null;
+    const where: Prisma.ProductWhereInput =
+      facetWhere != null ? { AND: [baseWhere, facetWhere] } : baseWhere;
 
-    // Facet matching runs in memory (legacy specs JSON + fuzzy labels). Prisma EAV-only
-    // filters excluded products that only have specs on Product.specs.
-    const where: Prisma.ProductWhereInput = baseWhere;
-
-    let rows;
-    try {
-      rows = await prisma.product.findMany({
+    const [total, rows] = await Promise.all([
+      prisma.product.count({ where }),
+      prisma.product.findMany({
         where,
         include: {
           ...storefrontProductIncludeBase,
           secondaryCategories: { include: { category: { select: { slug: true } } } },
         },
-        orderBy: { id: "asc" },
-      });
-    } catch {
-      rows = await prisma.product.findMany({
-        where: baseWhere,
-        include: storefrontProductIncludeBase,
-        orderBy: { id: "asc" },
-      });
-    }
+        orderBy: [{ featured: "desc" }, { id: "desc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
 
     let products = rows.map((r) => mapDbToProduct(r, input.locale));
-    const poolForFacetCounts = products;
 
-    if (facetEntries.length) {
-      const defsForMem =
-        facetDefs.length > 0
-          ? facetDefs
-          : facetEntries.map(([key]) => ({
-              key,
-              name_en: key,
-              name_ar: key,
-              type: typeByKey.get(key) ?? ("SELECT" as AttributeType),
-              filterable: true,
-            }));
-      products = products.filter((p) =>
-        productMatchesFacetsInMemory(p, input.cat ?? p.cat, defsForMem, input.facets!),
-      );
+    const needsMemFacetFilter = facetEntries.some(([key]) => FUZZY_SELECT_FILTER_KEYS.has(key));
+    if (needsMemFacetFilter && facetEntries.length && input.facets) {
+      products = products.filter((p) => productMatchesFacetsInMemory(p, facetDefs, input.facets!));
     }
 
     products = sortProducts(products, input.sort, Boolean(input.q));
-    const facetCounts = computeFacetCounts(poolForFacetCounts, input.cat ?? "", facetDefs);
-    const total = products.length;
-    const start = (page - 1) * pageSize;
-    const pageProducts = products.slice(start, start + pageSize);
 
-    return { products: pageProducts, total, page, pageSize, facets: facetCounts };
+    const facetCounts = await queryCatalogFacetCounts(input, facetDefs, baseWhere);
+
+    return { products, total, page, pageSize, facets: facetCounts };
   } catch (e) {
     if (!isDbConnectionError(e)) console.error("[catalog-filter]", e);
     return empty;

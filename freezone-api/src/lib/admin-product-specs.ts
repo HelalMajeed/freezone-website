@@ -5,22 +5,25 @@ import {
   saveProductSpecsNormalized,
 } from "@/lib/classification/persist";
 import { validateProductSpecsAgainstSchema, validationErrorMessage } from "@/lib/classification/validate";
+import { ensureCategorySchemaComplete } from "@/lib/classification/ensure-category-schema";
 import { syncCategoryAttributesFromFacetKeys } from "@/lib/classification/sync";
-import { productAttributeValuesToSpecs } from "@/lib/classification/values";
+import { productAttributeValuesToPdpDisplaySpecs } from "@/lib/classification/product-detail-specs";
+import { productAttributeValuesToFilterValues } from "@/lib/classification/values";
 
 async function getSchemaForCategory(categoryId: number) {
+  const cat = await prisma.category.findUnique({
+    where: { id: categoryId },
+    select: { slug: true, facetKeys: true },
+  });
   let rows = await loadCategoryAttributeSchema(
     (args) => prisma.categoryAttribute.findMany(args),
     categoryId,
   );
-  if (!rows.length) {
-    const cat = await prisma.category.findUnique({
-      where: { id: categoryId },
-      select: { facetKeys: true },
-    });
-    if (cat?.facetKeys) {
-      rows = await syncCategoryAttributesFromFacetKeys(prisma, categoryId, cat.facetKeys);
-    }
+  if (!rows.length && cat?.facetKeys) {
+    rows = await syncCategoryAttributesFromFacetKeys(prisma, categoryId, cat.facetKeys);
+  }
+  if (cat?.slug) {
+    rows = await ensureCategorySchemaComplete(prisma, categoryId, cat.slug, rows);
   }
   return rows;
 }
@@ -66,21 +69,42 @@ export async function adminProductSpecsForEdit(
   productId: number,
   categoryId: number,
   specsJson: unknown,
-): Promise<Record<string, string>> {
+): Promise<{ displaySpecs: Record<string, string>; filterSpecs: Record<string, string> }> {
   const schema = await getSchemaForCategory(categoryId);
   const raw = normalizeSpecsInput(specsJson);
-  if (!schema.length) return raw;
+  if (!schema.length) {
+    return { displaySpecs: raw, filterSpecs: {} };
+  }
 
   const values = await prisma.productAttributeValue.findMany({ where: { productId } });
-  const fromEav = values.length ? productAttributeValuesToSpecs(values, schema) : {};
-  const merged = { ...fromEav, ...raw };
-  const out: Record<string, string> = {};
+  const fromDisplay = values.length ? productAttributeValuesToPdpDisplaySpecs(values, schema) : {};
+  const fromFilter = values.length ? productAttributeValuesToFilterValues(values, schema) : {};
+  const displaySpecs: Record<string, string> = {};
+  const filterSpecs: Record<string, string> = {};
   for (const attr of schema) {
-    const v = merged[attr.key];
-    if (v?.trim()) out[attr.key] = v.trim();
+    const d = (fromDisplay[attr.key] ?? raw[attr.key] ?? "").trim();
+    const f = (fromFilter[attr.key] ?? "").trim();
+    if (d) displaySpecs[attr.key] = d;
+    if (f) filterSpecs[attr.key] = f;
   }
-  for (const [k, v] of Object.entries(merged)) {
-    if (!schema.some((a) => a.key === k) && v.trim()) out[k] = v.trim();
+  return { displaySpecs, filterSpecs };
+}
+
+export function buildSpecsPayloadForSave(
+  attributes: { key: string; filterable?: boolean }[],
+  displaySpecs: Record<string, string>,
+  filterSpecs: Record<string, string>,
+): Record<string, string | { display: string; filter?: string }> {
+  const out: Record<string, string | { display: string; filter?: string }> = {};
+  for (const attr of attributes) {
+    const display = (displaySpecs[attr.key] ?? "").trim();
+    const filter = (filterSpecs[attr.key] ?? "").trim();
+    if (!display && !filter) continue;
+    if (attr.filterable) {
+      out[attr.key] = { display, ...(filter ? { filter } : {}) };
+    } else {
+      out[attr.key] = display;
+    }
   }
   return out;
 }

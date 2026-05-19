@@ -150,7 +150,23 @@
   margin-bottom: 28px;
 }
 
-/* ── Attributes ───────────────────────────────── */
+/* ── Full-width specifications card ───────────── */
+.specificationsCard {
+  width: 100%;
+  margin-top: 8px;
+  margin-bottom: 48px;
+}
+
+.specificationsTitle {
+  margin: 0 0 16px;
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+/* ── Attributes table ─────────────────────────── */
 .attributes {
   width: 100%;
   box-sizing: border-box;

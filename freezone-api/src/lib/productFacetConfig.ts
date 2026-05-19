@@ -1,4 +1,5 @@
 import type { FacetAttributeDef, Product } from "./data";
+import { getProductFilterToken } from "./classification/facet-filter-token";
 import { productBelongsToCategory } from "./product-category-membership";
 
 export type FacetDefinition = {
@@ -350,10 +351,8 @@ export function facetDefinitionsForCategory(
 }
 
 export function getProductFacetValue(product: Product, facetKey: string): string | undefined {
-  const fromSpecs = product.specs?.[facetKey];
-  if (fromSpecs !== undefined && String(fromSpecs).trim() !== "") {
-    return String(fromSpecs).trim();
-  }
+  const fromFilter = getProductFilterToken(product, facetKey);
+  if (fromFilter) return fromFilter;
 
   if (facetKey === "componentType" && productBelongsToCategory(product, "components")) {
     const raw = product.storage?.toLowerCase() ?? "";

@@ -1,10 +1,10 @@
 import { Navigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { getProductById } from "@/lib/catalog";
 import type { LocaleCode } from "@/lib/layout-cms";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import ProductDetailClient from "@/features/product-detail/ProductDetailClient";
 import { productsShareAnyCategory } from "@/lib/productCategoryMembership";
+import { getProductDetail } from "@/lib/product-detail";
 
 export default function ProductDetailPage() {
   const { id, locale: loc } = useParams<{ id: string; locale: string }>();
@@ -12,9 +12,9 @@ export default function ProductDetailPage() {
   const num = parseInt(id ?? "", 10);
   const { catalog } = useStorefront();
 
-  const { data: product, isLoading, isFetched } = useQuery({
-    queryKey: ["product", num, lc],
-    queryFn: () => getProductById(num, lc),
+  const { data: detail, isLoading, isFetched } = useQuery({
+    queryKey: ["product-detail", num, lc],
+    queryFn: () => getProductDetail(num, lc),
     enabled: Number.isFinite(num),
   });
 
@@ -28,18 +28,24 @@ export default function ProductDetailPage() {
       </div>
     );
   }
-  if (isFetched && !product) {
+  if (isFetched && !detail?.product) {
     return <Navigate to="../products" replace />;
   }
-  if (!product) {
+  if (!detail?.product) {
     return null;
   }
 
   const relatedProducts = catalog.products
-    .filter((p) => p.id !== product.id && productsShareAnyCategory(p, product))
+    .filter((p) => p.id !== detail.product.id && productsShareAnyCategory(p, detail.product))
     .slice(0, 4);
 
   return (
-    <ProductDetailClient product={product} categories={catalog.categories} relatedProducts={relatedProducts} />
+    <ProductDetailClient
+      product={detail.product}
+      categories={catalog.categories}
+      relatedProducts={relatedProducts}
+      groupedSpecs={detail.groupedSpecs}
+      attributes={detail.attributes}
+    />
   );
 }

@@ -57,8 +57,10 @@ export interface Product {
   sku?: string;
   /** Product model name (e.g. ROG Strix G16). */
   model?: string;
-  /** Display strings for category-specific filters (CPU, GPU, screen size, etc.). */
+  /** Full display strings on product detail page. */
   specs?: Record<string, string>;
+  /** Normalized short values for category/search filters only. */
+  filterValues?: Record<string, string>;
 }
 
 export const CATEGORIES: Category[] = [

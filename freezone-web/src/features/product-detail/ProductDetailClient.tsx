@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { Product, Category } from "@/lib/data";
+import type { ProductDetailSpecGroup } from "@/lib/product-detail";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { ImageGallery } from "@/components/ui/ImageGallery";
 import { useCart } from "@/lib/store";
@@ -10,35 +11,54 @@ import styles from "./productDetail.module.css";
 import { Link, useRouter } from "@/navigation";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import { MotionReveal } from "@/components/motion/MotionReveal";
-import { buildProductSpecAttributeRows } from "@/lib/productSpecCardChips";
 import {
   formatSpecValueForDisplay,
   groupSpecRowsByDisplayGroup,
   humanizeDisplayGroup,
 } from "@/lib/classification/spec-display";
+import { buildProductSpecAttributeRows } from "@/lib/productSpecCardChips";
+import type { FacetAttributeDef } from "@/lib/data";
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en").format(n);
+}
+
+function formatGroupedSpecsForUi(
+  groups: ProductDetailSpecGroup[],
+  attributes: FacetAttributeDef[],
+  locale: "en" | "ar",
+): { groupTitle: string; rows: { key: string; label: string; value: string }[] }[] {
+  const attrByKey = new Map(attributes.map((a) => [a.key, a]));
+  return groups.map((g) => ({
+    groupTitle: locale === "ar" ? g.groupLabel.ar : g.groupLabel.en,
+    rows: g.items.map((item) => ({
+      key: item.key,
+      label: item.label,
+      value: formatSpecValueForDisplay(item.value, attrByKey.get(item.key), locale),
+    })),
+  }));
 }
 
 export default function ProductDetailClient({
   product,
   categories,
   relatedProducts,
+  groupedSpecs = [],
+  attributes = [],
 }: {
   product: Product;
   categories: Category[];
   relatedProducts: Product[];
+  groupedSpecs?: ProductDetailSpecGroup[];
+  attributes?: FacetAttributeDef[];
 }) {
   const t = useTranslations("ProductDetail");
-  const tProducts = useTranslations("Products");
   const locale = useLocale();
   const router = useRouter();
   const { addItem } = useCart();
 
   const category = categories.find((c) => c.id === product.cat);
-
-  const related = useMemo(() => relatedProducts, [relatedProducts]);
+  const facetAttrs = attributes.length ? attributes : category?.facetAttributes;
 
   const modelDisplay = useMemo(() => {
     const fromProduct = product.model?.trim();
@@ -50,42 +70,32 @@ export default function ProductDetailClient({
     return "";
   }, [product]);
 
-  const specAttributeRows = useMemo(
-    () =>
-      buildProductSpecAttributeRows(
-        product,
-        (labelKey) => {
-          const short = tProducts(`${labelKey}Short`, { defaultValue: "" });
-          if (typeof short === "string" && short.trim() !== "") return short.trim();
-          return tProducts(labelKey);
-        },
-        {
-          omitSpecKeys: modelDisplay ? ["model"] : [],
-          facetAttributes: category?.facetAttributes,
-          locale,
-        },
-      ),
-    [product, tProducts, modelDisplay, category?.facetAttributes, locale],
-  );
-
-  const specGroups = useMemo(() => {
-    const attrByKey = new Map((category?.facetAttributes ?? []).map((a) => [a.key, a]));
-    const rows = specAttributeRows.map((row) => ({
+  const specSections = useMemo(() => {
+    if (groupedSpecs.length) {
+      return formatGroupedSpecsForUi(groupedSpecs, facetAttrs ?? [], locale);
+    }
+    const rows = buildProductSpecAttributeRows(
+      product,
+      (labelKey) => labelKey,
+      {
+        omitSpecKeys: modelDisplay ? ["model", "brand"] : ["brand"],
+        facetAttributes: facetAttrs,
+        locale,
+      },
+    );
+    if (!rows.length) return [];
+    const attrByKey = new Map((facetAttrs ?? []).map((a) => [a.key, a]));
+    const formatted = rows.map((row) => ({
       ...row,
       value: formatSpecValueForDisplay(row.value, attrByKey.get(row.specKey), locale),
     }));
-    return groupSpecRowsByDisplayGroup(rows, category?.facetAttributes);
-  }, [specAttributeRows, category?.facetAttributes, locale]);
+    return groupSpecRowsByDisplayGroup(formatted, facetAttrs).map((g) => ({
+      groupTitle: humanizeDisplayGroup(g.group, locale),
+      rows: g.rows.map((r) => ({ key: r.specKey, label: r.label, value: r.value })),
+    }));
+  }, [groupedSpecs, facetAttrs, locale, product, modelDisplay]);
 
-  const legacyStorage = product.storage?.trim() ?? "";
-  const hasStorageInSpecs =
-    product.specs &&
-    (Object.prototype.hasOwnProperty.call(product.specs, "storage") ||
-      Object.prototype.hasOwnProperty.call(product.specs, "storageType"));
-  const showLegacyStorageRow =
-    legacyStorage.length > 0 &&
-    !hasStorageInSpecs &&
-    specAttributeRows.every((r) => r.specKey !== "storage" && r.specKey !== "storageType");
+  const hasSpecs = specSections.some((s) => s.rows.length > 0);
 
   return (
     <div className={`container ${styles.pdpWide} ${styles.pdpLayout}`}>
@@ -107,11 +117,7 @@ export default function ProductDetailClient({
 
       <div className={styles.productGrid}>
         <div className={styles.mediaCol}>
-          <ImageGallery
-            images={product.images || []}
-            model3d={product.model3d}
-            alt={product.name}
-          />
+          <ImageGallery images={product.images || []} model3d={product.model3d} alt={product.name} />
         </div>
 
         <div className={styles.infoCol}>
@@ -125,9 +131,9 @@ export default function ProductDetailClient({
 
           <div className={styles.priceRow}>
             <span className={styles.price}>{formatMoney(product.price)} IQD</span>
-            {product.oldPrice && (
+            {product.oldPrice ? (
               <span className={styles.oldPrice}>{formatMoney(product.oldPrice)} IQD</span>
-            )}
+            ) : null}
           </div>
 
           <div className={styles.badgeRow}>
@@ -136,43 +142,13 @@ export default function ProductDetailClient({
             ) : (
               <span className={`${styles.badge} ${styles.badgeOut}`}>{t("outOfStock")}</span>
             )}
-            {product.isNew && <span className={`${styles.badge} ${styles.badgeNew}`}>{t("newArrival")}</span>}
-            {product.featured && (
+            {product.isNew ? <span className={`${styles.badge} ${styles.badgeNew}`}>{t("newArrival")}</span> : null}
+            {product.featured ? (
               <span className={`${styles.badge} ${styles.badgeFeatured}`}>{t("featured")}</span>
-            )}
+            ) : null}
           </div>
 
           <p className={styles.desc}>{product.desc}</p>
-
-          <div className={styles.attributes} aria-label={t("specificationsAria")}>
-            <div className={styles.attrRow}>
-              <span className={styles.attrLabel}>{t("brand")}</span>
-              <span className={styles.attrValue}>{product.brand}</span>
-            </div>
-            {modelDisplay ? (
-              <div className={styles.attrRow}>
-                <span className={styles.attrLabel}>{t("model")}</span>
-                <span className={styles.attrValue}>{modelDisplay}</span>
-              </div>
-            ) : null}
-            {specGroups.map(({ group, rows }) => (
-              <div key={group}>
-                <p className={styles.specSectionTitle}>{humanizeDisplayGroup(group, locale)}</p>
-                {rows.map((row) => (
-                  <div key={row.specKey} className={styles.attrRow}>
-                    <span className={styles.attrLabel}>{row.label}</span>
-                    <span className={styles.attrValue}>{row.value}</span>
-                  </div>
-                ))}
-              </div>
-            ))}
-            {showLegacyStorageRow ? (
-              <div className={styles.attrRow}>
-                <span className={styles.attrLabel}>{t("storageSpecs")}</span>
-                <span className={styles.attrValue}>{legacyStorage}</span>
-              </div>
-            ) : null}
-          </div>
 
           <div className={styles.actionStack}>
             <button
@@ -202,18 +178,49 @@ export default function ProductDetailClient({
         </div>
       </div>
 
-      {related.length > 0 && (
+      {hasSpecs ? (
+        <section className={styles.specificationsCard} aria-labelledby="pdp-specifications-title">
+          <h2 id="pdp-specifications-title" className={styles.specificationsTitle}>
+            {t("specificationsTitle")}
+          </h2>
+          <div className={styles.attributes}>
+            <div className={styles.attrRow}>
+              <span className={styles.attrLabel}>{t("brand")}</span>
+              <span className={styles.attrValue}>{product.brand}</span>
+            </div>
+            {modelDisplay ? (
+              <div className={styles.attrRow}>
+                <span className={styles.attrLabel}>{t("model")}</span>
+                <span className={styles.attrValue}>{modelDisplay}</span>
+              </div>
+            ) : null}
+            {specSections.map(({ groupTitle, rows }) => (
+              <div key={groupTitle}>
+                <p className={styles.specSectionTitle}>{groupTitle}</p>
+                {rows.map((row) => (
+                  <div key={row.key} className={styles.attrRow}>
+                    <span className={styles.attrLabel}>{row.label}</span>
+                    <span className={styles.attrValue}>{row.value}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {relatedProducts.length > 0 ? (
         <MotionReveal direction="up" delay={0.05}>
           <section className={styles.relatedSection}>
             <h2 className={styles.relatedTitle}>{t("relatedTitle")}</h2>
             <div className={styles.relatedGrid}>
-              {related.map((p, i) => (
+              {relatedProducts.map((p, i) => (
                 <ProductCard key={p.id} product={p} categories={categories} delay={i * 50} />
               ))}
             </div>
           </section>
         </MotionReveal>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -271,21 +271,30 @@ export function buildProductSpecAttributeRows(
   translateFacetLabel: (labelKey: string) => string,
   options?: { omitSpecKeys?: readonly string[]; facetAttributes?: FacetAttributeDef[]; locale?: "en" | "ar" },
 ): ProductSpecAttributeRow[] {
-  if (!product.specs) return [];
+  const specs = product.specs ?? {};
+  const facetAttrs = options?.facetAttributes ?? [];
+  if (!Object.keys(specs).length && !facetAttrs.length) return [];
 
   const omit = new Set(options?.omitSpecKeys ?? []);
-  const attrByKey = new Map((options?.facetAttributes ?? []).map((a) => [a.key, a]));
+  const attrByKey = new Map(facetAttrs.map((a) => [a.key, a]));
   const loc = options?.locale ?? "en";
-  const entries = Object.entries(product.specs).filter(
-    ([k, v]) => !omit.has(k) && !isEmptySpecValue(String(v)),
-  );
-  if (entries.length === 0) return [];
 
-  const ordered = sortSpecKeys(
-    entries.map(([k]) => k),
-    options?.facetAttributes,
-  );
-  const entryByKey = new Map(entries);
+  const keysWithValues = new Set<string>();
+  if (facetAttrs.length) {
+    for (const a of facetAttrs) {
+      if (omit.has(a.key)) continue;
+      const v = specs[a.key];
+      if (v != null && !isEmptySpecValue(String(v))) keysWithValues.add(a.key);
+    }
+  }
+  for (const [k, v] of Object.entries(specs)) {
+    if (omit.has(k) || isEmptySpecValue(String(v))) continue;
+    keysWithValues.add(k);
+  }
+  if (keysWithValues.size === 0) return [];
+
+  const ordered = sortSpecKeys([...keysWithValues], facetAttrs.length ? facetAttrs : undefined);
+  const entryByKey = new Map(Object.entries(specs));
   const rows: ProductSpecAttributeRow[] = [];
 
   for (const key of ordered) {

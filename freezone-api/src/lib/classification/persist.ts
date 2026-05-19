@@ -36,6 +36,7 @@ export async function saveProductSpecsNormalized(
       data: result.values.map((v) => ({
         productId,
         attributeKey: v.attributeKey,
+        displayValue: v.displayValue ?? null,
         valueString: v.valueString,
         valueNumber: v.valueNumber,
         valueBoolean: v.valueBoolean,

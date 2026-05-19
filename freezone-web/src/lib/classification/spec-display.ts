@@ -2,16 +2,19 @@ import type { FacetAttributeDef } from "@/lib/data";
 import type { ProductSpecAttributeRow } from "@/lib/productSpecCardChips";
 
 export const SPEC_DISPLAY_GROUP_ORDER = [
+  "general",
   "identity",
   "performance",
-  "display",
-  "camera",
-  "battery",
-  "connectivity",
-  "design",
+  "memory_storage",
   "storage",
-  "variants",
+  "graphics",
+  "display",
+  "connectivity",
+  "battery",
+  "design",
   "warranty",
+  "camera",
+  "variants",
   "specs",
   "other",
 ] as const;
@@ -79,17 +82,20 @@ export function groupSpecRowsByDisplayGroup(
 
 export function humanizeDisplayGroup(group: string, locale: "en" | "ar"): string {
   const labels: Record<string, { en: string; ar: string }> = {
-    identity: { en: "Identity", ar: "الهوية" },
+    general: { en: "General", ar: "عام" },
+    identity: { en: "General", ar: "عام" },
     performance: { en: "Performance", ar: "الأداء" },
+    memory_storage: { en: "Memory & Storage", ar: "الذاكرة والتخزين" },
+    storage: { en: "Memory & Storage", ar: "الذاكرة والتخزين" },
+    graphics: { en: "Graphics", ar: "الرسوميات" },
     display: { en: "Display", ar: "الشاشة" },
     camera: { en: "Camera", ar: "الكاميرا" },
     battery: { en: "Battery", ar: "البطارية" },
     connectivity: { en: "Connectivity", ar: "الاتصال" },
     design: { en: "Design", ar: "التصميم" },
-    storage: { en: "Storage", ar: "التخزين" },
     variants: { en: "Variants", ar: "الخيارات" },
     warranty: { en: "Warranty", ar: "الضمان" },
-    specs: { en: "Specifications", ar: "المواصفات" },
+    specs: { en: "Other", ar: "أخرى" },
     other: { en: "Other", ar: "أخرى" },
   };
   const hit = labels[group];

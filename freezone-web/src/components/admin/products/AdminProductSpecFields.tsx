@@ -1,219 +1,283 @@
 "use client";
 
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties } from "react";
 import type { FacetAttributeDef } from "@/lib/data";
 import { facetAttributeDisplayName } from "@/lib/facet-attributes";
 import { partitionFacetAttributes } from "@/lib/classification/attribute-sets";
+import { normalizeFilterValue } from "@/lib/classification/filter-value";
+import { AdminProductFormSection } from "@/components/admin/products/AdminProductFormSection";
 
 type Props = {
   attributes: FacetAttributeDef[];
-  specs: Record<string, string>;
-  onChange: (key: string, value: string) => void;
+  displaySpecs: Record<string, string>;
+  filterSpecs: Record<string, string>;
+  onChangeDisplay: (key: string, value: string) => void;
+  onChangeFilter: (key: string, value: string) => void;
   fieldStyle: CSSProperties;
   locale?: "en" | "ar";
+  loading?: boolean;
 };
 
-function SpecFieldList({
-  attributes,
-  specs,
-  onChange,
+function AttributeField({
+  attr,
+  displayValue,
+  filterValue,
+  showFilterField,
+  onChangeDisplay,
+  onChangeFilter,
   fieldStyle,
   locale,
 }: {
-  attributes: FacetAttributeDef[];
-  specs: Record<string, string>;
-  onChange: (key: string, value: string) => void;
+  attr: FacetAttributeDef;
+  displayValue: string;
+  filterValue: string;
+  showFilterField: boolean;
+  onChangeDisplay: (v: string) => void;
+  onChangeFilter: (v: string) => void;
   fieldStyle: CSSProperties;
   locale: "en" | "ar";
 }) {
-  if (!attributes.length) return null;
+  const label = facetAttributeDisplayName(attr, locale);
+  const type = attr.type ?? "SELECT";
+  const keyBadge = (
+    <code style={{ fontSize: 11, opacity: 0.75 }}>
+      {attr.key}
+      {attr.required ? " *" : ""}
+    </code>
+  );
 
-  return (
-    <>
-      {attributes.map((attr) => {
-        const label = facetAttributeDisplayName(attr, locale);
-        const val = specs[attr.key] ?? "";
-        const type = attr.type ?? "SELECT";
+  const filterControl =
+    showFilterField &&
+    (attr.options?.length ? (
+      <select value={filterValue} onChange={(e) => onChangeFilter(e.target.value)} style={fieldStyle}>
+        <option value="">—</option>
+        {attr.options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
+    ) : (
+      <input
+        value={filterValue}
+        onChange={(e) => onChangeFilter(e.target.value)}
+        placeholder="Core i7, 16, RTX 5070…"
+        style={fieldStyle}
+      />
+    ));
 
-        if (type === "BOOLEAN") {
-          const checked = val === "true" || val === "1" || val === "yes" || val === "نعم";
-          return (
-            <label key={attr.key} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13 }}>
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={(e) => onChange(attr.key, e.target.checked ? "true" : "false")}
-              />
-              <span>
-                {label}{" "}
-                <code style={{ fontSize: 11, opacity: 0.75 }}>{attr.key}</code>
-                {attr.required ? " *" : ""}
-              </span>
-            </label>
-          );
-        }
+  if (type === "BOOLEAN") {
+    const checked = displayValue === "true" || displayValue === "1";
+    return (
+      <div style={{ display: "grid", gap: 8 }}>
+        <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13 }}>
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={(e) => {
+              const v = e.target.checked ? "true" : "false";
+              onChangeDisplay(v);
+              if (showFilterField) onChangeFilter(v);
+            }}
+          />
+          <span>
+            {label} {keyBadge}
+          </span>
+        </label>
+      </div>
+    );
+  }
 
-        if ((type === "SELECT" || type === "COLOR") && attr.options?.length) {
-          return (
-            <label key={attr.key} style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
-              <span style={{ color: "var(--admin-muted)" }}>
-                {label} <code style={{ fontSize: 11, opacity: 0.8 }}>{attr.key}</code>
-                {attr.required ? " *" : ""}
-              </span>
-              <select value={val} onChange={(e) => onChange(attr.key, e.target.value)} style={fieldStyle}>
-                <option value="">—</option>
-                {attr.options.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                    {attr.unit ? ` ${attr.unit}` : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-          );
-        }
+  if (type === "MULTI_SELECT") {
+    return (
+      <div style={{ display: "grid", gap: 8 }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+          <span style={{ color: "var(--admin-muted)" }}>
+            {label} {keyBadge}
+            {attr.unit ? ` (${attr.unit})` : ""}
+          </span>
+          <input
+            value={displayValue}
+            onChange={(e) => onChangeDisplay(e.target.value)}
+            placeholder={attr.options?.join(", ") ?? "8, 16, 32"}
+            style={fieldStyle}
+          />
+          <span style={{ fontSize: 11, color: "var(--admin-muted)" }}>قيم متعددة مفصولة بفاصلة</span>
+        </label>
+        {showFilterField ? (
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12 }}>
+            <span style={{ color: "var(--admin-muted)" }}>قيمة الفلتر (مختصرة)</span>
+            {filterControl}
+          </label>
+        ) : null}
+      </div>
+    );
+  }
 
-        if (type === "RANGE") {
-          return (
-            <label key={attr.key} style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
-              <span style={{ color: "var(--admin-muted)" }}>
-                {label} <code style={{ fontSize: 11, opacity: 0.8 }}>{attr.key}</code>
-                {attr.unit ? ` (${attr.unit})` : ""}
-                {attr.required ? " *" : ""}
-              </span>
-              <input
-                type="number"
-                value={val}
-                onChange={(e) => onChange(attr.key, e.target.value)}
-                placeholder={attr.unit ?? ""}
-                style={fieldStyle}
-              />
-            </label>
-          );
-        }
-
-        if (type === "MULTI_SELECT" && attr.options?.length) {
-          const selected = new Set(
-            val
-              .split(/[,;|]/)
-              .map((x) => x.trim())
-              .filter(Boolean),
-          );
-          return (
-            <fieldset key={attr.key} style={{ border: "none", margin: 0, padding: 0 }}>
-              <legend style={{ fontSize: 13, color: "var(--admin-muted)", marginBottom: 6 }}>
-                {label} <code style={{ fontSize: 11 }}>{attr.key}</code>
-              </legend>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {attr.options.map((opt) => (
-                  <label key={opt} style={{ display: "flex", gap: 4, alignItems: "center", fontSize: 12 }}>
-                    <input
-                      type="checkbox"
-                      checked={selected.has(opt)}
-                      onChange={(e) => {
-                        const next = new Set(selected);
-                        if (e.target.checked) next.add(opt);
-                        else next.delete(opt);
-                        onChange(attr.key, [...next].join(", "));
-                      }}
-                    />
-                    {opt}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          );
-        }
-
-        return (
-          <label key={attr.key} style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
-            <span style={{ color: "var(--admin-muted)" }}>
-              {label} <code style={{ fontSize: 11, opacity: 0.8 }}>{attr.key}</code>
-              {attr.required ? " *" : ""}
-            </span>
+  if (type === "RANGE") {
+    return (
+      <div style={{ display: "grid", gap: 8 }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+          <span style={{ color: "var(--admin-muted)" }}>
+            {showFilterField ? "قيمة العرض" : label} {keyBadge}
+            {attr.unit ? ` (${attr.unit})` : ""}
+          </span>
+          <input
+            type="number"
+            step="any"
+            value={displayValue}
+            onChange={(e) => {
+              onChangeDisplay(e.target.value);
+              if (showFilterField && !filterValue.trim()) onChangeFilter(e.target.value);
+            }}
+            style={fieldStyle}
+          />
+        </label>
+        {showFilterField ? (
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12 }}>
+            <span style={{ color: "var(--admin-muted)" }}>قيمة الفلتر (رقم)</span>
             <input
-              value={val}
-              onChange={(e) => onChange(attr.key, e.target.value)}
-              placeholder={attr.unit ? `(${attr.unit})` : ""}
+              type="number"
+              step="any"
+              value={filterValue}
+              onChange={(e) => onChangeFilter(e.target.value)}
               style={fieldStyle}
             />
           </label>
-        );
-      })}
-    </>
-  );
-}
-
-function SpecSection({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string;
-  subtitle: string;
-  children: ReactNode;
-}) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div>
-        <span style={{ color: "var(--admin-text, #e2e8f0)", fontSize: 14, fontWeight: 700 }}>{title}</span>
-        <p style={{ margin: "4px 0 0", color: "var(--admin-muted)", fontSize: 12 }}>{subtitle}</p>
+        ) : null}
       </div>
-      {children}
+    );
+  }
+
+  if ((type === "SELECT" || type === "COLOR") && attr.options?.length && !showFilterField) {
+    return (
+      <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+        <span style={{ color: "var(--admin-muted)" }}>
+          {label} {keyBadge}
+        </span>
+        <select value={displayValue} onChange={(e) => onChangeDisplay(e.target.value)} style={fieldStyle}>
+          <option value="">—</option>
+          {attr.options.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gap: 8,
+        padding: showFilterField ? 10 : 0,
+        borderRadius: showFilterField ? 8 : 0,
+        border: showFilterField ? "1px dashed var(--admin-border, #475569)" : "none",
+      }}
+    >
+      <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+        <span style={{ color: "var(--admin-muted)" }}>
+          {showFilterField ? "قيمة العرض (كاملة)" : label} {keyBadge}
+        </span>
+        <textarea
+          value={displayValue}
+          onChange={(e) => {
+            const v = e.target.value;
+            onChangeDisplay(v);
+            if (showFilterField && !filterValue.trim() && v.trim()) {
+              onChangeFilter(normalizeFilterValue(attr.key, v));
+            }
+          }}
+          rows={type === "TEXT" || showFilterField ? 3 : 1}
+          style={{ ...fieldStyle, minHeight: 56, resize: "vertical" }}
+        />
+      </label>
+      {showFilterField ? (
+        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12 }}>
+          <span style={{ color: "var(--admin-muted)" }}>قيمة الفلتر / Normalized (مختصرة)</span>
+          {filterControl}
+        </label>
+      ) : null}
     </div>
   );
 }
 
-export function AdminProductSpecFields({ attributes, specs, onChange, fieldStyle, locale = "ar" }: Props) {
-  if (!attributes.length) return null;
-
+export function AdminProductSpecFields({
+  attributes,
+  displaySpecs,
+  filterSpecs,
+  onChangeDisplay,
+  onChangeFilter,
+  fieldStyle,
+  locale = "ar",
+  loading,
+}: Props) {
   const { filterableSpecs, extendedSpecs } = partitionFacetAttributes(attributes);
 
-  const sectionStyle: CSSProperties = {
-    padding: 14,
-    borderRadius: 10,
-    border: "1px solid var(--admin-border, #334155)",
-    background: "var(--admin-surface-muted)",
-    display: "flex",
-    flexDirection: "column",
-    gap: 10,
-  };
+  if (loading) {
+    return <p style={{ fontSize: 13, color: "var(--admin-muted)" }}>جاري تحميل مواصفات القسم…</p>;
+  }
+
+  if (!attributes.length) {
+    return (
+      <p style={{ fontSize: 13, color: "var(--admin-muted)" }}>
+        لا توجد مواصفات معرّفة لهذا القسم. شغّل{" "}
+        <code style={{ fontSize: 12 }}>npx tsx scripts/seed-classification-only.ts</code> لمزامنة التصنيف.
+      </p>
+    );
+  }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {filterableSpecs.length > 0 ? (
-        <div style={sectionStyle}>
-          <SpecSection
-            title="مواصفات الفلاتر (Visible Filters)"
-            subtitle="تظهر في شريط الفلاتر بصفحة القسم فقط"
-          >
-            <SpecFieldList
-              attributes={filterableSpecs}
-              specs={specs}
-              onChange={onChange}
+    <>
+      <AdminProductFormSection
+        title="مواصفات الفلاتر (Filterable Specs)"
+        subtitle="filterable=true — تظهر في صفحة القسم/البحث بقيم مختصرة فقط. أدخل نص العرض الكامل + قيمة الفلتر المنفصلة."
+        badge={`${filterableSpecs.length} حقل`}
+      >
+        {filterableSpecs.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 13, color: "var(--admin-muted)" }}>لا توجد فلاتر لهذا القسم.</p>
+        ) : (
+          filterableSpecs.map((attr) => (
+            <AttributeField
+              key={attr.key}
+              attr={attr}
+              displayValue={displaySpecs[attr.key] ?? ""}
+              filterValue={filterSpecs[attr.key] ?? ""}
+              showFilterField
+              onChangeDisplay={(v) => onChangeDisplay(attr.key, v)}
+              onChangeFilter={(v) => onChangeFilter(attr.key, v)}
               fieldStyle={fieldStyle}
               locale={locale}
             />
-          </SpecSection>
-        </div>
-      ) : null}
+          ))
+        )}
+      </AdminProductFormSection>
 
-      {extendedSpecs.length > 0 ? (
-        <div style={sectionStyle}>
-          <SpecSection
-            title="المواصفات التفصيلية (Extended Specs)"
-            subtitle="تظهر في صفحة المنتج فقط — لا تظهر في شريط الفلاتر"
-          >
-            <SpecFieldList
-              attributes={extendedSpecs}
-              specs={specs}
-              onChange={onChange}
+      <AdminProductFormSection
+        title="المواصفات التفصيلية (Extended Specs)"
+        subtitle="filterable=false — تظهر كاملة في صفحة المنتج فقط ولا تظهر في شريط الفلاتر."
+        badge={`${extendedSpecs.length} حقل`}
+      >
+        {extendedSpecs.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 13, color: "var(--admin-muted)" }}>لا توجد مواصفات تفصيلية إضافية.</p>
+        ) : (
+          extendedSpecs.map((attr) => (
+            <AttributeField
+              key={attr.key}
+              attr={attr}
+              displayValue={displaySpecs[attr.key] ?? ""}
+              filterValue=""
+              showFilterField={false}
+              onChangeDisplay={(v) => onChangeDisplay(attr.key, v)}
+              onChangeFilter={() => {}}
               fieldStyle={fieldStyle}
               locale={locale}
             />
-          </SpecSection>
-        </div>
-      ) : null}
-    </div>
+          ))
+        )}
+      </AdminProductFormSection>
+    </>
   );
 }

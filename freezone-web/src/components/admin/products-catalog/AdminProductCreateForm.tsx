@@ -4,8 +4,12 @@ import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { uploadAdminImage, uploadAdminModel3d } from "@/lib/admin-upload-image";
 import { MediaPickerModal, type MediaRow } from "@/components/admin/MediaPickerModal";
-import { parseFacetAttributesFromUnknown } from "@/lib/facet-attributes";
 import { AdminProductSpecFields } from "@/components/admin/products/AdminProductSpecFields";
+import { AdminProductFormSection } from "@/components/admin/products/AdminProductFormSection";
+import { AdminProductVariantsSection } from "@/components/admin/products/AdminProductVariantsSection";
+import { buildSpecsPayloadForSave } from "@/lib/admin-product-specs-payload";
+import { validateAdminProductSpecs } from "@/lib/admin/admin-product-spec-validation";
+import { useCategoryAttributeSchema } from "@/lib/admin/use-category-attribute-schema";
 import { freezoneApiUrl } from "@/lib/api-internal";
 
 type Category = {
@@ -52,7 +56,8 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId, 
   const [submitting, setSubmitting] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [fromLibraryUrls, setFromLibraryUrls] = useState<string[]>([]);
-  const [specs, setSpecs] = useState<Record<string, string>>({});
+  const [displaySpecs, setDisplaySpecs] = useState<Record<string, string>>({});
+  const [filterSpecs, setFilterSpecs] = useState<Record<string, string>>({});
   const [model, setModel] = useState("");
   const [secondaryCategoryIds, setSecondaryCategoryIds] = useState<number[]>([]);
 
@@ -75,15 +80,21 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId, 
     setSecondaryCategoryIds((prev) => prev.filter((id) => id !== resolvedCategoryId));
   }, [resolvedCategoryId]);
 
-  const categoryAttributes = useMemo(() => {
-    const c = categories.find((x) => x.id === resolvedCategoryId);
-    return parseFacetAttributesFromUnknown(c?.facetAttributes ?? c?.facetKeys);
-  }, [categories, resolvedCategoryId]);
+  const { attributes: categoryAttributes, loading: schemaLoading } = useCategoryAttributeSchema(
+    resolvedCategoryId,
+    categories,
+  );
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setMsg("");
     setMsgIsError(false);
+    const specErr = validateAdminProductSpecs(categoryAttributes, displaySpecs, filterSpecs);
+    if (specErr) {
+      setMsg(specErr);
+      setMsgIsError(true);
+      return;
+    }
     setSubmitting(true);
     const imageUrls: string[] = [];
     let model3dUrl: string | null = null;
@@ -119,7 +130,9 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId, 
         model: model.trim(),
         model3d: model3dUrl,
         images: imageUrls,
-        specs: categoryAttributes.length ? specs : undefined,
+        specs: categoryAttributes.length
+          ? buildSpecsPayloadForSave(categoryAttributes, displaySpecs, filterSpecs)
+          : undefined,
         secondaryCategoryIds: secondaryCategoryIds.length ? secondaryCategoryIds : undefined,
       }),
     });
@@ -165,13 +178,15 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId, 
   }
 
   return (
-    <form onSubmit={(e) => void submit(e)} style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 720 }}>
+    <form onSubmit={(e) => void submit(e)} style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 720 }}>
+      <AdminProductFormSection title="المعلومات الأساسية (Basic Info)">
       <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>القسم الرئيسي</label>
       <select
         value={resolvedCategoryId}
         onChange={(e) => {
           setCategoryId(Number(e.target.value));
-          setSpecs({});
+          setDisplaySpecs({});
+          setFilterSpecs({});
         }}
         style={{
           padding: 10,
@@ -238,14 +253,22 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId, 
       <textarea placeholder="وصف AR" value={descAr} onChange={(e) => setDescAr(e.target.value)} rows={2} style={field} />
       <input placeholder="السعر (IQD)" value={price} onChange={(e) => setPrice(e.target.value)} required style={field} />
       <input placeholder="سعر قبل الخصم (اختياري)" value={oldPrice} onChange={(e) => setOldPrice(e.target.value)} style={field} />
-      <input placeholder="مواصفات مختصرة (سطر واحد للعرض)" value={storage} onChange={(e) => setStorage(e.target.value)} style={field} />
       <input placeholder="الموديل (مثل ROG Strix G16)" value={model} onChange={(e) => setModel(e.target.value)} style={field} />
+      <input placeholder="سطر مختصر للبطاقة (legacy)" value={storage} onChange={(e) => setStorage(e.target.value)} style={field} />
+      </AdminProductFormSection>
+
       <AdminProductSpecFields
         attributes={categoryAttributes}
-        specs={specs}
-        onChange={(key, value) => setSpecs((prev) => ({ ...prev, [key]: value }))}
+        displaySpecs={displaySpecs}
+        filterSpecs={filterSpecs}
+        loading={schemaLoading}
+        onChangeDisplay={(key, value) => setDisplaySpecs((prev) => ({ ...prev, [key]: value }))}
+        onChangeFilter={(key, value) => setFilterSpecs((prev) => ({ ...prev, [key]: value }))}
         fieldStyle={field}
       />
+
+      <AdminProductVariantsSection />
+
       <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>نموذج ثلاثي الأبعاد (اختياري — ملف .glb أو .gltf)</label>
       <input
         type="file"

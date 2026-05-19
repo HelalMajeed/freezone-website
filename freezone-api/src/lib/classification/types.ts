@@ -34,8 +34,16 @@ export type CategoryAttributeRow = {
 
 export type ProductAttributeValueRow = {
   attributeKey: string;
+  /** Full text on product detail page */
+  displayValue?: string | null;
+  /** Normalized short token for category/search filters (alias: normalizedValue) */
   valueString: string | null;
   valueNumber: number | null;
   valueBoolean: boolean | null;
   valueJson: unknown;
 };
+
+/** Normalized filter facet — stored in `valueString`. */
+export function normalizedValueFromRow(row: ProductAttributeValueRow): string | null {
+  return row.valueString?.trim() || null;
+}

@@ -1,11 +1,15 @@
 /** Legacy `product.specs` keys → current `CategoryAttribute.key` per category slug. */
 export const LEGACY_SPEC_KEY_ALIASES: Record<string, Record<string, string[]>> = {
   laptops: {
-    processor_family: ["cpu", "processor", "processor_family"],
-    ram_size: ["ram", "ram_size"],
+    processor_full: ["cpu", "processor", "processor_full"],
+    processor_family: ["processor_family"],
+    ram_display: ["ram", "ram_display"],
+    ram_size: ["ram_size"],
+    storage_display: ["storage", "storage_display"],
     storage_type: ["storageType", "storage_type"],
-    storage_size: ["storage", "storage_size", "storageSize"],
-    gpu_model: ["gpu", "gpu_model"],
+    storage_size: ["storage_size", "storageSize"],
+    gpu_full: ["gpu", "gpu_full"],
+    gpu_model: ["gpu_model"],
     screen_size: ["screen", "screenSize", "screen_size"],
     refresh_rate: ["refreshRate", "refresh_rate"],
     brand: ["brand"],
@@ -140,6 +144,20 @@ export function fuzzySelectFilterMatch(
     if (d === s) return true;
     return d.includes(s) || s.includes(d);
   });
+}
+
+/** Raw legacy text before normalization (for displayValue). */
+export function readLegacyRawDisplay(
+  specs: Record<string, string> | undefined,
+  catSlug: string,
+  attributeKey: string,
+): string | undefined {
+  if (!specs) return undefined;
+  for (const key of legacyKeysForAttribute(catSlug, attributeKey)) {
+    const raw = specs[key];
+    if (raw !== undefined && String(raw).trim() !== "") return String(raw).trim();
+  }
+  return undefined;
 }
 
 export function readLegacySpecValue(

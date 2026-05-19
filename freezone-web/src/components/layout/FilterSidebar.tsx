@@ -6,8 +6,9 @@ import styles from "./FilterSidebar.module.css";
 import { Filter, ChevronDown } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import type { Product } from "@/lib/data";
-import type { FacetCount } from "@/lib/catalog-products-api";
+import type { FacetCount, FacetFilterDefinition } from "@/lib/catalog-products-api";
 import { facetValueForFilter } from "@/lib/classification/legacy-spec-map";
+import { formatFacetFilterLabel, sanitizeFacetFilterToken } from "@/lib/classification/facet-filter-token";
 import {
   facetDefinitionsForCategory,
   facetDefinitionDisplayTitle,
@@ -40,30 +41,46 @@ interface FilterSidebarProps {
   categories: Category[];
   /** Server-computed facet counts (optional). */
   serverFacets?: Record<string, FacetCount[]>;
+  /** Full facet definitions with sanitized labels from API. */
+  serverFacetFilters?: FacetFilterDefinition[];
 }
 
 function resolveFacetOptions(
   def: { key: string; options?: string[]; unit?: string },
   activeCat: string,
   products: Product[],
-  categoryMeta: Category | undefined,
+  locale: "en" | "ar",
+  serverFacetFilters?: FacetFilterDefinition[],
   serverFacets?: Record<string, FacetCount[]>,
-): { value: string; count: number }[] {
+): { value: string; label: string; count: number }[] {
+  const fromApi = serverFacetFilters?.find((f) => f.key === def.key);
+  if (fromApi?.options.length) {
+    return fromApi.options.map((o) => ({ value: o.value, label: o.label, count: o.count }));
+  }
+
   const fromServer = serverFacets?.[def.key];
-  if (fromServer?.length) return fromServer;
+  if (fromServer?.length) {
+    const seen = new Set<string>();
+    const out: { value: string; label: string; count: number }[] = [];
+    for (const { value, count } of fromServer) {
+      const token = sanitizeFacetFilterToken(def.key, value);
+      if (!token || seen.has(token)) continue;
+      seen.add(token);
+      out.push({
+        value: token,
+        label: formatFacetFilterLabel(def.key, token, def.unit, locale),
+        count,
+      });
+    }
+    if (out.length) return out;
+  }
+
   const counts = collectFacetValueCounts(products, activeCat, def.key);
-  const countMap = new Map<string, number>();
-  for (const { value, count } of counts) {
-    const bucket = facetValueForFilter(def.key, value) ?? value;
-    countMap.set(bucket, (countMap.get(bucket) ?? 0) + count);
-  }
-  if (def.options?.length) {
-    return def.options.map((value) => ({
-      value: facetValueForFilter(def.key, value) ?? value,
-      count: countMap.get(facetValueForFilter(def.key, value) ?? value) ?? 0,
-    }));
-  }
-  return Array.from(countMap.entries()).map(([value, count]) => ({ value, count }));
+  return counts.map(({ value, count }) => ({
+    value,
+    label: formatFacetFilterLabel(def.key, value, def.unit, locale),
+    count,
+  }));
 }
 
 function AccordionSection({
@@ -105,6 +122,7 @@ export function FilterSidebar({
   products,
   categories,
   serverFacets,
+  serverFacetFilters,
 }: FilterSidebarProps) {
   const t = useTranslations("Products");
   const locale = useLocale();
@@ -238,9 +256,14 @@ export function FilterSidebar({
           );
         }
 
-        const options = resolveFacetOptions(def, activeCat, products, categoryMeta, serverFacets).filter(
-          (o) => o.count > 0 || (def.options?.includes(o.value) ?? false),
-        );
+        const options = resolveFacetOptions(
+          def,
+          activeCat,
+          products,
+          locale,
+          serverFacetFilters,
+          serverFacets,
+        ).filter((o) => o.count > 0 || (def.options?.includes(o.value) ?? false));
         if (options.length === 0 && !def.options?.length) return null;
 
         return (
@@ -252,10 +275,9 @@ export function FilterSidebar({
             onToggle={() => toggleSection(`spec-${def.key}`)}
           >
             <div className={styles.facetList}>
-              {options.map(({ value: opt, count }) => {
+              {options.map(({ value: opt, label: optLabel, count }) => {
                 const urlOpt = facetValueForFilter(def.key, opt) ?? opt;
                 const isOn = selected.includes(urlOpt);
-                const label = def.unit && /^\d/.test(opt) ? `${opt} ${def.unit}` : opt;
                 return (
                   <label key={opt} className={styles.facetRow}>
                     <input
@@ -263,7 +285,7 @@ export function FilterSidebar({
                       checked={isOn}
                       onChange={() => toggleSpecValue(def.key, opt)}
                     />
-                    <span className={styles.facetLabel}>{label}</span>
+                    <span className={styles.facetLabel}>{optLabel}</span>
                     <span className={styles.facetCount}>{count}</span>
                   </label>
                 );

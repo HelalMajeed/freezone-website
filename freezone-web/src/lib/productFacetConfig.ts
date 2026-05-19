@@ -1,12 +1,8 @@
 import type { AttributeType, FacetAttributeDef, Product } from "./data";
 import { productBelongsToCategory } from "./productCategoryMembership";
 import { productValueMatchesFilterSelection } from "@/lib/classification/product-filter";
-import {
-  facetValueForFilter,
-  fuzzySelectFilterMatch,
-  FUZZY_SELECT_FILTER_KEYS,
-  readLegacySpecValue,
-} from "@/lib/classification/legacy-spec-map";
+import { fuzzySelectFilterMatch, FUZZY_SELECT_FILTER_KEYS } from "@/lib/classification/legacy-spec-map";
+import { getProductFilterToken } from "@/lib/classification/facet-filter-token";
 
 export type FacetDefinition = {
   key: string;
@@ -369,13 +365,8 @@ export function facetDefinitionsForCategory(
 }
 
 export function getProductFacetValue(product: Product, facetKey: string): string | undefined {
-  const fromSpecs = product.specs?.[facetKey];
-  if (fromSpecs !== undefined && String(fromSpecs).trim() !== "") {
-    return facetValueForFilter(facetKey, String(fromSpecs)) ?? String(fromSpecs).trim();
-  }
-
-  const legacy = readLegacySpecValue(product.specs, product.cat, facetKey);
-  if (legacy) return legacy;
+  const fromFilter = getProductFilterToken(product, facetKey);
+  if (fromFilter) return fromFilter;
 
   if (facetKey === "componentType" && productBelongsToCategory(product, "components")) {
     const raw = product.storage?.toLowerCase() ?? "";

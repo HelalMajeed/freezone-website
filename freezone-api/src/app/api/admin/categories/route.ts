@@ -51,6 +51,7 @@ export async function GET(req: Request) {
         const attrs = catAttrs.length ? categoryAttributeRowsToFacetDefs(catAttrs) : null;
         return {
           ...row,
+          categoryAttributes: attrs ?? [],
           facetKeys: attrs?.length ? attrs : row.facetKeys,
           primaryProductCount: _count.products,
           secondaryLinkCount: _count.secondaryProductLinks,

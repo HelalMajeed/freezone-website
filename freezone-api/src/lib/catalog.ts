@@ -4,7 +4,10 @@ import { prisma, isDatabaseConfigured, isDbConnectionError } from "./prisma";
 import { productQueryMissingSecondarySupport } from "./prisma-product-secondary-fallback";
 import { facetKeysFromAttributes, parseFacetAttributesFromUnknown } from "./facet-attributes";
 import { categoryAttributeRowsToFacetDefs } from "./classification/sync";
-import { productAttributeValuesToSpecs } from "./classification/values";
+import {
+  productAttributeValuesToDisplaySpecs,
+  productAttributeValuesToFilterValues,
+} from "./classification/values";
 import type { CategoryAttributeRow, ProductAttributeValueRow } from "./classification/types";
 
 export type LocaleCode = "en" | "ar";
@@ -49,6 +52,7 @@ export function mapDbToProduct(
       ? row.brandRef.nameAr
       : row.brandRef.nameEn
     : row.brand;
+  const specMaps = resolveProductSpecMaps(row);
   return {
     id: row.id,
     cat: row.category.slug,
@@ -71,24 +75,29 @@ export function mapDbToProduct(
     model3d: row.model3d,
     sku: row.sku?.trim() || undefined,
     model: row.model?.trim() || undefined,
-    specs: resolveProductSpecs(row),
+    specs: specMaps.display,
+    ...(Object.keys(specMaps.filterValues).length ? { filterValues: specMaps.filterValues } : {}),
   };
 }
 
-function resolveProductSpecs(row: {
+function resolveProductSpecMaps(row: {
   specs: unknown;
   attributeValues?: ProductAttributeValueRow[];
   category?: { categoryAttributes?: CategoryAttributeRow[] };
-}): Record<string, string> | undefined {
+}): { display: Record<string, string> | undefined; filterValues: Record<string, string> } {
   const schema = row.category?.categoryAttributes ?? [];
-  if (row.attributeValues?.length) {
-    const fromEav = productAttributeValuesToSpecs(row.attributeValues, schema);
-    if (Object.keys(fromEav).length) return fromEav;
+  if (row.attributeValues?.length && schema.length) {
+    const display = productAttributeValuesToDisplaySpecs(row.attributeValues, schema);
+    const filterValues = productAttributeValuesToFilterValues(row.attributeValues, schema);
+    return {
+      display: Object.keys(display).length ? display : undefined,
+      filterValues,
+    };
   }
   if (row.specs && typeof row.specs === "object" && !Array.isArray(row.specs)) {
-    return row.specs as Record<string, string>;
+    return { display: row.specs as Record<string, string>, filterValues: {} };
   }
-  return undefined;
+  return { display: undefined, filterValues: {} };
 }
 
 function mapDbToCategory(
@@ -105,7 +114,9 @@ function mapDbToCategory(
   locale: LocaleCode,
 ): Category {
   const facetAttributes: FacetAttributeDef[] = row.categoryAttributes?.length
-    ? categoryAttributeRowsToFacetDefs(row.categoryAttributes)
+    ? categoryAttributeRowsToFacetDefs(
+        row.categoryAttributes.filter((a) => a.filterable === true && a.active !== false),
+      )
     : parseFacetAttributesFromUnknown(row.facetKeys);
   const facetKeys = facetAttributes.length ? facetKeysFromAttributes(facetAttributes) : undefined;
   const img = row.backgroundImageUrl?.trim() || null;

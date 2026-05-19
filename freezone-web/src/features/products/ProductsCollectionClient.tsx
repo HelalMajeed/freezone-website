@@ -26,9 +26,11 @@ import { useLocale, useTranslations } from "@/i18n/hooks";
 import {
   catalogUsesFilteredApi,
   fetchCatalogProducts,
+  fetchCatalogFacets,
   type CatalogProductsQuery,
 } from "@/lib/catalog-products-api";
 import { facetValueForFilter } from "@/lib/classification/legacy-spec-map";
+import { sanitizeFacetFilterToken } from "@/lib/classification/facet-filter-token";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 export type SortOption = "featured" | "relevant" | "price-asc" | "price-desc" | "date-new" | "date-old";
 
@@ -157,9 +159,9 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
   const initialBrands =
     brandParams.length > 0 ? brandParams : initialBrand ? [initialBrand] : [];
   const initialSpecSelections = facetDefs.reduce<Record<string, string[]>>((acc, def) => {
-    const fromUrl = parseCsvValues(searchParams.getAll(def.key)).map(
-      (v) => facetValueForFilter(def.key, v) ?? v,
-    );
+    const fromUrl = parseCsvValues(searchParams.getAll(def.key))
+      .map((v) => sanitizeFacetFilterToken(def.key, facetValueForFilter(def.key, v) ?? v))
+      .filter((v): v is string => Boolean(v));
     if (fromUrl.length > 0) acc[def.key] = fromUrl;
     return acc;
   }, {});
@@ -292,6 +294,18 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
     placeholderData: (prev) => prev,
   });
 
+  const facetPoolQuery = useMemo(
+    () => ({ ...catalogQuery, facets: undefined as Record<string, string[]> | undefined }),
+    [catalogQuery],
+  );
+
+  const serverFacetDefs = useQuery({
+    queryKey: ["catalog-facets", facetPoolQuery],
+    queryFn: () => fetchCatalogFacets(facetPoolQuery),
+    enabled: Boolean(filters.cat),
+    staleTime: 30_000,
+  });
+
   const { filtered, searchMatchById } = useMemo(() => {
     if (useServerCatalog && serverCatalog.data) {
       const r = serverCatalog.data.products;
@@ -350,6 +364,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
 
   const displayCount = useServerCatalog && serverCatalog.data ? serverCatalog.data.total : filtered.length;
   const serverFacets = serverCatalog.data?.facets;
+  const serverFacetFilters = serverFacetDefs.data?.filters;
   const catalogLoading = useServerCatalog && serverCatalog.isFetching && !serverCatalog.data;
 
   const queryChips = useMemo(() => tokenizeSearchQueryDisplay(query), [query]);
@@ -369,6 +384,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
       products={useServerCatalog && serverCatalog.data ? serverCatalog.data.products : allProducts}
       categories={categories}
       serverFacets={serverFacets}
+      serverFacetFilters={serverFacetFilters}
     />
   );
 

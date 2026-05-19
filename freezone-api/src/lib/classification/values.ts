@@ -1,8 +1,10 @@
 import type { AttributeType, CategoryAttributeRow, ProductAttributeValueRow } from "./types";
 import { isAttributeType } from "./types";
 import { FUZZY_SELECT_FILTER_KEYS, fuzzySelectFilterMatch } from "./legacy-spec-map";
+import { normalizeFilterValue } from "./filter-value";
+import { sanitizeFacetFilterToken } from "./facet-filter-token";
+import { parseSpecsPayload, specInputDisplay, specInputFilter, type SpecValueInput } from "./spec-input";
 
-/** Normalize admin/storefront input key to snake_case. */
 export function normalizeAttributeKey(raw: string): string {
   return raw
     .trim()
@@ -18,8 +20,29 @@ export function parseOptionsJson(raw: unknown): string[] | undefined {
   return out.length ? out : undefined;
 }
 
-/** Display string for storefront `product.specs` and filter chips. */
-export function attributeValueToDisplayString(row: ProductAttributeValueRow, type: AttributeType): string {
+/** Full text for product detail page — never a short filter-only token. */
+export function attributeValueToPdpDisplayString(
+  row: ProductAttributeValueRow,
+  type: AttributeType,
+  attr: Pick<CategoryAttributeRow, "filterable" | "unit">,
+): string {
+  const explicit = row.displayValue?.trim();
+  if (explicit) return explicit;
+
+  if (attr.filterable === true) {
+    const stored = row.valueString?.trim() ?? "";
+    if (stored.length > 48) return stored;
+    return "";
+  }
+
+  return attributeValueToTypedDisplayString(row, type, attr.unit);
+}
+
+function attributeValueToTypedDisplayString(
+  row: ProductAttributeValueRow,
+  type: AttributeType,
+  unit?: string | null,
+): string {
   if (type === "BOOLEAN") {
     if (row.valueBoolean === true) return "true";
     if (row.valueBoolean === false) return "false";
@@ -31,25 +54,105 @@ export function attributeValueToDisplayString(row: ProductAttributeValueRow, typ
     }
     return row.valueString?.trim() ?? "";
   }
-  if (type === "RANGE" || type === "SELECT" || type === "COLOR" || type === "TEXT") {
+  if (type === "RANGE") {
     if (row.valueNumber != null && Number.isFinite(row.valueNumber)) {
-      return String(row.valueNumber);
+      const n = String(row.valueNumber);
+      return unit?.trim() ? `${n} ${unit.trim()}` : n;
     }
     return row.valueString?.trim() ?? "";
+  }
+  if (row.valueNumber != null && Number.isFinite(row.valueNumber)) {
+    const n = String(row.valueNumber);
+    return unit?.trim() ? `${n} ${unit.trim()}` : n;
   }
   return row.valueString?.trim() ?? "";
 }
 
+/** Display map for Product.specs JSON (catalog). */
+export function attributeValueToDisplayString(
+  row: ProductAttributeValueRow,
+  type: AttributeType,
+  filterable = false,
+): string {
+  const explicit = row.displayValue?.trim();
+  if (explicit) return explicit;
+
+  if (filterable) {
+    return "";
+  }
+
+  return attributeValueToTypedDisplayString(row, type, null);
+}
+
+/** Short normalized token for category/search filters. */
+export function attributeValueToFilterString(
+  row: ProductAttributeValueRow,
+  type: AttributeType,
+  attributeKey: string,
+): string {
+  if (type === "BOOLEAN") {
+    if (row.valueBoolean === true) return "true";
+    if (row.valueBoolean === false) return "false";
+    return "";
+  }
+  if (type === "MULTI_SELECT") {
+    if (Array.isArray(row.valueJson)) {
+      return row.valueJson.map((x) => String(x).trim()).filter(Boolean).join(", ");
+    }
+    return row.valueString?.trim() ?? "";
+  }
+  if (type === "RANGE") {
+    if (row.valueNumber != null && Number.isFinite(row.valueNumber)) return String(row.valueNumber);
+    return row.valueString?.trim() ?? "";
+  }
+  const filterStored = row.valueString?.trim();
+  if (filterStored) {
+    if (filterStored.length <= 64) return filterStored;
+    return normalizeFilterValue(attributeKey, filterStored);
+  }
+  if (row.valueNumber != null && Number.isFinite(row.valueNumber)) {
+    return String(row.valueNumber);
+  }
+  return "";
+}
+
+export function productAttributeValuesToDisplaySpecs(
+  values: ProductAttributeValueRow[],
+  schema: CategoryAttributeRow[],
+): Record<string, string> {
+  const attrByKey = new Map(schema.map((a) => [a.key, a]));
+  const out: Record<string, string> = {};
+  for (const v of values) {
+    const attr = attrByKey.get(v.attributeKey);
+    if (!attr) continue;
+    const type = normalizeAttributeType(attr.type);
+    const display = attributeValueToPdpDisplayString(v, type, attr);
+    if (display) out[v.attributeKey] = display;
+  }
+  return out;
+}
+
+/** @deprecated alias — display specs for Product.specs JSON */
 export function productAttributeValuesToSpecs(
   values: ProductAttributeValueRow[],
   schema: CategoryAttributeRow[],
 ): Record<string, string> {
+  return productAttributeValuesToDisplaySpecs(values, schema);
+}
+
+export function productAttributeValuesToFilterValues(
+  values: ProductAttributeValueRow[],
+  schema: CategoryAttributeRow[],
+): Record<string, string> {
   const typeByKey = new Map(schema.map((a) => [a.key, normalizeAttributeType(a.type)]));
+  const filterable = new Set(schema.filter((a) => a.filterable === true).map((a) => a.key));
   const out: Record<string, string> = {};
   for (const v of values) {
+    if (!filterable.has(v.attributeKey)) continue;
     const type = typeByKey.get(v.attributeKey) ?? "SELECT";
-    const display = attributeValueToDisplayString(v, type);
-    if (display) out[v.attributeKey] = display;
+    const raw = attributeValueToFilterString(v, type, v.attributeKey);
+    const filter = raw ? sanitizeFacetFilterToken(v.attributeKey, raw) : undefined;
+    if (filter) out[v.attributeKey] = filter;
   }
   return out;
 }
@@ -67,33 +170,43 @@ export function normalizeAttributeType(raw: string): AttributeType {
   return legacy[u] ?? "SELECT";
 }
 
-/** Parse raw admin spec input into typed storage + display specs. */
 export function parseSpecInputForAttribute(
   attr: CategoryAttributeRow,
-  raw: unknown,
-): { row: Omit<ProductAttributeValueRow, "attributeKey">; display: string } | null {
-  if (raw == null || (typeof raw === "string" && raw.trim() === "")) return null;
+  raw: string | SpecValueInput,
+): { row: Omit<ProductAttributeValueRow, "attributeKey">; display: string; filter: string } | null {
+  const displayRaw = specInputDisplay(raw);
+  const filterOverride = specInputFilter(raw);
+  if (!displayRaw && !filterOverride) return null;
 
   const type = normalizeAttributeType(attr.type);
+  const display = displayRaw;
 
   if (type === "BOOLEAN") {
-    const s = String(raw).trim().toLowerCase();
+    const s = (filterOverride ?? displayRaw).trim().toLowerCase();
     const truthy = s === "true" || s === "1" || s === "yes" || s === "نعم";
     const falsy = s === "false" || s === "0" || s === "no" || s === "لا";
     if (!truthy && !falsy) return null;
     const valueBoolean = truthy;
     return {
-      row: { valueString: null, valueNumber: null, valueBoolean, valueJson: null },
-      display: valueBoolean ? "true" : "false",
+      row: {
+        displayValue: displayRaw || (valueBoolean ? "true" : "false"),
+        valueString: valueBoolean ? "true" : "false",
+        valueNumber: null,
+        valueBoolean,
+        valueJson: null,
+      },
+      display: displayRaw || (valueBoolean ? "true" : "false"),
+      filter: valueBoolean ? "true" : "false",
     };
   }
 
   if (type === "MULTI_SELECT") {
+    const source = filterOverride ?? displayRaw;
     let items: string[];
-    if (Array.isArray(raw)) {
-      items = raw.map((x) => String(x).trim()).filter(Boolean);
+    if (Array.isArray(source)) {
+      items = source.map((x) => String(x).trim()).filter(Boolean);
     } else {
-      items = String(raw)
+      items = String(source)
         .split(/[,;|]/)
         .map((x) => x.trim())
         .filter(Boolean);
@@ -105,53 +218,87 @@ export function parseSpecInputForAttribute(
       if (invalid.length) return null;
     }
     return {
-      row: { valueString: items.join(", "), valueNumber: null, valueBoolean: null, valueJson: items },
-      display: items.join(", "),
+      row: {
+        displayValue: displayRaw || items.join(", "),
+        valueString: items.join(", "),
+        valueNumber: null,
+        valueBoolean: null,
+        valueJson: items,
+      },
+      display: displayRaw || items.join(", "),
+      filter: items.join(", "),
     };
   }
 
   if (type === "RANGE") {
-    const n = typeof raw === "number" ? raw : parseFloat(String(raw).replace(/[^\d.-]/g, ""));
+    const n = parseFloat(String(filterOverride ?? displayRaw).replace(/[^\d.-]/g, ""));
     if (!Number.isFinite(n)) return null;
+    const filterStr = String(n);
     return {
-      row: { valueString: String(n), valueNumber: n, valueBoolean: null, valueJson: null },
-      display: String(n),
+      row: {
+        displayValue: displayRaw || filterStr,
+        valueString: filterStr,
+        valueNumber: n,
+        valueBoolean: null,
+        valueJson: null,
+      },
+      display: displayRaw || filterStr,
+      filter: filterStr,
     };
   }
 
-  const display = String(raw).trim();
-  if (!display) return null;
+  if (!displayRaw && !filterOverride) return null;
 
   if (type === "SELECT" || type === "COLOR") {
+    const filterVal =
+      filterOverride ?? (displayRaw ? normalizeFilterValue(attr.key, displayRaw) : "");
+    if (!filterVal && !displayRaw) return null;
     const options = parseOptionsJson(attr.options);
-    if (options?.length && !options.includes(display)) return null;
+    if (options?.length && filterVal && !options.includes(filterVal)) {
+      if (!attr.filterable && displayRaw && !options.includes(displayRaw)) return null;
+    }
+    return {
+      row: {
+        displayValue: displayRaw || null,
+        valueString: filterVal,
+        valueNumber: null,
+        valueBoolean: null,
+        valueJson: null,
+      },
+      display: displayRaw,
+      filter: filterVal,
+    };
   }
 
-  const num = parseFloat(display.replace(/[^\d.-]/g, ""));
-  const looksNumeric = Number.isFinite(num) && /^[\d.]+$/.test(display);
+  const filterVal =
+    filterOverride ?? (displayRaw ? normalizeFilterValue(attr.key, displayRaw) : "");
+  if (!filterVal && !displayRaw) return null;
+  const num = parseFloat(filterVal.replace(/[^\d.-]/g, ""));
+  const looksNumeric = Number.isFinite(num) && /^[\d.]+$/.test(filterVal);
 
   return {
     row: {
-      valueString: display,
+      displayValue: displayRaw || null,
+      valueString: filterVal,
       valueNumber: looksNumeric && Number.isFinite(num) ? num : null,
       valueBoolean: null,
       valueJson: null,
     },
-    display,
+    display: displayRaw,
+    filter: filterVal,
   };
 }
 
-/** Match product value against URL filter selection (supports RANGE min-max, BOOLEAN, MULTI). */
 export function productValueMatchesFilterSelection(
-  displayValue: string | undefined,
+  filterValue: string | undefined,
   type: AttributeType,
   selected: string[],
 ): boolean {
   if (!selected.length) return true;
-  if (!displayValue?.trim()) return false;
+  if (!filterValue?.trim()) return false;
 
   if (type === "BOOLEAN") {
-    const v = displayValue.trim().toLowerCase();
+    const v = filterValue.trim().toLowerCase();
     return selected.some((s) => {
       const want = s.trim().toLowerCase();
       if (want === "true") return v === "true" || v === "yes" || v === "1" || v === "نعم";
@@ -161,7 +308,7 @@ export function productValueMatchesFilterSelection(
   }
 
   if (type === "RANGE") {
-    const num = parseFloat(displayValue.replace(/[^\d.-]/g, ""));
+    const num = parseFloat(filterValue.replace(/[^\d.-]/g, ""));
     if (!Number.isFinite(num)) return false;
     for (const sel of selected) {
       const m = sel.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)$/);
@@ -178,16 +325,16 @@ export function productValueMatchesFilterSelection(
   }
 
   if (type === "MULTI_SELECT") {
-    const parts = displayValue.split(/[,;|]/).map((x) => x.trim());
+    const parts = filterValue.split(/[,;|]/).map((x) => x.trim());
     return selected.some((s) => parts.includes(s.trim()));
   }
 
-  return selected.includes(displayValue.trim());
+  return selected.includes(filterValue.trim());
 }
 
 export function productValueMatchesFilterSelectionForKey(
   attributeKey: string,
-  displayValue: string | undefined,
+  filterValue: string | undefined,
   type: AttributeType,
   selected: string[],
 ): boolean {
@@ -195,7 +342,9 @@ export function productValueMatchesFilterSelectionForKey(
     (type === "SELECT" || type === "TEXT") &&
     FUZZY_SELECT_FILTER_KEYS.has(attributeKey)
   ) {
-    return fuzzySelectFilterMatch(attributeKey, displayValue, selected);
+    return fuzzySelectFilterMatch(attributeKey, filterValue, selected);
   }
-  return productValueMatchesFilterSelection(displayValue, type, selected);
+  return productValueMatchesFilterSelection(filterValue, type, selected);
 }
+
+export { parseSpecsPayload };

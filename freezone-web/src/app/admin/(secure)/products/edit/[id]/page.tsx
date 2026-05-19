@@ -7,7 +7,12 @@ import { uploadAdminImage, uploadAdminModel3d } from "@/lib/admin-upload-image";
 import { MediaPickerModal, type MediaRow } from "@/components/admin/MediaPickerModal";
 import { normalizeSpecsInput } from "@/lib/spec-validation";
 import { parseFacetAttributesFromUnknown } from "@/lib/facet-attributes";
+import { buildSpecsPayloadForSave } from "@/lib/admin-product-specs-payload";
+import { validateAdminProductSpecs } from "@/lib/admin/admin-product-spec-validation";
+import { useCategoryAttributeSchema } from "@/lib/admin/use-category-attribute-schema";
 import { AdminProductSpecFields } from "@/components/admin/products/AdminProductSpecFields";
+import { AdminProductFormSection } from "@/components/admin/products/AdminProductFormSection";
+import { AdminProductVariantsSection } from "@/components/admin/products/AdminProductVariantsSection";
 import { freezoneApiUrl } from "@/lib/api-internal";
 
 type Category = {
@@ -49,6 +54,8 @@ type ProductRow = {
   images: ImgRow[];
   category: { id: number; slug: string; nameEn: string };
   specs?: Record<string, unknown> | null;
+  displaySpecs?: Record<string, unknown> | null;
+  filterSpecs?: Record<string, unknown> | null;
 };
 
 type ApiProductPayload = Omit<ProductRow, "secondaryCategoryIds"> & {
@@ -80,7 +87,13 @@ export default function AdminEditProductPage() {
   const [replaceImageId, setReplaceImageId] = useState<number | null>(null);
   const [galleryUrlDraft, setGalleryUrlDraft] = useState("");
   const [addingGalleryUrls, setAddingGalleryUrls] = useState(false);
-  const [specs, setSpecs] = useState<Record<string, string>>({});
+  const [displaySpecs, setDisplaySpecs] = useState<Record<string, string>>({});
+  const [filterSpecs, setFilterSpecs] = useState<Record<string, string>>({});
+  const {
+    attributes: categoryAttributes,
+    loading: schemaLoading,
+    setAttributes: setCategoryAttributes,
+  } = useCategoryAttributeSchema(product?.categoryId, categories);
 
   const loadAll = useCallback(async () => {
     if (!Number.isFinite(productId)) {
@@ -122,29 +135,49 @@ export default function AdminEditProductPage() {
       const cat = cats.find((x) => x.id === raw.categoryId);
       const attrs =
         apiAttrs?.length ? apiAttrs : parseFacetAttributesFromUnknown(cat?.facetKeys);
-      const base = normalizeSpecsInput(raw.specs);
-      const s: Record<string, string> = {};
-      for (const a of attrs) s[a.key] = base[a.key] ?? "";
-      setSpecs(s);
+      const displayBase = normalizeSpecsInput(raw.displaySpecs ?? raw.specs);
+      const filterBase = normalizeSpecsInput(raw.filterSpecs);
+      const display: Record<string, string> = {};
+      const filter: Record<string, string> = {};
+      for (const a of attrs) {
+        display[a.key] = displayBase[a.key] ?? "";
+        filter[a.key] = filterBase[a.key] ?? "";
+      }
+      setDisplaySpecs(display);
+      setFilterSpecs(filter);
+      if (apiAttrs?.length) setCategoryAttributes(apiAttrs);
     } else {
       setErr(p.status === 503 ? "قاعدة البيانات غير متاحة" : "تعذّر تحميل المنتج");
     }
     setLoading(false);
-  }, [productId, navigate]);
+  }, [productId, navigate, setCategoryAttributes]);
 
   useEffect(() => {
     void loadAll();
   }, [loadAll]);
 
-  const categoryAttributes = useMemo(() => {
-    if (!product || categories.length === 0) return [];
-    const cat = categories.find((c) => c.id === product.categoryId);
-    return parseFacetAttributesFromUnknown(cat?.facetAttributes ?? cat?.facetKeys);
-  }, [product, categories]);
+  useEffect(() => {
+    if (!categoryAttributes.length) return;
+    setDisplaySpecs((prev) => {
+      const next: Record<string, string> = {};
+      for (const a of categoryAttributes) next[a.key] = prev[a.key] ?? "";
+      return next;
+    });
+    setFilterSpecs((prev) => {
+      const next: Record<string, string> = {};
+      for (const a of categoryAttributes) next[a.key] = prev[a.key] ?? "";
+      return next;
+    });
+  }, [categoryAttributes.map((a) => a.key).join("|")]);
 
   async function saveProduct(e: React.FormEvent) {
     e.preventDefault();
     if (!product || !Number.isFinite(productId)) return;
+    const specErr = validateAdminProductSpecs(categoryAttributes, displaySpecs, filterSpecs);
+    if (specErr) {
+      setErr(specErr);
+      return;
+    }
     setSaving(true);
     setMsg("");
     setErr("");
@@ -175,7 +208,9 @@ export default function AdminEditProductPage() {
         sales: product.sales,
         published: product.published,
         model: product.model ?? "",
-        specs: categoryAttributes.length ? specs : {},
+        specs: categoryAttributes.length
+          ? buildSpecsPayloadForSave(categoryAttributes, displaySpecs, filterSpecs)
+          : {},
         secondaryCategoryIds: product.secondaryCategoryIds,
       }),
     });
@@ -357,7 +392,8 @@ export default function AdminEditProductPage() {
       {err && <p style={{ color: "#fecaca", marginBottom: 12 }}>{err}</p>}
       {msg && <p style={{ color: "#86efac", marginBottom: 12 }}>{msg}</p>}
 
-      <form onSubmit={saveProduct} style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 32 }}>
+      <form onSubmit={saveProduct} style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 32 }}>
+        <AdminProductFormSection title="المعلومات الأساسية (Basic Info)" subtitle="الاسم، العلامة، القسم، السعر، المخزون، الحالة">
         <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>القسم الرئيسي</label>
         <select
           value={product.categoryId}
@@ -367,12 +403,9 @@ export default function AdminEditProductPage() {
               ...product,
               categoryId,
               secondaryCategoryIds: product.secondaryCategoryIds.filter((id) => id !== categoryId),
+              displaySpecs: {},
+              filterSpecs: {},
             });
-            const cat = categories.find((c) => c.id === categoryId);
-            const attrs = parseFacetAttributesFromUnknown(cat?.facetKeys);
-            const next: Record<string, string> = {};
-            for (const a of attrs) next[a.key] = specs[a.key] ?? "";
-            setSpecs(next);
           }}
           style={field}
         >
@@ -512,23 +545,16 @@ export default function AdminEditProductPage() {
           style={field}
         />
         <input
-          placeholder="مواصفات مختصرة (storage)"
-          value={product.storage}
-          onChange={(e) => setProduct({ ...product, storage: e.target.value })}
-          style={field}
-        />
-        <input
           placeholder="الموديل (مثل ROG Strix G16)"
           value={product.model ?? ""}
           onChange={(e) => setProduct({ ...product, model: e.target.value })}
           style={field}
         />
-
-        <AdminProductSpecFields
-          attributes={categoryAttributes}
-          specs={specs}
-          onChange={(key, value) => setSpecs((prev) => ({ ...prev, [key]: value }))}
-          fieldStyle={field}
+        <input
+          placeholder="سطر مختصر للبطاقة (legacy — ليس المواصفات التفصيلية)"
+          value={product.storage}
+          onChange={(e) => setProduct({ ...product, storage: e.target.value })}
+          style={field}
         />
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" }}>
@@ -561,6 +587,19 @@ export default function AdminEditProductPage() {
             منشور في المتجر
           </label>
         </div>
+        </AdminProductFormSection>
+
+        <AdminProductSpecFields
+          attributes={categoryAttributes}
+          displaySpecs={displaySpecs}
+          filterSpecs={filterSpecs}
+          loading={schemaLoading}
+          onChangeDisplay={(key, value) => setDisplaySpecs((prev) => ({ ...prev, [key]: value }))}
+          onChangeFilter={(key, value) => setFilterSpecs((prev) => ({ ...prev, [key]: value }))}
+          fieldStyle={field}
+        />
+
+        <AdminProductVariantsSection />
 
         <input
           placeholder="أيقونة (emoji)"

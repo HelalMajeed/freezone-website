@@ -3,7 +3,6 @@ import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
-import { normalizeSpecsInput } from "@/lib/spec-validation";
 import {
   adminProductSpecsForEdit,
   persistProductSpecsForProduct,
@@ -68,12 +67,18 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     const attrs = schema.length
       ? categoryAttributeRowsToFacetDefs(schema)
       : [];
-    const specs = await adminProductSpecsForEdit(row.id, row.categoryId, row.specs);
+    const { displaySpecs, filterSpecs } = await adminProductSpecsForEdit(
+      row.id,
+      row.categoryId,
+      row.specs,
+    );
     const parts = partitionFacetAttributes(attrs);
 
     return Response.json({
       ...row,
-      specs,
+      specs: displaySpecs,
+      displaySpecs,
+      filterSpecs,
       categoryAttributes: attrs,
       filterableAttributes: parts.filterableSpecs,
       extendedAttributes: parts.extendedSpecs,
@@ -126,16 +131,20 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     if (!existing) return Response.json({ error: "not found" }, { status: 404 });
 
     const nextCategoryId = body.categoryId ?? existing.categoryId;
-    const mergedSpecs = normalizeSpecsInput(
-      body.specs !== undefined ? body.specs : existing.specs,
-    );
-    const specCheck = await validateProductSpecsAgainstCategory(nextCategoryId, mergedSpecs);
-    if (!specCheck.ok) {
-      return Response.json({ error: specCheck.error }, { status: 400 });
-    }
+    let finalSpecs: object = (existing.specs as object) ?? {};
 
-    const persisted = await persistProductSpecsForProduct(id, nextCategoryId, mergedSpecs);
-    const finalSpecs = persisted.ok ? persisted.specs : specCheck.specs;
+    if (body.specs !== undefined) {
+      const specCheck = await validateProductSpecsAgainstCategory(nextCategoryId, body.specs);
+      if (!specCheck.ok) {
+        return Response.json({ error: specCheck.error }, { status: 400 });
+      }
+
+      const persisted = await persistProductSpecsForProduct(id, nextCategoryId, body.specs);
+      if (!persisted.ok) {
+        return Response.json({ error: persisted.error }, { status: 400 });
+      }
+      finalSpecs = persisted.specs;
+    }
 
     await prisma.product.update({
       where: { id },
