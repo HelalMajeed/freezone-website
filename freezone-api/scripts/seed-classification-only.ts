@@ -2,7 +2,13 @@
  * Sync CategoryAttribute rows from CLASSIFICATION_SEED_BY_SLUG — does not delete products or orders.
  * Run: npx tsx scripts/seed-classification-only.ts
  */
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
 import { CLASSIFICATION_SEED_BY_SLUG } from "../src/lib/classification/seed-presets";
 import { syncCategoryAttributesFromFacetKeys } from "../src/lib/classification/sync";
 

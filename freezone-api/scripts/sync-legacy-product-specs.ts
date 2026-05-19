@@ -1,8 +1,14 @@
 /**
  * Map legacy product.specs → ProductAttributeValue with displayValue + normalized filter tokens.
- * Safe to re-run (idempotent per product).
+ * Safe to re-run (idempotent per product). Does not delete products.
  */
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
 import { loadCategoryAttributeSchema, saveProductSpecsNormalized } from "../src/lib/classification/persist";
 import {
   readLegacyRawDisplay,
@@ -10,8 +16,22 @@ import {
 } from "../src/lib/classification/legacy-spec-map";
 import { normalizeFilterValue } from "../src/lib/classification/filter-value";
 import { deriveFilterFacetsFromDisplay } from "../src/lib/classification/derive-filter-facets";
+import { ensureCategorySchemaComplete } from "../src/lib/classification/ensure-category-schema";
+import { sanitizeFacetFilterToken } from "../src/lib/classification/facet-filter-token";
 
 const prisma = new PrismaClient();
+
+function isDisplaySpecKey(key: string): boolean {
+  return key.endsWith("_full") || key.endsWith("_display");
+}
+
+function applySanitizedFilters(filterByKey: Record<string, string>): void {
+  for (const [key, raw] of Object.entries(filterByKey)) {
+    const token = sanitizeFacetFilterToken(key, raw);
+    if (token) filterByKey[key] = token;
+    else delete filterByKey[key];
+  }
+}
 
 async function main() {
   const products = await prisma.product.findMany({
@@ -37,10 +57,11 @@ async function main() {
       continue;
     }
 
-    const schema = await loadCategoryAttributeSchema(
+    let schema = await loadCategoryAttributeSchema(
       (args) => prisma.categoryAttribute.findMany(args),
       p.categoryId,
     );
+    schema = await ensureCategorySchemaComplete(prisma, p.categoryId, p.category.slug, schema);
     if (!schema.length) {
       skip++;
       continue;
@@ -67,16 +88,25 @@ async function main() {
     if (gpuLegacy && p.category.slug === "laptops") displayByKey.gpu_full = gpuLegacy;
 
     for (const attr of schema) {
-      const rawDisplay = readLegacyRawDisplay(specs, p.category.slug, attr.key) ?? displayByKey[attr.key];
+      const rawDisplay = readLegacyRawDisplay(specs, p.category.slug, attr.key);
       const normalized =
-        remapped[attr.key] ?? (rawDisplay ? normalizeFilterValue(attr.key, rawDisplay) : "");
-      if (!rawDisplay && !normalized) continue;
-      if (rawDisplay) displayByKey[attr.key] = rawDisplay;
-      if (attr.filterable && normalized) filterByKey[attr.key] = normalized;
+        remapped[attr.key] ??
+        (rawDisplay ? normalizeFilterValue(attr.key, rawDisplay) : "");
+
+      if (attr.filterable) {
+        const filterToken = normalized ? sanitizeFacetFilterToken(attr.key, normalized) : undefined;
+        if (filterToken) filterByKey[attr.key] = filterToken;
+        if (rawDisplay && (isDisplaySpecKey(attr.key) || rawDisplay.length > 48)) {
+          displayByKey[attr.key] = rawDisplay;
+        }
+      } else if (rawDisplay) {
+        displayByKey[attr.key] = rawDisplay;
+      }
     }
 
     const derived = deriveFilterFacetsFromDisplay(schema, displayByKey, filterByKey);
     Object.assign(filterByKey, derived);
+    applySanitizedFilters(filterByKey);
 
     const payload: Record<string, { display: string; filter?: string }> = {};
     const keys = new Set([...Object.keys(displayByKey), ...Object.keys(filterByKey)]);

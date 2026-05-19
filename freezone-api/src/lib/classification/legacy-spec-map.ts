@@ -100,12 +100,12 @@ export function normalizeLegacySpecDisplay(attributeKey: string, raw: string): s
     const snap = s.match(/Snapdragon\s*\d+/i);
     if (snap) return snap[0].replace(/\s+/g, " ").trim();
     if (/Intel\s*Core/i.test(s)) return "Intel Core";
-    return s.length > 48 ? `${s.slice(0, 48)}…` : s;
+    return "";
   }
   if (attributeKey === "gpu_model" || attributeKey === "gpu") {
     const m = s.match(/RTX\s*\d+/i) ?? s.match(/GTX\s*\d+/i) ?? s.match(/RX\s*\d+/i);
     if (m) return m[0].toUpperCase();
-    return s.length > 48 ? `${s.slice(0, 48)}…` : s;
+    return "";
   }
   if (attributeKey === "storage_type") {
     if (/nvme|ssd/i.test(s)) return "SSD";
@@ -127,7 +127,7 @@ export const FUZZY_SELECT_FILTER_KEYS = new Set([
 export function facetValueForFilter(attributeKey: string, raw: string | undefined): string | undefined {
   if (!raw?.trim()) return undefined;
   const norm = normalizeLegacySpecDisplay(attributeKey, raw);
-  return norm || raw.trim();
+  return norm?.trim() || undefined;
 }
 
 export function fuzzySelectFilterMatch(

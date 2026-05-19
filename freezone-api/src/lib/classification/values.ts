@@ -107,8 +107,13 @@ export function attributeValueToFilterString(
   }
   const filterStored = row.valueString?.trim();
   if (filterStored) {
-    if (filterStored.length <= 64) return filterStored;
-    return normalizeFilterValue(attributeKey, filterStored);
+    const sanitized = sanitizeFacetFilterToken(attributeKey, filterStored);
+    if (sanitized) return sanitized;
+    if (filterStored.length > 64) {
+      const derived = normalizeFilterValue(attributeKey, filterStored);
+      return sanitizeFacetFilterToken(attributeKey, derived) ?? "";
+    }
+    return "";
   }
   if (row.valueNumber != null && Number.isFinite(row.valueNumber)) {
     return String(row.valueNumber);
