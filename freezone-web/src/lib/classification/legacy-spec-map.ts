@@ -82,17 +82,19 @@ export function normalizeLegacySpecDisplay(attributeKey: string, raw: string): s
     if (mah) return mah[1];
   }
   if (attributeKey === "processor_family" || attributeKey === "cpu" || attributeKey === "chipset") {
-    const fam =
-      s.match(/Core\s*Ultra\s*\d+/i)?.[0] ??
-      s.match(/Core\s*i[3579]/i)?.[0] ??
-      s.match(/Ryzen\s*AI\s*\d+/i)?.[0] ??
-      s.match(/Ryzen\s*\d+/i)?.[0] ??
-      s.match(/Intel\s*Core/i)?.[0] ??
-      s.match(/Snapdragon\s*\d+/i)?.[0] ??
-      s.match(/Apple\s*M\d/i)?.[0];
-    if (fam) return fam.replace(/\s+/g, " ").trim();
-    const amd = s.match(/AMD\s+Ryzen[^,;|]*/i)?.[0];
-    if (amd) return amd.replace(/\s+/g, " ").trim().slice(0, 48);
+    const ultra = s.match(/(?:Core[^0-9]*)?Ultra[^0-9]*(\d+)/i);
+    if (ultra) return `Ultra ${ultra[1]}`;
+    const coreI = s.match(/Core[^0-9]*i\s*([3579])/i);
+    if (coreI) return `Core i${coreI[1]}`;
+    const ryzenAi = s.match(/Ryzen[^0-9]*AI[^0-9]*(\d+)/i);
+    if (ryzenAi) return `Ryzen AI ${ryzenAi[1]}`;
+    const ryzen = s.match(/Ryzen[^0-9]*(\d+)/i);
+    if (ryzen) return `Ryzen ${ryzen[1]}`;
+    const apple = s.match(/Apple\s*M\d(?:\s*(?:Pro|Max|Ultra))?/i);
+    if (apple) return apple[0].replace(/\s+/g, " ").trim();
+    const snap = s.match(/Snapdragon\s*\d+/i);
+    if (snap) return snap[0].replace(/\s+/g, " ").trim();
+    if (/Intel\s*Core/i.test(s)) return "Intel Core";
     return s.length > 48 ? `${s.slice(0, 48)}…` : s;
   }
   if (attributeKey === "gpu_model" || attributeKey === "gpu") {

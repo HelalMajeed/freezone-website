@@ -111,4 +111,33 @@ export const CLASSIFICATION_SEED_BY_SLUG: Record<string, FacetAttributeDef[]> = 
     a({ key: "fast_charging", name_en: "Fast charging", name_ar: "شحن سريع", type: "BOOLEAN", filterable: true }),
     a({ key: "connector_type", name_en: "Connector", name_ar: "الموصل", type: "SELECT", filterable: true }),
   ],
+  computers: [
+    a({ key: "brand", name_en: "Brand", name_ar: "الماركة", type: "SELECT", filterable: true }),
+    a({ key: "cpu", name_en: "Processor", name_ar: "المعالج", type: "SELECT", filterable: true }),
+    a({ key: "ram", name_en: "RAM", name_ar: "الرام", type: "MULTI_SELECT", filterable: true, unit: "GB" }),
+    a({ key: "storage", name_en: "Storage", name_ar: "التخزين", type: "SELECT", filterable: true }),
+    a({ key: "gpu", name_en: "GPU", name_ar: "كرت الشاشة", type: "SELECT", filterable: true }),
+    a({ key: "screen_size", name_en: "Screen", name_ar: "الشاشة", type: "RANGE", filterable: true, unit: "inch" }),
+  ],
+  security: [
+    a({ key: "brand", name_en: "Brand", name_ar: "الماركة", type: "SELECT", filterable: true }),
+    a({ key: "system_type", name_en: "System type", name_ar: "نوع النظام", type: "SELECT", filterable: true }),
+    a({ key: "channel_count", name_en: "Channels", name_ar: "القنوات", type: "RANGE", filterable: true }),
+  ],
+  printers: [
+    a({ key: "brand", name_en: "Brand", name_ar: "الماركة", type: "SELECT", filterable: true }),
+    a({ key: "print_technology", name_en: "Technology", name_ar: "التقنية", type: "SELECT", filterable: true }),
+    a({ key: "print_color", name_en: "Color", name_ar: "اللون", type: "SELECT", filterable: true }),
+  ],
+  tablets: [
+    a({ key: "brand", name_en: "Brand", name_ar: "الماركة", type: "SELECT", filterable: true }),
+    a({ key: "screen_size", name_en: "Screen", name_ar: "الشاشة", type: "RANGE", filterable: true, unit: "inch" }),
+    a({ key: "storage", name_en: "Storage", name_ar: "التخزين", type: "SELECT", filterable: true }),
+    a({ key: "ram", name_en: "RAM", name_ar: "الرام", type: "SELECT", filterable: true, unit: "GB" }),
+  ],
+  "smart-home": [
+    a({ key: "brand", name_en: "Brand", name_ar: "الماركة", type: "SELECT", filterable: true }),
+    a({ key: "device_type", name_en: "Device type", name_ar: "نوع الجهاز", type: "SELECT", filterable: true }),
+    a({ key: "wireless", name_en: "Wireless", name_ar: "لاسلكي", type: "BOOLEAN", filterable: true }),
+  ],
 };

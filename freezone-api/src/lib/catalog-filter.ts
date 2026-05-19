@@ -4,7 +4,7 @@ import { PRODUCTS } from "./data";
 import { prisma, isDatabaseConfigured, isDbConnectionError } from "./prisma";
 import { mapDbToProduct, storefrontProductIncludeBase, type LocaleCode } from "./catalog";
 import { categoryAttributeRowsToFacetDefs } from "./classification/sync";
-import { facetValueForFilter, FUZZY_SELECT_FILTER_KEYS, readLegacySpecValue } from "./classification/legacy-spec-map";
+import { facetValueForFilter, readLegacySpecValue } from "./classification/legacy-spec-map";
 import { normalizeAttributeType, productValueMatchesFilterSelectionForKey } from "./classification/values";
 import type { AttributeType, CategoryAttributeRow } from "./classification/types";
 
@@ -82,7 +82,9 @@ export function parseCatalogFilterFromUrl(url: string): CatalogFilterInput {
       .split(",")
       .map((v) => v.trim())
       .filter(Boolean);
-    if (vals.length) facets[key] = vals;
+    if (vals.length) {
+      facets[key] = vals.map((v) => facetValueForFilter(key, v) ?? v);
+    }
   });
   const sort = (sp.get("sort") as CatalogSort | null) ?? undefined;
   const page = Math.max(1, parseInt(sp.get("page") ?? "1", 10) || 1);
@@ -164,79 +166,6 @@ function buildBaseWhere(input: CatalogFilterInput): Prisma.ProductWhereInput {
     });
   }
   return and.length === 1 ? and[0] : { AND: and };
-}
-
-function facetAttributeValueWhere(
-  key: string,
-  type: AttributeType,
-  selected: string[],
-): Prisma.ProductAttributeValueWhereInput | null {
-  if (!selected.length) return null;
-
-  if (type === "BOOLEAN") {
-    const bools: boolean[] = [];
-    for (const s of selected) {
-      const w = s.trim().toLowerCase();
-      if (w === "true" || w === "yes" || w === "1") bools.push(true);
-      if (w === "false" || w === "no" || w === "0") bools.push(false);
-    }
-    if (!bools.length) return null;
-    return {
-      attributeKey: key,
-      OR: bools.map((valueBoolean) => ({ valueBoolean })),
-    };
-  }
-
-  if (type === "RANGE") {
-    const or: Prisma.ProductAttributeValueWhereInput[] = [];
-    for (const sel of selected) {
-      const m = sel.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)$/);
-      if (m) {
-        or.push({
-          attributeKey: key,
-          valueNumber: { gte: parseFloat(m[1]), lte: parseFloat(m[2]) },
-        });
-        continue;
-      }
-      const n = parseFloat(sel);
-      if (Number.isFinite(n)) or.push({ attributeKey: key, valueNumber: n });
-    }
-    return or.length ? { OR: or } : null;
-  }
-
-  if (type === "MULTI_SELECT") {
-    return {
-      attributeKey: key,
-      OR: selected.map((v) => ({
-        valueString: { contains: v, mode: "insensitive" },
-      })),
-    };
-  }
-
-  if (FUZZY_SELECT_FILTER_KEYS.has(key)) {
-    return {
-      attributeKey: key,
-      OR: selected.flatMap((v) => {
-        const needle = facetValueForFilter(key, v) ?? v;
-        return [
-          { valueString: { contains: needle, mode: "insensitive" } },
-          { valueString: { contains: v, mode: "insensitive" } },
-        ];
-      }),
-    };
-  }
-
-  return {
-    attributeKey: key,
-    OR: selected.flatMap((v) => {
-      const clauses: Prisma.ProductAttributeValueWhereInput[] = [
-        { valueString: { equals: v, mode: "insensitive" } },
-      ];
-      const n = parseFloat(v);
-      if (Number.isFinite(n)) clauses.push({ valueNumber: n });
-      return clauses;
-    }),
-  };
 }
 
 function facetDisplayForProduct(product: Product, catSlug: string, facetKey: string): string | undefined {
@@ -374,16 +303,9 @@ export async function queryCatalogProducts(input: CatalogFilterInput): Promise<C
     const baseWhere = buildBaseWhere(input);
     const facetEntries = Object.entries(input.facets ?? {}).filter(([, v]) => v.length);
 
-    const and: Prisma.ProductWhereInput[] = [baseWhere];
-    for (const [key, selected] of facetEntries) {
-      const type = typeByKey.get(key) ?? "SELECT";
-      const attrWhere = facetAttributeValueWhere(key, type, selected);
-      if (attrWhere) {
-        and.push({ attributeValues: { some: attrWhere } });
-      }
-    }
-
-    const where: Prisma.ProductWhereInput = and.length === 1 ? and[0] : { AND: and };
+    // Facet matching runs in memory (legacy specs JSON + fuzzy labels). Prisma EAV-only
+    // filters excluded products that only have specs on Product.specs.
+    const where: Prisma.ProductWhereInput = baseWhere;
 
     let rows;
     try {
@@ -404,6 +326,7 @@ export async function queryCatalogProducts(input: CatalogFilterInput): Promise<C
     }
 
     let products = rows.map((r) => mapDbToProduct(r, input.locale));
+    const poolForFacetCounts = products;
 
     if (facetEntries.length) {
       const defsForMem =
@@ -422,7 +345,7 @@ export async function queryCatalogProducts(input: CatalogFilterInput): Promise<C
     }
 
     products = sortProducts(products, input.sort, Boolean(input.q));
-    const facetCounts = computeFacetCounts(products, input.cat ?? "", facetDefs);
+    const facetCounts = computeFacetCounts(poolForFacetCounts, input.cat ?? "", facetDefs);
     const total = products.length;
     const start = (page - 1) * pageSize;
     const pageProducts = products.slice(start, start + pageSize);

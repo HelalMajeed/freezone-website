@@ -14,6 +14,7 @@
     "db:seed": "prisma db seed",
     "db:seed:classification": "tsx scripts/seed-classification-only.ts",
     "db:sync:legacy-specs": "tsx scripts/sync-legacy-product-specs.ts",
+    "db:sync:classification": "tsx scripts/sync-all-classification.ts",
     "db:delete-products": "tsx prisma/delete-all-products.ts",
     "db:setup": "prisma generate && prisma migrate deploy && prisma db seed",
     "db:status": "prisma migrate status",

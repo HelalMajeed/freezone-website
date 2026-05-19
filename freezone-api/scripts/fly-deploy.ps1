@@ -66,7 +66,7 @@ Invoke-Fly ssh console -a $app -C "cd /app && npx prisma migrate deploy"
 Write-Host "==> sync classification attributes (no product wipe) via SSH ($app)" -ForegroundColor Cyan
 Invoke-Fly ssh console -a $app -C "sh -lc 'cd /app && npx tsx scripts/seed-classification-only.ts'"
 
-Write-Host "==> sync legacy product specs → filter values via SSH ($app)" -ForegroundColor Cyan
-Invoke-Fly ssh console -a $app -C "sh -lc 'cd /app && npx tsx scripts/sync-legacy-product-specs.ts'"
+Write-Host "==> full classification sync (attributes + product specs) via SSH ($app)" -ForegroundColor Cyan
+Invoke-Fly ssh console -a $app -C "sh -lc 'cd /app && npx tsx scripts/sync-all-classification.ts'"
 
 Write-Host "==> done" -ForegroundColor Green

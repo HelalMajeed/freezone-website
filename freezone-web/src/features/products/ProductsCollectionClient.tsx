@@ -28,6 +28,7 @@ import {
   fetchCatalogProducts,
   type CatalogProductsQuery,
 } from "@/lib/catalog-products-api";
+import { facetValueForFilter } from "@/lib/classification/legacy-spec-map";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 export type SortOption = "featured" | "relevant" | "price-asc" | "price-desc" | "date-new" | "date-old";
 
@@ -156,7 +157,9 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
   const initialBrands =
     brandParams.length > 0 ? brandParams : initialBrand ? [initialBrand] : [];
   const initialSpecSelections = facetDefs.reduce<Record<string, string[]>>((acc, def) => {
-    const fromUrl = parseCsvValues(searchParams.getAll(def.key));
+    const fromUrl = parseCsvValues(searchParams.getAll(def.key)).map(
+      (v) => facetValueForFilter(def.key, v) ?? v,
+    );
     if (fromUrl.length > 0) acc[def.key] = fromUrl;
     return acc;
   }, {});
