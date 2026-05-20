@@ -103,11 +103,11 @@ export function AdminCategoryAttributesManager() {
       <div className={styles.header}>
         <div>
           <Link to="/admin/categories" className={styles.back}>
-            ← Categories
+            ← الأقسام
           </Link>
-          <h1 className={styles.title}>Attributes — {nameEn || slug}</h1>
+          <h1 className={styles.title}>سمات القسم — {nameEn || slug}</h1>
           <p className={styles.sub}>
-            Filter Values (filterable) vs Display Specs (filterable=false). لا تخلط النص الطويل في الفلاتر.
+            قيم الفلاتر (filterable) مقابل مواصفات العرض (غير قابلة للفلترة). لا تضع نصًا تسويقيًا طويلًا في الفلاتر.
           </p>
         </div>
         <button type="button" className={styles.saveBtn} disabled={saving} onClick={() => void save()}>
@@ -118,9 +118,9 @@ export function AdminCategoryAttributesManager() {
       <div className={styles.tabs}>
         {(
           [
-            ["all", "All"],
-            ["filterable", "Filterable"],
-            ["display", "Display Specs"],
+            ["all", "الكل"],
+            ["filterable", "فلاتر الواجهة"],
+            ["display", "مواصفات المنتج"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -151,7 +151,7 @@ export function AdminCategoryAttributesManager() {
             {filteredAttrs.map((a) => (
               <span key={a.key} className={a.filterable ? styles.badgeFilter : styles.badgeDisplay}>
                 {a.key}
-                {a.filterable ? " · Filter" : " · Display"}
+                {a.filterable ? " · فلتر" : " · عرض"}
               </span>
             ))}
             {filteredAttrs.length === 0 ? <span style={{ opacity: 0.7 }}>لا نتائج في هذا التبويب</span> : null}

@@ -95,6 +95,9 @@ export default function AdminDataQualityPage() {
             >
               تصدير JSON
             </button>
+            <Link className={ui.btnSm} to="/admin/products?stock=unset">
+              مخزون غير محدد
+            </Link>
             <Link className={ui.btnSm} to="/admin/classification">
               أدوات التصنيف →
             </Link>

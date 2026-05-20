@@ -12,9 +12,9 @@ import { AdminEmptyState } from "@/components/admin/ui/AdminEmptyState";
 import ui from "@/components/admin/ui/AdminUi.module.css";
 
 const CATEGORIES = [
-  { slug: "laptops", label: "Laptops" },
-  { slug: "phones", label: "Phones" },
-  { slug: "gaming", label: "Gaming" },
+  { slug: "laptops", label: "لابتوب" },
+  { slug: "phones", label: "هواتف" },
+  { slug: "gaming", label: "ألعاب" },
 ];
 
 export default function AdminClassificationPage() {

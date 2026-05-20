@@ -7,7 +7,6 @@ import { uploadAdminImage, uploadAdminModel3d } from "@/lib/admin-upload-image";
 import { MediaPickerModal, type MediaRow } from "@/components/admin/MediaPickerModal";
 import { AdminProductSpecFields } from "@/components/admin/products/AdminProductSpecFields";
 import { AdminProductFormSection } from "@/components/admin/products/AdminProductFormSection";
-import { AdminProductVariantsSection } from "@/components/admin/products/AdminProductVariantsSection";
 import {
   AdminProductEditorTabs,
   type ProductEditorTab,
@@ -88,10 +87,12 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId }
     setSecondaryCategoryIds((prev) => prev.filter((id) => id !== resolvedCategoryId));
   }, [resolvedCategoryId]);
 
-  const { attributes: categoryAttributes, loading: schemaLoading } = useCategoryAttributeSchema(
-    resolvedCategoryId,
-    categories,
-  );
+  const {
+    attributes: categoryAttributes,
+    loading: schemaLoading,
+    error: schemaError,
+    reload: reloadSchema,
+  } = useCategoryAttributeSchema(resolvedCategoryId, categories);
 
   useEffect(() => {
     if (!categoryAttributes.length) return;
@@ -276,6 +277,9 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId }
           displaySpecs={displaySpecs}
           filterSpecs={filterSpecs}
           loading={schemaLoading}
+          error={schemaError}
+          categoryId={resolvedCategoryId}
+          onRetry={() => reloadSchema()}
           onChangeDisplay={(key, value) => setDisplaySpecs((p) => ({ ...p, [key]: value }))}
           onChangeFilter={(key, value) => setFilterSpecs((p) => ({ ...p, [key]: value }))}
           fieldStyle={field}
@@ -289,13 +293,14 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId }
           displaySpecs={displaySpecs}
           filterSpecs={filterSpecs}
           loading={schemaLoading}
+          error={schemaError}
+          categoryId={resolvedCategoryId}
+          onRetry={() => reloadSchema()}
           onChangeDisplay={(key, value) => setDisplaySpecs((p) => ({ ...p, [key]: value }))}
           onChangeFilter={(key, value) => setFilterSpecs((p) => ({ ...p, [key]: value }))}
           fieldStyle={field}
         />
       ) : null}
-
-      {editorTab === "variants" ? <AdminProductVariantsSection /> : null}
 
       {editorTab === "preview" ? (
         <AdminProductPreviewPanel
@@ -306,7 +311,7 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId }
       ) : null}
 
       {editorTab === "images" ? (
-        <AdminProductFormSection title="Images" subtitle="صور المنتج ونموذج 3D">
+        <AdminProductFormSection title="الصور" subtitle="صور المنتج ونموذج 3D">
           <input type="file" accept=".glb,.gltf" onChange={(e) => setModel3dFile(e.target.files?.[0] ?? null)} style={{ fontSize: 13 }} />
           <input
             type="file"

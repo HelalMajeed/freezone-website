@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { freezoneApiUrl } from "@/lib/api-internal";
+import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
+import { AdminLoadingState } from "@/components/admin/ui/AdminLoadingState";
 import styles from "./AdminCategoriesManager.module.css";
 
 export type AdminCategoryRow = {
@@ -15,6 +17,7 @@ export type AdminCategoryRow = {
   active: boolean;
   primaryProductCount?: number;
   secondaryLinkCount?: number;
+  attributeCount?: number;
 };
 
 type FormState = {
@@ -39,12 +42,14 @@ export function AdminCategoriesManager() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<AdminCategoryRow[]>([]);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"" | "active" | "inactive">("");
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -65,22 +70,25 @@ export function AdminCategoriesManager() {
   }, [load]);
 
   const parentName = useMemo(() => {
-    const m = new Map(rows.map((r) => [r.id, r.nameEn]));
+    const m = new Map(rows.map((r) => [r.id, r.nameAr || r.nameEn]));
     return (id: number | null) => (id != null ? m.get(id) ?? `#${id}` : "—");
   }, [rows]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return [...rows].sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
-    return rows
-      .filter(
+    let list = [...rows];
+    if (statusFilter === "active") list = list.filter((r) => r.active !== false);
+    if (statusFilter === "inactive") list = list.filter((r) => r.active === false);
+    if (q) {
+      list = list.filter(
         (r) =>
           r.nameEn.toLowerCase().includes(q) ||
           r.nameAr.toLowerCase().includes(q) ||
           r.slug.toLowerCase().includes(q),
-      )
-      .sort((a, b) => a.sortOrder - b.sortOrder);
-  }, [rows, search]);
+      );
+    }
+    return list.sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
+  }, [rows, search, statusFilter]);
 
   function openCreate() {
     setForm(emptyForm());
@@ -103,7 +111,7 @@ export function AdminCategoriesManager() {
 
   async function saveForm() {
     if (!form.nameEn.trim()) {
-      setMsg("الاسم EN مطلوب");
+      setMsg("الاسم بالإنجليزية مطلوب");
       return;
     }
     setSaving(true);
@@ -154,17 +162,17 @@ export function AdminCategoriesManager() {
   async function tryDelete(row: AdminCategoryRow) {
     const count = row.primaryProductCount ?? 0;
     if (count > 0) {
-      setMsg("This category has products. Disable it instead of deleting.");
+      setMsg("هذا القسم يحتوي منتجات. عطّله بدل الحذف.");
       return;
     }
-    if (!confirm(`حذف القسم «${row.nameEn}»؟`)) return;
+    if (!confirm(`حذف القسم «${row.nameAr || row.nameEn}»؟`)) return;
     const res = await fetch(freezoneApiUrl(`/api/admin/categories/${row.id}`), {
       method: "DELETE",
       credentials: "include",
     });
     if (res.status === 409) {
       const j = (await res.json().catch(() => null)) as { error?: string } | null;
-      setMsg(j?.error ?? "This category has products. Disable it instead of deleting.");
+      setMsg(j?.error ?? "لا يمكن الحذف — القسم مرتبط بمنتجات.");
       return;
     }
     if (!res.ok) {
@@ -177,79 +185,99 @@ export function AdminCategoriesManager() {
 
   return (
     <div className={styles.wrap}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Categories</h1>
-          <p className={styles.sub}>إدارة الأقسام، الترتيب، والحالة. المواصفات من صفحة Attributes.</p>
-        </div>
-        <button type="button" className={styles.btnPrimary} onClick={openCreate}>
-          + قسم جديد
-        </button>
-      </div>
+      <AdminPageHeader
+        title="الأقسام"
+        description="إدارة أقسام المتجر، الترتيب، والسمات. الفلاتر ومواصفات العرض من صفحة سمات كل قسم."
+        actions={
+          <button type="button" className={styles.btnPrimary} onClick={openCreate}>
+            + قسم جديد
+          </button>
+        }
+      />
 
       <div className={styles.toolbar}>
         <input
           type="search"
           className={styles.input}
-          placeholder="بحث بالاسم أو slug…"
+          placeholder="بحث بالاسم أو المعرف…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        <select
+          className={styles.input}
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as "" | "active" | "inactive")}
+        >
+          <option value="">كل الحالات</option>
+          <option value="active">نشط</option>
+          <option value="inactive">معطّل</option>
+        </select>
       </div>
 
       {msg ? (
-        <div className={`${styles.msg} ${msg.includes("فشل") || msg.includes("products") ? styles.msgErr : styles.msgOk}`}>
-          {msg}
-        </div>
+        <div className={`${styles.msg} ${msg.includes("فشل") ? styles.msgErr : styles.msgOk}`}>{msg}</div>
       ) : null}
 
       {loading ? (
-        <p style={{ color: "var(--admin-muted)" }}>جاري التحميل…</p>
+        <AdminLoadingState message="جاري تحميل الأقسام…" />
+      ) : filtered.length === 0 ? (
+        <p style={{ color: "var(--admin-muted)" }}>لا توجد أقسام مطابقة.</p>
       ) : (
         <div className={styles.tableScroll}>
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Slug</th>
-                <th>Parent</th>
-                <th>Products</th>
-                <th>Sort</th>
-                <th>Active</th>
-                <th>Actions</th>
+                <th>القسم</th>
+                <th>المعرف</th>
+                <th>الأب</th>
+                <th>المنتجات</th>
+                <th>السمات</th>
+                <th>الترتيب</th>
+                <th>الحالة</th>
+                <th>إجراءات</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((r) => (
                 <tr key={r.id}>
                   <td>
-                    <strong>{r.nameEn}</strong>
-                    <div style={{ fontSize: "0.75rem", opacity: 0.7 }}>{r.nameAr}</div>
+                    <strong>{r.nameAr || r.nameEn}</strong>
+                    <div className={styles.subEn}>{r.nameEn}</div>
                   </td>
-                  <td>{r.slug}</td>
+                  <td dir="ltr">{r.slug}</td>
                   <td>{parentName(r.parentId)}</td>
                   <td>{r.primaryProductCount ?? 0}</td>
+                  <td>{r.attributeCount ?? "—"}</td>
                   <td>{r.sortOrder}</td>
                   <td>
                     <span className={r.active !== false ? styles.badgeOn : styles.badgeOff}>
-                      {r.active !== false ? "Active" : "Disabled"}
+                      {r.active !== false ? "نشط" : "معطّل"}
                     </span>
                   </td>
-                  <td>
-                    <div className={styles.actions}>
-                      <button type="button" className={styles.link} onClick={() => openEdit(r)}>
-                        Edit
-                      </button>
-                      <Link className={styles.link} to={`/admin/categories/${r.id}/attributes`}>
-                        Attributes
-                      </Link>
-                      <button type="button" className={styles.link} onClick={() => void toggleActive(r)}>
-                        {r.active !== false ? "Disable" : "Enable"}
-                      </button>
-                      <button type="button" className={styles.link} onClick={() => void tryDelete(r)}>
-                        Delete
-                      </button>
-                    </div>
+                  <td className={styles.actionsCell}>
+                    <button
+                      type="button"
+                      className={styles.menuBtn}
+                      onClick={() => setOpenMenuId(openMenuId === r.id ? null : r.id)}
+                    >
+                      ⋮
+                    </button>
+                    {openMenuId === r.id ? (
+                      <div className={styles.menu}>
+                        <button type="button" onClick={() => { setOpenMenuId(null); openEdit(r); }}>
+                          تعديل
+                        </button>
+                        <Link to={`/admin/categories/${r.id}/attributes`} onClick={() => setOpenMenuId(null)}>
+                          إدارة السمات
+                        </Link>
+                        <button type="button" onClick={() => { setOpenMenuId(null); void toggleActive(r); }}>
+                          {r.active !== false ? "تعطيل" : "تفعيل"}
+                        </button>
+                        <button type="button" className={styles.menuDanger} onClick={() => { setOpenMenuId(null); void tryDelete(r); }}>
+                          حذف
+                        </button>
+                      </div>
+                    ) : null}
                   </td>
                 </tr>
               ))}
@@ -263,32 +291,32 @@ export function AdminCategoriesManager() {
           <div className={styles.modal}>
             <h2 style={{ margin: 0 }}>{modal === "create" ? "قسم جديد" : "تعديل القسم"}</h2>
             <label className={styles.field}>
-              name_en
+              الاسم (إنجليزي)
               <input value={form.nameEn} onChange={(e) => setForm((f) => ({ ...f, nameEn: e.target.value }))} />
             </label>
             <label className={styles.field}>
-              name_ar
+              الاسم (عربي)
               <input value={form.nameAr} onChange={(e) => setForm((f) => ({ ...f, nameAr: e.target.value }))} />
             </label>
             <label className={styles.field}>
-              slug
+              المعرف (slug)
               <input value={form.slug} onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))} dir="ltr" />
             </label>
             <label className={styles.field}>
-              parent
+              القسم الأب
               <select value={form.parentId} onChange={(e) => setForm((f) => ({ ...f, parentId: e.target.value }))}>
-                <option value="">— none —</option>
+                <option value="">— بدون —</option>
                 {rows
                   .filter((c) => c.id !== editId)
                   .map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.nameEn}
+                      {c.nameAr || c.nameEn}
                     </option>
                   ))}
               </select>
             </label>
             <label className={styles.field}>
-              sortOrder
+              الترتيب
               <input value={form.sortOrder} onChange={(e) => setForm((f) => ({ ...f, sortOrder: e.target.value }))} />
             </label>
             <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -297,7 +325,7 @@ export function AdminCategoriesManager() {
                 checked={form.active}
                 onChange={(e) => setForm((f) => ({ ...f, active: e.target.checked }))}
               />
-              Active
+              نشط
             </label>
             <div className={styles.modalActions}>
               <button type="button" onClick={() => setModal(null)}>

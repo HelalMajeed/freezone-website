@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate, useParams } from "react-router-dom";
 import { uploadAdminImage, uploadAdminModel3d } from "@/lib/admin-upload-image";
@@ -12,12 +12,18 @@ import { validateAdminProductSpecs } from "@/lib/admin/admin-product-spec-valida
 import { useCategoryAttributeSchema } from "@/lib/admin/use-category-attribute-schema";
 import { AdminProductSpecFields } from "@/components/admin/products/AdminProductSpecFields";
 import { AdminProductFormSection } from "@/components/admin/products/AdminProductFormSection";
-import { AdminProductVariantsSection } from "@/components/admin/products/AdminProductVariantsSection";
 import {
   AdminProductEditorTabs,
   type ProductEditorTab,
 } from "@/components/admin/products/AdminProductEditorTabs";
 import { AdminProductPreviewPanel } from "@/components/admin/products/AdminProductPreviewPanel";
+import { AdminProductEditorHeader } from "@/components/admin/products/AdminProductEditorHeader";
+import { AdminStickySaveBar } from "@/components/admin/ui/AdminStickySaveBar";
+import {
+  computeTabStatuses,
+  deriveWorkflowStatus,
+  stockWorkflowStatus,
+} from "@/lib/admin/admin-product-tab-status";
 import { freezoneApiUrl } from "@/lib/api-internal";
 
 type Category = {
@@ -95,11 +101,49 @@ export default function AdminEditProductPage() {
   const [editorTab, setEditorTab] = useState<ProductEditorTab>("basic");
   const [displaySpecs, setDisplaySpecs] = useState<Record<string, string>>({});
   const [filterSpecs, setFilterSpecs] = useState<Record<string, string>>({});
+  const [dirty, setDirty] = useState(false);
+  const [publishIntent, setPublishIntent] = useState<boolean | null>(null);
   const {
     attributes: categoryAttributes,
     loading: schemaLoading,
+    error: schemaError,
+    reload: reloadSchema,
     setAttributes: setCategoryAttributes,
   } = useCategoryAttributeSchema(product?.categoryId, categories);
+
+  const markDirty = useCallback(() => setDirty(true), []);
+
+  const editorCtx = useMemo(() => {
+    if (!product) return null;
+    return {
+      nameEn: product.nameEn,
+      categoryId: product.categoryId,
+      price: product.price,
+      quantity: product.quantity,
+      inStock: product.inStock,
+      published: product.published,
+      imageCount: product.images.length,
+      displaySpecs,
+      filterSpecs,
+      attributes: categoryAttributes,
+    };
+  }, [product, displaySpecs, filterSpecs, categoryAttributes]);
+
+  const tabStatuses = useMemo(() => (editorCtx ? computeTabStatuses(editorCtx) : undefined), [editorCtx]);
+  const workflowStatus = useMemo(() => (editorCtx ? deriveWorkflowStatus(editorCtx) : "draft"), [editorCtx]);
+
+  const publishChecklist = useMemo(() => {
+    if (!product) return [];
+    const st = tabStatuses;
+    return [
+      { id: "name", label: "اسم المنتج", ok: Boolean(product.nameEn.trim()) },
+      { id: "cat", label: "القسم", ok: Boolean(product.categoryId) },
+      { id: "price", label: "السعر", ok: product.price > 0 },
+      { id: "img", label: "صورة رئيسية", ok: product.images.length > 0 },
+      { id: "filters", label: "قيم الفلاتر", ok: st?.filters !== "error" && st?.filters !== "warn" },
+      { id: "display", label: "مواصفات العرض", ok: st?.display !== "warn" },
+    ];
+  }, [product, tabStatuses]);
 
   const loadAll = useCallback(async () => {
     if (!Number.isFinite(productId)) {
@@ -212,7 +256,7 @@ export default function AdminEditProductPage() {
         rating: product.rating,
         reviews: product.reviews,
         sales: product.sales,
-        published: product.published,
+        published: publishIntent ?? product.published,
         model: product.model ?? "",
         specs: categoryAttributes.length
           ? buildSpecsPayloadForSave(categoryAttributes, displaySpecs, filterSpecs)
@@ -231,7 +275,21 @@ export default function AdminEditProductPage() {
       return;
     }
     setMsg("تم حفظ بيانات المنتج");
+    setDirty(false);
+    setPublishIntent(null);
     void loadAll();
+  }
+
+  function saveAsDraft() {
+    setPublishIntent(false);
+    const form = document.getElementById("admin-product-edit-form") as HTMLFormElement | null;
+    form?.requestSubmit();
+  }
+
+  function publishProduct() {
+    setPublishIntent(true);
+    const form = document.getElementById("admin-product-edit-form") as HTMLFormElement | null;
+    form?.requestSubmit();
   }
 
   async function reorder(ids: number[]) {
@@ -380,33 +438,39 @@ export default function AdminEditProductPage() {
     );
   }
 
+  const stockMode = stockWorkflowStatus(product.inStock, product.quantity);
+
   return (
-    <div style={{ padding: 24, maxWidth: 920, margin: "0 auto" }}>
-      <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
-        <Link to="/admin/products" style={{ color: "var(--admin-muted)" }}>
-          ← المنتجات
-        </Link>
-        <a href={`/en/product/${product.id}`} target="_blank" rel="noreferrer" style={{ color: "#0b1f3b" }}>
-          معاينة في المتجر
-        </a>
-      </div>
-      <h1 style={{ marginBottom: 8 }}>تعديل المنتج #{product.id}</h1>
-      <p style={{ opacity: 0.75, marginBottom: 20, fontSize: 14 }}>
-        عدّل الحقول ثم احفظ. الصور: ترتيب، حذف، استبدال برفع ملف جديد، أو إضافة من الرفع / المكتبة / رابط خارجي — دون المساس بباقي الصور.
-      </p>
+    <div style={{ padding: 24, maxWidth: 960, margin: "0 auto" }}>
+      <AdminProductEditorHeader
+        title={product.nameAr || product.nameEn || `منتج #${product.id}`}
+        workflowStatus={workflowStatus}
+        storefrontUrl={`/ar/product/${product.id}`}
+        saving={saving}
+        onSave={() => {
+          const form = document.getElementById("admin-product-edit-form") as HTMLFormElement | null;
+          form?.requestSubmit();
+        }}
+        onSaveDraft={() => void saveAsDraft()}
+        onPublish={() => void publishProduct()}
+      />
 
       {err && <p style={{ color: "#fecaca", marginBottom: 12 }}>{err}</p>}
-      {msg && <p style={{ color: "#86efac", marginBottom: 12 }}>{msg}</p>}
+      {msg && <p style={{ color: "#166534", marginBottom: 12 }}>{msg}</p>}
 
-      <AdminProductEditorTabs active={editorTab} onChange={setEditorTab} />
+      <AdminProductEditorTabs active={editorTab} onChange={setEditorTab} tabStatuses={tabStatuses} />
 
-      <form onSubmit={saveProduct} style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 32 }}>
+      <form
+        id="admin-product-edit-form"
+        onSubmit={saveProduct}
+        style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 32 }}
+      >
         {(editorTab === "basic" || editorTab === "pricing") && (
         <AdminProductFormSection
-          title={editorTab === "pricing" ? "Pricing & Stock" : "Basic Info"}
+          title={editorTab === "pricing" ? "السعر والمخزون" : "المعلومات الأساسية"}
           subtitle={
             editorTab === "pricing"
-              ? "السعر، SKU، المخزون، الحالة"
+              ? "السعر، SKU، المخزون، حالة التوفر"
               : "الاسم، العلامة، القسم، الوصف"
           }
         >
@@ -417,12 +481,17 @@ export default function AdminEditProductPage() {
           value={product.categoryId}
           onChange={(e) => {
             const categoryId = Number(e.target.value);
+            if (categoryId !== product.categoryId) {
+              const hasSpecs = Object.values(displaySpecs).some((v) => v.trim()) || Object.values(filterSpecs).some((v) => v.trim());
+              if (hasSpecs && !confirm("تغيير القسم قد يغيّر الفلاتر والمواصفات المطلوبة. هل تريد المتابعة؟ القيم الحالية تُحفظ حتى تحدّث السمات.")) {
+                return;
+              }
+            }
+            markDirty();
             setProduct({
               ...product,
               categoryId,
               secondaryCategoryIds: product.secondaryCategoryIds.filter((id) => id !== categoryId),
-              displaySpecs: {},
-              filterSpecs: {},
             });
           }}
           style={field}
@@ -504,7 +573,10 @@ export default function AdminEditProductPage() {
         <input
           placeholder="الاسم EN *"
           value={product.nameEn}
-          onChange={(e) => setProduct({ ...product, nameEn: e.target.value })}
+          onChange={(e) => {
+            markDirty();
+            setProduct({ ...product, nameEn: e.target.value });
+          }}
           required
           style={field}
         />
@@ -579,15 +651,34 @@ export default function AdminEditProductPage() {
           style={field}
         />
 
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 8 }}>
+          <span style={{ fontSize: 13, color: "var(--admin-muted)" }}>حالة المخزون</span>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            {(
+              [
+                { id: "in", label: "متوفر" },
+                { id: "out", label: "غير متوفر" },
+                { id: "unset", label: "مخزون غير محدد" },
+              ] as const
+            ).map((opt) => (
+              <label key={opt.id} style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 14 }}>
+                <input
+                  type="radio"
+                  name="stockMode"
+                  checked={stockMode === opt.id}
+                  onChange={() => {
+                    markDirty();
+                    if (opt.id === "in") setProduct({ ...product, inStock: true, quantity: Math.max(1, product.quantity) });
+                    else if (opt.id === "out") setProduct({ ...product, inStock: false });
+                    else setProduct({ ...product, inStock: true, quantity: 0 });
+                  }}
+                />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" }}>
-          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14 }}>
-            <input
-              type="checkbox"
-              checked={product.inStock}
-              onChange={(e) => setProduct({ ...product, inStock: e.target.checked })}
-            />
-            متوفر
-          </label>
           <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14 }}>
             <input
               type="checkbox"
@@ -621,8 +712,17 @@ export default function AdminEditProductPage() {
           displaySpecs={displaySpecs}
           filterSpecs={filterSpecs}
           loading={schemaLoading}
-          onChangeDisplay={(key, value) => setDisplaySpecs((prev) => ({ ...prev, [key]: value }))}
-          onChangeFilter={(key, value) => setFilterSpecs((prev) => ({ ...prev, [key]: value }))}
+          error={schemaError}
+          categoryId={product.categoryId}
+          onRetry={() => reloadSchema()}
+          onChangeDisplay={(key, value) => {
+            markDirty();
+            setDisplaySpecs((prev) => ({ ...prev, [key]: value }));
+          }}
+          onChangeFilter={(key, value) => {
+            markDirty();
+            setFilterSpecs((prev) => ({ ...prev, [key]: value }));
+          }}
           fieldStyle={field}
         />
         ) : null}
@@ -634,45 +734,55 @@ export default function AdminEditProductPage() {
           displaySpecs={displaySpecs}
           filterSpecs={filterSpecs}
           loading={schemaLoading}
-          onChangeDisplay={(key, value) => setDisplaySpecs((prev) => ({ ...prev, [key]: value }))}
-          onChangeFilter={(key, value) => setFilterSpecs((prev) => ({ ...prev, [key]: value }))}
+          error={schemaError}
+          categoryId={product.categoryId}
+          onRetry={() => reloadSchema()}
+          onChangeDisplay={(key, value) => {
+            markDirty();
+            setDisplaySpecs((prev) => ({ ...prev, [key]: value }));
+          }}
+          onChangeFilter={(key, value) => {
+            markDirty();
+            setFilterSpecs((prev) => ({ ...prev, [key]: value }));
+          }}
           fieldStyle={field}
         />
         ) : null}
-
-        {editorTab === "variants" ? <AdminProductVariantsSection /> : null}
 
         {editorTab === "preview" ? (
           <AdminProductPreviewPanel
             displaySpecs={displaySpecs}
             filterSpecs={filterSpecs}
             attributes={categoryAttributes}
+            productName={product.nameAr || product.nameEn}
+            priceLabel={`${product.price.toLocaleString("ar-IQ")} د.ع`}
+            imageUrl={product.images[0]?.url ?? null}
+            checklist={publishChecklist}
+            publishing={saving}
+            onSaveDraft={() => void saveAsDraft()}
+            onPublish={() => void publishProduct()}
           />
-        ) : null}
-
-        {editorTab !== "images" && editorTab !== "preview" ? (
-        <button
-          type="submit"
-          disabled={saving}
-          style={{
-            padding: "12px 20px",
-            borderRadius: 8,
-            border: "none",
-            background: saving ? "var(--admin-border-strong)" : "#0b1f3b",
-            color: "#fff",
-            fontWeight: 700,
-            cursor: saving ? "wait" : "pointer",
-            marginTop: 8,
-          }}
-        >
-          {saving ? "جاري الحفظ…" : "حفظ بيانات المنتج"}
-        </button>
         ) : null}
       </form>
 
+      <AdminStickySaveBar
+        visible={dirty}
+        saving={saving}
+        onSave={() => {
+          const form = document.getElementById("admin-product-edit-form") as HTMLFormElement | null;
+          form?.requestSubmit();
+        }}
+        onDiscard={() => {
+          if (confirm("تجاهل التغييرات غير المحفوظة؟")) {
+            setDirty(false);
+            void loadAll();
+          }
+        }}
+      />
+
       {editorTab === "images" ? (
       <>
-      <h2 style={{ fontSize: 18, marginBottom: 12 }}>Images</h2>
+      <h2 style={{ fontSize: 18, marginBottom: 12 }}>الصور</h2>
       <label style={{ color: "var(--admin-muted)", fontSize: 13, display: "block", marginBottom: 8 }}>
         نموذج 3D — رابط أو رفع ملف
       </label>

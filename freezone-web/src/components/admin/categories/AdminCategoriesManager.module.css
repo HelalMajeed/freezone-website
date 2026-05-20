@@ -185,3 +185,65 @@
   justify-content: flex-end;
   margin-top: 8px;
 }
+
+.subEn {
+  font-size: 0.72rem;
+  opacity: 0.65;
+}
+
+.actionsCell {
+  position: relative;
+  width: 48px;
+}
+
+.menuBtn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.menu {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 100%;
+  z-index: 30;
+  min-width: 160px;
+  margin-top: 4px;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-float);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menu button,
+.menu a {
+  display: block;
+  width: 100%;
+  text-align: start;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--admin-text);
+  font-size: 0.8rem;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.menu button:hover,
+.menu a:hover {
+  background: var(--admin-surface-muted);
+}
+
+.menuDanger {
+  color: #b91c1c !important;
+}

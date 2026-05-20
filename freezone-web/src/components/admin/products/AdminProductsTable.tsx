@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { AdminProductRow } from "@/components/admin/products-catalog/admin-product-types";
 import { brandLabel, formatIqd } from "@/components/admin/products-catalog/admin-product-types";
+import { stockWorkflowStatus } from "@/lib/admin/admin-product-tab-status";
 import {
   fetchAdminProductsList,
   type AdminProductsListParams,
@@ -175,6 +176,9 @@ export function AdminProductsTable({ categories }: { categories: CategoryOpt[] }
             <tbody>
               {items.map((p) => {
                 const thumb = p.images[0]?.url;
+                const stock = stockWorkflowStatus(p.inStock, p.quantity ?? 0);
+                const stockLabel =
+                  stock === "in" ? `متوفر (${p.quantity})` : stock === "out" ? "غير متوفر" : "غير محدد";
                 return (
                   <tr key={p.id}>
                     <td>
@@ -195,8 +199,12 @@ export function AdminProductsTable({ categories }: { categories: CategoryOpt[] }
                     <td>{brandLabel(p) || "—"}</td>
                     <td>{formatIqd(p.price)}</td>
                     <td>
-                      <span className={p.inStock ? styles.badgeIn : styles.badgeOut}>
-                        {p.inStock ? `${p.quantity}` : "نفد"}
+                      <span
+                        className={
+                          stock === "in" ? styles.badgeIn : stock === "out" ? styles.badgeOut : styles.badgeUnset
+                        }
+                      >
+                        {stockLabel}
                       </span>
                     </td>
                     <td>
