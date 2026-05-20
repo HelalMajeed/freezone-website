@@ -49,11 +49,27 @@ function applySanitizedFilters(filterByKey: Record<string, string>): void {
 
 function previewFromFilters(filterByKey: Record<string, string>): LegacySyncPreview {
   return {
-    processor_family: filterByKey.processor_family,
-    gpu_model: filterByKey.gpu_model,
-    ram_size: filterByKey.ram_size,
-    storage_size: filterByKey.storage_size,
+    screen_size: filterByKey.screen_size ?? null,
+    display_resolution: filterByKey.display_resolution ?? null,
+    refresh_rate: filterByKey.refresh_rate ?? null,
+    gpu_model: filterByKey.gpu_model ?? null,
+    processor_family: filterByKey.processor_family ?? null,
+    ram_size: filterByKey.ram_size ?? null,
+    storage_size: filterByKey.storage_size ?? null,
   };
+}
+
+function rebuildFilterByKeyFromDisplay(
+  schema: CategoryAttributeRow[],
+  displayByKey: Record<string, string>,
+  seedFilters: Record<string, string> = {},
+): Record<string, string> {
+  const filterByKey = { ...seedFilters };
+  applySanitizedFilters(filterByKey);
+  const derived = deriveFilterFacetsFromDisplay(schema, displayByKey, filterByKey);
+  Object.assign(filterByKey, derived);
+  applySanitizedFilters(filterByKey);
+  return filterByKey;
 }
 
 export async function buildLegacyProductSpecsPayload(
