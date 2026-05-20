@@ -150,6 +150,40 @@
   margin-bottom: 28px;
 }
 
+.heroSpecs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px 16px;
+  margin-bottom: 24px;
+  padding: 14px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+}
+
+.heroSpecRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.heroSpecLabel {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.heroSpecValue {
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
 /* ── Full-width specifications card ───────────── */
 .specificationsCard {
   width: 100%;

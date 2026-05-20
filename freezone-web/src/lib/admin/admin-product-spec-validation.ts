@@ -1,4 +1,5 @@
 import type { FacetAttributeDef } from "@/lib/data";
+import { isLongMarketingFacetText, sanitizeFacetFilterToken } from "@/lib/classification/facet-filter-token";
 
 const SNAKE_KEY = /^[a-z][a-z0-9_]*$/;
 
@@ -20,6 +21,13 @@ export function validateAdminProductSpecs(
 
     if (attr.required && !display && !filter) {
       return `حقل مطلوب: ${attr.name_ar || attr.name_en || attr.key}`;
+    }
+
+    if (attr.filterable && filter) {
+      const token = sanitizeFacetFilterToken(attr.key, filter);
+      if (!token || isLongMarketingFacetText(filter)) {
+        return `قيمة الفلتر غير صالحة لـ ${attr.name_ar || attr.name_en || attr.key}: ضع النص الكامل في Display Specs وليس Filter Values (مثال: Core i7، RTX 5070)`;
+      }
     }
 
     if (attr.filterable && display && !filter) {

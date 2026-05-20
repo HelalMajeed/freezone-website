@@ -266,6 +266,28 @@
   text-align: end;
 }
 
+.facetRowDisabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.facetRowDisabled input {
+  cursor: not-allowed;
+}
+
+.showMoreBtn {
+  margin-top: 6px;
+  padding: 6px 0;
+  border: none;
+  background: none;
+  color: var(--red-600);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: underline;
+}
+
 /* ── Radio group ────────────────────────────── */
 .radioGroup {
   display: flex;

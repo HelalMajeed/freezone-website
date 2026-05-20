@@ -18,6 +18,7 @@ import {
 } from "@/lib/classification/spec-display";
 import { buildProductSpecAttributeRows } from "@/lib/productSpecCardChips";
 import type { FacetAttributeDef } from "@/lib/data";
+import { buildProductHeroSpecLines } from "@/lib/product-detail-hero-specs";
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en").format(n);
@@ -97,6 +98,11 @@ export default function ProductDetailClient({
 
   const hasSpecs = specSections.some((s) => s.rows.length > 0);
 
+  const heroSpecs = useMemo(
+    () => buildProductHeroSpecLines(groupedSpecs, locale),
+    [groupedSpecs, locale],
+  );
+
   return (
     <div className={`container ${styles.pdpWide} ${styles.pdpLayout}`}>
       <nav className={styles.breadcrumb}>
@@ -149,6 +155,17 @@ export default function ProductDetailClient({
           </div>
 
           <p className={styles.desc}>{product.desc}</p>
+
+          {heroSpecs.length > 0 ? (
+            <div className={styles.heroSpecs} aria-label={t("specificationsTitle")}>
+              {heroSpecs.map((line) => (
+                <div key={line.label} className={styles.heroSpecRow}>
+                  <span className={styles.heroSpecLabel}>{line.label}</span>
+                  <span className={styles.heroSpecValue}>{line.value}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
 
           <div className={styles.actionStack}>
             <button

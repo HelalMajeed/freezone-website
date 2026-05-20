@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import type { Category } from "@/lib/data";
 import styles from "./FilterSidebar.module.css";
 import { Filter, ChevronDown } from "lucide-react";
@@ -16,6 +16,13 @@ import {
   collectFacetValueCounts,
   collectBrandCounts,
 } from "@/lib/productFacetConfig";
+import {
+  FACET_OPTIONS_VISIBLE_DEFAULT,
+  facetSortIndex,
+  getFacetDisplayLabel,
+  orderServerFacetFilters,
+  sortFacetOptionsNatural,
+} from "@/lib/catalog-facet-ui";
 
 export type ListingAge = "all" | "new" | "older";
 
@@ -83,6 +90,65 @@ function resolveFacetOptions(
   }));
 }
 
+function FacetOptionList({
+  facetKey,
+  options,
+  selected,
+  onToggle,
+  locale,
+  maxVisible = FACET_OPTIONS_VISIBLE_DEFAULT,
+}: {
+  facetKey: string;
+  options: { value: string; label: string; count: number }[];
+  selected: string[];
+  onToggle: (value: string) => void;
+  locale: "en" | "ar";
+  maxVisible?: number;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const sorted = sortFacetOptionsNatural(facetKey, options);
+  const visible = expanded ? sorted : sorted.slice(0, maxVisible);
+  const hiddenCount = sorted.length - maxVisible;
+
+  return (
+    <>
+      <div className={styles.facetList}>
+        {visible.map(({ value: opt, label: optLabel, count }) => {
+          const urlOpt =
+            facetKey === "brand" ? opt : (facetValueForFilter(facetKey, opt) ?? opt);
+          const isOn = selected.includes(urlOpt) || selected.includes(opt);
+          const disabled = count === 0 && !isOn;
+          return (
+            <label
+              key={opt}
+              className={`${styles.facetRow} ${disabled ? styles.facetRowDisabled : ""}`}
+            >
+              <input
+                type="checkbox"
+                checked={isOn}
+                disabled={disabled}
+                onChange={() => !disabled && onToggle(opt)}
+              />
+              <span className={styles.facetLabel}>{optLabel}</span>
+              <span className={styles.facetCount}>{count}</span>
+            </label>
+          );
+        })}
+      </div>
+      {hiddenCount > 0 && !expanded ? (
+        <button type="button" className={styles.showMoreBtn} onClick={() => setExpanded(true)}>
+          {locale === "ar" ? `عرض ${hiddenCount} المزيد` : `Show ${hiddenCount} more`}
+        </button>
+      ) : null}
+      {expanded && sorted.length > maxVisible ? (
+        <button type="button" className={styles.showMoreBtn} onClick={() => setExpanded(false)}>
+          {locale === "ar" ? "عرض أقل" : "Show less"}
+        </button>
+      ) : null}
+    </>
+  );
+}
+
 function AccordionSection({
   id,
   title,
@@ -138,12 +204,26 @@ export function FilterSidebar({
 
   const activeCat = filters.cat;
   const categoryMeta = categories.find((c) => c.id === activeCat);
-  const facetDefs = filterableFacetDefinitions(
-    facetDefinitionsForCategory(
-      activeCat,
-      categoryMeta?.facetAttributes?.length ? categoryMeta.facetAttributes : categoryMeta?.facetKeys ?? null,
-    ),
-  );
+  const catSlug = activeCat;
+
+  const facetDefs = useMemo(() => {
+    const defs = filterableFacetDefinitions(
+      facetDefinitionsForCategory(
+        activeCat,
+        categoryMeta?.facetAttributes?.length ? categoryMeta.facetAttributes : categoryMeta?.facetKeys ?? null,
+      ),
+    );
+    if (serverFacetFilters?.length) {
+      const ordered = orderServerFacetFilters(catSlug, serverFacetFilters);
+      const rank = new Map(ordered.map((f, i) => [f.key, i]));
+      return [...defs].sort(
+        (a, b) =>
+          (rank.get(a.key) ?? facetSortIndex(catSlug, a.key)) -
+          (rank.get(b.key) ?? facetSortIndex(catSlug, b.key)),
+      );
+    }
+    return [...defs].sort((a, b) => facetSortIndex(catSlug, a.key) - facetSortIndex(catSlug, b.key));
+  }, [activeCat, categoryMeta, serverFacetFilters, catSlug]);
 
   const brandOptions = collectBrandCounts(products, activeCat);
 
@@ -183,9 +263,74 @@ export function FilterSidebar({
 
       {!activeCat ? <p className={styles.hint}>{t("filterSpecsHint")}</p> : null}
 
+      <AccordionSection
+        id="availability"
+        title={locale === "ar" ? "التوفر" : "Availability"}
+        isOpen={openSections.availability ?? true}
+        onToggle={() => toggleSection("availability")}
+      >
+        <div className={styles.checkboxGroup}>
+          <label className={styles.checkboxLabel}>
+            <input type="checkbox" checked={filters.inStock} onChange={(e) => updateFilter("inStock", e.target.checked)} />
+            {t("inStock")}
+          </label>
+          <label className={styles.checkboxLabel}>
+            <input type="checkbox" checked={filters.onSale} onChange={(e) => updateFilter("onSale", e.target.checked)} />
+            {t("onSale")}
+          </label>
+          <label className={styles.checkboxLabel}>
+            <input type="checkbox" checked={filters.featured} onChange={(e) => updateFilter("featured", e.target.checked)} />
+            {t("featured")}
+          </label>
+        </div>
+      </AccordionSection>
+
+      {brandOptions.length > 0 && (
+        <AccordionSection
+          id="brands"
+          title={locale === "ar" ? "العلامة التجارية" : "Brand"}
+          isOpen={openSections.brands ?? true}
+          onToggle={() => toggleSection("brands")}
+        >
+          <FacetOptionList
+            facetKey="brand"
+            options={brandOptions.map(({ value, count }) => ({ value, label: value, count }))}
+            selected={filters.brands}
+            onToggle={toggleBrand}
+            locale={locale}
+          />
+        </AccordionSection>
+      )}
+
+      <AccordionSection
+        id="price"
+        title={locale === "ar" ? "السعر" : "Price"}
+        isOpen={openSections.price ?? true}
+        onToggle={() => toggleSection("price")}
+      >
+        <div className={styles.priceInputs}>
+          <input
+            type="number"
+            placeholder={t("priceMin")}
+            value={filters.pMin}
+            onChange={(e) => updateFilter("pMin", e.target.value)}
+          />
+          <input
+            type="number"
+            placeholder={t("priceMax")}
+            value={filters.pMax}
+            onChange={(e) => updateFilter("pMax", e.target.value)}
+          />
+        </div>
+      </AccordionSection>
+
       {facetDefs.map((def) => {
         const selected = filters.specSelections[def.key] ?? [];
-        const facetTitle = facetDefinitionDisplayTitle(def, locale, (k, o) => t(k, o));
+        const apiDef = serverFacetFilters?.find((f) => f.key === def.key);
+        const facetTitle =
+          apiDef?.label?.trim() ||
+          getFacetDisplayLabel(def.key, locale) ||
+          facetDefinitionDisplayTitle(def, locale, (k, o) => t(k, o));
         const open = openSections[`spec-${def.key}`] ?? false;
 
         if (def.type === "RANGE") {
@@ -263,7 +408,7 @@ export function FilterSidebar({
           locale,
           serverFacetFilters,
           serverFacets,
-        ).filter((o) => o.count > 0 || (def.options?.includes(o.value) ?? false));
+        );
         if (options.length === 0 && !def.options?.length) return null;
 
         return (
@@ -274,70 +419,16 @@ export function FilterSidebar({
             isOpen={open}
             onToggle={() => toggleSection(`spec-${def.key}`)}
           >
-            <div className={styles.facetList}>
-              {options.map(({ value: opt, label: optLabel, count }) => {
-                const urlOpt = facetValueForFilter(def.key, opt) ?? opt;
-                const isOn = selected.includes(urlOpt);
-                return (
-                  <label key={opt} className={styles.facetRow}>
-                    <input
-                      type="checkbox"
-                      checked={isOn}
-                      onChange={() => toggleSpecValue(def.key, opt)}
-                    />
-                    <span className={styles.facetLabel}>{optLabel}</span>
-                    <span className={styles.facetCount}>{count}</span>
-                  </label>
-                );
-              })}
-            </div>
+            <FacetOptionList
+              facetKey={def.key}
+              options={options}
+              selected={selected}
+              onToggle={(opt) => toggleSpecValue(def.key, opt)}
+              locale={locale}
+            />
           </AccordionSection>
         );
       })}
-
-      {brandOptions.length > 0 && (
-        <AccordionSection
-          id="brands"
-          title={t("brandsInDepartment")}
-          isOpen={openSections.brands ?? false}
-          onToggle={() => toggleSection("brands")}
-        >
-          <div className={styles.facetList}>
-            {brandOptions.map(({ value: b, count }) => {
-              const isOn = filters.brands.includes(b);
-              return (
-                <label key={b} className={styles.facetRow}>
-                  <input type="checkbox" checked={isOn} onChange={() => toggleBrand(b)} />
-                  <span className={styles.facetLabel}>{b}</span>
-                  <span className={styles.facetCount}>{count}</span>
-                </label>
-              );
-            })}
-          </div>
-        </AccordionSection>
-      )}
-
-      <AccordionSection
-        id="price"
-        title={t("priceRange")}
-        isOpen={openSections.price ?? false}
-        onToggle={() => toggleSection("price")}
-      >
-        <div className={styles.priceInputs}>
-          <input
-            type="number"
-            placeholder={t("priceMin")}
-            value={filters.pMin}
-            onChange={(e) => updateFilter("pMin", e.target.value)}
-          />
-          <input
-            type="number"
-            placeholder={t("priceMax")}
-            value={filters.pMax}
-            onChange={(e) => updateFilter("pMax", e.target.value)}
-          />
-        </div>
-      </AccordionSection>
 
       <AccordionSection
         id="listing"
@@ -366,20 +457,6 @@ export function FilterSidebar({
         </div>
       </AccordionSection>
 
-      <div className={styles.checkboxGroup}>
-        <label className={styles.checkboxLabel}>
-          <input type="checkbox" checked={filters.onSale} onChange={(e) => updateFilter("onSale", e.target.checked)} />
-          {t("onSale")}
-        </label>
-        <label className={styles.checkboxLabel}>
-          <input type="checkbox" checked={filters.inStock} onChange={(e) => updateFilter("inStock", e.target.checked)} />
-          {t("inStock")}
-        </label>
-        <label className={styles.checkboxLabel}>
-          <input type="checkbox" checked={filters.featured} onChange={(e) => updateFilter("featured", e.target.checked)} />
-          {t("featured")}
-        </label>
-      </div>
     </aside>
   );
 }

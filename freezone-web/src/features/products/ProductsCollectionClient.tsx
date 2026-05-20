@@ -30,7 +30,8 @@ import {
   type CatalogProductsQuery,
 } from "@/lib/catalog-products-api";
 import { facetValueForFilter } from "@/lib/classification/legacy-spec-map";
-import { sanitizeFacetFilterToken } from "@/lib/classification/facet-filter-token";
+import { sanitizeFacetFilterToken, formatFacetFilterLabel } from "@/lib/classification/facet-filter-token";
+import { getFacetDisplayLabel } from "@/lib/catalog-facet-ui";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 export type SortOption = "featured" | "relevant" | "price-asc" | "price-desc" | "date-new" | "date-old";
 
@@ -369,6 +370,69 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
 
   const queryChips = useMemo(() => tokenizeSearchQueryDisplay(query), [query]);
 
+  const activeCategory = useMemo(
+    () => categories.find((c) => c.id === filters.cat),
+    [categories, filters.cat],
+  );
+
+  const filterChips = useMemo(() => {
+    const chips: { key: string; label: string; remove: () => void }[] = [];
+    if (filters.inStock) {
+      chips.push({
+        key: "inStock",
+        label: t("inStock"),
+        remove: () => setFilters((p) => ({ ...p, inStock: false })),
+      });
+    }
+    if (filters.onSale) {
+      chips.push({
+        key: "onSale",
+        label: t("onSale"),
+        remove: () => setFilters((p) => ({ ...p, onSale: false })),
+      });
+    }
+    if (filters.featured) {
+      chips.push({
+        key: "featured",
+        label: t("featured"),
+        remove: () => setFilters((p) => ({ ...p, featured: false })),
+      });
+    }
+    if (filters.pMin || filters.pMax) {
+      chips.push({
+        key: "price",
+        label: `${filters.pMin || "0"} – ${filters.pMax || "∞"}`,
+        remove: () => setFilters((p) => ({ ...p, pMin: "", pMax: "" })),
+      });
+    }
+    for (const b of filters.brands) {
+      chips.push({
+        key: `brand-${b}`,
+        label: b,
+        remove: () => setFilters((p) => ({ ...p, brands: p.brands.filter((x) => x !== b) })),
+      });
+    }
+    for (const [facetKey, vals] of Object.entries(filters.specSelections)) {
+      for (const v of vals) {
+        const token = sanitizeFacetFilterToken(facetKey, v) ?? v;
+        chips.push({
+          key: `${facetKey}-${token}`,
+          label: `${getFacetDisplayLabel(facetKey, locale)}: ${formatFacetFilterLabel(facetKey, token, undefined, locale)}`,
+          remove: () =>
+            setFilters((p) => {
+              const cur = p.specSelections[facetKey] ?? [];
+              const next = cur.filter((x) => x !== v && x !== token);
+              const nextSpecs = { ...p.specSelections };
+              if (next.length) nextSpecs[facetKey] = next;
+              else delete nextSpecs[facetKey];
+              return { ...p, specSelections: nextSpecs };
+            }),
+        });
+      }
+    }
+    return chips;
+  }, [filters, locale, t, setFilters]);
+
   const removeQueryChip = (chip: string) => {
     const next = queryChips.filter((c) => c !== chip);
     setQuery(next.join(" "));
@@ -391,6 +455,20 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
   return (
     <>
       <MotionReveal delay={0.04} className={`container ${collStyles.collectionWide} ${productsStyles.productsPageShell}`}>
+        {activeCategory ? (
+          <header className={collStyles.collectionHeader}>
+            <h1 className={collStyles.collectionTitle}>
+              {locale === "ar" ? activeCategory.nameAr || activeCategory.name : activeCategory.name}
+            </h1>
+            <p className={collStyles.collectionMeta}>
+              <Trans
+                i18nKey="Products.showingResults"
+                values={{ count: displayCount }}
+                components={{ b: <strong /> }}
+              />
+            </p>
+          </header>
+        ) : null}
         <div className={collStyles.toolbar}>
           <div className={collStyles.toolbarLeft}>
             <button
@@ -412,7 +490,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
                 aria-label={t("sortBy")}
               >
                 <option value="featured">{t("sortFeatured")}</option>
-                <option value="relevant">{t("sortRelevant")}</option>
+                <option value="relevant">{t("sortRelevant", { defaultValue: "Name A–Z" })}</option>
                 <option value="price-asc">{t("sortPriceLow")}</option>
                 <option value="price-desc">{t("sortPriceHigh")}</option>
                 <option value="date-new">{t("sortNew")}</option>
@@ -433,6 +511,25 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
           <div className={collStyles.sidebarDesktop}>{filterAside}</div>
 
           <div className={productsStyles.mainCol}>
+            {filterChips.length > 0 ? (
+              <div className={collStyles.activeChips} role="list" aria-label={t("activeFiltersAria", { defaultValue: "Active filters" })}>
+                {filterChips.map((chip) => (
+                  <button
+                    key={chip.key}
+                    type="button"
+                    role="listitem"
+                    className={collStyles.filterChip}
+                    onClick={chip.remove}
+                  >
+                    {chip.label}
+                    <X size={12} aria-hidden />
+                  </button>
+                ))}
+                <button type="button" className={collStyles.clearChipsBtn} onClick={clearFilters}>
+                  {t("clearFilters")}
+                </button>
+              </div>
+            ) : null}
             <div className={productsStyles.topBar}>
               <div className={productsStyles.searchColumn}>
                 <div className={productsStyles.searchWrapper}>

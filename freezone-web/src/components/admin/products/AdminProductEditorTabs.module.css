@@ -1,0 +1,33 @@
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 20px;
+  padding: 4px;
+  background: var(--admin-surface-muted, #1e293b);
+  border-radius: 10px;
+  border: 1px solid var(--admin-border, #334155);
+}
+
+.tab {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--admin-muted, #94a3b8);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tab:hover {
+  color: var(--admin-text, #f1f5f9);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tabActive {
+  background: var(--admin-accent, #0b1f3b);
+  color: #fff;
+}

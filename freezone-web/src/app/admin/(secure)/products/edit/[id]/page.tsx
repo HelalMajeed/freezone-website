@@ -13,6 +13,11 @@ import { useCategoryAttributeSchema } from "@/lib/admin/use-category-attribute-s
 import { AdminProductSpecFields } from "@/components/admin/products/AdminProductSpecFields";
 import { AdminProductFormSection } from "@/components/admin/products/AdminProductFormSection";
 import { AdminProductVariantsSection } from "@/components/admin/products/AdminProductVariantsSection";
+import {
+  AdminProductEditorTabs,
+  type ProductEditorTab,
+} from "@/components/admin/products/AdminProductEditorTabs";
+import { AdminProductPreviewPanel } from "@/components/admin/products/AdminProductPreviewPanel";
 import { freezoneApiUrl } from "@/lib/api-internal";
 
 type Category = {
@@ -87,6 +92,7 @@ export default function AdminEditProductPage() {
   const [replaceImageId, setReplaceImageId] = useState<number | null>(null);
   const [galleryUrlDraft, setGalleryUrlDraft] = useState("");
   const [addingGalleryUrls, setAddingGalleryUrls] = useState(false);
+  const [editorTab, setEditorTab] = useState<ProductEditorTab>("basic");
   const [displaySpecs, setDisplaySpecs] = useState<Record<string, string>>({});
   const [filterSpecs, setFilterSpecs] = useState<Record<string, string>>({});
   const {
@@ -392,8 +398,20 @@ export default function AdminEditProductPage() {
       {err && <p style={{ color: "#fecaca", marginBottom: 12 }}>{err}</p>}
       {msg && <p style={{ color: "#86efac", marginBottom: 12 }}>{msg}</p>}
 
+      <AdminProductEditorTabs active={editorTab} onChange={setEditorTab} />
+
       <form onSubmit={saveProduct} style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 32 }}>
-        <AdminProductFormSection title="المعلومات الأساسية (Basic Info)" subtitle="الاسم، العلامة، القسم، السعر، المخزون، الحالة">
+        {(editorTab === "basic" || editorTab === "pricing") && (
+        <AdminProductFormSection
+          title={editorTab === "pricing" ? "Pricing & Stock" : "Basic Info"}
+          subtitle={
+            editorTab === "pricing"
+              ? "السعر، SKU، المخزون، الحالة"
+              : "الاسم، العلامة، القسم، الوصف"
+          }
+        >
+        {editorTab === "basic" ? (
+        <>
         <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>القسم الرئيسي</label>
         <select
           value={product.categoryId}
@@ -510,7 +528,11 @@ export default function AdminEditProductPage() {
           rows={2}
           style={field}
         />
+        </>
+        ) : null}
 
+        {editorTab === "pricing" ? (
+        <>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <input
             placeholder="السعر IQD"
@@ -551,7 +573,7 @@ export default function AdminEditProductPage() {
           style={field}
         />
         <input
-          placeholder="سطر مختصر للبطاقة (legacy — ليس المواصفات التفصيلية)"
+          placeholder="سطر مختصر للبطاقة (legacy)"
           value={product.storage}
           onChange={(e) => setProduct({ ...product, storage: e.target.value })}
           style={field}
@@ -587,9 +609,14 @@ export default function AdminEditProductPage() {
             منشور في المتجر
           </label>
         </div>
+        </>
+        ) : null}
         </AdminProductFormSection>
+        )}
 
+        {editorTab === "filters" ? (
         <AdminProductSpecFields
+          section="filter"
           attributes={categoryAttributes}
           displaySpecs={displaySpecs}
           filterSpecs={filterSpecs}
@@ -598,50 +625,32 @@ export default function AdminEditProductPage() {
           onChangeFilter={(key, value) => setFilterSpecs((prev) => ({ ...prev, [key]: value }))}
           fieldStyle={field}
         />
+        ) : null}
 
-        <AdminProductVariantsSection />
-
-        <input
-          placeholder="أيقونة (emoji)"
-          value={product.icon}
-          onChange={(e) => setProduct({ ...product, icon: e.target.value })}
-          style={field}
+        {editorTab === "display" ? (
+        <AdminProductSpecFields
+          section="display"
+          attributes={categoryAttributes}
+          displaySpecs={displaySpecs}
+          filterSpecs={filterSpecs}
+          loading={schemaLoading}
+          onChangeDisplay={(key, value) => setDisplaySpecs((prev) => ({ ...prev, [key]: value }))}
+          onChangeFilter={(key, value) => setFilterSpecs((prev) => ({ ...prev, [key]: value }))}
+          fieldStyle={field}
         />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-          <input
-            placeholder="تقييم"
-            type="number"
-            step="0.1"
-            value={product.rating}
-            onChange={(e) => setProduct({ ...product, rating: parseFloat(e.target.value) || 0 })}
-            style={field}
-          />
-          <input
-            placeholder="مراجعات"
-            type="number"
-            value={product.reviews}
-            onChange={(e) => setProduct({ ...product, reviews: parseInt(e.target.value, 10) || 0 })}
-            style={field}
-          />
-          <input
-            placeholder="مبيعات"
-            type="number"
-            value={product.sales}
-            onChange={(e) => setProduct({ ...product, sales: parseInt(e.target.value, 10) || 0 })}
-            style={field}
-          />
-        </div>
+        ) : null}
 
-        <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>نموذج 3D — رابط أو رفع ملف</label>
-        <input
-          dir="ltr"
-          placeholder="رابط .glb إن وُجد"
-          value={product.model3d ?? ""}
-          onChange={(e) => setProduct({ ...product, model3d: e.target.value || null })}
-          style={field}
-        />
-        <input type="file" accept=".glb,.gltf" onChange={onModel3dFile} style={{ fontSize: 13, color: "var(--admin-text)" }} />
+        {editorTab === "variants" ? <AdminProductVariantsSection /> : null}
 
+        {editorTab === "preview" ? (
+          <AdminProductPreviewPanel
+            displaySpecs={displaySpecs}
+            filterSpecs={filterSpecs}
+            attributes={categoryAttributes}
+          />
+        ) : null}
+
+        {editorTab !== "images" && editorTab !== "preview" ? (
         <button
           type="submit"
           disabled={saving}
@@ -658,9 +667,24 @@ export default function AdminEditProductPage() {
         >
           {saving ? "جاري الحفظ…" : "حفظ بيانات المنتج"}
         </button>
+        ) : null}
       </form>
 
-      <h2 style={{ fontSize: 18, marginBottom: 12 }}>معرض الصور</h2>
+      {editorTab === "images" ? (
+      <>
+      <h2 style={{ fontSize: 18, marginBottom: 12 }}>Images</h2>
+      <label style={{ color: "var(--admin-muted)", fontSize: 13, display: "block", marginBottom: 8 }}>
+        نموذج 3D — رابط أو رفع ملف
+      </label>
+      <input
+        dir="ltr"
+        placeholder="رابط .glb إن وُجد"
+        value={product.model3d ?? ""}
+        onChange={(e) => setProduct({ ...product, model3d: e.target.value || null })}
+        style={{ ...field, marginBottom: 10 }}
+      />
+      <input type="file" accept=".glb,.gltf" onChange={onModel3dFile} style={{ fontSize: 13, color: "var(--admin-text)", marginBottom: 20 }} />
+      <h3 style={{ fontSize: 16, marginBottom: 12 }}>معرض الصور</h3>
       <input
         type="file"
         id="replace-image-input"
@@ -805,6 +829,8 @@ export default function AdminEditProductPage() {
       {product.images.length === 0 && (
         <p style={{ color: "var(--admin-muted)", fontSize: 14 }}>لا توجد صور — أضف من الرفع أو المكتبة أو رابط https.</p>
       )}
+      </>
+      ) : null}
     </div>
   );
 }

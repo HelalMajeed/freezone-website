@@ -16,6 +16,8 @@ type Props = {
   fieldStyle: CSSProperties;
   locale?: "en" | "ar";
   loading?: boolean;
+  /** When set, only render filterable or display-only sections (for tabbed editor). */
+  section?: "filter" | "display" | "both";
 };
 
 function AttributeField({
@@ -213,8 +215,11 @@ export function AdminProductSpecFields({
   fieldStyle,
   locale = "ar",
   loading,
+  section = "both",
 }: Props) {
   const { filterableSpecs, extendedSpecs } = partitionFacetAttributes(attributes);
+  const showFilter = section === "both" || section === "filter";
+  const showDisplay = section === "both" || section === "display";
 
   if (loading) {
     return <p style={{ fontSize: 13, color: "var(--admin-muted)" }}>جاري تحميل مواصفات القسم…</p>;
@@ -231,53 +236,57 @@ export function AdminProductSpecFields({
 
   return (
     <>
-      <AdminProductFormSection
-        title="مواصفات الفلاتر (Filterable Specs)"
-        subtitle="filterable=true — تظهر في صفحة القسم/البحث بقيم مختصرة فقط. أدخل نص العرض الكامل + قيمة الفلتر المنفصلة."
-        badge={`${filterableSpecs.length} حقل`}
-      >
-        {filterableSpecs.length === 0 ? (
-          <p style={{ margin: 0, fontSize: 13, color: "var(--admin-muted)" }}>لا توجد فلاتر لهذا القسم.</p>
-        ) : (
-          filterableSpecs.map((attr) => (
-            <AttributeField
-              key={attr.key}
-              attr={attr}
-              displayValue={displaySpecs[attr.key] ?? ""}
-              filterValue={filterSpecs[attr.key] ?? ""}
-              showFilterField
-              onChangeDisplay={(v) => onChangeDisplay(attr.key, v)}
-              onChangeFilter={(v) => onChangeFilter(attr.key, v)}
-              fieldStyle={fieldStyle}
-              locale={locale}
-            />
-          ))
-        )}
-      </AdminProductFormSection>
+      {showFilter ? (
+        <AdminProductFormSection
+          title="Filter Values"
+          subtitle="قيم مختصرة للفلاتر فقط (Core i7، RTX 5070). النص الطويل في Display Specs."
+          badge={`${filterableSpecs.length} حقل`}
+        >
+          {filterableSpecs.length === 0 ? (
+            <p style={{ margin: 0, fontSize: 13, color: "var(--admin-muted)" }}>لا توجد فلاتر لهذا القسم.</p>
+          ) : (
+            filterableSpecs.map((attr) => (
+              <AttributeField
+                key={attr.key}
+                attr={attr}
+                displayValue={displaySpecs[attr.key] ?? ""}
+                filterValue={filterSpecs[attr.key] ?? ""}
+                showFilterField
+                onChangeDisplay={(v) => onChangeDisplay(attr.key, v)}
+                onChangeFilter={(v) => onChangeFilter(attr.key, v)}
+                fieldStyle={fieldStyle}
+                locale={locale}
+              />
+            ))
+          )}
+        </AdminProductFormSection>
+      ) : null}
 
-      <AdminProductFormSection
-        title="المواصفات التفصيلية (Extended Specs)"
-        subtitle="filterable=false — تظهر كاملة في صفحة المنتج فقط ولا تظهر في شريط الفلاتر."
-        badge={`${extendedSpecs.length} حقل`}
-      >
-        {extendedSpecs.length === 0 ? (
-          <p style={{ margin: 0, fontSize: 13, color: "var(--admin-muted)" }}>لا توجد مواصفات تفصيلية إضافية.</p>
-        ) : (
-          extendedSpecs.map((attr) => (
-            <AttributeField
-              key={attr.key}
-              attr={attr}
-              displayValue={displaySpecs[attr.key] ?? ""}
-              filterValue=""
-              showFilterField={false}
-              onChangeDisplay={(v) => onChangeDisplay(attr.key, v)}
-              onChangeFilter={() => {}}
-              fieldStyle={fieldStyle}
-              locale={locale}
-            />
-          ))
-        )}
-      </AdminProductFormSection>
+      {showDisplay ? (
+        <AdminProductFormSection
+          title="Display Specs"
+          subtitle="مواصفات صفحة المنتج — نص كامل (processor_full، gpu_full…)."
+          badge={`${extendedSpecs.length} حقل`}
+        >
+          {extendedSpecs.length === 0 ? (
+            <p style={{ margin: 0, fontSize: 13, color: "var(--admin-muted)" }}>لا توجد مواصفات تفصيلية إضافية.</p>
+          ) : (
+            extendedSpecs.map((attr) => (
+              <AttributeField
+                key={attr.key}
+                attr={attr}
+                displayValue={displaySpecs[attr.key] ?? ""}
+                filterValue=""
+                showFilterField={false}
+                onChangeDisplay={(v) => onChangeDisplay(attr.key, v)}
+                onChangeFilter={() => {}}
+                fieldStyle={fieldStyle}
+                locale={locale}
+              />
+            ))
+          )}
+        </AdminProductFormSection>
+      ) : null}
     </>
   );
 }
