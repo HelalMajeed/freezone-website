@@ -14,6 +14,7 @@
     "db:seed": "prisma db seed",
     "classification:seed": "npx tsx scripts/seed-classification-only.ts",
     "classification:sync-legacy": "npx tsx scripts/sync-legacy-product-specs.ts",
+    "classification:repair-laptop-filters": "npx tsx scripts/repair-laptop-filter-values.ts",
     "classification:repair": "npm run classification:seed && npm run classification:sync-legacy",
     "db:seed:classification": "npm run classification:seed",
     "db:sync:legacy-specs": "npm run classification:sync-legacy",

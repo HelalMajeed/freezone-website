@@ -1,4 +1,12 @@
 import { facetValueForFilter } from "./legacy-spec-map";
+import {
+  extractDisplayResolution,
+  extractRefreshRateHz,
+  extractRamSizeGb,
+  extractScreenSizeInches,
+  extractStorageSizeGb,
+  sanitizeStoredScreenSize,
+} from "./laptop-filter-extract";
 
 /**
  * Derive short normalized filter token from full display text.
@@ -14,18 +22,20 @@ export function normalizeFilterValue(attributeKey: string, displayText: string):
   const key = attributeKey.toLowerCase();
 
   if (key === "ram_size" || key === "ram") {
-    const m = s.match(/(\d+)\s*GB/i);
-    if (m) return m[1];
+    const gb = extractRamSizeGb(s);
+    if (gb) return gb;
   }
   if (key === "storage_size" || key === "storage") {
-    const tb = s.match(/(\d+(?:\.\d+)?)\s*TB/i);
-    if (tb) return String(Math.round(parseFloat(tb[1]) * 1024));
-    const gb = s.match(/(\d+)\s*GB/i);
-    if (gb) return gb[1];
+    const gb = extractStorageSizeGb(s);
+    if (gb) return gb;
+  }
+  if (key === "display_resolution" || key === "screen_resolution" || key === "resolution") {
+    const res = extractDisplayResolution(s);
+    if (res) return res;
   }
   if (key === "screen_size" || key === "size_inch") {
-    const inch = s.match(/(\d+(?:\.\d+)?)\s*[-\s]?inch/i) ?? s.match(/(\d+(?:\.\d+)?)\s*"/i);
-    if (inch) return inch[1];
+    const inch = extractScreenSizeInches(s) ?? sanitizeStoredScreenSize(s);
+    if (inch) return inch;
   }
   if (key === "weight") {
     const kg = s.match(/(\d+(?:\.\d+)?)\s*kg/i);
@@ -38,8 +48,8 @@ export function normalizeFilterValue(attributeKey: string, displayText: string):
     if (mah) return mah[1];
   }
   if (key === "refresh_rate") {
-    const hz = s.match(/(\d+)\s*Hz/i);
-    if (hz) return hz[1];
+    const hz = extractRefreshRateHz(s);
+    if (hz) return hz;
   }
   if (key === "storage_type") {
     if (/nvme/i.test(s)) return "SSD";

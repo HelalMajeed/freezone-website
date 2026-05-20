@@ -1,5 +1,6 @@
 import { facetValueForFilter } from "./legacy-spec-map";
 import { normalizeFilterValue } from "./filter-value";
+import { sanitizeStoredScreenSize } from "./laptop-filter-extract";
 
 /** Max length for a filter facet label in sidebar / URL. */
 export const MAX_FACET_FILTER_TOKEN_LEN = 48;
@@ -26,6 +27,13 @@ export function sanitizeFacetFilterToken(attributeKey: string, raw: string | und
 
   const normalized =
     facetValueForFilter(attributeKey, trimmed) ?? normalizeFilterValue(attributeKey, trimmed);
+
+  const key = attributeKey.toLowerCase();
+  if (key === "screen_size" || key === "size_inch") {
+    const inch = sanitizeStoredScreenSize(normalized ?? trimmed);
+    return inch;
+  }
+
   if (normalized && !isLongMarketingFacetText(normalized)) {
     return normalized;
   }

@@ -29,8 +29,11 @@ const prisma = new PrismaClient();
 
 function formatPreview(p: LegacySyncPreview): string {
   const parts = [
-    p.processor_family != null ? `processor_family=${p.processor_family}` : null,
+    p.screen_size != null ? `screen_size=${p.screen_size}` : null,
+    p.display_resolution != null ? `display_resolution=${p.display_resolution}` : null,
+    p.refresh_rate != null ? `refresh_rate=${p.refresh_rate}` : null,
     p.gpu_model != null ? `gpu_model=${p.gpu_model}` : null,
+    p.processor_family != null ? `processor_family=${p.processor_family}` : null,
     p.ram_size != null ? `ram_size=${p.ram_size}` : null,
     p.storage_size != null ? `storage_size=${p.storage_size}` : null,
   ].filter(Boolean);

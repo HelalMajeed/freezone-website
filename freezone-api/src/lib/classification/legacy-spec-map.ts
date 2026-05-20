@@ -1,3 +1,14 @@
+import {
+  extractDisplayResolution,
+  extractGpuModel,
+  extractProcessorFamily,
+  extractRamSizeGb,
+  extractRefreshRateHz,
+  extractScreenSizeInches,
+  extractStorageSizeGb,
+  sanitizeStoredScreenSize,
+} from "./laptop-filter-extract";
+
 /** Legacy `product.specs` keys → current `CategoryAttribute.key` per category slug. */
 export const LEGACY_SPEC_KEY_ALIASES: Record<string, Record<string, string[]>> = {
   laptops: {
@@ -63,48 +74,40 @@ export function normalizeLegacySpecDisplay(attributeKey: string, raw: string): s
   if (!s) return "";
 
   if (attributeKey === "ram_size" || attributeKey === "ram") {
-    const m = s.match(/(\d+)\s*GB/i);
-    if (m) return m[1];
+    const gb = extractRamSizeGb(s);
+    if (gb) return gb;
   }
   if (attributeKey === "storage_size" || attributeKey === "storage") {
-    const tb = s.match(/(\d+(?:\.\d+)?)\s*TB/i);
-    if (tb) return String(Math.round(parseFloat(tb[1]) * 1024));
-    const gb = s.match(/(\d+)\s*GB/i);
-    if (gb) return gb[1];
+    const gb = extractStorageSizeGb(s);
+    if (gb) return gb;
   }
   if (attributeKey === "screen_size" || attributeKey === "size_inch") {
-    const inch = s.match(/(\d+(?:\.\d+)?)\s*[-\s]?inch/i) ?? s.match(/(\d+(?:\.\d+)?)\s*"/i);
-    if (inch) return inch[1];
-    const cm = s.match(/(\d+(?:\.\d+)?)\s*cm/i);
-    if (cm) return String(Math.round((parseFloat(cm[1]) / 2.54) * 10) / 10);
+    const inch = extractScreenSizeInches(s) ?? sanitizeStoredScreenSize(s);
+    if (inch) return inch;
+    return "";
+  }
+  if (attributeKey === "display_resolution" || attributeKey === "screen_resolution" || attributeKey === "resolution") {
+    const res = extractDisplayResolution(s);
+    if (res) return res;
+    return "";
   }
   if (attributeKey === "refresh_rate") {
-    const hz = s.match(/(\d+)\s*Hz/i);
-    if (hz) return hz[1];
+    const hz = extractRefreshRateHz(s);
+    if (hz) return hz;
+    return "";
   }
   if (attributeKey === "battery_capacity") {
     const mah = s.match(/(\d+)\s*mAh/i);
     if (mah) return mah[1];
   }
   if (attributeKey === "processor_family" || attributeKey === "cpu" || attributeKey === "chipset") {
-    const ultra = s.match(/(?:Core[^0-9]*)?Ultra[^0-9]*(\d+)/i);
-    if (ultra) return `Ultra ${ultra[1]}`;
-    const coreI = s.match(/Core[^0-9]*i\s*([3579])/i);
-    if (coreI) return `Core i${coreI[1]}`;
-    const ryzenAi = s.match(/Ryzen[^0-9]*AI[^0-9]*(\d+)/i);
-    if (ryzenAi) return `Ryzen AI ${ryzenAi[1]}`;
-    const ryzen = s.match(/Ryzen[^0-9]*(\d+)/i);
-    if (ryzen) return `Ryzen ${ryzen[1]}`;
-    const apple = s.match(/Apple\s*M\d(?:\s*(?:Pro|Max|Ultra))?/i);
-    if (apple) return apple[0].replace(/\s+/g, " ").trim();
-    const snap = s.match(/Snapdragon\s*\d+/i);
-    if (snap) return snap[0].replace(/\s+/g, " ").trim();
-    if (/Intel\s*Core/i.test(s)) return "Intel Core";
+    const fam = extractProcessorFamily(s);
+    if (fam) return fam;
     return "";
   }
   if (attributeKey === "gpu_model" || attributeKey === "gpu") {
-    const m = s.match(/RTX\s*\d+/i) ?? s.match(/GTX\s*\d+/i) ?? s.match(/RX\s*\d+/i);
-    if (m) return m[0].toUpperCase();
+    const gpu = extractGpuModel(s);
+    if (gpu) return gpu;
     return "";
   }
   if (attributeKey === "storage_type") {
@@ -112,7 +115,7 @@ export function normalizeLegacySpecDisplay(attributeKey: string, raw: string): s
     if (/hdd/i.test(s)) return "HDD";
   }
 
-  return s.length > 96 ? `${s.slice(0, 96)}…` : s;
+  return "";
 }
 
 /** Attributes where URL filter uses normalized labels and fuzzy text match. */
