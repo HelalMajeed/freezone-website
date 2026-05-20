@@ -23,6 +23,7 @@ import {
   History,
   PanelLeftClose,
   PanelLeft,
+  Menu,
   Search,
   Bell,
   HelpCircle,
@@ -142,10 +143,12 @@ function breadcrumbTrail(pathname: string, flatNav: NavItem[]) {
 function AdminTopBar({
   collapsed,
   onToggleSidebar,
+  onOpenMobileNav,
   flatNav,
 }: {
   collapsed: boolean;
   onToggleSidebar: () => void;
+  onOpenMobileNav: () => void;
   flatNav: NavItem[];
 }) {
   const navigate = useNavigate();
@@ -160,6 +163,9 @@ function AdminTopBar({
   return (
     <header className={styles.topbar}>
       <div className={styles.topbarLeft}>
+        <button type="button" className={styles.mobileMenuBtn} aria-label="فتح القائمة" onClick={onOpenMobileNav}>
+          <Menu size={20} />
+        </button>
         <nav aria-label="مسار التنقل">
           <ol className={styles.breadcrumbs}>
             {crumbs.map((c, i) => (
@@ -239,13 +245,28 @@ export function AdminAppShell() {
   const { t, i18n } = useTranslation();
   const pathname = useLocation().pathname ?? "";
   const { collapsed, toggle } = useSidebarCollapsed();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
 
   const groups = useMemo(() => makeAdminNavGroups(t), [t, i18n.language]);
   const flatNav = useMemo(() => groups.flatMap((g) => g.items), [groups]);
 
   return (
     <div className={`admin-root ${styles.root}`}>
-      <aside className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ""}`}>
+      {mobileNavOpen ? (
+        <button
+          type="button"
+          className={styles.sidebarBackdrop}
+          aria-label="إغلاق القائمة"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      ) : null}
+      <aside
+        className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ""} ${mobileNavOpen ? styles.sidebarMobileOpen : ""}`}
+      >
         <div className={styles.brand}>
           <div className={styles.brandMark}>
             <Store size={18} aria-hidden />
@@ -294,7 +315,12 @@ export function AdminAppShell() {
       </aside>
 
       <div className={styles.main}>
-        <AdminTopBar collapsed={collapsed} onToggleSidebar={toggle} flatNav={flatNav} />
+        <AdminTopBar
+          collapsed={collapsed}
+          onToggleSidebar={toggle}
+          onOpenMobileNav={() => setMobileNavOpen(true)}
+          flatNav={flatNav}
+        />
         <div className={styles.content}>
           <Outlet />
         </div>

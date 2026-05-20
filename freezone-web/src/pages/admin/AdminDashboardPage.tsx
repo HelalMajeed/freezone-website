@@ -12,6 +12,8 @@ import {
   ImageOff,
   Filter,
   FileWarning,
+  Store,
+  RefreshCcw,
 } from "lucide-react";
 import { freezoneApiUrl } from "@/lib/api-internal";
 import { isDatabaseConfigured } from "@/lib/prisma";
@@ -144,6 +146,14 @@ export default function AdminDashboardPage() {
               <Link to="/admin/classification" className={ui.quickAction}>
                 <Filter size={20} />
                 أدوات التصنيف
+              </Link>
+              <Link to="/admin/classification" className={ui.quickAction}>
+                <RefreshCcw size={20} />
+                مزامنة المواصفات
+              </Link>
+              <Link to="/" target="_blank" rel="noopener noreferrer" className={ui.quickAction}>
+                <Store size={20} />
+                عرض المتجر
               </Link>
               <Link to="/admin/media" className={ui.quickAction}>
                 <ImageOff size={20} />

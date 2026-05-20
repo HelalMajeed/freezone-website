@@ -54,9 +54,27 @@ export default function AdminDataQualityPage() {
         title="جودة البيانات"
         description="مراجعة المنتجات والفلاتر والمواصفات قبل النشر. لا يتم تعديل البيانات تلقائيًا من هذه الصفحة."
         actions={
-          <Link className={ui.btnSm} to="/admin/classification">
-            أدوات التصنيف →
-          </Link>
+          <>
+            <button
+              type="button"
+              className={ui.btnSm}
+              disabled={!q.data?.items?.length}
+              onClick={() => {
+                const blob = new Blob([JSON.stringify(q.data, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `data-quality-${tab}-p${page}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+            >
+              تصدير JSON
+            </button>
+            <Link className={ui.btnSm} to="/admin/classification">
+              أدوات التصنيف →
+            </Link>
+          </>
         }
       />
 
