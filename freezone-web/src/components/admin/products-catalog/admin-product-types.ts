@@ -12,6 +12,8 @@ export type AdminProductRow = {
   price: number;
   oldPrice: number | null;
   brand: string;
+  sku?: string;
+  model?: string;
   quantity: number;
   inStock: boolean;
   featured: boolean;
@@ -103,6 +105,8 @@ export function parseAdminProductsFromApi(raw: unknown): AdminProductRow[] {
       price: typeof o.price === "number" ? o.price : Number(o.price) || 0,
       oldPrice: o.oldPrice == null ? null : typeof o.oldPrice === "number" ? o.oldPrice : Number(o.oldPrice) || null,
       brand: String(o.brand ?? ""),
+      sku: typeof o.sku === "string" ? o.sku : undefined,
+      model: typeof o.model === "string" ? o.model : undefined,
       quantity: typeof o.quantity === "number" ? o.quantity : Number(o.quantity) || 0,
       inStock: Boolean(o.inStock),
       featured: Boolean(o.featured),

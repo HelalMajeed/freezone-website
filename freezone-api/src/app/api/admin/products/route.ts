@@ -6,6 +6,11 @@ import { logAdminAction } from "@/lib/admin-audit";
 import { persistProductSpecsForProduct, validateProductSpecsAgainstCategory } from "@/lib/admin-product-specs";
 import { replaceProductSecondaryCategories } from "@/lib/sync-product-secondary-categories";
 import { productQueryMissingSecondarySupport } from "@/lib/prisma-product-secondary-fallback";
+import {
+  adminProductsOrderBy,
+  adminProductsWhere,
+  parseAdminProductsListQuery,
+} from "@/lib/admin-products-list";
 
 export async function GET(req: Request) {
   if (!isAdminAuthenticatedFromRequest(req)) {
@@ -14,6 +19,10 @@ export async function GET(req: Request) {
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
+  const url = new URL(req.url);
+  const listQuery = parseAdminProductsListQuery(url);
+  const paginated = url.searchParams.has("page") || url.searchParams.has("pageSize");
+
   const adminListIncludeBase = {
     category: { select: { slug: true, nameEn: true, nameAr: true } },
     brandRef: { select: { slug: true, nameEn: true, nameAr: true } },
@@ -21,22 +30,69 @@ export async function GET(req: Request) {
   };
 
   try {
+    const where = adminProductsWhere(listQuery);
+    const orderBy = adminProductsOrderBy(listQuery.sort);
+    const skip = (listQuery.page - 1) * listQuery.pageSize;
+    const take = paginated ? listQuery.pageSize : 200;
+
     let rows;
+    let total = 0;
     try {
-      rows = await prisma.product.findMany({
-        include: {
-          ...adminListIncludeBase,
-          secondaryCategories: { select: { categoryId: true } },
-        },
-        orderBy: { id: "desc" },
-        take: 200,
-      });
+      if (paginated) {
+        [total, rows] = await Promise.all([
+          prisma.product.count({ where }),
+          prisma.product.findMany({
+            where,
+            include: {
+              ...adminListIncludeBase,
+              secondaryCategories: { select: { categoryId: true } },
+            },
+            orderBy,
+            skip,
+            take,
+          }),
+        ]);
+      } else {
+        rows = await prisma.product.findMany({
+          include: {
+            ...adminListIncludeBase,
+            secondaryCategories: { select: { categoryId: true } },
+          },
+          orderBy: { id: "desc" },
+          take,
+        });
+        total = rows.length;
+      }
     } catch (e) {
       if (!productQueryMissingSecondarySupport(e)) throw e;
-      rows = await prisma.product.findMany({
-        include: { ...adminListIncludeBase },
-        orderBy: { id: "desc" },
-        take: 200,
+      if (paginated) {
+        [total, rows] = await Promise.all([
+          prisma.product.count({ where }),
+          prisma.product.findMany({
+            where,
+            include: { ...adminListIncludeBase },
+            orderBy,
+            skip,
+            take,
+          }),
+        ]);
+      } else {
+        rows = await prisma.product.findMany({
+          include: { ...adminListIncludeBase },
+          orderBy: { id: "desc" },
+          take,
+        });
+        total = rows.length;
+      }
+    }
+
+    if (paginated) {
+      return Response.json({
+        items: rows,
+        total,
+        page: listQuery.page,
+        pageSize: listQuery.pageSize,
+        totalPages: Math.max(1, Math.ceil(total / listQuery.pageSize)),
       });
     }
     return Response.json(rows);

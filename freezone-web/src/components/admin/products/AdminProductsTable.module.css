@@ -146,3 +146,40 @@
   color: var(--admin-muted);
   font-size: 0.85rem;
 }
+
+.mono {
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  color: var(--admin-muted);
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.pageBtn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border, #334155);
+  background: var(--admin-surface-muted, #1e293b);
+  color: var(--admin-text, #f1f5f9);
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.pageBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  font-size: 0.82rem;
+  color: var(--admin-muted);
+  font-weight: 600;
+}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { AdminProductCreateForm } from "@/components/admin/products-catalog/AdminProductCreateForm";
+import { AdminProductCreateForm } from "@/components/admin/products/AdminProductCreateForm";
 import { freezoneApiUrl } from "@/lib/api-internal";
 
 type Category = { id: number; slug: string; nameEn: string; nameAr?: string; facetKeys?: unknown };
@@ -64,18 +64,13 @@ export default function AdminNewProductPage() {
       </div>
       <h1 style={{ margin: "0 0 8px", fontSize: "1.5rem" }}>إضافة منتج جديد</h1>
       <p style={{ color: "var(--admin-muted)", marginBottom: 20, fontSize: 13, lineHeight: 1.55 }}>
-        اختر القسم والعلامة والأسعار والصور. حقول المواصفات حسب القسم اختيارية — اضبط facetKeys من «الأقسام».
+        نفس محرر التعديل: تبويبات Basic، Pricing، Filter Values، Display Specs، Images، Variants، Preview.
       </p>
 
       {loading ? (
         <p style={{ color: "var(--admin-muted)" }}>جاري التحميل…</p>
       ) : (
-        <AdminProductCreateForm
-          categories={categories}
-          brands={brands}
-          initialCategoryId={initialCategoryId}
-          onSuccess={() => navigate("/admin/products")}
-        />
+        <AdminProductCreateForm categories={categories} brands={brands} initialCategoryId={initialCategoryId} />
       )}
     </div>
   );

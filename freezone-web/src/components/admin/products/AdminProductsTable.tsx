@@ -1,40 +1,65 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { AdminProductRow } from "@/components/admin/products-catalog/admin-product-types";
-import { adminProductInCategory, brandLabel, formatIqd } from "@/components/admin/products-catalog/admin-product-types";
+import { brandLabel, formatIqd } from "@/components/admin/products-catalog/admin-product-types";
+import {
+  fetchAdminProductsList,
+  type AdminProductsListParams,
+} from "@/lib/admin/admin-products-api";
 import styles from "./AdminProductsTable.module.css";
 
 type CategoryOpt = { id: number; nameEn: string; nameAr?: string; slug: string };
 
-type Props = {
-  products: AdminProductRow[];
-  categories: CategoryOpt[];
-  loading?: boolean;
-  onRefresh?: () => void;
+const DEFAULT_PARAMS: AdminProductsListParams = {
+  page: 1,
+  pageSize: 25,
+  search: "",
+  categoryId: "",
+  published: "",
+  stock: "",
+  sort: "id_desc",
 };
 
-export function AdminProductsTable({ products, categories, loading }: Props) {
-  const [q, setQ] = useState("");
-  const [catId, setCatId] = useState("");
-  const [status, setStatus] = useState<"" | "published" | "draft">("");
-  const [stock, setStock] = useState<"" | "in" | "out">("");
+export function AdminProductsTable({ categories }: { categories: CategoryOpt[] }) {
+  const [params, setParams] = useState<AdminProductsListParams>(DEFAULT_PARAMS);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [items, setItems] = useState<AdminProductRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    const cid = catId ? Number(catId) : null;
-    return products.filter((p) => {
-      if (cid != null && Number.isFinite(cid) && !adminProductInCategory(p, cid)) return false;
-      if (status === "published" && !p.published) return false;
-      if (status === "draft" && p.published) return false;
-      if (stock === "in" && !p.inStock) return false;
-      if (stock === "out" && p.inStock) return false;
-      if (!needle) return true;
-      const hay = `${p.nameEn} ${p.nameAr} ${p.brand} ${p.id}`.toLowerCase();
-      return hay.includes(needle);
-    });
-  }, [products, q, catId, status, stock]);
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedSearch(params.search), 300);
+    return () => window.clearTimeout(t);
+  }, [params.search]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await fetchAdminProductsList({ ...params, search: debouncedSearch });
+      setItems(result.items);
+      setTotal(result.total);
+      setTotalPages(result.totalPages);
+    } catch {
+      setError("تعذّر تحميل المنتجات");
+      setItems([]);
+    }
+    setLoading(false);
+  }, [params, debouncedSearch]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const setPage = (page: number) => setParams((p) => ({ ...p, page: Math.max(1, page) }));
+
+  const patchParams = (patch: Partial<AdminProductsListParams>) => {
+    setParams((p) => ({ ...p, ...patch, page: 1 }));
+  };
 
   return (
     <div className={styles.wrap}>
@@ -42,11 +67,15 @@ export function AdminProductsTable({ products, categories, loading }: Props) {
         <input
           type="search"
           className={styles.input}
-          placeholder="بحث: اسم، SKU، موديل…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
+          placeholder="بحث: اسم، SKU، موديل، #id…"
+          value={params.search}
+          onChange={(e) => setParams((p) => ({ ...p, search: e.target.value, page: 1 }))}
         />
-        <select className={styles.select} value={catId} onChange={(e) => setCatId(e.target.value)}>
+        <select
+          className={styles.select}
+          value={params.categoryId}
+          onChange={(e) => patchParams({ categoryId: e.target.value })}
+        >
           <option value="">كل الأقسام</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
@@ -54,19 +83,48 @@ export function AdminProductsTable({ products, categories, loading }: Props) {
             </option>
           ))}
         </select>
-        <select className={styles.select} value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
+        <select
+          className={styles.select}
+          value={params.published}
+          onChange={(e) => patchParams({ published: e.target.value as AdminProductsListParams["published"] })}
+        >
           <option value="">كل الحالات</option>
           <option value="published">منشور</option>
           <option value="draft">مسودة</option>
         </select>
-        <select className={styles.select} value={stock} onChange={(e) => setStock(e.target.value as typeof stock)}>
+        <select
+          className={styles.select}
+          value={params.stock}
+          onChange={(e) => patchParams({ stock: e.target.value as AdminProductsListParams["stock"] })}
+        >
           <option value="">المخزون</option>
           <option value="in">متوفر</option>
           <option value="out">غير متوفر</option>
         </select>
-        <span className={styles.count}>{filtered.length} منتج</span>
+        <select
+          className={styles.select}
+          value={params.sort}
+          onChange={(e) => patchParams({ sort: e.target.value })}
+        >
+          <option value="id_desc">الأحدث</option>
+          <option value="id_asc">الأقدم</option>
+          <option value="name_asc">الاسم A–Z</option>
+          <option value="price_asc">السعر ↑</option>
+          <option value="price_desc">السعر ↓</option>
+        </select>
+        <select
+          className={styles.select}
+          value={params.pageSize}
+          onChange={(e) => patchParams({ pageSize: Number(e.target.value), page: 1 })}
+        >
+          <option value={10}>10 / صفحة</option>
+          <option value={25}>25 / صفحة</option>
+          <option value={50}>50 / صفحة</option>
+        </select>
+        <span className={styles.count}>{total} منتج</span>
       </div>
 
+      {error ? <p className={styles.muted}>{error}</p> : null}
       {loading ? (
         <p className={styles.muted}>جاري التحميل…</p>
       ) : (
@@ -76,6 +134,7 @@ export function AdminProductsTable({ products, categories, loading }: Props) {
               <tr>
                 <th>صورة</th>
                 <th>الاسم</th>
+                <th>SKU</th>
                 <th>القسم</th>
                 <th>العلامة</th>
                 <th>السعر</th>
@@ -85,7 +144,7 @@ export function AdminProductsTable({ products, categories, loading }: Props) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => {
+              {items.map((p) => {
                 const thumb = p.images[0]?.url;
                 return (
                   <tr key={p.id}>
@@ -102,6 +161,7 @@ export function AdminProductsTable({ products, categories, loading }: Props) {
                         <span className={styles.sub}>#{p.id}</span>
                       </div>
                     </td>
+                    <td className={styles.mono}>{p.sku && p.sku !== "—" ? p.sku : "—"}</td>
                     <td>{p.category.nameEn}</td>
                     <td>{brandLabel(p) || "—"}</td>
                     <td>{formatIqd(p.price)}</td>
@@ -130,9 +190,31 @@ export function AdminProductsTable({ products, categories, loading }: Props) {
               })}
             </tbody>
           </table>
-          {filtered.length === 0 ? <p className={styles.muted}>لا توجد منتجات.</p> : null}
+          {items.length === 0 ? <p className={styles.muted}>لا توجد منتجات.</p> : null}
         </div>
       )}
+
+      <div className={styles.pagination}>
+        <button
+          type="button"
+          className={styles.pageBtn}
+          disabled={params.page <= 1 || loading}
+          onClick={() => setPage(params.page - 1)}
+        >
+          السابق
+        </button>
+        <span className={styles.pageInfo}>
+          صفحة {params.page} من {totalPages}
+        </span>
+        <button
+          type="button"
+          className={styles.pageBtn}
+          disabled={params.page >= totalPages || loading}
+          onClick={() => setPage(params.page + 1)}
+        >
+          التالي
+        </button>
+      </div>
     </div>
   );
 }

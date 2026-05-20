@@ -75,6 +75,8 @@ export async function POST(req: Request) {
     nameEn?: string;
     nameAr?: string;
     slug?: string;
+    parentId?: number | null;
+    active?: boolean;
     icon?: string;
     color?: string;
     backgroundImageUrl?: string | null;
@@ -115,6 +117,9 @@ export async function POST(req: Request) {
         slug,
         nameEn,
         nameAr: nameAr || nameEn,
+        parentId:
+          body?.parentId != null && Number.isFinite(body.parentId) ? body.parentId : null,
+        active: body?.active !== false,
         icon: body?.icon?.trim() ?? "",
         color: body?.color?.trim() || "#64748b",
         backgroundImageUrl: bg,

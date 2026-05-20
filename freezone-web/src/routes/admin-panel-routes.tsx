@@ -12,6 +12,9 @@ const AdminProductsPage = lazy(() => import("@/app/admin/(secure)/products/page"
 const AdminNewProductPage = lazy(() => import("@/app/admin/(secure)/products/new/page"));
 const AdminProductEditPage = lazy(() => import("@/app/admin/(secure)/products/edit/[id]/page"));
 const AdminCategoriesPage = lazy(() => import("@/app/admin/(secure)/categories/page"));
+const AdminCategoryAttributesPage = lazy(
+  () => import("@/app/admin/(secure)/categories/[id]/attributes/page"),
+);
 const AdminBrandsPage = lazy(() => import("@/app/admin/(secure)/brands/page"));
 const AdminOrdersPage = lazy(() => import("@/app/admin/(secure)/orders/page"));
 const AdminCouponsPage = lazy(() => import("@/app/admin/(secure)/coupons/page"));
@@ -86,6 +89,14 @@ export const freezoneAdminRouteBranch = (
           element={
             <SuspensePage>
               <AdminCategoriesPage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="categories/:id/attributes"
+          element={
+            <SuspensePage>
+              <AdminCategoryAttributesPage />
             </SuspensePage>
           }
         />
