@@ -21,7 +21,10 @@ import * as adminCmsPageReorder from "./app/api/admin/cms-page/reorder/route";
 import * as adminCmsPageSections from "./app/api/admin/cms-page/sections/route";
 import * as adminCmsPageSectionsId from "./app/api/admin/cms-page/sections/[id]/route";
 import * as adminCoupons from "./app/api/admin/coupons/route";
+import * as adminDashboard from "./app/api/admin/dashboard/route";
 import * as adminDashboardStats from "./app/api/admin/dashboard-stats/route";
+import * as adminDataQuality from "./app/api/admin/data-quality/route";
+import * as adminClassificationPreview from "./app/api/admin/classification-preview/route";
 import * as adminLogin from "./app/api/admin/login/route";
 import * as adminLogout from "./app/api/admin/logout/route";
 import * as adminMedia from "./app/api/admin/media/route";
@@ -198,6 +201,15 @@ async function main() {
 
   app.get("/api/admin/dashboard-stats", async (req, res) => {
     await sendWebResponse(res, await adminDashboardStats.GET(webRequestFromExpress(req)));
+  });
+  app.get("/api/admin/dashboard", async (req, res) => {
+    await sendWebResponse(res, await adminDashboard.GET(webRequestFromExpress(req)));
+  });
+  app.get("/api/admin/data-quality", async (req, res) => {
+    await sendWebResponse(res, await adminDataQuality.GET(webRequestFromExpress(req)));
+  });
+  app.get("/api/admin/classification-preview", async (req, res) => {
+    await sendWebResponse(res, await adminClassificationPreview.GET(webRequestFromExpress(req)));
   });
   app.get("/api/admin/audit-log", async (req, res) => {
     await sendWebResponse(res, await adminAuditLog.GET(webRequestFromExpress(req)));

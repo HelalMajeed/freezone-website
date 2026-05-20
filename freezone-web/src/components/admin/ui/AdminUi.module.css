@@ -1,0 +1,336 @@
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 4px 32px;
+}
+
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--admin-text);
+}
+
+.pageDesc {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+  color: var(--admin-muted);
+  max-width: 560px;
+  line-height: 1.5;
+}
+
+.pageActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.statCard {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  padding: 16px;
+  box-shadow: var(--admin-shadow-card);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.statCard:hover {
+  border-color: rgba(181, 24, 34, 0.3);
+}
+
+.statLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--admin-muted);
+  margin-bottom: 6px;
+}
+
+.statValue {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--admin-text);
+  line-height: 1.1;
+}
+
+.statHint {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--admin-muted);
+}
+
+.statLink {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--admin-accent);
+  text-decoration: none;
+}
+
+.section {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  margin-bottom: 20px;
+  box-shadow: var(--admin-shadow-card);
+  overflow: hidden;
+}
+
+.sectionHead {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--admin-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--admin-text);
+}
+
+.sectionBody {
+  padding: 14px 18px 18px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.badgeOk {
+  background: rgba(22, 163, 74, 0.1);
+  color: #166534;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.badgeWarn {
+  background: rgba(234, 179, 8, 0.12);
+  color: #854d0e;
+  border-color: rgba(234, 179, 8, 0.35);
+}
+
+.badgeError {
+  background: rgba(239, 68, 68, 0.1);
+  color: #991b1b;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.badgeMuted {
+  background: var(--admin-surface-muted);
+  color: var(--admin-muted);
+  border-color: var(--admin-border);
+}
+
+.quickGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.quickAction {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--admin-radius-lg);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-muted);
+  text-decoration: none;
+  color: var(--admin-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.quickAction:hover {
+  border-color: rgba(181, 24, 34, 0.35);
+  background: var(--admin-surface);
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table th {
+  text-align: start;
+  padding: 10px 12px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--admin-muted);
+  border-bottom: 1px solid var(--admin-border);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--admin-border);
+  color: var(--admin-text);
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tr:hover td {
+  background: var(--admin-surface-muted);
+}
+
+.empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--admin-muted);
+}
+
+.emptyTitle {
+  font-weight: 700;
+  color: var(--admin-text);
+  margin: 0 0 8px;
+}
+
+.alertList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alertItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--admin-radius);
+  font-size: 0.85rem;
+}
+
+.alertWarn {
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  color: #854d0e;
+}
+
+.alertError {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #991b1b;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.tab {
+  padding: 8px 14px;
+  border-radius: var(--admin-radius-lg);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tabActive {
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
+  background: var(--admin-bg);
+}
+
+.btnSm {
+  padding: 6px 12px;
+  border-radius: var(--admin-radius);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  cursor: pointer;
+}
+
+.btnSm:hover {
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--admin-surface-muted) 25%, var(--admin-border) 50%, var(--admin-surface-muted) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  border-radius: var(--admin-radius);
+  min-height: 80px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.envBadge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--admin-surface-muted);
+  color: var(--admin-muted);
+  border: 1px solid var(--admin-border);
+}
+
+.codeBlock {
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+  background: var(--admin-surface-inset);
+  padding: 12px;
+  border-radius: var(--admin-radius);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--admin-text);
+  border: 1px solid var(--admin-border);
+}

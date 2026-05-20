@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Route } from "react-router-dom";
+import { Navigate, Route } from "react-router-dom";
 import { AdminAuthGuard } from "@/routes/AdminAuthGuard";
 import { AdminChrome } from "@/components/admin/AdminChrome";
 import { AdminAppShell } from "@/components/admin/AdminAppShell";
@@ -22,6 +22,8 @@ const AdminMediaPage = lazy(() => import("@/app/admin/(secure)/media/page"));
 const AdminDesignPage = lazy(() => import("@/app/admin/(secure)/design/page"));
 const AdminAuditPage = lazy(() => import("@/app/admin/(secure)/audit/page"));
 const AdminOffersPage = lazy(() => import("@/app/admin/(secure)/offers/page"));
+const AdminDataQualityPage = lazy(() => import("@/pages/admin/AdminDataQualityPage"));
+const AdminClassificationPage = lazy(() => import("@/pages/admin/AdminClassificationPage"));
 
 function SuspensePage({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<div style={{ padding: 48, textAlign: "center" }}>…</div>}>{children}</Suspense>;
@@ -44,6 +46,23 @@ export const freezoneAdminRouteBranch = (
     <Route element={<AdminAuthGuard />}>
       <Route element={<AdminAppShell />}>
         <Route index element={<AdminDashboardPage />} />
+        <Route
+          path="data-quality"
+          element={
+            <SuspensePage>
+              <AdminDataQualityPage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="classification"
+          element={
+            <SuspensePage>
+              <AdminClassificationPage />
+            </SuspensePage>
+          }
+        />
+        <Route path="tools/classification" element={<Navigate to="/admin/classification" replace />} />
         <Route
           path="cms"
           element={

@@ -27,6 +27,9 @@ import {
   Bell,
   HelpCircle,
   Plus,
+  FileWarning,
+  Filter,
+  Settings,
 } from "lucide-react";
 import { freezoneApiUrl } from "@/lib/api-internal";
 import styles from "./AdminChrome.module.css";
@@ -36,25 +39,32 @@ type NavItem = { href: string; label: string; icon: LucideIcon };
 function makeAdminNavGroups(t: TFunction): { label: string; items: NavItem[] }[] {
   return [
     {
-      label: "الواجهة والمحتوى",
+      label: "لوحة التحكم",
       items: [
-        { href: "/admin", label: "لوحة التحكم", icon: LayoutDashboard },
-        { href: "/admin/cms", label: "إعدادات الموقع (CMS)", icon: LayoutPanelTop },
-        { href: "/admin/content", label: "بناء الصفحة الرئيسية", icon: LayoutGrid },
-        { href: "/admin/media", label: "مكتبة الوسائط", icon: Images },
-        { href: "/admin/design", label: "المظهر والألوان", icon: Palette },
+        { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/admin/data-quality", label: "جودة البيانات", icon: FileWarning },
+        { href: "/admin/classification", label: "أدوات التصنيف", icon: Filter },
       ],
     },
     {
-      label: "المتجر والكتالوج",
+      label: "الكتالوج",
       items: [
         { href: "/admin/products", label: "المنتجات", icon: Package },
-        { href: "/admin/categories", label: "الأقسام", icon: FolderTree },
+        { href: "/admin/categories", label: "الأقسام والسمات", icon: FolderTree },
         { href: "/admin/brands", label: "العلامات التجارية", icon: Tag },
       ],
     },
     {
-      label: "المبيعات والتسويق",
+      label: "الموقع والمحتوى",
+      items: [
+        { href: "/admin/cms", label: "إعدادات الموقع", icon: LayoutPanelTop },
+        { href: "/admin/content", label: "بناء الصفحة الرئيسية", icon: LayoutGrid },
+        { href: "/admin/media", label: "الوسائط", icon: Images },
+        { href: "/admin/design", label: "المظهر", icon: Palette },
+      ],
+    },
+    {
+      label: "المبيعات",
       items: [
         { href: "/admin/orders", label: "الطلبات", icon: ShoppingCart },
         { href: "/admin/coupons", label: "الكوبونات", icon: TicketPercent },
@@ -63,7 +73,10 @@ function makeAdminNavGroups(t: TFunction): { label: string; items: NavItem[] }[]
     },
     {
       label: "النظام",
-      items: [{ href: "/admin/audit", label: "سجل التدقيق", icon: History }],
+      items: [
+        { href: "/admin/audit", label: "سجل التدقيق", icon: History },
+        { href: "/admin/cms", label: "الإعدادات", icon: Settings },
+      ],
     },
   ];
 }
@@ -238,8 +251,8 @@ export function AdminAppShell() {
             <Store size={18} aria-hidden />
           </div>
           <div className={styles.brandText}>
-            <p className={styles.brandTitle}>لوحة الإدارة</p>
-            <p className={styles.brandSub}>المتجر والواجهة</p>
+            <p className={styles.brandTitle}>FreeZone Admin</p>
+            <p className={styles.brandSub}>Commerce Dashboard</p>
           </div>
         </div>
 

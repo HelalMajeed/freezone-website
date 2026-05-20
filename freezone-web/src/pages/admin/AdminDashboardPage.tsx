@@ -1,197 +1,245 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { freezoneApiUrl, getInternalApiFetchSignal } from "@/lib/api-internal";
+import {
+  Package,
+  FolderTree,
+  AlertTriangle,
+  Plus,
+  ExternalLink,
+  RefreshCw,
+  ImageOff,
+  Filter,
+  FileWarning,
+} from "lucide-react";
+import { freezoneApiUrl } from "@/lib/api-internal";
 import { isDatabaseConfigured } from "@/lib/prisma";
-import s from "./AdminDashboard.module.css";
+import { fetchAdminDashboard } from "@/lib/admin/admin-dashboard-api";
+import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
+import { AdminStatCard } from "@/components/admin/ui/AdminStatCard";
+import { AdminSectionCard } from "@/components/admin/ui/AdminSectionCard";
+import { AdminBadge } from "@/components/admin/ui/AdminBadge";
+import { AdminAlertPanel } from "@/components/admin/ui/AdminAlertPanel";
+import { AdminEmptyState } from "@/components/admin/ui/AdminEmptyState";
+import ui from "@/components/admin/ui/AdminUi.module.css";
+
+function formatDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleString("ar-IQ", { dateStyle: "short", timeStyle: "short" });
+  } catch {
+    return iso;
+  }
+}
 
 export default function AdminDashboardPage() {
+  const qc = useQueryClient();
   const q = useQuery({
-    queryKey: ["admin-dashboard-stats"],
+    queryKey: ["admin-dashboard"],
     enabled: isDatabaseConfigured(),
-    queryFn: async () => {
-      const res = await fetch(freezoneApiUrl("/api/admin/dashboard-stats"), {
-        credentials: "include",
-        cache: "no-store",
-        signal: getInternalApiFetchSignal(),
-      });
-      if (res.status === 401) throw new Error("401");
-      if (!res.ok) throw new Error("bad");
-      return res.json() as Promise<{
-        dbConnected?: boolean;
-        connectionFailed?: boolean;
-        productCount: number;
-        orderCount: number;
-        categoryCount: number;
-        brandCount: number;
-        mediaCount: number;
-        lowStock: number;
-        pendingOrders: number;
-      }>;
-    },
+    queryFn: fetchAdminDashboard,
+    staleTime: 60_000,
   });
 
-  let productCount = 0;
-  let orderCount = 0;
-  let categoryCount = 0;
-  let brandCount = 0;
-  let mediaCount = 0;
-  let lowStock = 0;
-  let pendingOrders = 0;
-  let dbError = false;
-  let apiUnreachable = false;
-  let dbConnected = false;
-  const authError = false;
-
-  if (q.data) {
-    const j = q.data;
-    dbConnected = j.dbConnected !== false && j.connectionFailed !== true;
-    dbError = j.connectionFailed === true;
-    productCount = j.productCount;
-    orderCount = j.orderCount;
-    categoryCount = j.categoryCount;
-    brandCount = j.brandCount;
-    mediaCount = j.mediaCount;
-    lowStock = j.lowStock;
-    pendingOrders = j.pendingOrders;
-  }
-  if (q.error) {
-    apiUnreachable = true;
-  }
-
-  const links: { href: string; title: string; desc: string }[] = [
-    { href: "/admin/cms", title: "إعدادات الموقع (CMS)", desc: "الشعار، الهيرو، التيكر، شريط الثقة، البقع، التنقل، والعروض." },
-    { href: "/admin/content", title: "بناء الصفحة الرئيسية", desc: "مكوّنات الصفحة ديناميكية وترتيبها ونشرها للزائر." },
-    { href: "/admin/media", title: "مكتبة الوسائط", desc: "رفع الصور والفيديو وإعادة استخدامها في المنتجات والصفحات." },
-    { href: "/admin/design", title: "المظهر والألوان", desc: "ألوان الثيم والتباعد والخطوط كما تظهر في المتجر." },
-    { href: "/admin/products", title: "المنتجات", desc: "إضافة وتعديل المنتجات، الصور، والمخزون." },
-    { href: "/admin/categories", title: "الأقسام", desc: "أقسام المتجر (الكتالوج) والفلاتر كما تظهر في صفحة المنتجات." },
-    { href: "/admin/brands", title: "العلامات التجارية", desc: "شعارات العلامات وربطها بالمنتجات وشريط العلامات." },
-    { href: "/admin/orders", title: "الطلبات", desc: "متابعة الطلبات وحالات التنفيذ." },
-    { href: "/admin/coupons", title: "الكوبونات", desc: "أكواد الخصم وشروطها في صفحة الدفع." },
-    { href: "/admin/audit", title: "سجل التدقيق", desc: "متابعة تغييرات الإدارة على المنتجات والمحتوى والطلبات." },
-  ];
-
-  if (q.isLoading) {
-    return <div className={s.wrap}>جاري التحميل…</div>;
-  }
+  const d = q.data;
+  const stats = d?.stats;
+  const loading = q.isLoading;
+  const apiDown = q.isError;
 
   return (
-    <div className={s.wrap}>
-      <h1 className={s.title}>لوحة التحكم</h1>
-      <p className={s.subtitle}>
-        إدارة موحّدة للمحتوى الذي يراه الزائر: الصفحة الرئيسية، الكتالوج، الطلبات، والمظهر. يُفضّل تشغيل خادم الـ API الخلفي مع{" "}
-        <code style={{ fontSize: "0.85em" }}>DATABASE_URL</code> لعرض البيانات الحية.
-      </p>
+    <div className={ui.page}>
+      <AdminPageHeader
+        title="لوحة التحكم"
+        description="نظرة عامة على المتجر، جودة البيانات، والكتالوج. كل الأقسام مرتبة تحت قائمة جانبية واحدة."
+        actions={
+          <>
+            <span className={ui.envBadge}>Production API</span>
+            <button
+              type="button"
+              className={ui.btnSm}
+              onClick={() => void qc.invalidateQueries({ queryKey: ["admin-dashboard"] })}
+              disabled={loading}
+            >
+              <RefreshCw size={14} style={{ verticalAlign: "middle", marginInlineEnd: 4 }} />
+              تحديث
+            </button>
+            <Link className={ui.btnSm} to="/" target="_blank" rel="noopener noreferrer">
+              <ExternalLink size={14} style={{ verticalAlign: "middle", marginInlineEnd: 4 }} />
+              عرض المتجر
+            </Link>
+            <Link className={ui.btnSm} to="/admin/products/new" style={{ borderColor: "var(--admin-accent)", color: "var(--admin-accent)" }}>
+              <Plus size={14} style={{ verticalAlign: "middle", marginInlineEnd: 4 }} />
+              منتج جديد
+            </Link>
+          </>
+        }
+      />
 
-      <div className={s.badgeRow}>
-        {authError ? (
-          <span className={`${s.badge} ${s.badgeWarn}`}>⚠ انتهت الجلسة أو رفض الخادم الطلب</span>
-        ) : apiUnreachable ? (
-          <span className={`${s.badge} ${s.badgeWarn}`}>⚠ خادم API غير متاح (المنفذ 4000)</span>
-        ) : dbError ? (
-          <span className={`${s.badge} ${s.badgeWarn}`}>⚠ فشل الاتصال بقاعدة البيانات</span>
-        ) : dbConnected ? (
-          <span className={`${s.badge} ${s.badgeOk}`}>● متصل بقاعدة البيانات</span>
-        ) : (
-          <span className={`${s.badge} ${s.badgeWarn}`}>وضع بدون قاعدة بيانات — بيانات تجريبية</span>
-        )}
-      </div>
-
-      {authError && (
-        <div className={s.alert}>
-          أعد{" "}
-          <Link to="/admin/login">تسجيل الدخول</Link> وتأكد أن خادم الـ API يعمل وأن <code style={{ fontSize: 12 }}>ADMIN_SESSION_SECRET</code> متطابق
-          في <code style={{ fontSize: 12 }}>freezone-web/.env</code> و<code style={{ fontSize: 12 }}>freezone-api/.env</code>.
+      {apiDown && (
+        <div className={ui.alertItem + " " + ui.alertError} style={{ marginBottom: 16 }}>
+          تعذّر تحميل البيانات. تأكد من تشغيل API على {freezoneApiUrl("")}
         </div>
       )}
 
-      {apiUnreachable && !authError && (
-        <div className={s.alert}>
-          <strong>خادم الـ API غير متاح على المنفذ 4000.</strong> شغّل <code style={{ fontSize: 12 }}>npm run dev</code> من المشروع (يشغّل الـ API + الواجهة).
+      {loading ? (
+        <div className={ui.statGrid}>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className={ui.skeleton} />
+          ))}
         </div>
-      )}
+      ) : stats ? (
+        <>
+          <div className={ui.statGrid}>
+            <AdminStatCard label="إجمالي المنتجات" value={stats.totalProducts} href="/admin/products" />
+            <AdminStatCard label="منشور" value={stats.publishedProducts} hint="Published" />
+            <AdminStatCard label="مسودة" value={stats.draftProducts} />
+            <AdminStatCard label="غير متوفر" value={stats.outOfStockProducts} tone={stats.outOfStockProducts > 0 ? "warn" : "default"} />
+            <AdminStatCard label="أقسام" value={stats.categoriesCount} href="/admin/categories" />
+            <AdminStatCard label="علامات" value={stats.brandsCount} href="/admin/brands" />
+            <AdminStatCard
+              label="مواصفات ناقصة"
+              value={stats.productsMissingSpecs}
+              href="/admin/data-quality?tab=missing_specs"
+              tone={stats.productsMissingSpecs > 0 ? "warn" : "default"}
+            />
+            <AdminStatCard
+              label="فلاتر غير صالحة"
+              value={stats.invalidFilterValues}
+              href="/admin/data-quality?tab=invalid_filters"
+              tone={stats.invalidFilterValues > 0 ? "error" : "default"}
+            />
+            <AdminStatCard
+              label="بدون صور"
+              value={stats.productsMissingImages}
+              href="/admin/data-quality?tab=missing_images"
+              tone={stats.productsMissingImages > 0 ? "warn" : "default"}
+            />
+            <AdminStatCard label="طلبات معلّقة" value={stats.pendingOrders} href="/admin/orders" />
+          </div>
 
-      {dbError && !authError && !apiUnreachable && (
-        <div className={s.alert}>
-          <strong>شغّل PostgreSQL</strong> بحيث يطابق <code style={{ fontSize: 12 }}>DATABASE_URL</code> في <code style={{ fontSize: 12 }}>freezone-api/.env</code>.
-        </div>
-      )}
+          {d?.warnings?.length ? (
+            <AdminSectionCard title="تنبيهات جودة البيانات">
+              <AdminAlertPanel alerts={d.warnings} />
+            </AdminSectionCard>
+          ) : null}
 
-      <div className={s.stats}>
-        <div className={s.statCard}>
-          <div className={s.statLabel}>منتجات</div>
-          <div className={s.statValue}>{productCount}</div>
-          <Link to="/admin/products" className={s.statLink}>
-            إدارة →
-          </Link>
-        </div>
-        <div className={s.statCard}>
-          <div className={s.statLabel}>طلبات</div>
-          <div className={s.statValue}>{orderCount}</div>
-          <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 6 }}>معلّقة: {pendingOrders}</div>
-          <Link to="/admin/orders" className={s.statLink}>
-            عرض →
-          </Link>
-        </div>
-        <div className={s.statCard}>
-          <div className={s.statLabel}>أقسام المتجر</div>
-          <div className={s.statValue}>{categoryCount}</div>
-          <Link to="/admin/categories" className={s.statLink}>
-            الأقسام →
-          </Link>
-        </div>
-        <div className={s.statCard}>
-          <div className={s.statLabel}>علامات</div>
-          <div className={s.statValue}>{brandCount}</div>
-          <Link to="/admin/brands" className={s.statLink}>
-            علامات →
-          </Link>
-        </div>
-        <div className={s.statCard}>
-          <div className={s.statLabel}>وسائط</div>
-          <div className={s.statValue}>{mediaCount}</div>
-          <Link to="/admin/media" className={s.statLink}>
-            المكتبة →
-          </Link>
-        </div>
-        <div className={s.statCard}>
-          <div className={s.statLabel}>مخزون منخفض</div>
-          <div className={s.statValue}>{lowStock}</div>
-          <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 6 }}>&lt; 5 وحدات ومنشور</div>
-        </div>
-      </div>
+          <AdminSectionCard title="إجراءات سريعة">
+            <div className={ui.quickGrid}>
+              <Link to="/admin/products/new" className={ui.quickAction}>
+                <Plus size={20} />
+                إضافة منتج
+              </Link>
+              <Link to="/admin/products" className={ui.quickAction}>
+                <Package size={20} />
+                المنتجات
+              </Link>
+              <Link to="/admin/categories" className={ui.quickAction}>
+                <FolderTree size={20} />
+                الأقسام
+              </Link>
+              <Link to="/admin/data-quality" className={ui.quickAction}>
+                <FileWarning size={20} />
+                جودة البيانات
+              </Link>
+              <Link to="/admin/classification" className={ui.quickAction}>
+                <Filter size={20} />
+                أدوات التصنيف
+              </Link>
+              <Link to="/admin/media" className={ui.quickAction}>
+                <ImageOff size={20} />
+                الوسائط
+              </Link>
+            </div>
+          </AdminSectionCard>
 
-      <h2 className={s.sectionTitle}>إجراءات سريعة</h2>
-      <div className={s.actions}>
-        <Link to="/admin/cms" className={s.btnPrimary}>
-          تعديل الصفحة الرئيسية والشريط
-        </Link>
-        <Link to="/admin/products" className={s.btnSecondary}>
-          إضافة منتج
-        </Link>
-        <Link to="/admin/coupons" className={s.btnSecondary}>
-          كوبون جديد
-        </Link>
-        <Link to="/admin/content" className={s.btnSecondary}>
-          بناء مكوّنات الصفحة الرئيسية
-        </Link>
-      </div>
+          <AdminSectionCard title="آخر المنتجات المحدّثة">
+            {!d?.recentProducts?.length ? (
+              <AdminEmptyState title="لا منتجات بعد" message="أضف أول منتج من إجراءات سريعة." />
+            ) : (
+              <div className={ui.tableWrap}>
+                <table className={ui.table}>
+                  <thead>
+                    <tr>
+                      <th>المنتج</th>
+                      <th>القسم</th>
+                      <th>الحالة</th>
+                      <th>آخر تحديث</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {d.recentProducts.map((p) => (
+                      <tr key={p.id}>
+                        <td>
+                          <strong>#{p.id}</strong> {p.nameEn}
+                        </td>
+                        <td>{p.categoryName}</td>
+                        <td>
+                          <AdminBadge variant={p.published ? "ok" : "muted"}>
+                            {p.published ? "منشور" : "مسودة"}
+                          </AdminBadge>{" "}
+                          <AdminBadge variant={p.inStock ? "ok" : "warn"}>
+                            {p.inStock ? "متوفر" : "نفد"}
+                          </AdminBadge>
+                        </td>
+                        <td>{formatDate(p.updatedAt)}</td>
+                        <td>
+                          <Link className={ui.btnSm} to={`/admin/products/edit/${p.id}`}>
+                            تعديل
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </AdminSectionCard>
 
-      <h2 className={s.sectionTitle}>كل أقسام الإدارة</h2>
-      <div className={s.grid}>
-        {links.map((item) => (
-          <Link key={item.href} to={item.href} className={s.linkCard}>
-            <div className={s.linkCardTitle}>{item.title}</div>
-            <p className={s.linkCardDesc}>{item.desc}</p>
-          </Link>
-        ))}
-      </div>
+          <AdminSectionCard title="صحة الكتالوج حسب القسم">
+            <div className={ui.tableWrap}>
+              <table className={ui.table}>
+                <thead>
+                  <tr>
+                    <th>القسم</th>
+                    <th>منتجات</th>
+                    <th>سمات</th>
+                    <th>فلاتر</th>
+                    <th>مواصفات عرض</th>
+                    <th>ناقص مواصفات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {d?.categoryHealth?.map((c) => (
+                    <tr key={c.categoryId}>
+                      <td>
+                        <Link to={`/admin/categories/${c.categoryId}/attributes`}>{c.name}</Link>
+                        <div style={{ fontSize: "0.75rem", color: "var(--admin-muted)" }}>{c.slug}</div>
+                      </td>
+                      <td>{c.productCount}</td>
+                      <td>{c.attributeCount}</td>
+                      <td>{c.filterableAttributes}</td>
+                      <td>{c.displaySpecAttributes}</td>
+                      <td>
+                        {c.productsMissingSpecs > 0 ? (
+                          <AdminBadge variant="warn">{c.productsMissingSpecs}</AdminBadge>
+                        ) : (
+                          <AdminBadge variant="ok">0</AdminBadge>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </AdminSectionCard>
+        </>
+      ) : null}
 
-      <p className={s.hint}>
-        <strong style={{ color: "#e2e8f0" }}>ربط الزائر:</strong> المحتوى المنشور من CMS والمنتجات وأقسام المتجر والعلامات يُحمَّل في واجهة المتجر عبر{" "}
-        <code>StorefrontProvider</code>.
+      <p style={{ fontSize: "0.8rem", color: "var(--admin-muted)", marginTop: 24 }}>
+        <AlertTriangle size={14} style={{ verticalAlign: "middle", marginInlineEnd: 4 }} />
+        لا تشغّل <code>prisma db seed</code> من الإنتاج. إصلاح الفلاتر عبر{" "}
+        <Link to="/admin/classification">أدوات التصنيف</Link> فقط بعد dry-run.
       </p>
     </div>
   );

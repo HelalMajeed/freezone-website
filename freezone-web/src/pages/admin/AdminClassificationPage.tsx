@@ -1,0 +1,166 @@
+"use client";
+
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import { isDatabaseConfigured } from "@/lib/prisma";
+import { fetchClassificationPreview } from "@/lib/admin/admin-dashboard-api";
+import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
+import { AdminSectionCard } from "@/components/admin/ui/AdminSectionCard";
+import { AdminBadge } from "@/components/admin/ui/AdminBadge";
+import { AdminEmptyState } from "@/components/admin/ui/AdminEmptyState";
+import ui from "@/components/admin/ui/AdminUi.module.css";
+
+const CATEGORIES = [
+  { slug: "laptops", label: "Laptops" },
+  { slug: "phones", label: "Phones" },
+  { slug: "gaming", label: "Gaming" },
+];
+
+export default function AdminClassificationPage() {
+  const [slug, setSlug] = useState("laptops");
+  const [run, setRun] = useState(false);
+
+  const q = useQuery({
+    queryKey: ["classification-preview", slug],
+    enabled: isDatabaseConfigured() && run,
+    queryFn: () => fetchClassificationPreview(slug),
+  });
+
+  const preview = q.data as {
+    category?: { name: string; slug: string };
+    dryRunOnly?: boolean;
+    manualCommand?: string;
+    applyCommand?: string;
+    summary?: { wouldChange: number; total: number };
+    previews?: {
+      productId: number;
+      ok: boolean;
+      changed: boolean;
+      before: Record<string, string | null>;
+      after: Record<string, string | null>;
+      reason?: string;
+    }[];
+  };
+
+  return (
+    <div className={ui.page}>
+      <AdminPageHeader
+        title="أدوات التصنيف والفلاتر"
+        description="معاينة dry-run لاستخراج قيم الفلاتر من مواصفات العرض. التطبيق الفعلي يتطلب تأكيدًا يدويًا على الخادم."
+      />
+
+      <AdminSectionCard title="إعداد المعاينة">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", marginBottom: 12 }}>
+          <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>
+            القسم:
+            <select
+              value={slug}
+              onChange={(e) => {
+                setSlug(e.target.value);
+                setRun(false);
+              }}
+              style={{ marginInlineStart: 8, padding: "6px 10px", borderRadius: 8 }}
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c.slug} value={c.slug}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="button" className={ui.btnSm} onClick={() => setRun(true)} disabled={q.isFetching}>
+            تشغيل dry-run
+          </button>
+        </div>
+        <p style={{ fontSize: "0.8rem", color: "var(--admin-muted)", margin: 0 }}>
+          لا يتم تشغيل <code>prisma db seed</code> ولا حذف منتجات. إصلاح اللابتوبات:{" "}
+          <code>repair-laptop-filter-values.ts</code>
+        </p>
+      </AdminSectionCard>
+
+      {run && q.isLoading ? <div className={ui.skeleton} style={{ minHeight: 100 }} /> : null}
+
+      {preview?.summary ? (
+        <AdminSectionCard
+          title={`نتيجة المعاينة — ${preview.category?.name ?? slug}`}
+          action={
+            <AdminBadge variant={preview.summary.wouldChange > 0 ? "warn" : "ok"}>
+              {preview.summary.wouldChange} / {preview.summary.total} سيتغيّر
+            </AdminBadge>
+          }
+        >
+          {preview.manualCommand ? (
+            <>
+              <p style={{ fontSize: "0.85rem", margin: "0 0 8px" }}>
+                <strong>أمر dry-run على Fly:</strong>
+              </p>
+              <pre className={ui.codeBlock}>{preview.manualCommand}</pre>
+              <p style={{ fontSize: "0.85rem", margin: "12px 0 8px" }}>
+                <strong>تطبيق الإصلاح (بعد المراجعة):</strong>
+              </p>
+              <pre className={ui.codeBlock}>{preview.applyCommand}</pre>
+            </>
+          ) : null}
+
+          {!preview.previews?.length ? (
+            <AdminEmptyState title="لا منتجات في هذا القسم" />
+          ) : (
+            <div className={ui.tableWrap} style={{ marginTop: 16 }}>
+              <table className={ui.table}>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>تغيّر؟</th>
+                    <th>gpu_model</th>
+                    <th>processor_family</th>
+                    <th>screen_size</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {preview.previews
+                    .filter((p) => p.changed || !p.ok)
+                    .slice(0, 40)
+                    .map((p) => (
+                      <tr key={p.productId}>
+                        <td>#{p.productId}</td>
+                        <td>
+                          {!p.ok ? (
+                            <AdminBadge variant="error">{p.reason ?? "skip"}</AdminBadge>
+                          ) : p.changed ? (
+                            <AdminBadge variant="warn">نعم</AdminBadge>
+                          ) : (
+                            <AdminBadge variant="ok">لا</AdminBadge>
+                          )}
+                        </td>
+                        <td>
+                          {p.before?.gpu_model ?? "—"} → {p.after?.gpu_model ?? "—"}
+                        </td>
+                        <td>
+                          {p.before?.processor_family ?? "—"} → {p.after?.processor_family ?? "—"}
+                        </td>
+                        <td>
+                          {p.before?.screen_size ?? "—"} → {p.after?.screen_size ?? "—"}
+                        </td>
+                        <td>
+                          <Link className={ui.btnSm} to={`/admin/products/edit/${p.productId}`}>
+                            تعديل
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <p style={{ marginTop: 16, fontSize: "0.8rem", color: "var(--admin-muted)" }}>
+            تشغيل الإصلاح من الواجهة غير مفعّل عمدًا — استخدم SSH بعد مراجعة dry-run.{" "}
+            <Link to="/admin/data-quality?tab=invalid_filters">جودة البيانات</Link>
+          </p>
+        </AdminSectionCard>
+      ) : null}
+    </div>
+  );
+}

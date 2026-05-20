@@ -240,14 +240,17 @@ export async function buildLaptopFilterRepairFromEav(
   const rows = await prisma.productAttributeValue.findMany({
     where: { productId: product.id },
   });
-  const values: ProductAttributeValueRow[] = rows.map((r) => ({
-    attributeKey: r.attributeKey,
-    displayValue: r.displayValue,
-    valueString: r.valueString,
-    valueNumber: r.valueNumber,
-    valueBoolean: r.valueBoolean,
-    valueJson: r.valueJson,
-  }));
+  const values: ProductAttributeValueRow[] = rows.map((r) => {
+    const row = r as typeof r & { displayValue?: string | null };
+    return {
+      attributeKey: row.attributeKey,
+      displayValue: row.displayValue,
+      valueString: row.valueString,
+      valueNumber: row.valueNumber,
+      valueBoolean: row.valueBoolean,
+      valueJson: row.valueJson,
+    };
+  });
 
   if (!values.length) {
     return { ok: false, reason: "no attribute values on product" };
