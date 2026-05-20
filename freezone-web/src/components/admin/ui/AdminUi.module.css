@@ -48,12 +48,53 @@
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
   padding: 16px;
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
   box-shadow: var(--admin-shadow-card);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .statCard:hover {
-  border-color: rgba(181, 24, 34, 0.3);
+  border-color: var(--admin-border-strong);
+  box-shadow: var(--admin-shadow-float);
+}
+
+.statCardWarn {
+  border-color: rgba(234, 179, 8, 0.4);
+}
+
+.statCardError {
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.statCardTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.statIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--admin-surface-muted);
+  color: var(--admin-primary);
+  flex-shrink: 0;
+}
+
+.statCardWarn .statIcon {
+  color: #854d0e;
+  background: rgba(234, 179, 8, 0.12);
+}
+
+.statCardError .statIcon {
+  color: #991b1b;
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .statLabel {
@@ -80,11 +121,70 @@
 
 .statLink {
   display: inline-block;
-  margin-top: 10px;
+  margin-top: auto;
+  padding-top: 10px;
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--admin-accent);
+  color: var(--admin-primary);
   text-decoration: none;
+}
+
+.statLink:hover {
+  color: var(--admin-primary-bright);
+}
+
+.sectionHeading {
+  margin: 8px 0 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--admin-muted);
+  text-transform: uppercase;
+}
+
+.impactList {
+  margin: 0;
+  padding: 0 1.1rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--admin-text);
+}
+
+.impactList li {
+  margin-bottom: 10px;
+}
+
+.impactList li:last-child {
+  margin-bottom: 0;
+}
+
+.tableThumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--admin-border);
+}
+
+.tableThumbPlaceholder {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--admin-surface-muted);
+  color: var(--admin-muted);
+  font-size: 0.75rem;
+}
+
+.btnPrimaryOutline {
+  border-color: var(--admin-primary) !important;
+  color: var(--admin-primary) !important;
+}
+
+.btnPrimaryOutline:hover {
+  background: var(--admin-primary-soft) !important;
 }
 
 .section {
@@ -273,8 +373,8 @@
 }
 
 .tabActive {
-  border-color: var(--admin-accent);
-  color: var(--admin-accent);
+  border-color: var(--admin-primary);
+  color: var(--admin-primary);
   background: var(--admin-bg);
 }
 
@@ -291,8 +391,8 @@
 }
 
 .btnSm:hover {
-  border-color: var(--admin-accent);
-  color: var(--admin-accent);
+  border-color: var(--admin-primary);
+  color: var(--admin-primary);
 }
 
 .skeleton {

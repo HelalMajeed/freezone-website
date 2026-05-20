@@ -1,34 +1,42 @@
+import type { LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import ui from "./AdminUi.module.css";
 
 export function AdminStatCard({
   label,
   value,
-  hint,
+  subtitle,
   href,
-  tone,
+  actionLabel = "عرض",
+  tone = "default",
+  icon: Icon,
 }: {
   label: string;
   value: string | number;
-  hint?: string;
+  subtitle?: string;
   href?: string;
+  actionLabel?: string;
   tone?: "default" | "warn" | "error";
+  icon?: LucideIcon;
 }) {
-  const border =
-    tone === "warn"
-      ? { borderColor: "rgba(234, 179, 8, 0.45)" }
-      : tone === "error"
-        ? { borderColor: "rgba(239, 68, 68, 0.4)" }
-        : undefined;
+  const toneClass =
+    tone === "warn" ? ui.statCardWarn : tone === "error" ? ui.statCardError : "";
 
   return (
-    <div className={ui.statCard} style={border}>
-      <div className={ui.statLabel}>{label}</div>
+    <div className={`${ui.statCard} ${toneClass}`}>
+      <div className={ui.statCardTop}>
+        {Icon ? (
+          <span className={ui.statIcon} aria-hidden>
+            <Icon size={18} />
+          </span>
+        ) : null}
+        <div className={ui.statLabel}>{label}</div>
+      </div>
       <div className={ui.statValue}>{value}</div>
-      {hint ? <div className={ui.statHint}>{hint}</div> : null}
+      {subtitle ? <div className={ui.statHint}>{subtitle}</div> : null}
       {href ? (
         <Link to={href} className={ui.statLink}>
-          عرض →
+          {actionLabel} →
         </Link>
       ) : null}
     </div>

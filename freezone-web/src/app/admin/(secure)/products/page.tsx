@@ -59,20 +59,6 @@ export default function AdminProductsPage() {
             جدول مع pagination من الخادم. المواصفات والفلاتر من محرر المنتج (تبويبات).
           </p>
         </div>
-        <Link
-          to="/admin/products/new"
-          style={{
-            padding: "10px 18px",
-            borderRadius: 8,
-            background: "#0b1f3b",
-            color: "#fff",
-            fontWeight: 700,
-            textDecoration: "none",
-            fontSize: 14,
-          }}
-        >
-          + منتج جديد
-        </Link>
       </div>
 
       {loading ? (

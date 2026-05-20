@@ -4,12 +4,20 @@ import {
   getCategoryHealthRows,
 } from "./admin-catalog-health";
 
+function arCount(n: number, one: string, few: string, many: string): string {
+  if (n === 1) return one;
+  if (n === 2) return few;
+  return `${n} ${many}`;
+}
+
 export async function buildAdminDashboardPayload(prisma: PrismaClient) {
   const [
     totalProducts,
     activeProducts,
     draftProducts,
+    inStockProducts,
     outOfStockProducts,
+    stockNotSetProducts,
     categoriesCount,
     brandsCount,
     orderCount,
@@ -23,9 +31,9 @@ export async function buildAdminDashboardPayload(prisma: PrismaClient) {
     prisma.product.count(),
     prisma.product.count({ where: { published: true } }),
     prisma.product.count({ where: { published: false } }),
-    prisma.product.count({
-      where: { OR: [{ inStock: false }, { quantity: { lte: 0 } }] },
-    }),
+    prisma.product.count({ where: { inStock: true, quantity: { gt: 0 } } }),
+    prisma.product.count({ where: { inStock: false } }),
+    prisma.product.count({ where: { inStock: true, quantity: { lte: 0 } } }),
     prisma.category.count({ where: { active: true } }),
     prisma.brand.count(),
     prisma.order.count(),
@@ -51,38 +59,43 @@ export async function buildAdminDashboardPayload(prisma: PrismaClient) {
   ]);
 
   const warnings: { level: "warning" | "error"; message: string; href?: string }[] = [];
-  if (health.productsMissingImages > 0) {
+  const nImg = health.productsMissingImages;
+  if (nImg > 0) {
     warnings.push({
       level: "warning",
-      message: `${health.productsMissingImages} products without images`,
+      message: arCount(nImg, "منتج واحد بدون صور", "منتجان بدون صور", "منتجات بدون صور"),
       href: "/admin/data-quality?tab=missing_images",
     });
   }
-  if (health.productsInvalidFilters > 0) {
+  const nInv = health.productsInvalidFilters;
+  if (nInv > 0) {
     warnings.push({
       level: "error",
-      message: `${health.productsInvalidFilters} products with invalid filter values`,
+      message: arCount(nInv, "منتج بفلاتر غير صالحة", "منتجان بفلاتر غير صالحة", "منتجات بفلاتر غير صالحة"),
       href: "/admin/data-quality?tab=invalid_filters",
     });
   }
-  if (health.productsMissingSpecs > 0) {
+  const nSpec = health.productsMissingSpecs;
+  if (nSpec > 0) {
     warnings.push({
       level: "warning",
-      message: `${health.productsMissingSpecs} products missing specs or filter tokens`,
+      message: arCount(nSpec, "منتج بمواصفات ناقصة", "منتجان بمواصفات ناقصة", "منتجات بمواصفات ناقصة"),
       href: "/admin/data-quality?tab=missing_specs",
     });
   }
-  if (health.categoriesWithoutAttributes > 0) {
+  const nCat = health.categoriesWithoutAttributes;
+  if (nCat > 0) {
     warnings.push({
       level: "warning",
-      message: `${health.categoriesWithoutAttributes} categories without attributes`,
+      message: arCount(nCat, "قسم بلا سمات", "قسمان بلا سمات", "أقسام بلا سمات"),
       href: "/admin/data-quality?tab=categories_without_attributes",
     });
   }
-  if (health.productsLegacySpecsOnly > 0) {
+  const nLeg = health.productsLegacySpecsOnly;
+  if (nLeg > 0) {
     warnings.push({
       level: "warning",
-      message: `${health.productsLegacySpecsOnly} products using legacy specs JSON only`,
+      message: arCount(nLeg, "منتج Legacy specs فقط", "منتجان Legacy specs فقط", "منتجات Legacy specs فقط"),
       href: "/admin/data-quality?tab=legacy_specs",
     });
   }
@@ -93,12 +106,16 @@ export async function buildAdminDashboardPayload(prisma: PrismaClient) {
       activeProducts,
       publishedProducts: activeProducts,
       draftProducts,
+      inStockProducts,
       outOfStockProducts,
+      stockNotSetProducts,
       categoriesCount,
       brandsCount,
       productsMissingSpecs: health.productsMissingSpecs,
       productsMissingImages: health.productsMissingImages,
       invalidFilterValues: health.productsInvalidFilters,
+      categoriesWithoutAttributes: health.categoriesWithoutAttributes,
+      productsLegacySpecsOnly: health.productsLegacySpecsOnly,
       orderCount,
       mediaCount,
       lowStock,

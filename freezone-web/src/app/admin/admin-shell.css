@@ -14,19 +14,26 @@
   /* Structure */
   --admin-border: #e2e8f0;
   --admin-border-strong: #cbd5e1;
-  --admin-outline-variant: #e4beba;
+  --admin-outline-variant: #e2e8f0;
 
   /* Typography */
   --admin-text: #1a202c;
-  --admin-text-warm: #271816;
+  --admin-text-warm: #1e293b;
   --admin-muted: #64748b;
-  --admin-muted-warm: #5b403e;
+  --admin-muted-warm: #64748b;
 
-  /* Accent — primary from design bundle */
+  /* Primary — navigation & actions (neutral enterprise blue) */
+  --admin-primary: #1e40af;
+  --admin-primary-bright: #2563eb;
+  --admin-primary-soft: rgba(37, 99, 235, 0.08);
+  --admin-primary-ring: rgba(37, 99, 235, 0.25);
+  --admin-on-primary: #ffffff;
+
+  /* Accent — danger / logout only */
   --admin-accent: #b51822;
-  --admin-accent-bright: #d93537;
-  --admin-accent-soft: rgba(181, 24, 34, 0.1);
-  --admin-accent-ring: rgba(229, 62, 62, 0.38);
+  --admin-accent-bright: #dc2626;
+  --admin-accent-soft: rgba(220, 38, 38, 0.08);
+  --admin-accent-ring: rgba(220, 38, 38, 0.2);
   --admin-on-accent: #ffffff;
 
   /* Legacy aliases (existing modules) */
@@ -51,6 +58,6 @@
   --admin-surface: #ffffff;
   --admin-border: #e2e8f0;
   min-height: 100vh;
-  background: radial-gradient(ellipse 100% 80% at 50% -30%, rgba(181, 24, 34, 0.08), transparent), var(--admin-login-bg);
+  background: radial-gradient(ellipse 100% 80% at 50% -30%, rgba(37, 99, 235, 0.06), transparent), var(--admin-login-bg);
   color: var(--admin-text);
 }

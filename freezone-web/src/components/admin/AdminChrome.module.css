@@ -36,8 +36,8 @@
   width: 36px;
   height: 36px;
   border-radius: var(--admin-radius);
-  background: var(--admin-accent);
-  color: var(--admin-on-accent);
+  background: var(--admin-primary, #1e40af);
+  color: var(--admin-on-primary, #fff);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -106,9 +106,9 @@
 }
 
 .navLinkActive {
-  color: var(--admin-accent) !important;
+  color: var(--admin-primary, #1e40af) !important;
   background: var(--admin-bg) !important;
-  border-inline-start-color: var(--admin-accent) !important;
+  border-inline-start-color: var(--admin-primary, #1e40af) !important;
   font-weight: 600;
 }
 
@@ -119,6 +119,18 @@
 
 .navLinkText {
   min-width: 0;
+  flex: 1;
+}
+
+.navSoon {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--admin-surface-muted);
+  color: var(--admin-muted);
+  border: 1px solid var(--admin-border);
+  margin-inline-start: auto;
 }
 
 .sidebarCollapsed .navLink {
@@ -221,7 +233,7 @@
 }
 
 .breadcrumbLink:hover {
-  color: var(--admin-accent);
+  color: var(--admin-primary, #1e40af);
 }
 
 .breadcrumbCurrent {
@@ -338,8 +350,8 @@
   padding: 8px 16px;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--admin-on-accent);
-  background: var(--admin-accent);
+  color: var(--admin-on-primary, #fff);
+  background: var(--admin-primary, #1e40af);
   border: none;
   border-radius: var(--admin-radius);
   cursor: pointer;
@@ -348,7 +360,7 @@
 }
 
 .btnPrimarySm:hover {
-  background: var(--admin-accent-bright);
+  background: var(--admin-primary-bright, #2563eb);
 }
 
 .btnPrimarySm:active {

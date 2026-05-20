@@ -8,12 +8,16 @@ export type AdminDashboardPayload = {
     activeProducts: number;
     publishedProducts: number;
     draftProducts: number;
+    inStockProducts: number;
     outOfStockProducts: number;
+    stockNotSetProducts: number;
     categoriesCount: number;
     brandsCount: number;
     productsMissingSpecs: number;
     productsMissingImages: number;
     invalidFilterValues: number;
+    categoriesWithoutAttributes: number;
+    productsLegacySpecsOnly: number;
     orderCount: number;
     mediaCount: number;
     lowStock: number;

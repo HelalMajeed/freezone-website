@@ -7,7 +7,9 @@ export type AdminProductsListQuery = {
   categoryId: number | null;
   brand: string;
   published: boolean | null;
+  /** @deprecated use stockMode */
   inStock: boolean | null;
+  stockMode: "in" | "out" | "unset" | null;
   sort: "id_desc" | "id_asc" | "price_asc" | "price_desc" | "name_asc";
 };
 
@@ -24,8 +26,10 @@ export function parseAdminProductsListQuery(url: URL): AdminProductsListQuery {
   else if (publishedRaw === "draft" || publishedRaw === "false") published = false;
   const stockRaw = url.searchParams.get("stock") ?? url.searchParams.get("inStock");
   let inStock: boolean | null = null;
-  if (stockRaw === "in" || stockRaw === "true") inStock = true;
-  else if (stockRaw === "out" || stockRaw === "false") inStock = false;
+  let stockMode: "in" | "out" | "unset" | null = null;
+  if (stockRaw === "in" || stockRaw === "true") stockMode = "in";
+  else if (stockRaw === "out" || stockRaw === "false") stockMode = "out";
+  else if (stockRaw === "unset" || stockRaw === "unknown") stockMode = "unset";
   const sortRaw = url.searchParams.get("sort") ?? "id_desc";
   const sort: AdminProductsListQuery["sort"] =
     sortRaw === "id_asc" ||
@@ -34,7 +38,7 @@ export function parseAdminProductsListQuery(url: URL): AdminProductsListQuery {
     sortRaw === "name_asc"
       ? sortRaw
       : "id_desc";
-  return { page, pageSize, search, categoryId, brand, published, inStock, sort };
+  return { page, pageSize, search, categoryId, brand, published, inStock, stockMode, sort };
 }
 
 export function adminProductsWhere(q: AdminProductsListQuery): Prisma.ProductWhereInput {
@@ -42,7 +46,17 @@ export function adminProductsWhere(q: AdminProductsListQuery): Prisma.ProductWhe
   if (q.categoryId != null) where.categoryId = q.categoryId;
   if (q.brand) where.brand = { contains: q.brand, mode: "insensitive" };
   if (q.published !== null) where.published = q.published;
-  if (q.inStock !== null) where.inStock = q.inStock;
+  if (q.stockMode === "in") {
+    where.inStock = true;
+    where.quantity = { gt: 0 };
+  } else if (q.stockMode === "out") {
+    where.inStock = false;
+  } else if (q.stockMode === "unset") {
+    where.inStock = true;
+    where.quantity = { lte: 0 };
+  } else if (q.inStock !== null) {
+    where.inStock = q.inStock;
+  }
   if (q.search) {
     const s = q.search;
     const idNum = /^\d+$/.test(s) ? parseInt(s, 10) : null;

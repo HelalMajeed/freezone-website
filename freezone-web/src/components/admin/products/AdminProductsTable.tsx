@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import type { AdminProductRow } from "@/components/admin/products-catalog/admin-product-types";
 import { brandLabel, formatIqd } from "@/components/admin/products-catalog/admin-product-types";
 import {
@@ -22,8 +22,36 @@ const DEFAULT_PARAMS: AdminProductsListParams = {
   sort: "id_desc",
 };
 
+function paramsFromSearch(sp: URLSearchParams): AdminProductsListParams {
+  const publishedRaw = sp.get("published");
+  let published: AdminProductsListParams["published"] = "";
+  if (publishedRaw === "true" || publishedRaw === "published") published = "published";
+  else if (publishedRaw === "false" || publishedRaw === "draft") published = "draft";
+
+  const stockRaw = sp.get("stock");
+  let stock: AdminProductsListParams["stock"] = "";
+  if (stockRaw === "in") stock = "in";
+  else if (stockRaw === "out") stock = "out";
+  else if (stockRaw === "unset") stock = "unset";
+
+  return {
+    ...DEFAULT_PARAMS,
+    page: Math.max(1, parseInt(sp.get("page") ?? "1", 10) || 1),
+    published,
+    stock,
+    categoryId: sp.get("categoryId") ?? "",
+    search: sp.get("search") ?? sp.get("q") ?? "",
+  };
+}
+
 export function AdminProductsTable({ categories }: { categories: CategoryOpt[] }) {
-  const [params, setParams] = useState<AdminProductsListParams>(DEFAULT_PARAMS);
+  const [searchParams] = useSearchParams();
+  const initial = useMemo(() => paramsFromSearch(searchParams), [searchParams]);
+  const [params, setParams] = useState<AdminProductsListParams>(initial);
+
+  useEffect(() => {
+    setParams(paramsFromSearch(searchParams));
+  }, [searchParams]);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [items, setItems] = useState<AdminProductRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -97,9 +125,10 @@ export function AdminProductsTable({ categories }: { categories: CategoryOpt[] }
           value={params.stock}
           onChange={(e) => patchParams({ stock: e.target.value as AdminProductsListParams["stock"] })}
         >
-          <option value="">المخزون</option>
+          <option value="">كل المخزون</option>
           <option value="in">متوفر</option>
           <option value="out">غير متوفر</option>
+          <option value="unset">مخزون غير محدد</option>
         </select>
         <select
           className={styles.select}

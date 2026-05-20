@@ -8,7 +8,7 @@ export type AdminProductsListParams = {
   search: string;
   categoryId: string;
   published: "" | "published" | "draft";
-  stock: "" | "in" | "out";
+  stock: "" | "in" | "out" | "unset";
   sort: string;
 };
 
@@ -28,10 +28,11 @@ export async function fetchAdminProductsList(
   sp.set("pageSize", String(params.pageSize));
   if (params.search.trim()) sp.set("search", params.search.trim());
   if (params.categoryId) sp.set("categoryId", params.categoryId);
-  if (params.published === "published") sp.set("published", "published");
-  if (params.published === "draft") sp.set("published", "draft");
+  if (params.published === "published") sp.set("published", "true");
+  if (params.published === "draft") sp.set("published", "false");
   if (params.stock === "in") sp.set("stock", "in");
   if (params.stock === "out") sp.set("stock", "out");
+  if (params.stock === "unset") sp.set("stock", "unset");
   if (params.sort) sp.set("sort", params.sort);
 
   const res = await fetch(freezoneApiUrl(`/api/admin/products?${sp}`), {

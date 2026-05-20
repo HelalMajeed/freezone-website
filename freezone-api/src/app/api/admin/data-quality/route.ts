@@ -11,7 +11,8 @@ export async function GET(req: Request) {
   }
 
   const url = new URL(req.url);
-  const tab = url.searchParams.get("tab") ?? "invalid_filters";
+  const tabRaw = url.searchParams.get("tab") ?? "invalid_filters";
+  const tab = tabRaw.replace(/-/g, "_");
   const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") ?? "25", 10) || 25));
 

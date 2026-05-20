@@ -25,27 +25,22 @@ import {
   PanelLeft,
   Menu,
   Search,
-  Bell,
-  HelpCircle,
   Plus,
   FileWarning,
   Filter,
   Settings,
+  Languages,
 } from "lucide-react";
 import { freezoneApiUrl } from "@/lib/api-internal";
 import styles from "./AdminChrome.module.css";
 
-type NavItem = { href: string; label: string; icon: LucideIcon };
+type NavItem = { href: string; label: string; icon: LucideIcon; soon?: boolean };
 
 function makeAdminNavGroups(t: TFunction): { label: string; items: NavItem[] }[] {
   return [
     {
       label: "لوحة التحكم",
-      items: [
-        { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-        { href: "/admin/data-quality", label: "جودة البيانات", icon: FileWarning },
-        { href: "/admin/classification", label: "أدوات التصنيف", icon: Filter },
-      ],
+      items: [{ href: "/admin", label: "لوحة التحكم", icon: LayoutDashboard }],
     },
     {
       label: "الكتالوج",
@@ -53,14 +48,21 @@ function makeAdminNavGroups(t: TFunction): { label: string; items: NavItem[] }[]
         { href: "/admin/products", label: "المنتجات", icon: Package },
         { href: "/admin/categories", label: "الأقسام والسمات", icon: FolderTree },
         { href: "/admin/brands", label: "العلامات التجارية", icon: Tag },
+        { href: "/admin/media", label: "الوسائط", icon: Images },
+      ],
+    },
+    {
+      label: "جودة الكتالوج",
+      items: [
+        { href: "/admin/data-quality", label: "جودة البيانات", icon: FileWarning },
+        { href: "/admin/classification", label: "أدوات التصنيف", icon: Filter },
       ],
     },
     {
       label: "الموقع والمحتوى",
       items: [
-        { href: "/admin/cms", label: "إعدادات الموقع", icon: LayoutPanelTop },
         { href: "/admin/content", label: "بناء الصفحة الرئيسية", icon: LayoutGrid },
-        { href: "/admin/media", label: "الوسائط", icon: Images },
+        { href: "/admin/cms", label: "إعدادات الموقع", icon: LayoutPanelTop },
         { href: "/admin/design", label: "المظهر", icon: Palette },
       ],
     },
@@ -68,15 +70,15 @@ function makeAdminNavGroups(t: TFunction): { label: string; items: NavItem[] }[]
       label: "المبيعات",
       items: [
         { href: "/admin/orders", label: "الطلبات", icon: ShoppingCart },
-        { href: "/admin/coupons", label: "الكوبونات", icon: TicketPercent },
-        { href: "/admin/offers", label: t("AdminShell.navOffers"), icon: Gift },
+        { href: "/admin/coupons", label: "الكوبونات", icon: TicketPercent, soon: true },
+        { href: "/admin/offers", label: t("AdminShell.navOffers"), icon: Gift, soon: true },
       ],
     },
     {
       label: "النظام",
       items: [
-        { href: "/admin/audit", label: "سجل التدقيق", icon: History },
         { href: "/admin/cms", label: "الإعدادات", icon: Settings },
+        { href: "/admin/audit", label: "سجل التدقيق", icon: History },
       ],
     },
   ];
@@ -130,6 +132,8 @@ function breadcrumbTrail(pathname: string, flatNav: NavItem[]) {
   if (match && normalized !== match.href) {
     if (normalized.includes("/edit/")) {
       trail.push({ href: normalized, label: "تعديل منتج" });
+    } else if (normalized.includes("/new")) {
+      trail.push({ href: normalized, label: "منتج جديد" });
     } else {
       trail.push({ href: normalized, label: "تفاصيل" });
     }
@@ -152,6 +156,7 @@ function AdminTopBar({
   flatNav: NavItem[];
 }) {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   const pathname = useLocation().pathname ?? "";
   const crumbs = useMemo(() => breadcrumbTrail(pathname, flatNav), [pathname, flatNav]);
 
@@ -160,11 +165,21 @@ function AdminTopBar({
     navigate("/admin/login", { replace: true });
   }
 
+  const storeLocale = i18n.language.startsWith("ar") ? "/ar" : "/";
+
   return (
     <header className={styles.topbar}>
       <div className={styles.topbarLeft}>
         <button type="button" className={styles.mobileMenuBtn} aria-label="فتح القائمة" onClick={onOpenMobileNav}>
           <Menu size={20} />
+        </button>
+        <button
+          type="button"
+          className={styles.iconBtn}
+          aria-label="طي أو توسيع القائمة"
+          onClick={onToggleSidebar}
+        >
+          {collapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
         </button>
         <nav aria-label="مسار التنقل">
           <ol className={styles.breadcrumbs}>
@@ -190,7 +205,7 @@ function AdminTopBar({
           <input
             className={styles.searchInput}
             type="search"
-            placeholder="بحث سريع في القائمة…"
+            placeholder="بحث في القائمة…"
             aria-label="بحث في لوحة التحكم"
             onKeyDown={(e) => {
               if (e.key !== "Enter") return;
@@ -209,25 +224,21 @@ function AdminTopBar({
       </div>
 
       <div className={styles.topbarRight}>
-        <button type="button" className={styles.iconBtn} aria-label="طي أو توسيع القائمة" onClick={onToggleSidebar}>
-          {collapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
-        </button>
-        <button type="button" className={styles.iconBtn} title="التنبيهات" aria-label="التنبيهات">
-          <Bell size={20} />
-        </button>
-        <button type="button" className={styles.iconBtn} title="مساعدة" aria-label="مساعدة">
-          <HelpCircle size={20} />
-        </button>
-        <span className={styles.topbarDivider} aria-hidden />
         <div className={styles.topbarActions}>
-          <Link className={styles.btnGhost} to="/en" target="_blank" rel="noopener noreferrer">
-            <ExternalLink size={16} aria-hidden />
-            معاينة الموقع
+          <Link className={styles.btnGhost} to={storeLocale} target="_blank" rel="noopener noreferrer">
+            <Store size={16} aria-hidden />
+            عرض المتجر
           </Link>
-          <Link className={styles.btnGhost} to="/ar" target="_blank" rel="noopener noreferrer">
-            النسخة العربية
-          </Link>
-          <Link className={styles.btnPrimarySm} to="/admin/products">
+          <button
+            type="button"
+            className={styles.btnGhost}
+            onClick={() => void i18n.changeLanguage(i18n.language.startsWith("ar") ? "en" : "ar")}
+            title="تبديل اللغة"
+          >
+            <Languages size={16} aria-hidden />
+            {i18n.language.startsWith("ar") ? "English" : "العربية"}
+          </button>
+          <Link className={styles.btnPrimarySm} to="/admin/products/new">
             <Plus size={16} aria-hidden />
             إضافة منتج
           </Link>
@@ -251,7 +262,7 @@ export function AdminAppShell() {
     setMobileNavOpen(false);
   }, [pathname]);
 
-  const groups = useMemo(() => makeAdminNavGroups(t), [t, i18n.language]);
+  const groups = useMemo(() => makeAdminNavGroups(t), [t]);
   const flatNav = useMemo(() => groups.flatMap((g) => g.items), [groups]);
 
   return (
@@ -272,8 +283,8 @@ export function AdminAppShell() {
             <Store size={18} aria-hidden />
           </div>
           <div className={styles.brandText}>
-            <p className={styles.brandTitle}>FreeZone Admin</p>
-            <p className={styles.brandSub}>Commerce Dashboard</p>
+            <p className={styles.brandTitle}>FreeZone</p>
+            <p className={styles.brandSub}>لوحة الإدارة</p>
           </div>
         </div>
 
@@ -283,22 +294,16 @@ export function AdminAppShell() {
             {group.items.map((item) => {
               const on = isNavActive(pathname, item.href);
               const Icon = item.icon;
-              const title = collapsed
-                ? item.label
-                : item.href === "/admin/offers"
-                  ? i18n.language.startsWith("ar")
-                    ? "Offers"
-                    : "العروض"
-                  : undefined;
               return (
                 <Link
-                  key={item.href}
+                  key={`${group.label}-${item.href}-${item.label}`}
                   to={item.href}
                   className={`${styles.navLink} ${on ? styles.navLinkActive : ""}`}
-                  title={title}
+                  title={collapsed ? item.label : undefined}
                 >
                   <Icon className={styles.navIcon} size={18} strokeWidth={on ? 2.25 : 2} />
                   <span className={styles.navLinkText}>{item.label}</span>
+                  {item.soon && !collapsed ? <span className={styles.navSoon}>قريبًا</span> : null}
                 </Link>
               );
             })}
@@ -308,8 +313,9 @@ export function AdminAppShell() {
         <div className={styles.spacer} />
 
         <div className={styles.footerLinks}>
-          <Link to="/en" className={styles.footerLink}>
-            ← الموقع للزوار
+          <Link to={i18n.language.startsWith("ar") ? "/ar" : "/"} className={styles.footerLink} target="_blank" rel="noopener noreferrer">
+            <ExternalLink size={14} aria-hidden />
+            عرض المتجر
           </Link>
         </div>
       </aside>

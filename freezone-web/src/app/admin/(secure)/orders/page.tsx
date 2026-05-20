@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { freezoneApiUrl } from "@/lib/api-internal";
 
 type OrderRow = {
@@ -26,6 +26,8 @@ const STATUSES = ["pending", "confirmed", "processing", "shipped", "delivered", 
 
 export default function AdminOrdersPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const statusFilter = searchParams.get("status") ?? "";
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [msg, setMsg] = useState("");
   const [expanded, setExpanded] = useState<number | null>(null);
@@ -48,6 +50,11 @@ export default function AdminOrdersPage() {
     void load();
   }, [load]);
 
+  const visibleRows = useMemo(() => {
+    if (!statusFilter) return rows;
+    return rows.filter((o) => o.status === statusFilter);
+  }, [rows, statusFilter]);
+
   async function setStatus(id: number, status: string) {
     const res = await fetch(freezoneApiUrl("/api/admin/orders"), {
       method: "PATCH",
@@ -65,9 +72,17 @@ export default function AdminOrdersPage() {
   return (
     <div style={{ padding: 24, maxWidth: 1200 }}>
       <h1 style={{ marginBottom: 8 }}>الطلبات</h1>
-      <p style={{ color: "var(--admin-muted)", marginBottom: 20, fontSize: 14 }}>
-        الطلبات الناتجة عن صفحة الدفع عند وجود <code>DATABASE_URL</code>. الحقل الأخضر يحدّث حالة التنفيذ.
+      <p style={{ color: "var(--admin-muted)", marginBottom: 12, fontSize: 14 }}>
+        الطلبات الناتجة عن صفحة الدفع عند وجود <code>DATABASE_URL</code>.
       </p>
+      {statusFilter ? (
+        <p style={{ marginBottom: 16, fontSize: 13 }}>
+          عرض: <strong>{statusFilter}</strong>{" "}
+          <button type="button" className="text-sm" onClick={() => navigate("/admin/orders")} style={{ marginInlineStart: 8 }}>
+            إزالة الفلتر
+          </button>
+        </p>
+      ) : null}
       {msg && <div style={{ marginBottom: 12, color: "#fecaca" }}>{msg}</div>}
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
@@ -165,7 +180,7 @@ export default function AdminOrdersPage() {
           </tbody>
         </table>
       </div>
-      {rows.length === 0 && !msg && (
+      {visibleRows.length === 0 && !msg && (
         <p style={{ color: "#64748b", marginTop: 24 }}>لا توجد طلبات بعد.</p>
       )}
     </div>
