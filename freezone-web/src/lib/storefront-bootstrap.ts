@@ -18,14 +18,23 @@ export type StorefrontBootstrapPayload = {
   theme: ThemeTokens;
 };
 
-async function loadFallback(locale: "en" | "ar"): Promise<StorefrontBootstrapPayload> {
+/** Announcement marquee strips are disabled on the public storefront. */
+function withoutMarqueeStrips(payload: StorefrontBootstrapPayload): StorefrontBootstrapPayload {
   return {
+    ...payload,
+    site: { ...payload.site, marqueeStrips: [] },
+    theme: mergeThemeTokens(payload.theme),
+  };
+}
+
+async function loadFallback(locale: "en" | "ar"): Promise<StorefrontBootstrapPayload> {
+  return withoutMarqueeStrips({
     site: staticPublicSite(locale),
     home: staticHomeCms(locale === "ar" ? "ar" : "en"),
     catalog: { products: PRODUCTS, categories: CATEGORIES, brands: BRANDS },
     homeSections: null,
     theme: DEFAULT_THEME,
-  };
+  });
 }
 
 function bootstrapUrl(locale: "en" | "ar"): string {
@@ -46,8 +55,7 @@ export async function fetchStorefrontBootstrap(locale: "en" | "ar"): Promise<Sto
     console.warn(
       "[storefront-bootstrap] VITE_STATIC_STOREFRONT_ONLY=true — dev static mode; catalog products come from src/lib/data.ts.",
     );
-    const fb = await loadFallback(locale);
-    return { ...fb, theme: mergeThemeTokens(fb.theme) };
+    return loadFallback(locale);
   }
 
   const url = bootstrapUrl(locale);
@@ -66,18 +74,16 @@ export async function fetchStorefrontBootstrap(locale: "en" | "ar"): Promise<Sto
           `${detail}. Set VITE_API_URL in Netlify to your Freezone API origin (no /api suffix), clear cache, and redeploy.`,
         );
       }
-      const fb = await loadFallback(locale);
-      return { ...fb, theme: mergeThemeTokens(fb.theme) };
+      return loadFallback(locale);
     }
     const raw = (await r.json()) as StorefrontBootstrapPayload;
     if (!raw?.catalog || !Array.isArray(raw.catalog.products)) {
       const msg = `[storefront-bootstrap] Invalid JSON from ${url}`;
       console.error(msg, raw);
       if (prod) throw new Error(`${msg}. Check API deployment.`);
-      const fb = await loadFallback(locale);
-      return { ...fb, theme: mergeThemeTokens(fb.theme) };
+      return loadFallback(locale);
     }
-    return { ...raw, theme: mergeThemeTokens(raw.theme) };
+    return withoutMarqueeStrips(raw);
   } catch (e) {
     if (prod) {
       const base = getApiInternalBase();
@@ -90,7 +96,6 @@ export async function fetchStorefrontBootstrap(locale: "en" | "ar"): Promise<Sto
       "[storefront-bootstrap] fetch failed — dev fallback (empty products if data.ts PRODUCTS is []). Check API on port 4000 and Vite proxy.",
       e,
     );
-    const fb = await loadFallback(locale);
-    return { ...fb, theme: mergeThemeTokens(fb.theme) };
+    return loadFallback(locale);
   }
 }

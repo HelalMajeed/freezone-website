@@ -8,7 +8,6 @@ import { fetchStorefrontBootstrap } from "@/lib/storefront-bootstrap";
 import { StorefrontProvider } from "@/components/providers/StorefrontProvider";
 import { ThemeApplier } from "@/components/providers/ThemeApplier";
 import { StoreJsonLd } from "@/components/seo/StoreJsonLd";
-import { AnnouncementBar } from "@/components/ui/AnnouncementBar";
 import { StorefrontPrefetch } from "@/components/storefront/StorefrontPrefetch";
 import { setLocale } from "@/i18n/i18n";
 import { LocaleRouteFallback } from "@/routes/LocaleRouteFallback";
@@ -125,7 +124,6 @@ export function LocaleLayout() {
           }}
         >
           <ThemeApplier tokens={theme}>
-            <AnnouncementBar />
             <NavBar />
             <main className="app-main">
               <PageTransition>
