@@ -178,3 +178,9 @@
 .metaList dd {
   margin: 0;
 }
+
+.attrTable a {
+  color: var(--admin-accent, #93c5fd);
+  font-weight: 600;
+  text-decoration: none;
+}

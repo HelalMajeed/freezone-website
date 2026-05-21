@@ -10,6 +10,7 @@ import { AdminProductsTable } from "@/components/admin/products/AdminProductsTab
 import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
 import { AdminLoadingState } from "@/components/admin/ui/AdminLoadingState";
 import { freezoneApiUrl } from "@/lib/api-internal";
+import type { AdminProductRow } from "@/components/admin/products-catalog/admin-product-types";
 import type { AdminCategoryRow } from "@/components/admin/categories/AdminCategoriesManager";
 import styles from "./AdminCategoryHub.module.css";
 
@@ -44,34 +45,41 @@ export function AdminCategoryHub() {
   const [qualityIssues, setQualityIssues] = useState<
     { productId: number; nameEn: string; issue: string; tab: string }[]
   >([]);
+  const [recentProducts, setRecentProducts] = useState<AdminProductRow[]>([]);
+  const [stockUnsetCount, setStockUnsetCount] = useState(0);
+  const [missingImagesCount, setMissingImagesCount] = useState(0);
+  const [missingSpecsCount, setMissingSpecsCount] = useState(0);
 
   const load = useCallback(async () => {
     if (!Number.isFinite(categoryId)) return;
     setLoading(true);
-    const [catRes, attrRes, prodRes, pubRes] = await Promise.all([
+    const listBase = {
+      categoryId: String(categoryId),
+      search: "",
+      published: "" as const,
+      stock: "" as const,
+      sort: "id_desc",
+    };
+    const [catRes, attrRes, prodRes, pubRes, unsetRes, recentRes] = await Promise.all([
       fetch(freezoneApiUrl("/api/admin/categories"), { credentials: "include", cache: "no-store" }),
       fetch(freezoneApiUrl(`/api/admin/categories/${categoryId}/attributes`), {
         credentials: "include",
         cache: "no-store",
       }),
+      fetchAdminProductsList({ ...listBase, page: 1, pageSize: 1 }),
       fetchAdminProductsList({
-        categoryId: String(categoryId),
+        ...listBase,
         page: 1,
         pageSize: 1,
-        search: "",
-        published: "",
-        stock: "",
-        sort: "id_desc",
-      }),
-      fetchAdminProductsList({
-        categoryId: String(categoryId),
-        page: 1,
-        pageSize: 1,
-        search: "",
         published: "published",
-        stock: "",
-        sort: "id_desc",
       }),
+      fetchAdminProductsList({
+        ...listBase,
+        page: 1,
+        pageSize: 1,
+        stock: "unset",
+      }),
+      fetchAdminProductsList({ ...listBase, page: 1, pageSize: 5 }),
     ]);
     if (catRes.status === 401) {
       navigate("/admin/login", { replace: true });
@@ -90,8 +98,12 @@ export function AdminCategoryHub() {
     }
     setProductTotal(prodRes.total);
     setPublishedCount(pubRes.total);
+    setStockUnsetCount(unsetRes.total);
+    setRecentProducts(recentRes.items);
 
     const issues: { productId: number; nameEn: string; issue: string; tab: string }[] = [];
+    let missImg = 0;
+    let missSpec = 0;
     if (slug) {
       for (const qTab of ["missing_images", "missing_specs", "invalid_filters"] as const) {
         const res = await fetch(
@@ -105,11 +117,15 @@ export function AdminCategoryHub() {
           for (const item of j.items ?? []) {
             if (item.categorySlug === slug) {
               issues.push({ productId: item.productId, nameEn: item.nameEn, issue: item.issue, tab: qTab });
+              if (qTab === "missing_images") missImg++;
+              if (qTab === "missing_specs") missSpec++;
             }
           }
         }
       }
     }
+    setMissingImagesCount(missImg);
+    setMissingSpecsCount(missSpec);
     setQualityIssues(issues);
     setLoading(false);
   }, [categoryId, navigate]);
@@ -166,7 +182,7 @@ export function AdminCategoryHub() {
         description={`إدارة كتالوج القسم — ${category.slug}`}
         actions={
           <div className={styles.headerActions}>
-            <Link className={styles.btnPrimary} to={`/admin/products/new?categoryId=${categoryId}`}>
+            <Link className={styles.btnPrimary} to={`/admin/categories/${categoryId}/products/new`}>
               + إضافة منتج
             </Link>
             <a className={styles.btnGhost} href={storeUrl} target="_blank" rel="noopener noreferrer">
@@ -196,6 +212,9 @@ export function AdminCategoryHub() {
 
       {tab === "overview" ? (
         <section className={styles.panel}>
+          <p className={styles.help} dir="ltr" style={{ marginTop: 0 }}>
+            Slug: <strong>{category.slug}</strong>
+          </p>
           <div className={styles.statsGrid}>
             <div className={styles.statCard}>
               <span className={styles.statLabel}>المنتجات</span>
@@ -206,6 +225,18 @@ export function AdminCategoryHub() {
               <strong>{publishedCount}</strong>
             </div>
             <div className={styles.statCard}>
+              <span className={styles.statLabel}>بدون صور</span>
+              <strong>{missingImagesCount}</strong>
+            </div>
+            <div className={styles.statCard}>
+              <span className={styles.statLabel}>مواصفات ناقصة</span>
+              <strong>{missingSpecsCount}</strong>
+            </div>
+            <div className={styles.statCard}>
+              <span className={styles.statLabel}>مخزون غير محدد</span>
+              <strong>{stockUnsetCount}</strong>
+            </div>
+            <div className={styles.statCard}>
               <span className={styles.statLabel}>فلاتر</span>
               <strong>{filterableSpecs.length}</strong>
             </div>
@@ -214,7 +245,7 @@ export function AdminCategoryHub() {
               <strong>{extendedSpecs.length}</strong>
             </div>
             <div className={styles.statCard}>
-              <span className={styles.statLabel}>مشاكل جودة</span>
+              <span className={styles.statLabel}>مشاكل جودة (عينة)</span>
               <strong>{qualityIssues.length}</strong>
             </div>
             <div className={styles.statCard}>
@@ -222,6 +253,31 @@ export function AdminCategoryHub() {
               <strong>{category.active !== false ? "نشط" : "معطّل"}</strong>
             </div>
           </div>
+          {recentProducts.length > 0 ? (
+            <>
+              <h3 style={{ margin: "16px 0 10px", fontSize: "1rem" }}>آخر المنتجات المعدّلة</h3>
+              <table className={styles.attrTable}>
+                <thead>
+                  <tr>
+                    <th>المنتج</th>
+                    <th>SKU</th>
+                    <th>إجراء</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentProducts.map((p) => (
+                    <tr key={p.id}>
+                      <td>{p.nameAr || p.nameEn}</td>
+                      <td dir="ltr">{p.sku}</td>
+                      <td>
+                        <Link to={`/admin/products/edit/${p.id}`}>تعديل</Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          ) : null}
           <div className={styles.quickActions}>
             <button type="button" className={styles.btnGhost} onClick={() => setTab("products")}>
               عرض المنتجات
@@ -229,7 +285,7 @@ export function AdminCategoryHub() {
             <button type="button" className={styles.btnGhost} onClick={() => setTab("filters")}>
               إدارة الفلاتر
             </button>
-            <Link className={styles.btnGhost} to={`/admin/products/new?categoryId=${categoryId}`}>
+            <Link className={styles.btnGhost} to={`/admin/categories/${categoryId}/products/new`}>
               إضافة منتج
             </Link>
           </div>
@@ -240,7 +296,7 @@ export function AdminCategoryHub() {
         <section className={styles.panel}>
           <div className={styles.panelHead}>
             <h2>منتجات القسم</h2>
-            <Link className={styles.btnPrimary} to={`/admin/products/new?categoryId=${categoryId}`}>
+            <Link className={styles.btnPrimary} to={`/admin/categories/${categoryId}/products/new`}>
               إضافة منتج داخل هذا القسم
             </Link>
           </div>
@@ -349,7 +405,7 @@ export function AdminCategoryHub() {
                     <td>{row.nameEn}</td>
                     <td>{row.issue}</td>
                     <td>
-                      <Link to={`/admin/products/edit/${row.productId}`}>تعديل</Link>
+                      <Link to={`/admin/products/edit/${row.productId}`}>تعديل المنتج</Link>
                     </td>
                   </tr>
                 ))}

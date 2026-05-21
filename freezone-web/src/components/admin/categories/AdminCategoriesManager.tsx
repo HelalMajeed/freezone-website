@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { partitionFacetAttributes } from "@/lib/classification/attribute-sets";
+import { parseFacetAttributesFromUnknown } from "@/lib/facet-attributes";
 import { freezoneApiUrl } from "@/lib/api-internal";
 import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
 import { AdminLoadingState } from "@/components/admin/ui/AdminLoadingState";
@@ -19,7 +21,14 @@ export type AdminCategoryRow = {
   secondaryLinkCount?: number;
   attributeCount?: number;
   categoryAttributes?: unknown[];
+  facetKeys?: unknown;
 };
+
+function categoryAttrCounts(row: AdminCategoryRow): { filters: number; display: number } {
+  const attrs = parseFacetAttributesFromUnknown(row.categoryAttributes ?? row.facetKeys);
+  const { filterableSpecs, extendedSpecs } = partitionFacetAttributes(attrs);
+  return { filters: filterableSpecs.length, display: extendedSpecs.length };
+}
 
 type FormState = {
   nameEn: string;
@@ -232,7 +241,8 @@ export function AdminCategoriesManager() {
                 <th>المعرف</th>
                 <th>الأب</th>
                 <th>المنتجات</th>
-                <th>السمات</th>
+                <th>فلاتر</th>
+                <th>مواصفات عرض</th>
                 <th>الترتيب</th>
                 <th>الحالة</th>
                 <th>إجراءات</th>
@@ -248,11 +258,8 @@ export function AdminCategoriesManager() {
                   <td dir="ltr">{r.slug}</td>
                   <td>{parentName(r.parentId)}</td>
                   <td>{r.primaryProductCount ?? 0}</td>
-                  <td>
-                    {Array.isArray(r.categoryAttributes)
-                      ? r.categoryAttributes.length
-                      : (r.attributeCount ?? "—")}
-                  </td>
+                  <td>{categoryAttrCounts(r).filters}</td>
+                  <td>{categoryAttrCounts(r).display}</td>
                   <td>{r.sortOrder}</td>
                   <td>
                     <span className={r.active !== false ? styles.badgeOn : styles.badgeOff}>
@@ -267,7 +274,10 @@ export function AdminCategoriesManager() {
                       <Link className={styles.btnLink} to={`/admin/categories/${r.id}?tab=products`}>
                         المنتجات
                       </Link>
-                      <Link className={styles.btnLinkPrimary} to={`/admin/products/new?categoryId=${r.id}`}>
+                      <Link
+                        className={styles.btnLinkPrimary}
+                        to={`/admin/categories/${r.id}/products/new`}
+                      >
                         + منتج
                       </Link>
                     </div>
