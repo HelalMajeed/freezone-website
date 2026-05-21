@@ -18,6 +18,7 @@ export type AdminCategoryRow = {
   primaryProductCount?: number;
   secondaryLinkCount?: number;
   attributeCount?: number;
+  categoryAttributes?: unknown[];
 };
 
 type FormState = {
@@ -187,7 +188,7 @@ export function AdminCategoriesManager() {
     <div className={styles.wrap}>
       <AdminPageHeader
         title="الأقسام"
-        description="إدارة أقسام المتجر، الترتيب، والسمات. الفلاتر ومواصفات العرض من صفحة سمات كل قسم."
+        description="المدخل الرئيسي للكتالوج — اختر قسماً لإضافة المنتجات وإدارة الفلاتر ومواصفات العرض."
         actions={
           <button type="button" className={styles.btnPrimary} onClick={openCreate}>
             + قسم جديد
@@ -247,7 +248,11 @@ export function AdminCategoriesManager() {
                   <td dir="ltr">{r.slug}</td>
                   <td>{parentName(r.parentId)}</td>
                   <td>{r.primaryProductCount ?? 0}</td>
-                  <td>{r.attributeCount ?? "—"}</td>
+                  <td>
+                    {Array.isArray(r.categoryAttributes)
+                      ? r.categoryAttributes.length
+                      : (r.attributeCount ?? "—")}
+                  </td>
                   <td>{r.sortOrder}</td>
                   <td>
                     <span className={r.active !== false ? styles.badgeOn : styles.badgeOff}>
@@ -255,10 +260,22 @@ export function AdminCategoriesManager() {
                     </span>
                   </td>
                   <td className={styles.actionsCell}>
+                    <div className={styles.rowActions}>
+                      <Link className={styles.btnLink} to={`/admin/categories/${r.id}`}>
+                        إدارة القسم
+                      </Link>
+                      <Link className={styles.btnLink} to={`/admin/categories/${r.id}?tab=products`}>
+                        المنتجات
+                      </Link>
+                      <Link className={styles.btnLinkPrimary} to={`/admin/products/new?categoryId=${r.id}`}>
+                        + منتج
+                      </Link>
+                    </div>
                     <button
                       type="button"
                       className={styles.menuBtn}
                       onClick={() => setOpenMenuId(openMenuId === r.id ? null : r.id)}
+                      aria-label="المزيد"
                     >
                       ⋮
                     </button>
@@ -267,8 +284,11 @@ export function AdminCategoriesManager() {
                         <button type="button" onClick={() => { setOpenMenuId(null); openEdit(r); }}>
                           تعديل
                         </button>
+                        <Link to={`/admin/categories/${r.id}?tab=filters`} onClick={() => setOpenMenuId(null)}>
+                          الفلاتر والمواصفات
+                        </Link>
                         <Link to={`/admin/categories/${r.id}/attributes`} onClick={() => setOpenMenuId(null)}>
-                          إدارة السمات
+                          محرر السمات
                         </Link>
                         <button type="button" onClick={() => { setOpenMenuId(null); void toggleActive(r); }}>
                           {r.active !== false ? "تعطيل" : "تفعيل"}

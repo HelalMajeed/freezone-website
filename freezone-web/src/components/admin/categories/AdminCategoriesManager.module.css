@@ -191,6 +191,33 @@
   opacity: 0.65;
 }
 
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.btnLink,
+.btnLinkPrimary {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.btnLink {
+  color: #93c5fd;
+  border: 1px solid var(--admin-border);
+}
+
+.btnLinkPrimary {
+  color: #fff;
+  background: var(--admin-primary, #1e40af);
+}
+
 .actionsCell {
   position: relative;
   width: 48px;

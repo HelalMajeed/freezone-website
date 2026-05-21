@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AdminProductsTable } from "@/components/admin/products/AdminProductsTable";
+import { AdminProductCategoryPicker } from "@/components/admin/products/AdminProductCategoryPicker";
 import { freezoneApiUrl } from "@/lib/api-internal";
 
 type Category = { id: number; slug: string; nameEn: string; nameAr?: string };
@@ -11,6 +12,7 @@ export default function AdminProductsPage() {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pickCategoryOpen, setPickCategoryOpen] = useState(false);
 
   const loadCategories = useCallback(async () => {
     setLoading(true);
@@ -54,12 +56,46 @@ export default function AdminProductsPage() {
         }}
       >
         <div>
-          <h1 style={{ margin: "0 0 6px", fontSize: "1.5rem" }}>المنتجات</h1>
+          <h1 style={{ margin: "0 0 6px", fontSize: "1.5rem" }}>كل المنتجات</h1>
           <p style={{ color: "var(--admin-muted)", margin: 0, fontSize: 13, lineHeight: 1.5 }}>
-            جدول مع pagination من الخادم. المواصفات والفلاتر من محرر المنتج (تبويبات).
+            بحث عام في كل الكتالوج. لإضافة منتج جديد بشكل أدق، ابدأ من{" "}
+            <Link to="/admin/categories" style={{ color: "var(--admin-accent)", fontWeight: 700 }}>
+              صفحة الأقسام
+            </Link>{" "}
+            واختر القسم المناسب.
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => setPickCategoryOpen((o) => !o)}
+          style={{
+            padding: "10px 16px",
+            borderRadius: 8,
+            border: "none",
+            background: "var(--admin-primary, #1e40af)",
+            color: "#fff",
+            fontWeight: 700,
+            cursor: "pointer",
+            fontSize: 13,
+          }}
+        >
+          إضافة من داخل قسم
+        </button>
       </div>
+
+      {pickCategoryOpen && !loading ? (
+        <div
+          style={{
+            marginBottom: 20,
+            padding: 16,
+            borderRadius: 12,
+            border: "1px solid var(--admin-border)",
+            background: "var(--admin-surface-muted)",
+          }}
+        >
+          <AdminProductCategoryPicker categories={categories} />
+        </div>
+      ) : null}
 
       {loading ? (
         <p style={{ color: "var(--admin-muted)" }}>جاري التحميل…</p>

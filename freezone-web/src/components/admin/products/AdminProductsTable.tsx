@@ -45,14 +45,31 @@ function paramsFromSearch(sp: URLSearchParams): AdminProductsListParams {
   };
 }
 
-export function AdminProductsTable({ categories }: { categories: CategoryOpt[] }) {
+export function AdminProductsTable({
+  categories,
+  lockedCategoryId,
+}: {
+  categories: CategoryOpt[];
+  lockedCategoryId?: number;
+}) {
   const [searchParams] = useSearchParams();
-  const initial = useMemo(() => paramsFromSearch(searchParams), [searchParams]);
+  const initial = useMemo(() => {
+    const base = paramsFromSearch(searchParams);
+    if (lockedCategoryId != null) {
+      return { ...base, categoryId: String(lockedCategoryId) };
+    }
+    return base;
+  }, [searchParams, lockedCategoryId]);
   const [params, setParams] = useState<AdminProductsListParams>(initial);
 
   useEffect(() => {
-    setParams(paramsFromSearch(searchParams));
-  }, [searchParams]);
+    const next = paramsFromSearch(searchParams);
+    if (lockedCategoryId != null) {
+      setParams({ ...next, categoryId: String(lockedCategoryId) });
+      return;
+    }
+    setParams(next);
+  }, [searchParams, lockedCategoryId]);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [items, setItems] = useState<AdminProductRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -100,18 +117,24 @@ export function AdminProductsTable({ categories }: { categories: CategoryOpt[] }
           value={params.search}
           onChange={(e) => setParams((p) => ({ ...p, search: e.target.value, page: 1 }))}
         />
-        <select
-          className={styles.select}
-          value={params.categoryId}
-          onChange={(e) => patchParams({ categoryId: e.target.value })}
-        >
-          <option value="">كل الأقسام</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.nameEn}
-            </option>
-          ))}
-        </select>
+        {lockedCategoryId == null ? (
+          <select
+            className={styles.select}
+            value={params.categoryId}
+            onChange={(e) => patchParams({ categoryId: e.target.value })}
+          >
+            <option value="">كل الأقسام</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nameEn}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className={styles.count}>
+            قسم: {categories.find((c) => c.id === lockedCategoryId)?.nameAr || categories[0]?.nameEn}
+          </span>
+        )}
         <select
           className={styles.select}
           value={params.published}

@@ -3,10 +3,29 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AdminProductCreateForm } from "@/components/admin/products/AdminProductCreateForm";
+import { AdminProductCategoryPicker } from "@/components/admin/products/AdminProductCategoryPicker";
 import { freezoneApiUrl } from "@/lib/api-internal";
 
 type Category = { id: number; slug: string; nameEn: string; nameAr?: string; facetKeys?: unknown };
 type BrandOpt = { id: number; nameEn: string; nameAr: string };
+
+function resolveCategoryId(
+  searchParams: URLSearchParams,
+  categories: Category[],
+): number | null {
+  const raw =
+    searchParams.get("categoryId") ?? searchParams.get("cat") ?? searchParams.get("category");
+  if (raw && /^\d+$/.test(raw)) {
+    const id = Number(raw);
+    if (categories.some((x) => x.id === id)) return id;
+  }
+  const slug = searchParams.get("slug");
+  if (slug) {
+    const hit = categories.find((x) => x.slug === slug);
+    if (hit) return hit.id;
+  }
+  return null;
+}
 
 export default function AdminNewProductPage() {
   const navigate = useNavigate();
@@ -35,42 +54,58 @@ export default function AdminNewProductPage() {
     void load();
   }, [load]);
 
-  const initialCategoryId = useMemo(() => {
-    const cat = searchParams.get("cat");
-    const slug = searchParams.get("slug");
-    if (cat && /^\d+$/.test(cat)) {
-      const id = Number(cat);
-      if (categories.some((x) => x.id === id)) return id;
-    }
-    if (slug && categories.length) {
-      const hit = categories.find((x) => x.slug === slug);
-      if (hit) return hit.id;
-    }
-    return null;
-  }, [searchParams, categories]);
+  const initialCategoryId = useMemo(
+    () => resolveCategoryId(searchParams, categories),
+    [searchParams, categories],
+  );
+
+  const category = initialCategoryId != null ? categories.find((c) => c.id === initialCategoryId) : null;
 
   return (
     <div style={{ padding: "16px 20px 40px", width: "100%", maxWidth: 900, boxSizing: "border-box" }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 16 }}>
-        <Link to="/admin/products" style={{ color: "var(--admin-accent)", fontWeight: 700, fontSize: 14 }}>
-          ← كتالوج المنتجات
+        <Link to="/admin/categories" style={{ color: "var(--admin-accent)", fontWeight: 700, fontSize: 14 }}>
+          ← الأقسام
         </Link>
-        <span style={{ color: "var(--admin-border-strong)" }} aria-hidden>
-          |
-        </span>
-        <Link to="/admin" style={{ color: "var(--admin-muted)", fontSize: 13 }}>
-          لوحة التحكم
-        </Link>
+        {category ? (
+          <>
+            <span style={{ color: "var(--admin-border-strong)" }} aria-hidden>
+              |
+            </span>
+            <Link
+              to={`/admin/categories/${category.id}`}
+              style={{ color: "var(--admin-muted)", fontSize: 13 }}
+            >
+              {category.nameAr || category.nameEn}
+            </Link>
+          </>
+        ) : (
+          <Link to="/admin/products" style={{ color: "var(--admin-muted)", fontSize: 13 }}>
+            كل المنتجات
+          </Link>
+        )}
       </div>
-      <h1 style={{ margin: "0 0 8px", fontSize: "1.5rem" }}>إضافة منتج جديد</h1>
-      <p style={{ color: "var(--admin-muted)", marginBottom: 20, fontSize: 13, lineHeight: 1.55 }}>
-        نفس محرر التعديل: تبويبات Basic، Pricing، Filter Values، Display Specs، Images، Variants، Preview.
-      </p>
 
       {loading ? (
         <p style={{ color: "var(--admin-muted)" }}>جاري التحميل…</p>
+      ) : initialCategoryId == null ? (
+        <AdminProductCategoryPicker categories={categories} />
       ) : (
-        <AdminProductCreateForm categories={categories} brands={brands} initialCategoryId={initialCategoryId} />
+        <>
+          <h1 style={{ margin: "0 0 8px", fontSize: "1.5rem" }}>
+            إضافة منتج — {category?.nameAr || category?.nameEn}
+          </h1>
+          <p style={{ color: "var(--admin-muted)", marginBottom: 20, fontSize: 13, lineHeight: 1.55 }}>
+            الوضع البسيط: بيانات المنتج → السعر والصور → المواصفات الذكية → المراجعة. للتبويبات المنفصلة استخدم «الوضع
+            المتقدم».
+          </p>
+          <AdminProductCreateForm
+            categories={categories}
+            brands={brands}
+            initialCategoryId={initialCategoryId}
+            lockCategory
+          />
+        </>
       )}
     </div>
   );

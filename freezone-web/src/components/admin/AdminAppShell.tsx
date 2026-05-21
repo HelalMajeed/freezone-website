@@ -45,8 +45,8 @@ function makeAdminNavGroups(t: TFunction): { label: string; items: NavItem[] }[]
     {
       label: "الكتالوج",
       items: [
-        { href: "/admin/products", label: "المنتجات", icon: Package },
-        { href: "/admin/categories", label: "الأقسام والسمات", icon: FolderTree },
+        { href: "/admin/categories", label: "الأقسام", icon: FolderTree },
+        { href: "/admin/products", label: "كل المنتجات", icon: Package },
         { href: "/admin/brands", label: "العلامات التجارية", icon: Tag },
         { href: "/admin/media", label: "الوسائط", icon: Images },
       ],
@@ -130,10 +130,14 @@ function breadcrumbTrail(pathname: string, flatNav: NavItem[]) {
     trail.push({ href: match.href, label: match.label });
   }
   if (match && normalized !== match.href) {
-    if (normalized.includes("/edit/")) {
+    if (normalized.includes("/categories/") && !normalized.includes("/attributes")) {
+      trail.push({ href: normalized.split("?")[0] ?? normalized, label: "إدارة القسم" });
+    } else if (normalized.includes("/edit/")) {
       trail.push({ href: normalized, label: "تعديل منتج" });
     } else if (normalized.includes("/new")) {
       trail.push({ href: normalized, label: "منتج جديد" });
+    } else if (normalized.includes("/attributes")) {
+      trail.push({ href: normalized, label: "سمات القسم" });
     } else {
       trail.push({ href: normalized, label: "تفاصيل" });
     }
@@ -238,7 +242,7 @@ function AdminTopBar({
             <Languages size={16} aria-hidden />
             {i18n.language.startsWith("ar") ? "English" : "العربية"}
           </button>
-          <Link className={styles.btnPrimarySm} to="/admin/products/new">
+          <Link className={styles.btnPrimarySm} to="/admin/categories">
             <Plus size={16} aria-hidden />
             إضافة منتج
           </Link>

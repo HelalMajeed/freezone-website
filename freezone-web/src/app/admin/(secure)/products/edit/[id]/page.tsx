@@ -12,10 +12,13 @@ import { buildSpecsPayloadForSave } from "@/lib/admin-product-specs-payload";
 import { validateAdminProductSpecs } from "@/lib/admin/admin-product-spec-validation";
 import { useCategoryAttributeSchema } from "@/lib/admin/use-category-attribute-schema";
 import { AdminProductSpecFields } from "@/components/admin/products/AdminProductSpecFields";
+import { AdminProductSmartSpecs } from "@/components/admin/products/AdminProductSmartSpecs";
+import { AdminEditorModeToggle, type EditorMode } from "@/components/admin/products/AdminEditorModeToggle";
 import { AdminProductFormSection } from "@/components/admin/products/AdminProductFormSection";
 import {
   AdminProductEditorTabs,
   type ProductEditorTab,
+  type ProductEditorSimpleTab,
 } from "@/components/admin/products/AdminProductEditorTabs";
 import { AdminProductPreviewPanel } from "@/components/admin/products/AdminProductPreviewPanel";
 import { AdminProductEditorHeader } from "@/components/admin/products/AdminProductEditorHeader";
@@ -99,6 +102,8 @@ export default function AdminEditProductPage() {
   const [replaceImageId, setReplaceImageId] = useState<number | null>(null);
   const [galleryUrlDraft, setGalleryUrlDraft] = useState("");
   const [addingGalleryUrls, setAddingGalleryUrls] = useState(false);
+  const [editorMode, setEditorMode] = useState<EditorMode>("advanced");
+  const [simpleTab, setSimpleTab] = useState<ProductEditorSimpleTab>("info");
   const [editorTab, setEditorTab] = useState<ProductEditorTab>("basic");
   const [displaySpecs, setDisplaySpecs] = useState<Record<string, string>>({});
   const [filterSpecs, setFilterSpecs] = useState<Record<string, string>>({});
@@ -466,23 +471,43 @@ export default function AdminEditProductPage() {
       {err && <p style={{ color: "#fecaca", marginBottom: 12 }}>{err}</p>}
       {msg && <p style={{ color: "#166534", marginBottom: 12 }}>{msg}</p>}
 
-      <AdminProductEditorTabs active={editorTab} onChange={setEditorTab} tabStatuses={tabStatuses} />
+      <AdminEditorModeToggle mode={editorMode} onChange={setEditorMode} />
+
+      {editorMode === "simple" ? (
+        <AdminProductEditorTabs mode="simple" activeSimple={simpleTab} onChangeSimple={setSimpleTab} />
+      ) : (
+        <AdminProductEditorTabs
+          mode="advanced"
+          active={editorTab}
+          onChange={setEditorTab}
+          tabStatuses={tabStatuses}
+        />
+      )}
 
       <form
         id="admin-product-edit-form"
         onSubmit={saveProduct}
         style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 32 }}
       >
-        {(editorTab === "basic" || editorTab === "pricing") && (
+        {((editorMode === "simple" && (simpleTab === "info" || simpleTab === "commerce")) ||
+          (editorMode === "advanced" && (editorTab === "basic" || editorTab === "pricing"))) && (
         <AdminProductFormSection
-          title={editorTab === "pricing" ? "السعر والمخزون" : "المعلومات الأساسية"}
+          title={
+            editorMode === "simple" && simpleTab === "commerce"
+              ? "السعر والمخزون"
+              : editorTab === "pricing"
+                ? "السعر والمخزون"
+                : "المعلومات الأساسية"
+          }
           subtitle={
-            editorTab === "pricing"
-              ? "السعر، SKU، المخزون، حالة التوفر"
-              : "الاسم، العلامة، القسم، الوصف"
+            editorMode === "simple" && simpleTab === "commerce"
+              ? "السعر، SKU، المخزون"
+              : editorTab === "pricing"
+                ? "السعر، SKU، المخزون، حالة التوفر"
+                : "الاسم، العلامة، القسم، الوصف"
           }
         >
-        {editorTab === "basic" ? (
+        {(editorMode === "simple" && simpleTab === "info") || editorTab === "basic" ? (
         <>
         <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>القسم الرئيسي</label>
         <select
@@ -611,7 +636,8 @@ export default function AdminEditProductPage() {
         </>
         ) : null}
 
-        {editorTab === "pricing" ? (
+        {(editorMode === "advanced" && editorTab === "pricing") ||
+        (editorMode === "simple" && simpleTab === "commerce") ? (
         <>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <input
@@ -713,7 +739,28 @@ export default function AdminEditProductPage() {
         </AdminProductFormSection>
         )}
 
-        {editorTab === "filters" ? (
+        {editorMode === "simple" && simpleTab === "smartSpecs" ? (
+          <AdminProductSmartSpecs
+            attributes={categoryAttributes}
+            displaySpecs={displaySpecs}
+            filterSpecs={filterSpecs}
+            loading={schemaLoading}
+            error={schemaError}
+            categoryId={product.categoryId}
+            onRetry={() => reloadSchema()}
+            onChangeDisplay={(key, value) => {
+              setDisplaySpecs((p) => ({ ...p, [key]: value }));
+              markDirty();
+            }}
+            onChangeFilter={(key, value) => {
+              setFilterSpecs((p) => ({ ...p, [key]: value }));
+              markDirty();
+            }}
+            fieldStyle={field}
+          />
+        ) : null}
+
+        {editorMode === "advanced" && editorTab === "filters" ? (
         <AdminProductSpecFields
           section="filter"
           attributes={categoryAttributes}
@@ -757,7 +804,7 @@ export default function AdminEditProductPage() {
         />
         ) : null}
 
-        {editorTab === "preview" ? (
+        {(editorMode === "simple" && simpleTab === "review") || (editorMode === "advanced" && editorTab === "preview") ? (
           <AdminProductPreviewPanel
             displaySpecs={displaySpecs}
             filterSpecs={filterSpecs}
@@ -788,7 +835,7 @@ export default function AdminEditProductPage() {
         }}
       />
 
-      {editorTab === "images" ? (
+      {(editorMode === "simple" && simpleTab === "commerce") || (editorMode === "advanced" && editorTab === "images") ? (
       <>
       <h2 style={{ fontSize: 18, marginBottom: 12 }}>الصور</h2>
       <label style={{ color: "var(--admin-muted)", fontSize: 13, display: "block", marginBottom: 8 }}>

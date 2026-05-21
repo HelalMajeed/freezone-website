@@ -7,10 +7,13 @@ import { uploadAdminImage, uploadAdminModel3d } from "@/lib/admin-upload-image";
 import { importAdminImageFromUrl } from "@/lib/admin-import-image";
 import { MediaPickerModal, type MediaRow } from "@/components/admin/MediaPickerModal";
 import { AdminProductSpecFields } from "@/components/admin/products/AdminProductSpecFields";
+import { AdminProductSmartSpecs } from "@/components/admin/products/AdminProductSmartSpecs";
 import { AdminProductFormSection } from "@/components/admin/products/AdminProductFormSection";
+import { AdminEditorModeToggle, type EditorMode } from "@/components/admin/products/AdminEditorModeToggle";
 import {
   AdminProductEditorTabs,
   type ProductEditorTab,
+  type ProductEditorSimpleTab,
 } from "@/components/admin/products/AdminProductEditorTabs";
 import { AdminProductPreviewPanel } from "@/components/admin/products/AdminProductPreviewPanel";
 import { buildSpecsPayloadForSave } from "@/lib/admin-product-specs-payload";
@@ -40,11 +43,21 @@ type Props = {
   categories: Category[];
   brands: BrandOpt[];
   initialCategoryId?: number | null;
+  /** When set, category is fixed (add from category hub). */
+  lockCategory?: boolean;
 };
 
-export function AdminProductCreateForm({ categories, brands, initialCategoryId }: Props) {
+export function AdminProductCreateForm({
+  categories,
+  brands,
+  initialCategoryId,
+  lockCategory = false,
+}: Props) {
   const navigate = useNavigate();
+  const [editorMode, setEditorMode] = useState<EditorMode>(lockCategory || initialCategoryId != null ? "simple" : "simple");
+  const [simpleTab, setSimpleTab] = useState<ProductEditorSimpleTab>("info");
   const [editorTab, setEditorTab] = useState<ProductEditorTab>("basic");
+  const [showCategoryAdvanced, setShowCategoryAdvanced] = useState(false);
   const [categoryId, setCategoryId] = useState<number>(0);
   const [brandId, setBrandId] = useState<number | "">("");
   const [brand, setBrand] = useState("");
@@ -235,60 +248,101 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId }
     if (b) setBrand(b.nameEn || b.nameAr);
   }
 
+  const lockedCategory = lockCategory && initialCategoryId != null;
+  const categoryLabel =
+    categories.find((c) => c.id === resolvedCategoryId)?.nameAr ||
+    categories.find((c) => c.id === resolvedCategoryId)?.nameEn ||
+    "";
+
   if (categories.length === 0) {
     return <p style={{ color: "var(--admin-muted)" }}>لا توجد أقسام — أضف قسماً من «الأقسام».</p>;
   }
 
+  const showBasic =
+    editorMode === "simple" ? simpleTab === "info" : editorTab === "basic" || editorTab === "pricing";
+  const showPricingOnly = editorMode === "advanced" && editorTab === "pricing";
+  const showCommerce = editorMode === "simple" && simpleTab === "commerce";
+  const showSmartSpecs = editorMode === "simple" && simpleTab === "smartSpecs";
+  const showReview = editorMode === "simple" && simpleTab === "review";
+
   return (
     <form onSubmit={(e) => void submit(e)} style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 920 }}>
-      <AdminProductEditorTabs active={editorTab} onChange={setEditorTab} />
-
-      {(editorTab === "basic" || editorTab === "pricing") && (
-        <AdminProductFormSection
-          title={editorTab === "pricing" ? "Pricing & Stock" : "Basic Info"}
-          subtitle={
-            editorTab === "pricing"
-              ? "السعر، SKU، المخزون"
-              : "الاسم، القسم، العلامة، الوصف"
-          }
+      {lockedCategory ? (
+        <div
+          style={{
+            padding: "12px 14px",
+            borderRadius: 10,
+            background: "rgba(30, 64, 175, 0.12)",
+            border: "1px solid var(--admin-border)",
+          }}
         >
-          {editorTab === "basic" ? (
+          <strong>إضافة منتج إلى قسم:</strong> {categoryLabel}
+        </div>
+      ) : null}
+
+      <AdminEditorModeToggle mode={editorMode} onChange={setEditorMode} />
+
+      {editorMode === "simple" ? (
+        <AdminProductEditorTabs
+          mode="simple"
+          activeSimple={simpleTab}
+          onChangeSimple={setSimpleTab}
+        />
+      ) : (
+        <AdminProductEditorTabs mode="advanced" active={editorTab} onChange={setEditorTab} />
+      )}
+
+      {showBasic ? (
+        <AdminProductFormSection
+          title={showPricingOnly ? "السعر والمخزون" : "بيانات المنتج"}
+          subtitle={showPricingOnly ? "السعر، SKU، المخزون" : "الاسم، العلامة، الوصف"}
+        >
+          {!showPricingOnly ? (
             <>
-              <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>القسم الرئيسي</label>
-              <select
-                value={resolvedCategoryId}
-                onChange={(e) => {
-                  setCategoryId(Number(e.target.value));
-                  setDisplaySpecs({});
-                  setFilterSpecs({});
-                }}
-                style={field}
-              >
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nameEn} ({c.slug})
-                  </option>
-                ))}
-              </select>
-              <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>أقسام إضافية</label>
-              <div style={{ ...field, maxHeight: 180, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-                {categories
-                  .filter((c) => c.id !== resolvedCategoryId)
-                  .map((c) => (
-                    <label key={c.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <input
-                        type="checkbox"
-                        checked={secondaryCategoryIds.includes(c.id)}
-                        onChange={() =>
-                          setSecondaryCategoryIds((prev) =>
-                            prev.includes(c.id) ? prev.filter((x) => x !== c.id) : [...prev, c.id],
-                          )
-                        }
-                      />
-                      {c.nameEn}
-                    </label>
+              {!lockedCategory ? (
+                <>
+                  <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>القسم الرئيسي</label>
+                  <select
+                    value={resolvedCategoryId}
+                    onChange={(e) => {
+                      setCategoryId(Number(e.target.value));
+                      setDisplaySpecs({});
+                      setFilterSpecs({});
+                    }}
+                    style={field}
+                  >
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nameEn} ({c.slug})
+                      </option>
+                    ))}
+                  </select>
+                </>
+              ) : showCategoryAdvanced ? (
+                <select
+                  value={resolvedCategoryId}
+                  onChange={(e) => {
+                    setCategoryId(Number(e.target.value));
+                    setDisplaySpecs({});
+                    setFilterSpecs({});
+                  }}
+                  style={field}
+                >
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nameEn} ({c.slug})
+                    </option>
                   ))}
-              </div>
+                </select>
+              ) : (
+                <button
+                  type="button"
+                  style={{ ...field, cursor: "pointer", fontSize: 12 }}
+                  onClick={() => setShowCategoryAdvanced(true)}
+                >
+                  تغيير القسم (متقدم)
+                </button>
+              )}
               <select value={brandId === "" ? "" : String(brandId)} onChange={(e) => onBrandPick(e.target.value === "" ? "" : Number(e.target.value))} style={field}>
                 <option value="">— علامة —</option>
                 {brands.map((b) => (
@@ -303,7 +357,8 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId }
               <textarea placeholder="وصف EN" value={descEn} onChange={(e) => setDescEn(e.target.value)} rows={2} style={field} />
               <textarea placeholder="وصف AR" value={descAr} onChange={(e) => setDescAr(e.target.value)} rows={2} style={field} />
             </>
-          ) : (
+          ) : null}
+          {showPricingOnly ? (
             <>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <input placeholder="السعر IQD *" value={price} onChange={(e) => setPrice(e.target.value)} required style={field} />
@@ -314,11 +369,87 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId }
               <input placeholder="الموديل" value={model} onChange={(e) => setModel(e.target.value)} style={field} />
               <input placeholder="سطر البطاقة (legacy)" value={storage} onChange={(e) => setStorage(e.target.value)} style={field} />
             </>
-          )}
+          ) : null}
         </AdminProductFormSection>
-      )}
+      ) : null}
 
-      {editorTab === "filters" ? (
+      {showCommerce ? (
+        <AdminProductFormSection title="السعر والصور" subtitle="التسعير ورفع الصور قبل النشر">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <input placeholder="السعر IQD *" value={price} onChange={(e) => setPrice(e.target.value)} required style={field} />
+            <input placeholder="سعر قبل الخصم" value={oldPrice} onChange={(e) => setOldPrice(e.target.value)} style={field} />
+          </div>
+          <input placeholder="SKU" value={sku} onChange={(e) => setSku(e.target.value)} style={field} />
+          <input type="number" placeholder="الكمية" value={quantity} onChange={(e) => setQuantity(e.target.value)} style={field} />
+          <input placeholder="الموديل" value={model} onChange={(e) => setModel(e.target.value)} style={field} />
+          <input type="file" accept=".glb,.gltf" onChange={(e) => setModel3dFile(e.target.files?.[0] ?? null)} style={{ fontSize: 13 }} />
+          <input
+            type="file"
+            multiple
+            accept="image/png,image/jpeg"
+            onChange={(e) => {
+              setImageFiles((prev) => [...prev, ...Array.from(e.target.files ?? [])]);
+              e.target.value = "";
+            }}
+            style={{ fontSize: 13 }}
+          />
+          <button type="button" onClick={() => setPickerOpen(true)} style={field}>
+            من المكتبة
+          </button>
+          <p style={{ fontSize: 13, color: "var(--admin-muted)", margin: "12px 0 8px" }}>
+            استيراد صورة من رابط — يُحفظ على الخادم.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            <input
+              dir="ltr"
+              type="url"
+              placeholder="https://example.com/image.jpg"
+              value={importUrlDraft}
+              onChange={(e) => setImportUrlDraft(e.target.value)}
+              style={{ ...field, flex: "1 1 200px" }}
+            />
+            <button type="button" disabled={importingUrl} onClick={() => void importImageFromUrlDraft()} style={field}>
+              {importingUrl ? "جاري التنزيل…" : "تنزيل وحفظ"}
+            </button>
+          </div>
+          <MediaPickerModal
+            open={pickerOpen}
+            onClose={() => setPickerOpen(false)}
+            multi
+            onSelect={(rows: MediaRow[]) =>
+              setFromLibraryUrls((prev) => [...prev, ...rows.filter((r) => r.kind === "image").map((r) => r.url)])
+            }
+          />
+          <p style={{ fontSize: 12, color: "var(--admin-muted)", margin: 0 }}>
+            {imageFiles.length + fromLibraryUrls.length + importedLocalUrls.length} صورة جاهزة
+          </p>
+        </AdminProductFormSection>
+      ) : null}
+
+      {showSmartSpecs ? (
+        <AdminProductSmartSpecs
+          attributes={categoryAttributes}
+          displaySpecs={displaySpecs}
+          filterSpecs={filterSpecs}
+          loading={schemaLoading}
+          error={schemaError}
+          categoryId={resolvedCategoryId}
+          onRetry={() => reloadSchema()}
+          onChangeDisplay={(key, value) => setDisplaySpecs((p) => ({ ...p, [key]: value }))}
+          onChangeFilter={(key, value) => setFilterSpecs((p) => ({ ...p, [key]: value }))}
+          fieldStyle={field}
+        />
+      ) : null}
+
+      {showReview ? (
+        <AdminProductPreviewPanel
+          displaySpecs={displaySpecs}
+          filterSpecs={filterSpecs}
+          attributes={categoryAttributes}
+        />
+      ) : null}
+
+      {editorMode === "advanced" && editorTab === "filters" ? (
         <AdminProductSpecFields
           section="filter"
           attributes={categoryAttributes}
@@ -334,7 +465,7 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId }
         />
       ) : null}
 
-      {editorTab === "display" ? (
+      {editorMode === "advanced" && editorTab === "display" ? (
         <AdminProductSpecFields
           section="display"
           attributes={categoryAttributes}
@@ -350,7 +481,7 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId }
         />
       ) : null}
 
-      {editorTab === "preview" ? (
+      {editorMode === "advanced" && editorTab === "preview" ? (
         <AdminProductPreviewPanel
           displaySpecs={displaySpecs}
           filterSpecs={filterSpecs}
@@ -358,7 +489,7 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId }
         />
       ) : null}
 
-      {editorTab === "images" ? (
+      {editorMode === "advanced" && editorTab === "images" ? (
         <AdminProductFormSection title="الصور" subtitle="صور المنتج ونموذج 3D">
           <input type="file" accept=".glb,.gltf" onChange={(e) => setModel3dFile(e.target.files?.[0] ?? null)} style={{ fontSize: 13 }} />
           <input
@@ -441,7 +572,7 @@ export function AdminProductCreateForm({ categories, brands, initialCategoryId }
         </AdminProductFormSection>
       ) : null}
 
-      {editorTab !== "preview" ? (
+      {(editorMode === "simple" ? simpleTab !== "review" : editorTab !== "preview") ? (
         <button
           type="submit"
           disabled={submitting}

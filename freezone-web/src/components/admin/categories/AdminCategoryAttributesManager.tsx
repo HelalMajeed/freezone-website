@@ -102,8 +102,11 @@ export function AdminCategoryAttributesManager() {
     <div className={styles.wrap}>
       <div className={styles.header}>
         <div>
-          <Link to="/admin/categories" className={styles.back}>
-            ← الأقسام
+          <Link to={`/admin/categories/${categoryId}`} className={styles.back}>
+            ← إدارة القسم
+          </Link>
+          <Link to="/admin/categories" className={styles.back} style={{ marginInlineStart: 12 }}>
+            كل الأقسام
           </Link>
           <h1 className={styles.title}>سمات القسم — {nameEn || slug}</h1>
           <p className={styles.sub}>

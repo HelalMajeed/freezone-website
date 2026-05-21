@@ -62,3 +62,19 @@
   background: rgba(239, 68, 68, 0.15);
   color: #991b1b;
 }
+
+.modeToggle {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border, #334155);
+  background: var(--admin-surface-muted, #1e293b);
+  color: var(--admin-text, #f1f5f9);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.modeToggle:hover {
+  border-color: var(--admin-accent, #3b82f6);
+}
