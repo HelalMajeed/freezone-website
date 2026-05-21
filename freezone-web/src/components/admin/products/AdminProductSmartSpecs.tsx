@@ -4,15 +4,20 @@ import { useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import type { FacetAttributeDef } from "@/lib/data";
-import { facetAttributeDisplayName } from "@/lib/facet-attributes";
 import { partitionFacetAttributes } from "@/lib/classification/attribute-sets";
-import { normalizeFilterValue } from "@/lib/classification/filter-value";
 import { proposeFiltersFromDisplay } from "@/lib/admin/admin-product-tab-status";
 import { AdminProductFormSection } from "@/components/admin/products/AdminProductFormSection";
 import { AdminLoadingState } from "@/components/admin/ui/AdminLoadingState";
 import { AdminErrorState } from "@/components/admin/ui/AdminErrorState";
 import { AdminEmptyState } from "@/components/admin/ui/AdminEmptyState";
+import {
+  FilterValueControl,
+  DisplaySpecInput,
+  SpecTypeBadge,
+  attributeTitle,
+} from "@/components/admin/products/AdminProductAttributeControls";
 import ui from "@/components/admin/ui/AdminUi.module.css";
+import styles from "./AdminProductSmartSpecs.module.css";
 
 type Props = {
   attributes: FacetAttributeDef[];
@@ -42,7 +47,6 @@ export function AdminProductSmartSpecs({
   onRetry,
 }: Props) {
   const { filterableSpecs, extendedSpecs } = partitionFacetAttributes(attributes);
-  const allRows = useMemo(() => [...filterableSpecs, ...extendedSpecs], [filterableSpecs, extendedSpecs]);
   const [derivePreview, setDerivePreview] = useState<Record<string, { before: string; after: string }> | null>(null);
 
   const proposed = useMemo(
@@ -56,11 +60,11 @@ export function AdminProductSmartSpecs({
     return (
       <AdminEmptyState
         title="لا توجد سمات لهذا القسم"
-        message="عرّف الفلاتر ومواصفات العرض من صفحة القسم أولاً."
+        message="من صفحة القسم عرّف الفلاتر (أسماء وخياراتها) ثم أضف المنتج."
         action={
           categoryId ? (
-            <Link className={ui.btnSm} to={`/admin/categories/${categoryId}?tab=filters`}>
-              إدارة الفلاتر والمواصفات
+            <Link className={ui.btnSm} to={`/admin/categories/${categoryId}/attributes`}>
+              إدارة فلاتر القسم
             </Link>
           ) : undefined
         }
@@ -89,131 +93,123 @@ export function AdminProductSmartSpecs({
   return (
     <AdminProductFormSection
       title="المواصفات الذكية"
-      subtitle="مواصفة المنتج الكاملة وقيمة الفلتر المختصرة في جدول واحد — كما تظهر في صفحة المنتج والكتالوج."
-      badge={`${allRows.length} حقل`}
+      subtitle="نفس فلاتر القسم — اختر قيمة الفلتر واكتب المواصفة الموسعة بجانبها."
+      badge={`${filterableSpecs.length + extendedSpecs.length} حقل`}
     >
-      <p className={ui.helpBlock}>
-        <strong>صفحة المنتج:</strong> النص الكامل في عمود «مواصفة المنتج».{" "}
-        <strong>فلاتر القسم:</strong> القيم القصيرة في عمود «قيمة الفلتر» (للحقول القابلة للفلترة فقط).
+      <p className={styles.flowHelp}>
+        <strong>داخل القسم:</strong> تحدد الفلاتر وأسماءها وخياراتها (Select / Checkbox / Range).{" "}
+        <strong>هنا عند إضافة المنتج:</strong> لكل فلتر تختار قيمة الفلتر (تظهر في صفحة القسم فقط) وتكتب
+        المواصفة الموسعة (تظهر في صفحة المنتج).{" "}
+        <strong>لا تخلط:</strong> لا تضع نصًا طويلًا في خانة الفلتر.
       </p>
 
       {filterableSpecs.length > 0 ? (
-        <div style={{ marginBottom: 14 }}>
-          <button type="button" className={ui.btnSm} onClick={openDerivePreview}>
-            توليد قيم الفلاتر تلقائيًا من المواصفات
-          </button>
-        </div>
-      ) : null}
-
-      {derivePreview && Object.keys(derivePreview).length > 0 ? (
-        <div className={ui.derivePreviewBox} style={{ marginBottom: 16 }}>
-          <strong>معاينة قبل التطبيق</strong>
-          <table className={ui.table} style={{ marginTop: 8 }}>
-            <thead>
-              <tr>
-                <th>الحقل</th>
-                <th>قبل</th>
-                <th>بعد</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(derivePreview).map(([key, row]) => (
-                <tr key={key}>
-                  <td>{key}</td>
-                  <td>{row.before || "—"}</td>
-                  <td>{row.after}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            <button type="button" className={`${ui.btnSm} ${ui.btnPrimaryOutline}`} onClick={applyDerived}>
-              تطبيق القيم المقترحة
-            </button>
-            <button type="button" className={ui.btnSm} onClick={() => setDerivePreview(null)}>
-              إلغاء
+        <>
+          <div style={{ marginBottom: 12 }}>
+            <button type="button" className={ui.btnSm} onClick={openDerivePreview}>
+              توليد قيم الفلاتر من المواصفات الموسعة
             </button>
           </div>
-        </div>
-      ) : derivePreview ? (
-        <p style={{ fontSize: 13, color: "var(--admin-muted)", marginBottom: 12 }}>
-          لا توجد قيم فلاتر جديدة مقترحة من المواصفات الحالية.
-        </p>
-      ) : null}
+          {derivePreview && Object.keys(derivePreview).length > 0 ? (
+            <div className={ui.derivePreviewBox} style={{ marginBottom: 16 }}>
+              <strong>معاينة قبل التطبيق</strong>
+              <table className={ui.table} style={{ marginTop: 8 }}>
+                <thead>
+                  <tr>
+                    <th>الحقل</th>
+                    <th>قبل</th>
+                    <th>بعد</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(derivePreview).map(([key, row]) => (
+                    <tr key={key}>
+                      <td>{key}</td>
+                      <td>{row.before || "—"}</td>
+                      <td>{row.after}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                <button type="button" className={`${ui.btnSm} ${ui.btnPrimaryOutline}`} onClick={applyDerived}>
+                  تطبيق
+                </button>
+                <button type="button" className={ui.btnSm} onClick={() => setDerivePreview(null)}>
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          ) : null}
 
-      <div style={{ overflowX: "auto" }}>
-        <table className={ui.table}>
-          <thead>
-            <tr>
-              <th>المواصفة</th>
-              <th>تظهر في صفحة المنتج</th>
-              <th>تظهر في الفلاتر</th>
-            </tr>
-          </thead>
-          <tbody>
-            {allRows.map((attr) => {
-              const label = facetAttributeDisplayName(attr, locale);
-              const isFilter = attr.filterable === true;
-              const displayVal = displaySpecs[attr.key] ?? "";
-              const filterVal = filterSpecs[attr.key] ?? "";
-              return (
-                <tr key={attr.key}>
-                  <td style={{ minWidth: 120, verticalAlign: "top" }}>
-                    <strong>{label}</strong>
-                    <div style={{ fontSize: 11, color: "var(--admin-muted)", direction: "ltr" }}>{attr.key}</div>
-                    {attr.unit ? (
-                      <div style={{ fontSize: 11, color: "var(--admin-muted)" }}>{attr.unit}</div>
-                    ) : null}
-                  </td>
-                  <td style={{ minWidth: 220, verticalAlign: "top" }}>
-                    <textarea
-                      value={displayVal}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        onChangeDisplay(attr.key, v);
-                        if (isFilter && !filterVal.trim() && v.trim()) {
-                          onChangeFilter(attr.key, normalizeFilterValue(attr.key, v));
-                        }
-                      }}
-                      rows={attr.type === "TEXT" || isFilter ? 3 : 2}
-                      style={{ ...fieldStyle, width: "100%", minHeight: 56, resize: "vertical" }}
-                      placeholder="النص الكامل كما يظهر للعميل…"
+          <h3 className={styles.sectionTitle}>فلاتر القسم + مواصفة المنتج</h3>
+          {filterableSpecs.map((attr) => {
+            const displayVal = displaySpecs[attr.key] ?? "";
+            const filterVal = filterSpecs[attr.key] ?? "";
+            return (
+              <div key={attr.key} className={styles.specCard}>
+                <div className={styles.specCardHead}>
+                  <strong>{attributeTitle(attr, locale)}</strong>
+                  <SpecTypeBadge type={attr.type} />
+                  <span className={styles.specKey}>{attr.key}</span>
+                  {attr.unit ? <span className={styles.specKey}>{attr.unit}</span> : null}
+                </div>
+                <div className={styles.pairedGrid}>
+                  <div>
+                    <span className={styles.colLabel}>قيمة الفلتر — صفحة القسم</span>
+                    <FilterValueControl
+                      attr={attr}
+                      value={filterVal}
+                      onChange={(v) => onChangeFilter(attr.key, v)}
+                      fieldStyle={fieldStyle}
                     />
-                  </td>
-                  <td style={{ minWidth: 160, verticalAlign: "top" }}>
-                    {isFilter ? (
-                      attr.options?.length ? (
-                        <select
-                          value={filterVal}
-                          onChange={(e) => onChangeFilter(attr.key, e.target.value)}
-                          style={{ ...fieldStyle, width: "100%" }}
-                        >
-                          <option value="">—</option>
-                          {attr.options.map((opt) => (
-                            <option key={opt} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          value={filterVal}
-                          onChange={(e) => onChangeFilter(attr.key, e.target.value)}
-                          style={{ ...fieldStyle, width: "100%" }}
-                          placeholder="Core i7، RTX 5070، 16…"
-                          maxLength={64}
-                        />
-                      )
-                    ) : (
-                      <span style={{ fontSize: 12, color: "var(--admin-muted)" }}>— (عرض فقط)</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                    <span className={styles.colHint}>تظهر في فلاتر الكتالوج فقط (قصيرة).</span>
+                  </div>
+                  <div>
+                    <span className={styles.colLabel}>مواصفة موسعة — صفحة المنتج</span>
+                    <DisplaySpecInput
+                      attr={attr}
+                      value={displayVal}
+                      onChange={(v) => onChangeDisplay(attr.key, v)}
+                      fieldStyle={fieldStyle}
+                      onBlurNormalizeFilter={(normalized) => {
+                        if (!filterVal.trim()) onChangeFilter(attr.key, normalized);
+                      }}
+                    />
+                    <span className={styles.colHint}>تظهر في تفاصيل المنتج وبطاقة المواصفات.</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </>
+      ) : (
+        <p style={{ fontSize: 13, color: "var(--admin-muted)" }}>
+          لا توجد فلاتر معرّفة لهذا القسم — أضف سمات قابلة للفلترة من إدارة القسم.
+        </p>
+      )}
+
+      {extendedSpecs.length > 0 ? (
+        <>
+          <h3 className={styles.sectionTitle}>مواصفات عرض إضافية (صفحة المنتج فقط)</h3>
+          {extendedSpecs.map((attr) => (
+            <div key={attr.key} className={styles.displayOnlyCard}>
+              <div className={styles.specCardHead}>
+                <strong>{attributeTitle(attr, locale)}</strong>
+                <SpecTypeBadge type={attr.type} />
+                <span className={styles.specKey}>{attr.key}</span>
+              </div>
+              <DisplaySpecInput
+                attr={attr}
+                value={displaySpecs[attr.key] ?? ""}
+                onChange={(v) => onChangeDisplay(attr.key, v)}
+                fieldStyle={fieldStyle}
+              />
+              <span className={styles.colHint}>لا تظهر في فلاتر القسم — عرض داخل المنتج فقط.</span>
+            </div>
+          ))}
+        </>
+      ) : null}
     </AdminProductFormSection>
   );
 }

@@ -110,7 +110,8 @@ export function AdminCategoryAttributesManager() {
           </Link>
           <h1 className={styles.title}>سمات القسم — {nameEn || slug}</h1>
           <p className={styles.sub}>
-            قيم الفلاتر (filterable) مقابل مواصفات العرض (غير قابلة للفلترة). لا تضع نصًا تسويقيًا طويلًا في الفلاتر.
+            هنا تحدد فلاتر القسم: الاسم، النوع (Checkbox / Select / Range)، والخيارات. عند إضافة منتج يختار الموظف قيمة
+            الفلتر ويكتب المواصفة الموسعة بجانبها. الفلاتر تظهر في صفحة القسم فقط؛ المواصفات الموسعة في صفحة المنتج.
           </p>
         </div>
         <button type="button" className={styles.saveBtn} disabled={saving} onClick={() => void save()}>

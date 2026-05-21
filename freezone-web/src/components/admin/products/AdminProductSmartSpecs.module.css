@@ -1,0 +1,115 @@
+.flowHelp {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: var(--admin-radius, 1rem);
+  background: var(--admin-primary-soft, rgba(233, 29, 46, 0.08));
+  border: 1px solid var(--admin-border, #e7bcb9);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--admin-text-warm, #5d3f3d);
+}
+
+.flowHelp strong {
+  color: var(--admin-text, #400200);
+}
+
+.sectionTitle {
+  margin: 20px 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--admin-text, #400200);
+}
+
+.sectionTitle:first-of-type {
+  margin-top: 0;
+}
+
+.specCard {
+  border: 1px solid var(--admin-border, #e7bcb9);
+  border-radius: var(--admin-radius-lg, 2rem);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  background: var(--admin-surface, #fff);
+  box-shadow: var(--admin-shadow-sm);
+}
+
+.specCardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.specCardHead strong {
+  font-size: 14px;
+}
+
+.specKey {
+  font-size: 11px;
+  color: var(--admin-muted, #926e6c);
+  direction: ltr;
+}
+
+.typeBadge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--admin-surface-muted, #fff0ee);
+  color: var(--admin-primary-bright, #c0001e);
+  border: 1px solid var(--admin-border);
+}
+
+.pairedGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .pairedGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.colLabel {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--admin-muted, #926e6c);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.colHint {
+  display: block;
+  font-size: 11px;
+  color: var(--admin-muted, #926e6c);
+  margin-top: 6px;
+}
+
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.optionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.displayOnlyCard {
+  border: 1px dashed var(--admin-border);
+  border-radius: var(--admin-radius);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  background: var(--admin-surface-muted, #fff0ee);
+}

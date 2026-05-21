@@ -307,7 +307,8 @@ export function AdminCategoryHub() {
       {tab === "filters" ? (
         <section className={styles.panel}>
           <p className={styles.help}>
-            هذه السمات تظهر في فلاتر صفحة القسم (Sidebar). للتعديل الكامل استخدم محرر السمات.
+            هنا تعرّف الفلاتر وأسماءها وخياراتها (Select / Checkbox / Range). عند إضافة منتج يختار الموظف نفس هذه
+            الفلاتر كقيم قصيرة — والمواصفة الموسعة يكتبها بجانب كل فلتر في المحرر.
           </p>
           <table className={styles.attrTable}>
             <thead>
@@ -346,7 +347,9 @@ export function AdminCategoryHub() {
 
       {tab === "display" ? (
         <section className={styles.panel}>
-          <p className={styles.help}>تظهر داخل صفحة المنتج فقط — وليس في فلاتر الكتالوج.</p>
+          <p className={styles.help}>
+            مواصفات موسعة تظهر داخل صفحة المنتج وبطاقة التفاصيل فقط — لا تُستخدم في فلاتر صفحة القسم.
+          </p>
           <table className={styles.attrTable}>
             <thead>
               <tr>
