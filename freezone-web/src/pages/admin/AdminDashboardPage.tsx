@@ -2,31 +2,12 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import {
-  Package,
-  CheckCircle2,
-  FileEdit,
-  PackageX,
-  HelpCircle,
-  FolderTree,
-  Tag,
-  ImageOff,
-  Filter,
-  FileWarning,
-  ExternalLink,
-  RefreshCw,
-  ShoppingCart,
-} from "lucide-react";
 import { freezoneApiUrl } from "@/lib/api-internal";
 import { isDatabaseConfigured } from "@/lib/prisma";
 import { fetchAdminDashboard } from "@/lib/admin/admin-dashboard-api";
-import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
-import { AdminStatCard } from "@/components/admin/ui/AdminStatCard";
-import { AdminSectionCard } from "@/components/admin/ui/AdminSectionCard";
-import { AdminBadge } from "@/components/admin/ui/AdminBadge";
-import { AdminAlertPanel } from "@/components/admin/ui/AdminAlertPanel";
-import { AdminEmptyState } from "@/components/admin/ui/AdminEmptyState";
-import ui from "@/components/admin/ui/AdminUi.module.css";
+import { Badge, Card, Button } from "@/components/dashboard/ui";
+import dashUi from "@/components/dashboard/ui/ui.module.css";
+import s from "./AdminDashboardOverview.module.css";
 
 function formatDate(iso: string) {
   try {
@@ -36,10 +17,39 @@ function formatDate(iso: string) {
   }
 }
 
-function stockLabel(inStock: boolean, quantity?: number): { label: string; variant: "ok" | "warn" | "muted" } {
-  if (!inStock) return { label: "غير متوفر", variant: "warn" };
-  if (quantity != null && quantity <= 0) return { label: "مخزون غير محدد", variant: "muted" };
-  return { label: "متوفر", variant: "ok" };
+function stockLabel(inStock: boolean): { label: string; tone: "success" | "warning" | "neutral" } {
+  if (!inStock) return { label: "غير متوفر", tone: "warning" };
+  return { label: "متوفر", tone: "success" };
+}
+
+function Kpi({
+  label,
+  value,
+  href,
+  tone,
+}: {
+  label: string;
+  value: number | string;
+  href: string;
+  tone?: "warning" | "danger";
+}) {
+  return (
+    <Link to={href} className={dashUi.kpi} style={{ textDecoration: "none" }}>
+      <div className={dashUi.kpiLabel}>{label}</div>
+      <div
+        className={dashUi.kpiValue}
+        style={
+          tone === "warning"
+            ? { color: "var(--fz-warning)" }
+            : tone === "danger"
+              ? { color: "var(--fz-danger)" }
+              : undefined
+        }
+      >
+        {value}
+      </div>
+    </Link>
+  );
 }
 
 export default function AdminDashboardPage() {
@@ -56,313 +66,237 @@ export default function AdminDashboardPage() {
   const loading = q.isLoading;
   const apiDown = q.isError;
 
+  if (loading) return <div className="dashboard-loader" />;
+
   return (
-    <div className={ui.page}>
-      <AdminPageHeader
-        title="لوحة التحكم"
-        description="نظرة عامة على المتجر وجودة الكتالوج"
-        actions={
-          <>
-            <button
-              type="button"
-              className={ui.btnSm}
-              onClick={() => void qc.invalidateQueries({ queryKey: ["admin-dashboard"] })}
-              disabled={loading}
-            >
-              <RefreshCw size={14} style={{ verticalAlign: "middle", marginInlineEnd: 4 }} />
-              تحديث
-            </button>
-            <Link className={ui.btnSm} to="/" target="_blank" rel="noopener noreferrer">
-              <ExternalLink size={14} style={{ verticalAlign: "middle", marginInlineEnd: 4 }} />
-              عرض المتجر
-            </Link>
-          </>
-        }
-      />
+    <>
+      <div className="dashboard-page-header">
+        <div>
+          <h1 className="dashboard-page-title">لوحة التحكم</h1>
+          <div className="dashboard-page-subtitle">نظرة عامة على المتجر وجودة الكتالوج</div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => void qc.invalidateQueries({ queryKey: ["admin-dashboard"] })}
+          >
+            تحديث
+          </Button>
+          <Link to="/" target="_blank" rel="noopener noreferrer" className={`${dashUi.btn} ${dashUi.btnGhost} ${dashUi.btnSm}`}>
+            عرض المتجر
+          </Link>
+          <Link to="/admin/categories" className={`${dashUi.btn} ${dashUi.btnPrimary} ${dashUi.btnSm}`}>
+            إضافة من قسم
+          </Link>
+        </div>
+      </div>
 
       {apiDown && (
-        <div className={`${ui.alertItem} ${ui.alertError}`} style={{ marginBottom: 16 }}>
-          تعذّر تحميل البيانات. تأكد من تشغيل API الإنتاج على {freezoneApiUrl("")}
-        </div>
+        <Card title="تعذّر تحميل البيانات">
+          <p style={{ margin: 0, color: "var(--fz-danger)" }}>
+            تأكد من تشغيل API على {freezoneApiUrl("")}
+          </p>
+        </Card>
       )}
 
-      {loading ? (
-        <div className={ui.statGrid}>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className={ui.skeleton} />
-          ))}
-        </div>
-      ) : stats ? (
+      {stats ? (
         <>
-          <h3 className={ui.sectionHeading}>نظرة على المتجر</h3>
-          <div className={ui.statGrid}>
-            <AdminStatCard
-              icon={Package}
-              label="إجمالي المنتجات"
-              value={stats.totalProducts}
-              subtitle="كل المنتجات في الكتالوج"
-              href="/admin/products"
-              actionLabel="عرض المنتجات"
-            />
-            <AdminStatCard
-              icon={CheckCircle2}
-              label="منشور"
-              value={stats.publishedProducts}
-              subtitle="ظاهر في المتجر"
-              href="/admin/products?published=true"
-              actionLabel="عرض المنشور"
-            />
-            <AdminStatCard
-              icon={FileEdit}
-              label="مسودة"
-              value={stats.draftProducts}
-              subtitle="غير منشور بعد"
-              href="/admin/products?published=false"
-              actionLabel="عرض المسودات"
-            />
-            <AdminStatCard
-              icon={PackageX}
+          <div className={dashUi.kpiGrid}>
+            <Kpi label="إجمالي المنتجات" value={stats.totalProducts} href="/admin/products" />
+            <Kpi label="منشور" value={stats.publishedProducts} href="/admin/products?published=true" />
+            <Kpi label="مسودة" value={stats.draftProducts} href="/admin/products?published=false" />
+            <Kpi
               label="غير متوفر"
               value={stats.outOfStockProducts}
-              subtitle="علامة inStock = لا"
               href="/admin/products?stock=out"
-              tone={stats.outOfStockProducts > 0 ? "warn" : "default"}
-              actionLabel="مراجعة"
+              tone={stats.outOfStockProducts > 0 ? "warning" : undefined}
             />
             {stats.stockNotSetProducts > 0 ? (
-              <AdminStatCard
-                icon={HelpCircle}
+              <Kpi
                 label="مخزون غير محدد"
                 value={stats.stockNotSetProducts}
-                subtitle="inStock نعم لكن الكمية 0"
                 href="/admin/products?stock=unset"
-                tone="warn"
-                actionLabel="مراجعة"
+                tone="warning"
               />
             ) : null}
-            <AdminStatCard
-              icon={FolderTree}
-              label="أقسام"
-              value={stats.categoriesCount}
-              subtitle="أقسام نشطة"
-              href="/admin/categories"
-              actionLabel="إدارة الأقسام"
-            />
-            <AdminStatCard
-              icon={Tag}
-              label="علامات"
-              value={stats.brandsCount}
-              subtitle="علامات تجارية"
-              href="/admin/brands"
-              actionLabel="عرض العلامات"
-            />
+            <Kpi label="أقسام" value={stats.categoriesCount} href="/admin/categories" />
+            <Kpi label="علامات" value={stats.brandsCount} href="/admin/brands" />
           </div>
 
-          <h3 className={ui.sectionHeading}>يتطلب إجراء</h3>
-          <div className={ui.statGrid}>
-            <AdminStatCard
-              icon={ImageOff}
-              label="بدون صور"
+          <h3 style={{ margin: "28px 0 12px", fontSize: 15, fontWeight: 700 }}>يتطلب إجراء</h3>
+          <div className={dashUi.kpiGrid}>
+            <Kpi
+              label="صور ناقصة"
               value={stats.productsMissingImages}
-              subtitle="منتجات بلا صورة رئيسية"
               href="/admin/data-quality?tab=missing_images"
-              tone={stats.productsMissingImages > 0 ? "warn" : "default"}
-              actionLabel="مراجعة"
+              tone={stats.productsMissingImages > 0 ? "warning" : undefined}
             />
-            <AdminStatCard
-              icon={Filter}
+            <Kpi
               label="فلاتر غير صالحة"
               value={stats.invalidFilterValues}
-              subtitle="قيم فلترة تحتاج إصلاح"
               href="/admin/data-quality?tab=invalid_filters"
-              tone={stats.invalidFilterValues > 0 ? "error" : "default"}
-              actionLabel="مراجعة"
+              tone={stats.invalidFilterValues > 0 ? "danger" : undefined}
             />
-            <AdminStatCard
-              icon={FileWarning}
+            <Kpi
               label="مواصفات ناقصة"
               value={stats.productsMissingSpecs}
-              subtitle="فلاتر أو مواصفات عرض ناقصة"
               href="/admin/data-quality?tab=missing_specs"
-              tone={stats.productsMissingSpecs > 0 ? "warn" : "default"}
-              actionLabel="مراجعة"
+              tone={stats.productsMissingSpecs > 0 ? "warning" : undefined}
             />
             {(stats.categoriesWithoutAttributes ?? 0) > 0 ? (
-              <AdminStatCard
-                icon={FolderTree}
+              <Kpi
                 label="أقسام بلا سمات"
                 value={stats.categoriesWithoutAttributes}
-                subtitle="تحتاج تعريف CategoryAttribute"
                 href="/admin/data-quality?tab=categories_without_attributes"
-                tone="warn"
-                actionLabel="مراجعة"
-              />
-            ) : null}
-            {(stats.productsLegacySpecsOnly ?? 0) > 0 ? (
-              <AdminStatCard
-                icon={FileWarning}
-                label="مواصفات Legacy"
-                value={stats.productsLegacySpecsOnly}
-                subtitle="JSON قديم بدون EAV"
-                href="/admin/data-quality?tab=legacy_specs"
-                tone="warn"
-                actionLabel="مراجعة"
+                tone="warning"
               />
             ) : null}
             {stats.pendingOrders > 0 ? (
-              <AdminStatCard
-                icon={ShoppingCart}
-                label="طلبات معلّقة"
-                value={stats.pendingOrders}
-                subtitle="بانتظار التأكيد"
-                href="/admin/orders?status=pending"
-                tone="warn"
-                actionLabel="عرض الطلبات"
-              />
+              <Kpi label="طلبات معلّقة" value={stats.pendingOrders} href="/admin/orders?status=pending" tone="warning" />
             ) : null}
           </div>
 
-          {d?.warnings?.length ? (
-            <AdminSectionCard title="تنبيهات جودة البيانات">
-              <AdminAlertPanel alerts={d.warnings} />
-            </AdminSectionCard>
-          ) : null}
+          <div className={dashUi.twoCol} style={{ marginTop: 24 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              <Card
+                title="أولويات اليوم"
+                action={
+                  <Link to="/admin/data-quality" style={{ fontSize: 12, color: "var(--fz-brand)" }}>
+                    جودة البيانات
+                  </Link>
+                }
+              >
+                {d?.warnings?.length ? (
+                  <ul style={{ margin: 0, paddingInlineStart: 18, color: "var(--fz-text-soft)" }}>
+                    {d.warnings.map((w, i) => (
+                      <li key={i} style={{ marginBottom: 8 }}>
+                        {w.href ? (
+                          <Link to={w.href} style={{ color: "var(--fz-brand)" }}>
+                            {w.message}
+                          </Link>
+                        ) : (
+                          w.message
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p style={{ margin: 0, color: "var(--fz-text-muted)" }}>لا توجد تنبيهات عاجلة.</p>
+                )}
+              </Card>
 
-          <AdminSectionCard
-            title="كيف يؤثر الإدارة على المتجر"
-            action={
-              <Link className={ui.btnSm} to="/admin/data-quality">
-                جودة البيانات
-              </Link>
-            }
-          >
-            <ul className={ui.impactList}>
-              <li>
-                <strong>المنتجات</strong> — الاسم، السعر، الصورة، والمخزون تظهر في بطاقات المنتج وصفحة التفاصيل.
-              </li>
-              <li>
-                <strong>قيم الفلتر (Filter Values)</strong> — تظهر في صفحة القسم والفلاتر الجانبية فقط، وليس كبديل لمواصفات
-                العرض في صفحة المنتج.
-              </li>
-              <li>
-                <strong>مواصفات العرض (Display Specs)</strong> — تظهر داخل صفحة المنتج فقط.
-              </li>
-              <li>
-                <strong>الأقسام والسمات</strong> — السمات القابلة للفلترة تؤثر على فلاتر صفحة القسم؛ السمات غير القابلة
-                للفلترة لا تظهر في الشريط الجانبي.
-              </li>
-              <li>
-                <strong>بناء الصفحة الرئيسية</strong> — يؤثر على الصفحة الرئيسية وأقسام المحتوى فقط.
-              </li>
-            </ul>
-          </AdminSectionCard>
+              <Card
+                title="آخر المنتجات"
+                action={
+                  <Link to="/admin/products" style={{ fontSize: 12, color: "var(--fz-brand)" }}>
+                    كل المنتجات
+                  </Link>
+                }
+              >
+                {!d?.recentProducts?.length ? (
+                  <p className={dashUi.empty}>لا منتجات بعد — ابدأ من الأقسام.</p>
+                ) : (
+                  d.recentProducts.map((p) => {
+                    const stock = stockLabel(p.inStock);
+                    return (
+                      <div className={s.productRow} key={p.id}>
+                        <div className={s.productThumb}>
+                          {p.imageUrl ? <img src={p.imageUrl} alt="" /> : "—"}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className={s.productName}>
+                            #{p.id} {p.nameAr || p.nameEn}
+                          </div>
+                          <div className={s.productMeta}>
+                            {p.categoryName} · {formatDate(p.updatedAt)}
+                          </div>
+                        </div>
+                        <Badge tone={p.published ? "success" : "neutral"}>
+                          {p.published ? "منشور" : "مسودة"}
+                        </Badge>
+                        <Badge tone={stock.tone}>{stock.label}</Badge>
+                        <Link to={`/admin/products/edit/${p.id}`} style={{ fontSize: 12, color: "var(--fz-brand)" }}>
+                          تعديل
+                        </Link>
+                      </div>
+                    );
+                  })
+                )}
+              </Card>
+            </div>
 
-          <AdminSectionCard
-            title="آخر المنتجات المحدّثة"
-            action={
-              <Link className={ui.btnSm} to="/admin/products">
-                كل المنتجات
-              </Link>
-            }
-          >
-            {!d?.recentProducts?.length ? (
-              <AdminEmptyState title="لا منتجات بعد" message="أضف أول منتج من زر «إضافة منتج» أعلاه." />
-            ) : (
-              <div className={ui.tableWrap}>
-                <table className={ui.table}>
-                  <thead>
-                    <tr>
-                      <th>صورة</th>
-                      <th>المنتج</th>
-                      <th>القسم</th>
-                      <th>الحالة</th>
-                      <th>المخزون</th>
-                      <th>آخر تحديث</th>
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {d.recentProducts.map((p) => {
-                      const stock = stockLabel(p.inStock);
-                      return (
-                        <tr key={p.id}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              <Card title="صحة الكتالوج حسب القسم">
+                <div className={dashUi.tableWrap}>
+                  <table className={dashUi.table}>
+                    <thead>
+                      <tr>
+                        <th>القسم</th>
+                        <th>منتجات</th>
+                        <th>فلاتر</th>
+                        <th>عرض</th>
+                        <th>مشاكل</th>
+                        <th />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {d?.categoryHealth?.map((c) => (
+                        <tr key={c.categoryId}>
                           <td>
-                            {p.imageUrl ? (
-                              <img src={p.imageUrl} alt="" className={ui.tableThumb} />
+                            <Link to={`/admin/categories/${c.categoryId}`} style={{ fontWeight: 600 }}>
+                              {c.name}
+                            </Link>
+                            <div style={{ fontSize: 11, color: "var(--fz-text-muted)" }}>{c.slug}</div>
+                          </td>
+                          <td>{c.productCount}</td>
+                          <td>{c.filterableAttributes}</td>
+                          <td>{c.displaySpecAttributes}</td>
+                          <td>
+                            {c.productsMissingSpecs > 0 ? (
+                              <Badge tone="warning">{c.productsMissingSpecs}</Badge>
                             ) : (
-                              <span className={ui.tableThumbPlaceholder}>—</span>
+                              <Badge tone="success">سليم</Badge>
                             )}
                           </td>
                           <td>
-                            <strong>#{p.id}</strong> {p.nameAr || p.nameEn}
-                          </td>
-                          <td>{p.categoryName}</td>
-                          <td>
-                            <AdminBadge variant={p.published ? "ok" : "muted"}>
-                              {p.published ? "منشور" : "مسودة"}
-                            </AdminBadge>
-                          </td>
-                          <td>
-                            <AdminBadge variant={stock.variant}>{stock.label}</AdminBadge>
-                          </td>
-                          <td>{formatDate(p.updatedAt)}</td>
-                          <td>
-                            <Link className={ui.btnSm} to={`/admin/products/edit/${p.id}`}>
-                              تعديل
+                            <Link to={`/admin/categories/${c.categoryId}`} style={{ fontSize: 12, color: "var(--fz-brand)" }}>
+                              إدارة
                             </Link>
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </AdminSectionCard>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
 
-          <AdminSectionCard title="صحة الكتالوج حسب القسم">
-            <div className={ui.tableWrap}>
-              <table className={ui.table}>
-                <thead>
-                  <tr>
-                    <th>القسم</th>
-                    <th>منتجات</th>
-                    <th>سمات فلترة</th>
-                    <th>مواصفات عرض</th>
-                    <th>مشاكل</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {d?.categoryHealth?.map((c) => (
-                    <tr key={c.categoryId}>
-                      <td>
-                        <Link to={`/admin/categories/${c.categoryId}/attributes`}>{c.name}</Link>
-                        <div style={{ fontSize: "0.75rem", color: "var(--admin-muted)" }}>{c.slug}</div>
-                      </td>
-                      <td>{c.productCount}</td>
-                      <td>{c.filterableAttributes}</td>
-                      <td>{c.displaySpecAttributes}</td>
-                      <td>
-                        {c.productsMissingSpecs > 0 ? (
-                          <AdminBadge variant="warn">{c.productsMissingSpecs} مواصفات ناقصة</AdminBadge>
-                        ) : (
-                          <AdminBadge variant="ok">سليم</AdminBadge>
-                        )}
-                      </td>
-                      <td>
-                        <Link className={ui.btnSm} to={`/admin/categories/${c.categoryId}/attributes`}>
-                          إدارة
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Card title="إجراءات سريعة">
+                <div className={s.quickGrid}>
+                  <Link className={s.quickLink} to="/admin/categories">
+                    الأقسام
+                  </Link>
+                  <Link className={s.quickLink} to="/admin/products/new">
+                    منتج جديد
+                  </Link>
+                  <Link className={s.quickLink} to="/admin/data-quality">
+                    جودة البيانات
+                  </Link>
+                  <Link className={s.quickLink} to="/admin/classification">
+                    التصنيف
+                  </Link>
+                  <Link className={s.quickLink} to="/admin/content">
+                    الصفحة الرئيسية
+                  </Link>
+                  <Link className={s.quickLink} to="/admin/orders">
+                    الطلبات
+                  </Link>
+                </div>
+              </Card>
             </div>
-          </AdminSectionCard>
+          </div>
         </>
       ) : null}
-    </div>
+    </>
   );
 }

@@ -49,7 +49,13 @@ function SuspensePage({ children }: { children: React.ReactNode }) {
  * Full `/admin` route branch (shared by storefront `App` and `apps/admin-vite`).
  * Must be a `<Route>` element tree, not a wrapper component, so React Router registers children.
  */
+/** Legacy dashboard path — official admin is /admin only */
+const DashboardRedirect = () => <Navigate to="/admin" replace />;
+
 export const freezoneAdminRouteBranch = (
+  <>
+    <Route path="/dashboard/*" element={<DashboardRedirect />} />
+    <Route path="/dashboard" element={<DashboardRedirect />} />
   <Route path="/admin" element={<AdminChrome />}>
     <Route
       path="login"
@@ -242,4 +248,5 @@ export const freezoneAdminRouteBranch = (
       </Route>
     </Route>
   </Route>
+  </>
 );

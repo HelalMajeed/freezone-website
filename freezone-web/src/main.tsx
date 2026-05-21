@@ -7,6 +7,7 @@ import { ScrollToTop } from "@/routes/ScrollToTop";
 import "./theme/tokens.css";
 import "./globals.css";
 import "@/app/admin/admin-shell.css";
+import "@/app/admin/admin-dashboard-shell.css";
 import "@/i18n/i18n";
 
 const queryClient = new QueryClient({
