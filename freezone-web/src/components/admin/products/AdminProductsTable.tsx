@@ -9,6 +9,8 @@ import {
   fetchAdminProductsList,
   type AdminProductsListParams,
 } from "@/lib/admin/admin-products-api";
+import { formatAdminDate, productQualityHints } from "@/lib/admin/product-row-quality-hint";
+import { freezoneApiUrl } from "@/lib/api-internal";
 import styles from "./AdminProductsTable.module.css";
 
 type CategoryOpt = { id: number; nameEn: string; nameAr?: string; slug: string };
@@ -76,6 +78,8 @@ export function AdminProductsTable({
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [actingId, setActingId] = useState<number | null>(null);
+  const categoryHub = lockedCategoryId != null;
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(params.search), 300);
@@ -106,6 +110,46 @@ export function AdminProductsTable({
   const patchParams = (patch: Partial<AdminProductsListParams>) => {
     setParams((p) => ({ ...p, ...patch, page: 1 }));
   };
+
+  async function patchProduct(id: number, body: Record<string, unknown>) {
+    setActingId(id);
+    try {
+      const res = await fetch(freezoneApiUrl(`/api/admin/products/${id}`), {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error("failed");
+      await load();
+    } catch {
+      setError("تعذّر تحديث المنتج");
+    } finally {
+      setActingId(null);
+    }
+  }
+
+  async function togglePublish(p: AdminProductRow) {
+    await patchProduct(p.id, { published: !p.published });
+  }
+
+  async function safeDelete(p: AdminProductRow) {
+    const label = p.nameAr || p.nameEn || `#${p.id}`;
+    if (!confirm(`حذف المنتج «${label}» نهائيًا؟ لا يمكن التراجع.`)) return;
+    setActingId(p.id);
+    try {
+      const res = await fetch(freezoneApiUrl(`/api/admin/products/${p.id}`), {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("failed");
+      await load();
+    } catch {
+      setError("تعذّر حذف المنتج");
+    } finally {
+      setActingId(null);
+    }
+  }
 
   return (
     <div className={styles.wrap}>
@@ -186,13 +230,15 @@ export function AdminProductsTable({
             <thead>
               <tr>
                 <th>صورة</th>
-                <th>الاسم</th>
+                <th>{categoryHub ? "المنتج" : "الاسم"}</th>
                 <th>SKU</th>
-                <th>القسم</th>
-                <th>العلامة</th>
+                {!categoryHub ? <th>القسم</th> : null}
+                {!categoryHub ? <th>العلامة</th> : null}
                 <th>السعر</th>
                 <th>المخزون</th>
-                <th>الحالة</th>
+                <th>حالة المنتج</th>
+                {categoryHub ? <th>جودة البيانات</th> : null}
+                {categoryHub ? <th>آخر تحديث</th> : null}
                 <th>إجراءات</th>
               </tr>
             </thead>
@@ -202,6 +248,8 @@ export function AdminProductsTable({
                 const stock = stockWorkflowStatus(p.inStock, p.quantity ?? 0);
                 const stockLabel =
                   stock === "in" ? `متوفر (${p.quantity})` : stock === "out" ? "غير متوفر" : "غير محدد";
+                const hints = productQualityHints(p);
+                const busy = actingId === p.id;
                 return (
                   <tr key={p.id}>
                     <td>
@@ -218,8 +266,8 @@ export function AdminProductsTable({
                       </div>
                     </td>
                     <td className={styles.mono}>{p.sku && p.sku !== "—" ? p.sku : "—"}</td>
-                    <td>{p.category.nameEn}</td>
-                    <td>{brandLabel(p) || "—"}</td>
+                    {!categoryHub ? <td>{p.category.nameEn}</td> : null}
+                    {!categoryHub ? <td>{brandLabel(p) || "—"}</td> : null}
                     <td>{formatIqd(p.price)}</td>
                     <td>
                       <span
@@ -235,14 +283,46 @@ export function AdminProductsTable({
                         {p.published ? "منشور" : "مسودة"}
                       </span>
                     </td>
+                    {categoryHub ? (
+                      <td>
+                        {hints.length ? (
+                          <span className={styles.badgeWarn}>{hints.join(" · ")}</span>
+                        ) : (
+                          <span className={styles.badgeOk}>جيد</span>
+                        )}
+                      </td>
+                    ) : null}
+                    {categoryHub ? (
+                      <td className={styles.mono}>{formatAdminDate(p.updatedAt ?? p.createdAt)}</td>
+                    ) : null}
                     <td>
                       <div className={styles.actions}>
                         <Link to={`/admin/products/edit/${p.id}`} className={styles.actionLink}>
                           تعديل
                         </Link>
-                        <a href={`/en/product/${p.id}`} target="_blank" rel="noreferrer" className={styles.actionLink}>
-                          عرض
+                        <a href={`/ar/product/${p.id}`} target="_blank" rel="noreferrer" className={styles.actionLink}>
+                          معاينة
                         </a>
+                        {categoryHub ? (
+                          <button
+                            type="button"
+                            className={styles.actionLink}
+                            disabled={busy}
+                            onClick={() => void togglePublish(p)}
+                          >
+                            {p.published ? "تعطيل" : "نشر"}
+                          </button>
+                        ) : null}
+                        {categoryHub ? (
+                          <button
+                            type="button"
+                            className={`${styles.actionLink} ${styles.actionDanger}`}
+                            disabled={busy}
+                            onClick={() => void safeDelete(p)}
+                          >
+                            حذف
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>

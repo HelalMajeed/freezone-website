@@ -23,6 +23,7 @@ export type AdminProductRow = {
   sales: number;
   published: boolean;
   createdAt: string;
+  updatedAt?: string;
   icon: string;
   category: { slug: string; nameEn: string; nameAr: string };
   images: AdminProductImage[];
@@ -82,6 +83,12 @@ export function parseAdminProductsFromApi(raw: unknown): AdminProductRow[] {
         : o.createdAt instanceof Date
           ? o.createdAt.toISOString()
           : "";
+    const updatedAt =
+      typeof o.updatedAt === "string"
+        ? o.updatedAt
+        : o.updatedAt instanceof Date
+          ? o.updatedAt.toISOString()
+          : undefined;
     const secRaw = o.secondaryCategories;
     let secondaryCategoryIds: number[] | undefined;
     if (Array.isArray(secRaw)) {
@@ -116,6 +123,7 @@ export function parseAdminProductsFromApi(raw: unknown): AdminProductRow[] {
       sales: typeof o.sales === "number" ? o.sales : Number(o.sales) || 0,
       published: o.published !== false,
       createdAt,
+      ...(updatedAt ? { updatedAt } : {}),
       icon: String(o.icon ?? "📦"),
       category,
       images,

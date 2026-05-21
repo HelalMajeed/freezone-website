@@ -60,6 +60,7 @@ export function AdminCategoriesManager() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [qualityBySlug, setQualityBySlug] = useState<Record<string, number>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,6 +72,21 @@ export function AdminCategoriesManager() {
     if (res.ok) {
       const data = (await res.json()) as AdminCategoryRow[];
       setRows(data);
+      const counts: Record<string, number> = {};
+      for (const tab of ["missing_images", "missing_specs", "invalid_filters"] as const) {
+        const qRes = await fetch(
+          freezoneApiUrl(`/api/admin/data-quality?tab=${tab}&page=1&limit=100`),
+          { credentials: "include" },
+        );
+        if (!qRes.ok) continue;
+        const j = (await qRes.json()) as {
+          items: { categorySlug: string }[];
+        };
+        for (const item of j.items ?? []) {
+          if (item.categorySlug) counts[item.categorySlug] = (counts[item.categorySlug] ?? 0) + 1;
+        }
+      }
+      setQualityBySlug(counts);
     }
     setLoading(false);
   }, [navigate]);
@@ -260,6 +276,13 @@ export function AdminCategoriesManager() {
                   <td>{r.primaryProductCount ?? 0}</td>
                   <td>{categoryAttrCounts(r).filters}</td>
                   <td>{categoryAttrCounts(r).display}</td>
+                  <td>
+                    {(qualityBySlug[r.slug] ?? 0) > 0 ? (
+                      <span className={styles.badgeWarn}>{qualityBySlug[r.slug]}</span>
+                    ) : (
+                      <span className={styles.badgeOn}>—</span>
+                    )}
+                  </td>
                   <td>{r.sortOrder}</td>
                   <td>
                     <span className={r.active !== false ? styles.badgeOn : styles.badgeOff}>

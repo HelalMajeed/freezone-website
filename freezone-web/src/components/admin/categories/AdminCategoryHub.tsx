@@ -315,7 +315,9 @@ export function AdminCategoryHub() {
                 <th>الفلتر</th>
                 <th>key</th>
                 <th>النوع</th>
-                <th>الترتيب</th>
+                <th>الوحدة</th>
+                <th>الخيارات</th>
+                <th>إجراء</th>
               </tr>
             </thead>
             <tbody>
@@ -324,7 +326,11 @@ export function AdminCategoryHub() {
                   <td>{facetAttributeDisplayName(a, "ar")}</td>
                   <td dir="ltr">{a.key}</td>
                   <td>{a.type ?? "SELECT"}</td>
-                  <td>—</td>
+                  <td>{a.unit ?? "—"}</td>
+                  <td>{a.options?.length ? a.options.slice(0, 4).join(", ") : "—"}</td>
+                  <td>
+                    <Link to={`/admin/categories/${categoryId}/attributes`}>تعديل</Link>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -347,7 +353,9 @@ export function AdminCategoryHub() {
                 <th>المواصفة</th>
                 <th>key</th>
                 <th>المجموعة</th>
+                <th>النوع</th>
                 <th>مطلوب؟</th>
+                <th>إجراء</th>
               </tr>
             </thead>
             <tbody>
@@ -356,7 +364,11 @@ export function AdminCategoryHub() {
                   <td>{facetAttributeDisplayName(a, "ar")}</td>
                   <td dir="ltr">{a.key}</td>
                   <td>{a.displayGroup ?? "—"}</td>
+                  <td>{a.type ?? "TEXT"}</td>
                   <td>{a.required ? "نعم" : "—"}</td>
+                  <td>
+                    <Link to={`/admin/categories/${categoryId}/attributes`}>تعديل</Link>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -405,7 +417,9 @@ export function AdminCategoryHub() {
                     <td>{row.nameEn}</td>
                     <td>{row.issue}</td>
                     <td>
-                      <Link to={`/admin/products/edit/${row.productId}`}>تعديل المنتج</Link>
+                      <Link to={`/admin/products/edit/${row.productId}`}>تعديل</Link>
+                      {" · "}
+                      <Link to={`/admin/categories/${categoryId}?tab=quality`}>مراجعة</Link>
                     </td>
                   </tr>
                 ))}

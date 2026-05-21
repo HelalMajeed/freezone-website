@@ -16,6 +16,18 @@ const AdminCategoryDetailPage = lazy(() => import("@/app/admin/(secure)/categori
 const AdminCategoryNewProductPage = lazy(
   () => import("@/app/admin/(secure)/categories/[id]/products/new/page"),
 );
+const AdminCategoryProductsTabPage = lazy(
+  () => import("@/app/admin/(secure)/categories/[id]/products/page"),
+);
+const AdminCategoryFiltersTabPage = lazy(
+  () => import("@/app/admin/(secure)/categories/[id]/filters/page"),
+);
+const AdminCategoryDisplaySpecsTabPage = lazy(
+  () => import("@/app/admin/(secure)/categories/[id]/display-specs/page"),
+);
+const AdminCategoryDataQualityTabPage = lazy(
+  () => import("@/app/admin/(secure)/categories/[id]/data-quality/page"),
+);
 const AdminCategoryAttributesPage = lazy(
   () => import("@/app/admin/(secure)/categories/[id]/attributes/page"),
 );
@@ -128,6 +140,38 @@ export const freezoneAdminRouteBranch = (
           element={
             <SuspensePage>
               <AdminCategoryNewProductPage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="categories/:id/products"
+          element={
+            <SuspensePage>
+              <AdminCategoryProductsTabPage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="categories/:id/filters"
+          element={
+            <SuspensePage>
+              <AdminCategoryFiltersTabPage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="categories/:id/display-specs"
+          element={
+            <SuspensePage>
+              <AdminCategoryDisplaySpecsTabPage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="categories/:id/data-quality"
+          element={
+            <SuspensePage>
+              <AdminCategoryDataQualityTabPage />
             </SuspensePage>
           }
         />
