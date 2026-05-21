@@ -1,37 +1,47 @@
-/* Admin panel — dashboard shell tokens (scoped; does not affect storefront) */
+/* Admin panel — Modern Tech Pulse (DESIGN.md), scoped to .admin-shell only */
 .admin-shell.dashboard-root {
-  --fz-brand: #1e40af;
-  --fz-brand-600: #1d4ed8;
-  --fz-brand-700: #1e3a8a;
-  --fz-brand-50: #eff6ff;
-  --fz-brand-100: #dbeafe;
+  /* Brand — primary / secondary / tertiary */
+  --fz-brand: #e91d2e;
+  --fz-brand-600: #c0001e;
+  --fz-brand-700: #bb0701;
+  --fz-brand-50: #fff0ee;
+  --fz-brand-100: #ffe9e5;
+  --fz-brand-tint: #c0001e;
 
-  --fz-bg: #f6f7fb;
+  /* Surfaces */
+  --fz-bg: #fff8f6;
   --fz-bg-elev: #ffffff;
-  --fz-bg-soft: #f1f3f9;
-  --fz-border: #e4e7ef;
-  --fz-border-strong: #cdd2df;
-  --fz-text: #0f172a;
-  --fz-text-soft: #475569;
-  --fz-text-muted: #94a3b8;
+  --fz-bg-soft: #fff0ee;
+  --fz-bg-container: #ffe9e5;
+  --fz-border: #e7bcb9;
+  --fz-border-strong: #ffcfc7;
+
+  /* Typography on surfaces */
+  --fz-text: #400200;
+  --fz-text-soft: #5d3f3d;
+  --fz-text-muted: #926e6c;
   --fz-text-inverse: #ffffff;
 
+  /* Status */
   --fz-success: #16a34a;
   --fz-success-bg: #dcfce7;
   --fz-warning: #d97706;
   --fz-warning-bg: #fef3c7;
-  --fz-danger: #dc2626;
-  --fz-danger-bg: #fee2e2;
-  --fz-info: #2563eb;
-  --fz-info-bg: #dbeafe;
+  --fz-danger: #ba1a1a;
+  --fz-danger-bg: #ffdad6;
+  --fz-info: #c0001e;
+  --fz-info-bg: #ffdad7;
 
-  --fz-radius-sm: 6px;
-  --fz-radius: 10px;
-  --fz-radius-lg: 14px;
-  --fz-radius-xl: 20px;
-  --fz-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --fz-shadow: 0 4px 14px -4px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
-  --fz-shadow-lg: 0 18px 40px -16px rgba(15, 23, 42, 0.18), 0 6px 14px -6px rgba(15, 23, 42, 0.08);
+  /* Shapes — pill / rounded per DESIGN.md */
+  --fz-radius-sm: 0.5rem;
+  --fz-radius: 1rem;
+  --fz-radius-lg: 2rem;
+  --fz-radius-xl: 3rem;
+
+  /* Elevation — crimson tint, not grey */
+  --fz-shadow-sm: 0 1px 2px rgba(64, 2, 0, 0.06);
+  --fz-shadow: 0 4px 14px -4px rgba(192, 0, 30, 0.1), 0 2px 4px -2px rgba(64, 2, 0, 0.06);
+  --fz-shadow-lg: 0 18px 40px -16px rgba(192, 0, 30, 0.14), 0 6px 14px -6px rgba(64, 2, 0, 0.08);
 
   --fz-sidebar-w: 256px;
   --fz-sidebar-w-collapsed: 72px;
@@ -39,6 +49,37 @@
   --fz-font: "Inter", "Tajawal", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --fz-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --fz-t: 160ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Legacy --admin-* aliases (product editor, categories, CMS modules) */
+  --admin-bg: var(--fz-bg);
+  --admin-canvas: var(--fz-bg);
+  --admin-surface: var(--fz-bg-elev);
+  --admin-surface-muted: var(--fz-bg-soft);
+  --admin-surface-inset: var(--fz-bg-container);
+  --admin-sidebar: var(--fz-bg-elev);
+  --admin-table-header: #ffe2dd;
+  --admin-border: var(--fz-border);
+  --admin-border-strong: var(--fz-border-strong);
+  --admin-outline-variant: var(--fz-border);
+  --admin-text: var(--fz-text);
+  --admin-text-warm: var(--fz-text-soft);
+  --admin-muted: var(--fz-text-muted);
+  --admin-muted-warm: var(--fz-text-muted);
+  --admin-primary: var(--fz-brand);
+  --admin-primary-bright: var(--fz-brand-600);
+  --admin-primary-soft: rgba(233, 29, 46, 0.1);
+  --admin-primary-ring: rgba(192, 0, 30, 0.22);
+  --admin-on-primary: var(--fz-text-inverse);
+  --admin-accent: var(--fz-danger);
+  --admin-accent-bright: #93000a;
+  --admin-accent-soft: rgba(186, 26, 26, 0.1);
+  --admin-accent-ring: rgba(186, 26, 26, 0.2);
+  --admin-on-accent: var(--fz-text-inverse);
+  --admin-radius: var(--fz-radius);
+  --admin-radius-lg: var(--fz-radius-lg);
+  --admin-shadow-sm: var(--fz-shadow-sm);
+  --admin-shadow-card: var(--fz-shadow);
+  --admin-shadow-float: var(--fz-shadow-lg);
 
   background: var(--fz-bg);
   color: var(--fz-text);
@@ -95,17 +136,19 @@
 }
 
 .admin-shell .dashboard-page-title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--fz-text);
   margin: 0;
+  line-height: 1.33;
 }
 
 .admin-shell .dashboard-page-subtitle {
   color: var(--fz-text-soft);
-  font-size: 13px;
+  font-size: 14px;
   margin-top: 2px;
+  line-height: 1.43;
 }
 
 .admin-shell.dashboard-root a {
@@ -127,9 +170,9 @@
 }
 
 .admin-shell.dashboard-root :focus-visible {
-  outline: 2px solid var(--fz-brand);
+  outline: 2px solid var(--fz-brand-600);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--fz-radius-sm);
 }
 
 .admin-shell .dashboard-loader {
@@ -157,5 +200,6 @@
 }
 
 .admin-shell .searchInput:focus {
+  border-color: var(--fz-brand-600);
   box-shadow: 0 0 0 3px var(--fz-brand-100);
 }

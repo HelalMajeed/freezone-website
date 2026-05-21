@@ -1,49 +1,44 @@
-/* Admin panel — design tokens (Stitch / Apex-inspired, light enterprise shell) */
+/* Admin panel — Modern Tech Pulse (DESIGN.md), legacy pages + product editor */
 .admin-root {
-  /* Canvas */
-  --admin-bg: #f7fafc;
-  --admin-canvas: #f7fafc;
+  --admin-bg: #fff8f6;
+  --admin-canvas: #fff8f6;
 
-  /* Surfaces */
   --admin-surface: #ffffff;
-  --admin-surface-muted: #f8fafc;
-  --admin-surface-inset: #f1f5f9;
+  --admin-surface-muted: #fff0ee;
+  --admin-surface-inset: #ffe9e5;
   --admin-sidebar: #ffffff;
-  --admin-table-header: #edf2f7;
+  --admin-table-header: #ffe2dd;
 
-  /* Structure */
-  --admin-border: #e2e8f0;
-  --admin-border-strong: #cbd5e1;
-  --admin-outline-variant: #e2e8f0;
+  --admin-border: #e7bcb9;
+  --admin-border-strong: #ffcfc7;
+  --admin-outline-variant: #e7bcb9;
 
-  /* Typography */
-  --admin-text: #1a202c;
-  --admin-text-warm: #1e293b;
-  --admin-muted: #64748b;
-  --admin-muted-warm: #64748b;
+  --admin-text: #400200;
+  --admin-text-warm: #5d3f3d;
+  --admin-muted: #926e6c;
+  --admin-muted-warm: #926e6c;
 
-  /* Primary — navigation & actions (neutral enterprise blue) */
-  --admin-primary: #1e40af;
-  --admin-primary-bright: #2563eb;
-  --admin-primary-soft: rgba(37, 99, 235, 0.08);
-  --admin-primary-ring: rgba(37, 99, 235, 0.25);
+  /* Primary actions — seed / primary red */
+  --admin-primary: #e91d2e;
+  --admin-primary-bright: #c0001e;
+  --admin-primary-soft: rgba(233, 29, 46, 0.1);
+  --admin-primary-ring: rgba(192, 0, 30, 0.22);
   --admin-on-primary: #ffffff;
 
-  /* Accent — danger / logout only */
-  --admin-accent: #b51822;
-  --admin-accent-bright: #dc2626;
-  --admin-accent-soft: rgba(220, 38, 38, 0.08);
-  --admin-accent-ring: rgba(220, 38, 38, 0.2);
+  /* Accent — errors / destructive only */
+  --admin-accent: #ba1a1a;
+  --admin-accent-bright: #93000a;
+  --admin-accent-soft: rgba(186, 26, 26, 0.1);
+  --admin-accent-ring: rgba(186, 26, 26, 0.2);
   --admin-on-accent: #ffffff;
 
-  /* Legacy aliases (existing modules) */
-  --admin-radius: 8px;
-  --admin-radius-lg: 12px;
-  --admin-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --admin-shadow-card: 0 4px 10px rgba(0, 0, 0, 0.04);
-  --admin-shadow-float: 0 10px 24px rgba(15, 23, 42, 0.08);
+  --admin-radius: 1rem;
+  --admin-radius-lg: 2rem;
+  --admin-shadow-sm: 0 1px 2px rgba(64, 2, 0, 0.06);
+  --admin-shadow-card: 0 4px 14px -4px rgba(192, 0, 30, 0.1);
+  --admin-shadow-float: 0 18px 40px -16px rgba(192, 0, 30, 0.14);
 
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-family: "Inter", "Tajawal", "Segoe UI", system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.45;
   color: var(--admin-text);
@@ -51,13 +46,13 @@
 }
 
 .admin-login-root {
-  --admin-login-bg: #f7fafc;
-  --admin-text: #1a202c;
-  --admin-muted: #64748b;
-  --admin-accent: #b51822;
+  --admin-login-bg: #fff8f6;
+  --admin-text: #400200;
+  --admin-muted: #926e6c;
+  --admin-accent: #ba1a1a;
   --admin-surface: #ffffff;
-  --admin-border: #e2e8f0;
+  --admin-border: #e7bcb9;
   min-height: 100vh;
-  background: radial-gradient(ellipse 100% 80% at 50% -30%, rgba(37, 99, 235, 0.06), transparent), var(--admin-login-bg);
+  background: radial-gradient(ellipse 100% 80% at 50% -30%, rgba(233, 29, 46, 0.08), transparent), var(--admin-login-bg);
   color: var(--admin-text);
 }

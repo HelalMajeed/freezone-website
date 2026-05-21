@@ -25,7 +25,7 @@
 .brandMark {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--fz-radius, 1rem);
   background: var(--fz-brand);
   color: #fff;
   display: inline-flex;
@@ -182,9 +182,9 @@
 
 .searchInput:focus {
   background: var(--fz-bg-elev);
-  border-color: var(--fz-brand);
+  border-color: var(--fz-brand-600);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(201, 0, 0, 0.1);
+  box-shadow: 0 0 0 3px var(--fz-brand-100, #ffe9e5);
 }
 
 .searchIcon {

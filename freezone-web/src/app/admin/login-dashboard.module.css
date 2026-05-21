@@ -1,11 +1,11 @@
 .wrap {
-  --fz-brand: #1e40af;
-  --fz-brand-600: #1d4ed8;
-  --fz-brand-700: #1e3a8a;
-  --fz-bg: #f6f7fb;
-  --fz-text: #0f172a;
+  --fz-brand: #e91d2e;
+  --fz-brand-600: #c0001e;
+  --fz-brand-700: #bb0701;
+  --fz-bg: #fff8f6;
+  --fz-text: #400200;
   --fz-font: "Inter", "Tajawal", system-ui, sans-serif;
-  --fz-border: #e4e7ef;
+  --fz-border: #e7bcb9;
   min-height: 100vh;
   display: flex;
   background: var(--fz-bg);
