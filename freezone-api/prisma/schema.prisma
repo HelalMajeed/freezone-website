@@ -475,3 +475,41 @@ model CmsPageSection {
   publishedPayload  Json?
   updatedAt         DateTime @updatedAt
 }
+
+/// Dashboard user with role-based access (replaces single-password admin auth).
+/// Roles: superadmin | admin | editor | viewer
+model AdminUser {
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  passwordHash  String
+  name          String
+  role          String         @default("editor")
+  active        Boolean        @default(true)
+  avatarUrl     String?
+  lastLoginAt   DateTime?
+  failedLogins  Int            @default(0)
+  lockedUntil   DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  sessions      AdminSession[]
+
+  @@index([active])
+  @@index([role])
+}
+
+/// Server-side session — revocable, lookup by tokenHash from cookie.
+model AdminSession {
+  id         String    @id @default(cuid())
+  userId     Int
+  user       AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  userAgent  String?
+  ip         String?
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  lastSeenAt DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}

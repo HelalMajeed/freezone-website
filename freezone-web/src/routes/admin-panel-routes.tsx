@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route } from "react-router-dom";
-import { AdminAuthGuard } from "@/routes/AdminAuthGuard";
+import { AdminDashboardGuard } from "@/routes/AdminDashboardGuard";
 import { AdminChrome } from "@/components/admin/AdminChrome";
 import { AdminAppShell } from "@/components/admin/AdminAppShell";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
@@ -36,7 +36,9 @@ const AdminOrdersPage = lazy(() => import("@/app/admin/(secure)/orders/page"));
 const AdminCouponsPage = lazy(() => import("@/app/admin/(secure)/coupons/page"));
 const AdminMediaPage = lazy(() => import("@/app/admin/(secure)/media/page"));
 const AdminDesignPage = lazy(() => import("@/app/admin/(secure)/design/page"));
-const AdminAuditPage = lazy(() => import("@/app/admin/(secure)/audit/page"));
+const AdminUsersPage = lazy(() => import("@/pages/admin/AdminUsersPage"));
+const AdminProfilePage = lazy(() => import("@/pages/admin/AdminProfilePage"));
+const AdminDashboardAuditPage = lazy(() => import("@/pages/admin/AdminDashboardAuditPage"));
 const AdminOffersPage = lazy(() => import("@/app/admin/(secure)/offers/page"));
 const AdminDataQualityPage = lazy(() => import("@/pages/admin/AdminDataQualityPage"));
 const AdminClassificationPage = lazy(() => import("@/pages/admin/AdminClassificationPage"));
@@ -65,7 +67,7 @@ export const freezoneAdminRouteBranch = (
         </SuspensePage>
       }
     />
-    <Route element={<AdminAuthGuard />}>
+    <Route element={<AdminDashboardGuard />}>
       <Route element={<AdminAppShell />}>
         <Route index element={<AdminDashboardPage />} />
         <Route
@@ -230,10 +232,26 @@ export const freezoneAdminRouteBranch = (
           }
         />
         <Route
+          path="users"
+          element={
+            <SuspensePage>
+              <AdminUsersPage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="profile"
+          element={
+            <SuspensePage>
+              <AdminProfilePage />
+            </SuspensePage>
+          }
+        />
+        <Route
           path="audit"
           element={
             <SuspensePage>
-              <AdminAuditPage />
+              <AdminDashboardAuditPage />
             </SuspensePage>
           }
         />

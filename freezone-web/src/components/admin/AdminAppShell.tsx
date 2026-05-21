@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
@@ -30,14 +30,23 @@ import {
   Settings,
   Languages,
   RefreshCw,
+  Users,
+  UserRound,
 } from "lucide-react";
-import { freezoneApiUrl } from "@/lib/api-internal";
-import { Badge } from "@/components/dashboard/ui";
+import { useDashboardAuth } from "@/lib/dashboard/auth-store";
+import type { Role } from "@/lib/dashboard/api";
+import { Avatar, Badge } from "@/components/dashboard/ui";
 import s from "@/components/dashboard/layout.module.css";
 
-type NavItem = { href: string; label: string; icon: LucideIcon; soon?: boolean };
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  soon?: boolean;
+  minRole?: Role;
+};
 
-function makeAdminNavGroups(t: TFunction): { label: string; items: NavItem[] }[] {
+function makeAdminNavGroups(t: TFunction): { label: string; items: NavItem[]; minRole?: Role }[] {
   return [
     {
       label: "لوحة التحكم",
@@ -45,42 +54,47 @@ function makeAdminNavGroups(t: TFunction): { label: string; items: NavItem[] }[]
     },
     {
       label: "الكتالوج",
+      minRole: "editor",
       items: [
-        { href: "/admin/categories", label: "الأقسام", icon: FolderTree },
-        { href: "/admin/products", label: "كل المنتجات", icon: Package },
-        { href: "/admin/brands", label: "العلامات التجارية", icon: Tag },
-        { href: "/admin/media", label: "الوسائط", icon: Images },
+        { href: "/admin/categories", label: "الأقسام", icon: FolderTree, minRole: "editor" },
+        { href: "/admin/products", label: "كل المنتجات", icon: Package, minRole: "editor" },
+        { href: "/admin/brands", label: "العلامات التجارية", icon: Tag, minRole: "editor" },
+        { href: "/admin/media", label: "الوسائط", icon: Images, minRole: "editor" },
       ],
     },
     {
       label: "جودة الكتالوج",
+      minRole: "editor",
       items: [
-        { href: "/admin/data-quality", label: "جودة البيانات", icon: FileWarning },
-        { href: "/admin/classification", label: "أدوات التصنيف", icon: Filter },
-        { href: "/admin/data-quality?tab=invalid_filters", label: "صحة الفلاتر", icon: Filter },
+        { href: "/admin/data-quality", label: "جودة البيانات", icon: FileWarning, minRole: "editor" },
+        { href: "/admin/classification", label: "أدوات التصنيف", icon: Filter, minRole: "editor" },
       ],
     },
     {
       label: "الموقع والمحتوى",
+      minRole: "editor",
       items: [
-        { href: "/admin/content", label: "بناء الصفحة الرئيسية", icon: LayoutGrid },
-        { href: "/admin/cms", label: "البانرات والإعدادات", icon: LayoutPanelTop },
-        { href: "/admin/design", label: "المظهر", icon: Palette },
+        { href: "/admin/content", label: "بناء الصفحة الرئيسية", icon: LayoutGrid, minRole: "editor" },
+        { href: "/admin/cms", label: "البانرات والإعدادات", icon: LayoutPanelTop, minRole: "editor" },
+        { href: "/admin/design", label: "المظهر", icon: Palette, minRole: "editor" },
       ],
     },
     {
       label: "المبيعات",
+      minRole: "admin",
       items: [
-        { href: "/admin/orders", label: "الطلبات", icon: ShoppingCart },
-        { href: "/admin/coupons", label: "الكوبونات", icon: TicketPercent, soon: true },
-        { href: "/admin/offers", label: t("AdminShell.navOffers"), icon: Gift, soon: true },
+        { href: "/admin/orders", label: "الطلبات", icon: ShoppingCart, minRole: "admin" },
+        { href: "/admin/coupons", label: "الكوبونات", icon: TicketPercent, soon: true, minRole: "admin" },
+        { href: "/admin/offers", label: t("AdminShell.navOffers"), icon: Gift, soon: true, minRole: "admin" },
       ],
     },
     {
       label: "النظام",
+      minRole: "admin",
       items: [
-        { href: "/admin/cms", label: "الإعدادات", icon: Settings },
-        { href: "/admin/audit", label: "سجل التدقيق", icon: History },
+        { href: "/admin/users", label: "الفريق والصلاحيات", icon: Users, minRole: "superadmin" },
+        { href: "/admin/audit", label: "سجل النشاط", icon: History, minRole: "admin" },
+        { href: "/admin/cms", label: "إعدادات الموقع", icon: Settings, minRole: "admin" },
       ],
     },
   ];
@@ -104,7 +118,6 @@ function breadcrumbTrail(pathname: string, flatNav: NavItem[]) {
       return base !== "/admin" && (normalized === base || normalized.startsWith(`${base}/`));
     })
     .sort((a, b) => (b.href.split("?")[0] ?? b.href).length - (a.href.split("?")[0] ?? a.href).length)[0];
-
   const trail: { href: string; label: string }[] = [home];
   if (match) trail.push({ href: match.href.split("?")[0] ?? match.href, label: match.label });
   if (match && normalized !== (match.href.split("?")[0] ?? match.href)) {
@@ -120,6 +133,10 @@ export function AdminAppShell() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const pathname = useLocation().pathname ?? "";
+  const user = useDashboardAuth((s) => s.user);
+  const logout = useDashboardAuth((s) => s.logout);
+  const hasRole = useDashboardAuth((s) => s.hasRole);
+
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem(SIDEBAR_KEY) === "1";
@@ -128,6 +145,8 @@ export function AdminAppShell() {
     }
   });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     try {
@@ -150,15 +169,30 @@ export function AdminAppShell() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [menuOpen]);
+
   const groups = useMemo(() => makeAdminNavGroups(t), [t]);
-  const flatNav = useMemo(() => groups.flatMap((g) => g.items), [groups]);
+  const flatNav = useMemo(
+    () =>
+      groups.flatMap((g) =>
+        g.items.filter((item) => !item.minRole || hasRole(item.minRole)),
+      ),
+    [groups, hasRole],
+  );
   const crumbs = useMemo(() => breadcrumbTrail(pathname, flatNav), [pathname, flatNav]);
   const storeLocale = i18n.language.startsWith("ar") ? "/ar" : "/";
 
-  const logout = useCallback(async () => {
-    await fetch(freezoneApiUrl("/api/admin/logout"), { method: "POST", credentials: "include" });
+  const onLogout = useCallback(async () => {
+    await logout();
     navigate("/admin/login", { replace: true });
-  }, [navigate]);
+  }, [logout, navigate]);
 
   return (
     <div className="admin-shell dashboard-root">
@@ -175,35 +209,39 @@ export function AdminAppShell() {
           </div>
 
           <nav>
-            {groups.map((group) => (
-              <div key={group.label} className={s.navGroup}>
-                <div className={s.navGroupLabel}>{group.label}</div>
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  const hrefBase = item.href.split("?")[0] ?? item.href;
-                  return (
-                    <NavLink
-                      key={`${group.label}-${item.href}`}
-                      to={item.href}
-                      end={hrefBase === "/admin"}
-                      className={({ isActive }) =>
-                        [s.navItem, isActive || isNavActive(pathname, item.href) ? s.navItemActive : ""]
-                          .filter(Boolean)
-                          .join(" ")
-                      }
-                      onClick={() => setMobileOpen(false)}
-                      title={collapsed ? item.label : undefined}
-                    >
-                      <span className={s.navIcon} aria-hidden>
-                        <Icon size={16} strokeWidth={2} />
-                      </span>
-                      <span className={s.navLabel}>{item.label}</span>
-                      {item.soon ? <Badge tone="warning">قريبًا</Badge> : null}
-                    </NavLink>
-                  );
-                })}
-              </div>
-            ))}
+            {groups.map((group) => {
+              if (group.minRole && !hasRole(group.minRole)) return null;
+              const visible = group.items.filter((item) => !item.minRole || hasRole(item.minRole));
+              if (visible.length === 0) return null;
+              return (
+                <div key={group.label} className={s.navGroup}>
+                  <div className={s.navGroupLabel}>{group.label}</div>
+                  {visible.map((item) => {
+                    const Icon = item.icon;
+                    const hrefBase = item.href.split("?")[0] ?? item.href;
+                    return (
+                      <NavLink
+                        key={`${group.label}-${item.href}`}
+                        to={item.href}
+                        end={hrefBase === "/admin"}
+                        className={({ isActive }) =>
+                          [s.navItem, isActive || isNavActive(pathname, item.href) ? s.navItemActive : ""]
+                            .filter(Boolean)
+                            .join(" ")
+                        }
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        <span className={s.navIcon} aria-hidden>
+                          <Icon size={16} strokeWidth={2} />
+                        </span>
+                        <span className={s.navLabel}>{item.label}</span>
+                        {item.soon ? <Badge tone="warning">قريبًا</Badge> : null}
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              );
+            })}
           </nav>
 
           <div className={s.navFooter}>
@@ -227,24 +265,25 @@ export function AdminAppShell() {
         <div className="dashboard-main">
           <header className={s.topbar}>
             <div className={s.topbarLeft}>
-              <button
-                type="button"
-                className={s.langToggle}
-                aria-label="فتح القائمة"
-                onClick={() => setMobileOpen((v) => !v)}
-              >
+              <button type="button" className={s.langToggle} aria-label="القائمة" onClick={() => setMobileOpen((v) => !v)}>
                 ☰
               </button>
-              <button
-                type="button"
-                className={s.langToggle}
-                aria-label="طي القائمة"
-                onClick={() => setCollapsed((c) => !c)}
-              >
+              <button type="button" className={s.langToggle} aria-label="طي القائمة" onClick={() => setCollapsed((c) => !c)}>
                 {collapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
               </button>
               <nav aria-label="مسار التنقل">
-                <ol style={{ display: "flex", flexWrap: "wrap", gap: 6, listStyle: "none", margin: 0, padding: 0, fontSize: 12, color: "var(--fz-text-muted)" }}>
+                <ol
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 6,
+                    listStyle: "none",
+                    margin: 0,
+                    padding: 0,
+                    fontSize: 12,
+                    color: "var(--fz-text-muted)",
+                  }}
+                >
                   {crumbs.map((c, i) => (
                     <li key={`${c.href}-${i}`} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       {i > 0 ? <span>/</span> : null}
@@ -269,48 +308,69 @@ export function AdminAppShell() {
                 type="search"
                 className={s.searchInput}
                 placeholder="بحث في القائمة…"
-                aria-label="بحث في لوحة التحكم"
                 onKeyDown={(e) => {
                   if (e.key !== "Enter") return;
                   const q = (e.target as HTMLInputElement).value.trim().toLowerCase();
                   if (!q) return;
-                  const hit = flatNav.find(
-                    (item) =>
-                      item.label.toLowerCase().includes(q) ||
-                      item.href.replace("/admin", "").includes(q),
-                  );
+                  const hit = flatNav.find((item) => item.label.toLowerCase().includes(q));
                   if (hit) navigate(hit.href);
                 }}
               />
             </div>
 
             <div className={s.topbarRight}>
-              <button
-                type="button"
-                className={s.langToggle}
-                title="تحديث الصفحة"
-                onClick={() => window.location.reload()}
-              >
+              <button type="button" className={s.langToggle} title="تحديث" onClick={() => window.location.reload()}>
                 <RefreshCw size={16} />
               </button>
               <button
                 type="button"
                 className={s.langToggle}
                 onClick={() => void i18n.changeLanguage(i18n.language.startsWith("ar") ? "en" : "ar")}
-                title="تبديل اللغة"
               >
                 <Languages size={16} />
-                {i18n.language.startsWith("ar") ? "EN" : "ع"}
               </button>
               <Link className={s.langToggle} to={storeLocale} target="_blank" rel="noopener noreferrer" title="عرض المتجر">
                 <Store size={16} />
               </Link>
-              <Link className={s.langToggle} to="/admin/categories" title="إضافة منتج">
+              <Link className={s.langToggle} to="/admin/categories" title="إضافة منتج من قسم">
                 <Plus size={16} />
               </Link>
-              <button type="button" className={`${s.langToggle} ${s.userMenuItemDanger}`} onClick={() => void logout()} title="خروج">
-                <LogOut size={16} />
-              </button>
+
+              <div className={s.userMenu} ref={menuRef}>
+                <button type="button" className={s.userBtn} onClick={() => setMenuOpen((v) => !v)}>
+                  <Avatar name={user?.name ?? "?"} url={user?.avatarUrl} />
+                  <span className={s.userBtnText}>{user?.name ?? "—"}</span>
+                </button>
+                {menuOpen && (
+                  <div className={s.userMenuDropdown}>
+                    <div className={s.userMenuHeader}>
+                      <div className={s.userMenuName}>{user?.name}</div>
+                      <div className={s.userMenuEmail}>{user?.email}</div>
+                      {user?.role ? (
+                        <div className={s.userMenuRole}>
+                          <Badge tone="brand">{user.role}</Badge>
+                        </div>
+                      ) : null}
+                    </div>
+                    <button
+                      type="button"
+                      className={s.userMenuItem}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate("/admin/profile");
+                      }}
+                    >
+                      <UserRound size={14} />
+                      <span>حسابي وكلمة المرور</span>
+                    </button>
+                    <div className={s.userMenuDivider} />
+                    <button type="button" className={`${s.userMenuItem} ${s.userMenuItemDanger}`} onClick={() => void onLogout()}>
+                      <LogOut size={14} />
+                      <span>خروج</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </header>
 

@@ -37,6 +37,14 @@ import * as adminProductsId from "./app/api/admin/products/[id]/route";
 import * as adminProductsIdImages from "./app/api/admin/products/[id]/images/route";
 import * as adminTheme from "./app/api/admin/theme/route";
 import * as adminUpload from "./app/api/admin/upload/route";
+import * as dashboardLogin from "./app/api/dashboard/auth/login/route";
+import * as dashboardLogout from "./app/api/dashboard/auth/logout/route";
+import * as dashboardMe from "./app/api/dashboard/auth/me/route";
+import * as dashboardChangePw from "./app/api/dashboard/auth/change-password/route";
+import * as dashboardUsers from "./app/api/dashboard/users/route";
+import * as dashboardUsersId from "./app/api/dashboard/users/[id]/route";
+import * as dashboardOverview from "./app/api/dashboard/overview/route";
+import * as dashboardAudit from "./app/api/dashboard/audit/route";
 import * as pcBuild from "./app/api/pc-build/route";
 import * as publicCouponValidate from "./app/api/public/coupon/validate/route";
 import * as publicOrders from "./app/api/public/orders/route";
@@ -340,6 +348,40 @@ async function main() {
 
   app.get("/api/admin/audit", async (req, res) => {
     await sendWebResponse(res, await adminAudit.GET(webRequestFromExpress(req)));
+  });
+
+  app.post("/api/dashboard/auth/login", async (req, res) => {
+    await sendWebResponse(res, await dashboardLogin.POST(webRequestFromExpress(req)));
+  });
+  app.post("/api/dashboard/auth/logout", async (req, res) => {
+    await sendWebResponse(res, await dashboardLogout.POST(webRequestFromExpress(req)));
+  });
+  app.get("/api/dashboard/auth/me", async (req, res) => {
+    await sendWebResponse(res, await dashboardMe.GET(webRequestFromExpress(req)));
+  });
+  app.post("/api/dashboard/auth/change-password", async (req, res) => {
+    await sendWebResponse(res, await dashboardChangePw.POST(webRequestFromExpress(req)));
+  });
+  app.get("/api/dashboard/users", async (req, res) => {
+    await sendWebResponse(res, await dashboardUsers.GET(webRequestFromExpress(req)));
+  });
+  app.post("/api/dashboard/users", async (req, res) => {
+    await sendWebResponse(res, await dashboardUsers.POST(webRequestFromExpress(req)));
+  });
+  app.get("/api/dashboard/users/:id", async (req, res) => {
+    await sendWebResponse(res, await dashboardUsersId.GET(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+  app.patch("/api/dashboard/users/:id", async (req, res) => {
+    await sendWebResponse(res, await dashboardUsersId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+  app.delete("/api/dashboard/users/:id", async (req, res) => {
+    await sendWebResponse(res, await dashboardUsersId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+  app.get("/api/dashboard/overview", async (req, res) => {
+    await sendWebResponse(res, await dashboardOverview.GET(webRequestFromExpress(req)));
+  });
+  app.get("/api/dashboard/audit", async (req, res) => {
+    await sendWebResponse(res, await dashboardAudit.GET(webRequestFromExpress(req)));
   });
 
   app.post(
