@@ -29,6 +29,7 @@ import * as adminLogin from "./app/api/admin/login/route";
 import * as adminLogout from "./app/api/admin/logout/route";
 import * as adminMedia from "./app/api/admin/media/route";
 import * as adminMediaId from "./app/api/admin/media/[id]/route";
+import * as adminMediaImportImage from "./app/api/admin/media/import-image/route";
 import * as adminOrders from "./app/api/admin/orders/route";
 import * as adminProductImagesId from "./app/api/admin/product-images/[id]/route";
 import * as adminProducts from "./app/api/admin/products/route";
@@ -300,6 +301,9 @@ async function main() {
   });
   app.post("/api/admin/media", async (req, res) => {
     await sendWebResponse(res, await adminMedia.POST(webRequestFromExpress(req)));
+  });
+  app.post("/api/admin/media/import-image", async (req, res) => {
+    await sendWebResponse(res, await adminMediaImportImage.POST(webRequestFromExpress(req)));
   });
   app.delete("/api/admin/media/:id", async (req, res) => {
     await sendWebResponse(res, await adminMediaId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));

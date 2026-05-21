@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate, useParams } from "react-router-dom";
 import { uploadAdminImage, uploadAdminModel3d } from "@/lib/admin-upload-image";
+import { importAdminImageFromUrl } from "@/lib/admin-import-image";
 import { MediaPickerModal, type MediaRow } from "@/components/admin/MediaPickerModal";
 import { normalizeSpecsInput } from "@/lib/spec-validation";
 import { parseFacetAttributesFromUnknown } from "@/lib/facet-attributes";
@@ -34,7 +35,7 @@ type Category = {
   facetAttributes?: import("@/lib/data").FacetAttributeDef[];
 };
 type BrandOpt = { id: number; nameEn: string; nameAr: string };
-type ImgRow = { id: number; url: string; sortOrder: number };
+type ImgRow = { id: number; url: string; sortOrder: number; originalSourceUrl?: string | null };
 
 type ProductRow = {
   id: number;
@@ -359,20 +360,27 @@ export default function AdminEditProductPage() {
     return [...new Set(out)];
   }
 
-  async function addGalleryUrlsFromInput() {
+  async function importGalleryUrlFromInput() {
     const urls = parseExternalImageUrls(galleryUrlDraft);
     if (!urls.length) {
-      setErr("أدخل رابطًا يبدأ بـ https:// أو http://");
+      setErr("أدخل رابطًا يبدأ بـ https:// أو http:// يشير مباشرة إلى صورة.");
       return;
     }
     setErr("");
     setAddingGalleryUrls(true);
+    let saved = 0;
     try {
-      const ok = await appendImages(urls);
-      if (ok) {
-        setGalleryUrlDraft("");
-        setMsg(`تمت إضافة ${urls.length} صورة من الرابط`);
+      for (const source of urls) {
+        await importAdminImageFromUrl(source, { productId });
+        saved++;
       }
+      if (saved > 0) {
+        setGalleryUrlDraft("");
+        setMsg(`تم تنزيل وحفظ ${saved} صورة داخل الموقع`);
+        void loadAll();
+      }
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "تعذّر تنزيل الصورة");
     } finally {
       setAddingGalleryUrls(false);
     }
@@ -802,9 +810,9 @@ export default function AdminEditProductPage() {
         style={{ display: "none" }}
         onChange={onPickReplaceFile}
       />
-      <label style={{ color: "var(--admin-muted)", fontSize: 13, display: "block", marginBottom: 6 }}>
-        رابط صورة من موقع آخر (https)
-      </label>
+      <p style={{ fontSize: 13, color: "var(--admin-muted)", margin: "0 0 8px" }}>
+        استيراد صورة من رابط — يتم تنزيل الصورة وحفظها على الخادم (لا يُعتمد على الرابط الخارجي بعد الحفظ).
+      </p>
       <div
         style={{
           display: "flex",
@@ -818,13 +826,13 @@ export default function AdminEditProductPage() {
           dir="ltr"
           type="url"
           inputMode="url"
-          placeholder="https://example.com/image.jpg — يمكن لصق عدة روابط مفصولة بفاصلة أو سطر"
+          placeholder="https://example.com/image.jpg — رابط مباشر لصورة (يدعم Shopify CDN)"
           value={galleryUrlDraft}
           onChange={(e) => setGalleryUrlDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              void addGalleryUrlsFromInput();
+              void importGalleryUrlFromInput();
             }
           }}
           style={{ ...field, flex: "1 1 260px", minWidth: 200 }}
@@ -832,7 +840,7 @@ export default function AdminEditProductPage() {
         <button
           type="button"
           disabled={addingGalleryUrls || !galleryUrlDraft.trim()}
-          onClick={() => void addGalleryUrlsFromInput()}
+          onClick={() => void importGalleryUrlFromInput()}
           style={{
             padding: "10px 16px",
             borderRadius: 8,
@@ -844,7 +852,7 @@ export default function AdminEditProductPage() {
             alignSelf: "center",
           }}
         >
-          {addingGalleryUrls ? "…" : "إضافة بالرابط"}
+          {addingGalleryUrls ? "جاري تنزيل الصورة…" : "تنزيل وحفظ الصورة"}
         </button>
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
@@ -901,7 +909,26 @@ export default function AdminEditProductPage() {
             }}
           >
             <img src={im.url} alt="" style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 6 }} />
-            <span style={{ flex: 1, fontSize: 12, wordBreak: "break-all", opacity: 0.85 }}>{im.url}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: 12, wordBreak: "break-all", opacity: 0.85 }}>{im.url}</span>
+              {im.url.startsWith("/uploads/") ? (
+                <span
+                  style={{
+                    display: "inline-block",
+                    marginTop: 4,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: "2px 6px",
+                    borderRadius: 4,
+                    background: "rgba(22,163,74,0.12)",
+                    color: "#166534",
+                  }}
+                  title={im.originalSourceUrl ?? undefined}
+                >
+                  محفوظ محليًا
+                </span>
+              ) : null}
+            </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               <button
                 type="button"

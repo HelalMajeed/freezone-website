@@ -139,6 +139,16 @@ export async function POST(req: Request) {
   }
 
   const images = Array.isArray(body.images) ? body.images.filter(Boolean) : [];
+  for (const url of images) {
+    if (typeof url === "string" && /^https?:\/\//i.test(url.trim())) {
+      return Response.json(
+        {
+          error: "لا يمكن حفظ رابط خارجي مباشرة. استخدم «تنزيل وحفظ الصورة» لاستيراد الصورة محلياً.",
+        },
+        { status: 400 },
+      );
+    }
+  }
 
   try {
     const product = await prisma.product.create({
