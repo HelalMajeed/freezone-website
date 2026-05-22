@@ -165,6 +165,86 @@
   flex-wrap: wrap;
 }
 
+/* Mobile: product rows as cards */
+@media (max-width: 767px) {
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .input,
+  .select {
+    width: 100%;
+    min-width: 0 !important;
+    max-width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .count {
+    width: 100%;
+    text-align: center;
+  }
+
+  .tableScroll {
+    overflow-x: visible;
+    border: none;
+    background: transparent;
+  }
+
+  .table {
+    min-width: 0;
+    display: block;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .table tbody tr {
+    display: block;
+    padding: 12px;
+    border: 1px solid var(--admin-border, #334155);
+    border-radius: 12px;
+    background: var(--admin-surface, #fff);
+  }
+
+  .table tbody td {
+    display: block;
+    padding: 6px 0;
+    border: none;
+    max-width: none;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .table tbody td:first-child {
+    display: inline-block;
+    padding-bottom: 8px;
+  }
+
+  .nameCell strong {
+    font-size: 0.95rem;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .actions {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--admin-border, #334155);
+  }
+}
+
 .actionLink {
   color: #93c5fd;
   font-weight: 700;

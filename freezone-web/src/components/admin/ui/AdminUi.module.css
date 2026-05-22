@@ -640,3 +640,70 @@
   color: var(--admin-text);
   border: 1px solid var(--admin-border);
 }
+
+/* Data quality & shared admin tables — mobile cards */
+@media (max-width: 767px) {
+  .pageHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pageActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .statGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .statCard {
+    min-height: 0;
+    padding: 12px;
+  }
+
+  .tableWrap {
+    overflow-x: visible;
+  }
+
+  .table {
+    min-width: 0;
+    display: block;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .table tbody tr {
+    display: block;
+    padding: 12px;
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius-lg);
+    background: var(--admin-surface);
+  }
+
+  .table tbody td {
+    display: block;
+    padding: 6px 0;
+    border: none;
+    max-width: none;
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+  }
+
+  .table tbody td strong {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    overflow: visible;
+  }
+}

@@ -1,0 +1,17 @@
+/**
+ * Global mobile overflow guards (class-specific fixes live in CSS modules).
+ */
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--fz-page-max, 1320px);
+  box-sizing: border-box;
+}

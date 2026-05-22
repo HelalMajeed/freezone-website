@@ -20,17 +20,29 @@
 
 .tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
   margin: 16px 0 20px;
   padding: 4px;
   background: var(--admin-surface-muted);
   border-radius: 10px;
   border: 1px solid var(--admin-border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  scrollbar-width: thin;
+}
+
+@media (min-width: 900px) {
+  .tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
 }
 
 .tab,
 .tabActive {
+  flex-shrink: 0;
   padding: 8px 14px;
   border: none;
   border-radius: 8px;

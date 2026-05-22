@@ -100,6 +100,36 @@
   gap: 12px;
   overflow-x: auto;
   padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .mainDisplay {
+    border-radius: 12px;
+    aspect-ratio: 4 / 3;
+  }
+
+  .mainImage {
+    padding: 12px;
+  }
+
+  .thumbnailBtn {
+    width: 64px;
+    height: 64px;
+  }
+
+  .thumbnailList {
+    gap: 8px;
+  }
+
+  .expandBtn {
+    inset-inline-end: 10px;
+    bottom: 10px;
+    width: 44px;
+    height: 44px;
+  }
 }
 
 .thumbnailBtn {

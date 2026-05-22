@@ -8,7 +8,9 @@
 
 /* Wider than global `.container` so PDP + specs use horizontal space */
 :global(.container).pdpWide {
-  max-width: var(--fz-page-max-wide, min(96vw, 1680px));
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* ── Breadcrumb ───────────────────────────────── */
@@ -227,23 +229,81 @@
 }
 .attrRow:last-child { border-bottom: none; }
 
-@media (max-width: 640px) {
+@media (max-width: 767px) {
+  .productGrid {
+    gap: 20px;
+    padding-top: 16px;
+  }
+
+  .mediaCol,
+  .infoCol {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .title {
+    font-size: 1.35rem;
+    margin-bottom: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .priceRow {
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .price {
+    font-size: 1.75rem;
+  }
+
+  .badgeRow {
+    margin-bottom: 16px;
+    gap: 6px;
+  }
+
+  .actionStack {
+    gap: 10px;
+  }
+
+  .actionBtn {
+    min-height: var(--fz-touch-min, 44px);
+    padding: 14px;
+    font-size: 0.95rem;
+  }
+
   .heroSpecs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 12px;
   }
+
+  .attributes {
+    overflow: hidden;
+  }
+
   .attrRow {
     flex-direction: column;
     align-items: stretch;
     gap: 4px;
+    padding: 10px 12px;
   }
+
   .attrLabel {
     max-width: none;
+    font-size: 0.78rem;
   }
+
   .attrValue {
     text-align: start;
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
   }
-  .actionBtn {
-    min-height: var(--fz-touch-min, 44px);
+
+  .desc {
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
   }
 }
 

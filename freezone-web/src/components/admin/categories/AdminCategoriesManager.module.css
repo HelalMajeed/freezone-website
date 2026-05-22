@@ -284,3 +284,65 @@
 .menuDanger {
   color: #b91c1c !important;
 }
+
+@media (max-width: 767px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .input,
+  .select,
+  .btnPrimary {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .tableScroll {
+    overflow-x: visible;
+    border: none;
+  }
+
+  .table {
+    display: block;
+    min-width: 0;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .table tbody tr {
+    display: block;
+    padding: 12px;
+    border: 1px solid var(--admin-border, #334155);
+    border-radius: 12px;
+    background: var(--admin-surface, #fff);
+  }
+
+  .table tbody td {
+    display: block;
+    padding: 5px 0;
+    border: none;
+  }
+
+  .rowActions {
+    margin-top: 8px;
+  }
+
+  .actionsCell {
+    width: auto;
+  }
+}

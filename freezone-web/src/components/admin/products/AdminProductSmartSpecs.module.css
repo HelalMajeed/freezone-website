@@ -259,7 +259,7 @@
 }
 
 /* Mobile / tablet: stack spec rows as cards instead of wide table */
-@media (max-width: 900px) {
+@media (max-width: 767px) {
   .tableWrap {
     overflow-x: visible;
     border: none;

@@ -8,7 +8,7 @@
 
   /* Layout */
   --fz-page-max: min(100%, 1440px);
-  --fz-page-max-wide: min(96vw, 1680px);
+  --fz-page-max-wide: 100%;
   --fz-gutter: clamp(12px, 2vw, 32px);
   --fz-section-gap: clamp(16px, 3vw, 48px);
   --fz-block-gap: clamp(12px, 2vw, 28px);
@@ -105,8 +105,8 @@
     --fz-section-gap: 16px;
     --fz-card-padding: 12px;
     --fz-panel-padding: 12px;
-    --fz-grid-min: clamp(120px, 46vw, 168px);
-    --fz-grid-gap: 10px;
+    --fz-grid-min: 0;
+    --fz-grid-gap: 8px;
     --fz-font-base: max(13px, 0.8125rem);
     --fz-control-h: var(--fz-touch-min);
     --fz-control-h-sm: 40px;

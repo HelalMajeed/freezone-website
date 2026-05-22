@@ -313,10 +313,12 @@
     position: fixed;
     inset-inline-start: 0;
     top: 0;
-    width: var(--fz-sidebar-w);
-    height: 100vh;
+    width: min(var(--fz-sidebar-w), 88vw);
+    height: 100dvh;
+    z-index: 50;
     transform: translateX(0);
     transition: transform var(--fz-t);
+    box-shadow: var(--fz-shadow-lg);
   }
   [dir="rtl"] .sidebar {
     inset-inline-start: auto;
@@ -324,6 +326,7 @@
   }
   .sidebar[data-mobile-open="false"] {
     transform: translateX(-110%);
+    pointer-events: none;
   }
   [dir="rtl"] .sidebar[data-mobile-open="false"] {
     transform: translateX(110%);
@@ -331,10 +334,43 @@
   .mobileBackdrop {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.4);
-    z-index: 9;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 40;
   }
   .searchWrap {
     display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .topbar {
+    height: auto;
+    min-height: var(--fz-topbar-h);
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .topbarLeft {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .topbarRight {
+    flex: 1 1 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .userBtn {
+    max-width: 100%;
+  }
+
+  .userName {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }

@@ -6,6 +6,7 @@ import App from "./App";
 import { ScrollToTop } from "@/routes/ScrollToTop";
 import "./theme/tokens.css";
 import "./theme/adaptive-density.css";
+import "./theme/mobile-layout.css";
 import "./globals.css";
 import "@/app/admin/admin-shell.css";
 import "@/app/admin/admin-dashboard-shell.css";
