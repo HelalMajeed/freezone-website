@@ -5,7 +5,9 @@ import {
   sanitizeFacetFilterToken,
 } from "./classification/facet-filter-token";
 import { sanitizeStoredScreenSize } from "./classification/laptop-filter-extract";
+import { resolveDisplaySpecKey } from "./classification/filter-display-link";
 import { loadCategoryAttributeSchema } from "./classification/persist";
+import { parseOptionsJson } from "./classification/values";
 import { productAttributeValuesToFilterValues } from "./classification/values";
 import type { CategoryAttributeRow, ProductAttributeValueRow } from "./classification/types";
 
@@ -279,18 +281,37 @@ export async function listDataQualityIssues(
     if (tab === "missing_specs" && schema.length > 0) {
       let reason: string | null = null;
       if (p._count.attributeValues === 0) reason = "no attribute values";
-      else if (
-        (display.gpu_full || display.gpu) &&
-        !filters.gpu_model &&
-        schema.some((a) => a.key === "gpu_model" && a.filterable)
-      ) {
-        reason = "gpu_model missing (gpu_full present)";
-      } else if (
-        (display.processor_full || display.processor) &&
-        !filters.processor_family &&
-        schema.some((a) => a.key === "processor_family" && a.filterable)
-      ) {
-        reason = "processor_family missing (processor_full present)";
+      else {
+        for (const attr of schema.filter((a) => a.filterable)) {
+          const displayKey = resolveDisplaySpecKey(attr, p.category.slug);
+          const filterVal = filters[attr.key]?.trim();
+          const displayVal = displayKey ? display[displayKey]?.trim() : "";
+          if (attr.required && !filterVal) {
+            reason = `required filter missing: ${attr.key}`;
+            break;
+          }
+          if (displayKey && (attr.displaySpecRequired || filterVal) && !displayVal) {
+            reason = `linked display missing: ${displayKey} (filter ${attr.key})`;
+            break;
+          }
+          if (filterVal && attr.options) {
+            const opts = parseOptionsJson(attr.options);
+            if (opts?.length && !opts.includes(filterVal)) {
+              reason = `filter not in category options: ${attr.key}=${filterVal}`;
+              break;
+            }
+          }
+        }
+        if (!reason && (display.gpu_full || display.gpu) && !filters.gpu_model) {
+          reason = "gpu_model missing (gpu_full present)";
+        }
+        if (
+          !reason &&
+          (display.processor_full || display.processor) &&
+          !filters.processor_family
+        ) {
+          reason = "processor_family missing (processor_full present)";
+        }
       }
       if (reason) {
         all.push({

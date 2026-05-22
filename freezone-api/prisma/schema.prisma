@@ -79,6 +79,13 @@ model CategoryAttribute {
   required     Boolean  @default(false)
   unit         String?
   active       Boolean  @default(true)
+  /// When set, filter value stores under `key`; long PDP text stores under `displaySpecKey`.
+  displaySpecKey      String?
+  displaySpecNameEn   String?
+  displaySpecNameAr   String?
+  displaySpecGroup    String?
+  displaySpecRequired Boolean  @default(false)
+  linkDisplaySpec     Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

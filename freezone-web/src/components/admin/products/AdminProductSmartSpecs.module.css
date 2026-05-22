@@ -9,10 +9,6 @@
   color: var(--admin-text-warm, #5d3f3d);
 }
 
-.flowHelp strong {
-  color: var(--admin-text, #400200);
-}
-
 .sectionTitle {
   margin: 20px 0 10px;
   font-size: 14px;
@@ -20,35 +16,74 @@
   color: var(--admin-text, #400200);
 }
 
-.sectionTitle:first-of-type {
-  margin-top: 0;
-}
-
-.specCard {
+.tableWrap {
+  overflow-x: auto;
   border: 1px solid var(--admin-border, #e7bcb9);
   border-radius: var(--admin-radius-lg, 2rem);
-  padding: 14px 16px;
-  margin-bottom: 12px;
   background: var(--admin-surface, #fff);
-  box-shadow: var(--admin-shadow-sm);
 }
 
-.specCardHead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+.specTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
 }
 
-.specCardHead strong {
+.specTable th,
+.specTable td {
+  padding: 12px 14px;
+  text-align: start;
+  vertical-align: top;
+  border-bottom: 1px solid var(--admin-border, #e7bcb9);
+}
+
+.specTable th {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--admin-muted, #926e6c);
+  background: var(--admin-surface-muted, #fff0ee);
+}
+
+.specTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.specNameCell strong {
+  display: block;
   font-size: 14px;
+  margin-bottom: 4px;
 }
 
 .specKey {
   font-size: 11px;
   color: var(--admin-muted, #926e6c);
   direction: ltr;
+}
+
+.filterStack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.filterBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filterSubLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--admin-muted, #926e6c);
+}
+
+.colHint {
+  display: block;
+  font-size: 11px;
+  color: var(--admin-muted, #926e6c);
 }
 
 .typeBadge {
@@ -63,33 +98,51 @@
   border: 1px solid var(--admin-border);
 }
 
-.pairedGrid {
-  display: grid;
-  grid-template-columns: 1fr 1.2fr;
-  gap: 16px;
-}
-
-@media (max-width: 720px) {
-  .pairedGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.colLabel {
-  display: block;
+.statusBadge {
+  display: inline-block;
   font-size: 11px;
   font-weight: 700;
-  color: var(--admin-muted, #926e6c);
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
-.colHint {
-  display: block;
+.status_ok {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.status_warn {
+  background: #fff8e1;
+  color: #f57f17;
+}
+
+.status_error {
+  background: #ffebee;
+  color: #b71c1c;
+}
+
+.deriveModal {
+  margin-bottom: 16px;
+  padding: 14px;
+  border-radius: var(--admin-radius);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-muted, #fff0ee);
+}
+
+.deriveActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.rowWarn {
+  background: rgba(255, 248, 225, 0.5);
+}
+
+.warnText {
   font-size: 11px;
-  color: var(--admin-muted, #926e6c);
-  margin-top: 6px;
+  color: #b45309;
 }
 
 .checkRow {
@@ -106,10 +159,66 @@
   gap: 6px;
 }
 
-.displayOnlyCard {
-  border: 1px dashed var(--admin-border);
-  border-radius: var(--admin-radius);
-  padding: 12px 14px;
-  margin-bottom: 10px;
-  background: var(--admin-surface-muted, #fff0ee);
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.switchRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.switchTrack {
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--admin-border, #e7bcb9);
+  position: relative;
+  transition: background 0.15s;
+}
+
+.switchTrackOn {
+  background: var(--admin-primary, #e91d2e);
+}
+
+.switchThumb {
+  position: absolute;
+  top: 3px;
+  inset-inline-start: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.switchTrackOn .switchThumb {
+  transform: translateX(20px);
+}
+
+.colorChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.colorChip {
+  min-width: 36px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 2px solid var(--admin-border);
+  font-size: 12px;
+  cursor: pointer;
+  background: var(--admin-surface-muted);
+}
+
+.colorChipActive {
+  border-color: var(--admin-primary, #e91d2e);
+  box-shadow: 0 0 0 2px var(--admin-primary-soft);
 }

@@ -15,27 +15,36 @@ const TYPE_LABELS: Record<string, string> = {
   COLOR: "لون",
 };
 
-/** قيمة الفلتر فقط — تظهر في صفحة القسم (Checkbox / Select / Range …). */
+/** قيمة الفلتر — Checkbox / Radio / Select / Range / Switch / Color chips. */
 export function FilterValueControl({
   attr,
   value,
   onChange,
   fieldStyle,
+  preferRadio = true,
 }: {
   attr: FacetAttributeDef;
   value: string;
   onChange: (v: string) => void;
   fieldStyle: CSSProperties;
+  preferRadio?: boolean;
 }) {
   const type = attr.type ?? "SELECT";
 
   if (type === "BOOLEAN") {
     const checked = value === "true" || value === "1" || value === "yes" || value === "نعم";
     return (
-      <label className={styles.checkRow}>
+      <label className={styles.switchRow}>
+        <span
+          className={`${styles.switchTrack} ${checked ? styles.switchTrackOn : ""}`}
+          aria-hidden
+        >
+          <span className={styles.switchThumb} />
+        </span>
         <input
           type="checkbox"
           checked={checked}
+          className="sr-only"
           onChange={(e) => onChange(e.target.checked ? "true" : "false")}
         />
         <span>{checked ? "نعم" : "لا"}</span>
@@ -56,7 +65,46 @@ export function FilterValueControl({
     );
   }
 
+  if (type === "COLOR" && attr.options?.length) {
+    return (
+      <div className={styles.colorChips} role="listbox" aria-label={attr.name_ar}>
+        {attr.options.map((opt) => (
+          <button
+            key={opt}
+            type="button"
+            className={`${styles.colorChip} ${value === opt ? styles.colorChipActive : ""}`}
+            onClick={() => onChange(opt)}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   if ((type === "SELECT" || type === "COLOR") && attr.options?.length) {
+    const useRadio = preferRadio && attr.options.length <= 8;
+    if (useRadio) {
+      return (
+        <div className={styles.radioGroup} role="radiogroup">
+          {attr.options.map((opt) => (
+            <label key={opt} className={styles.checkRow}>
+              <input
+                type="radio"
+                name={`filter-${attr.key}`}
+                checked={value === opt}
+                onChange={() => onChange(opt)}
+              />
+              <span>{opt}</span>
+            </label>
+          ))}
+          <label className={styles.checkRow}>
+            <input type="radio" name={`filter-${attr.key}`} checked={!value} onChange={() => onChange("")} />
+            <span>—</span>
+          </label>
+        </div>
+      );
+    }
     return (
       <select value={value} onChange={(e) => onChange(e.target.value)} style={fieldStyle}>
         <option value="">— اختر —</option>
@@ -115,7 +163,7 @@ export function DisplaySpecInput({
   onBlurNormalizeFilter,
   fieldStyle,
 }: {
-  attr: FacetAttributeDef;
+  attr: Pick<FacetAttributeDef, "key" | "name_en" | "name_ar">;
   value: string;
   onChange: (v: string) => void;
   onBlurNormalizeFilter?: (normalized: string) => void;

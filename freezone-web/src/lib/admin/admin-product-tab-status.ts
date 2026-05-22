@@ -1,6 +1,9 @@
 import type { FacetAttributeDef } from "@/lib/data";
 import { partitionFacetAttributes } from "@/lib/classification/attribute-sets";
 import { normalizeFilterValue } from "@/lib/classification/filter-value";
+import { resolveDisplaySpecKey } from "@/lib/classification/filter-display-link";
+import { buildSmartSpecRows } from "@/lib/classification/filter-display-link";
+import { smartSpecRowStatus } from "@/lib/admin/admin-product-spec-validation";
 import type { ProductEditorTab } from "@/components/admin/products/AdminProductEditorTabs";
 
 export type TabCompletion = "complete" | "warn" | "error" | "idle";
@@ -29,7 +32,11 @@ export function computeTabStatuses(ctx: ProductEditorContext): Record<ProductEdi
   const requiredFilters = filterableSpecs.filter((a) => a.required);
   const missingFilters = requiredFilters.filter((a) => !(ctx.filterSpecs[a.key] ?? "").trim());
   const hasAnyFilter = filterableSpecs.some((a) => (ctx.filterSpecs[a.key] ?? "").trim());
-  const hasDisplay = ctx.attributes.some((a) => !a.filterable && (ctx.displaySpecs[a.key] ?? "").trim());
+  const hasDisplay =
+    ctx.attributes.some((a) => !a.filterable && (ctx.displaySpecs[a.key] ?? "").trim()) ||
+    buildSmartSpecRows(ctx.attributes).some(
+      (r) => r.displaySpecKey && (ctx.displaySpecs[r.displaySpecKey] ?? "").trim(),
+    );
 
   const basicOk = Boolean(ctx.nameEn.trim() && ctx.categoryId);
   const pricingOk = ctx.price > 0;
@@ -61,19 +68,16 @@ export function proposeFiltersFromDisplay(
   attributes: FacetAttributeDef[],
   displaySpecs: Record<string, string>,
   currentFilters: Record<string, string>,
+  categorySlug?: string,
 ): Record<string, string> {
   const { filterableSpecs } = partitionFacetAttributes(attributes);
   const next = { ...currentFilters };
   for (const attr of filterableSpecs) {
-    const altFull = attr.key.endsWith("_model")
-      ? `${attr.key.replace(/_model$/, "")}_full`
-      : attr.key.endsWith("_family")
-        ? `${attr.key.replace(/_family$/, "")}_full`
-        : null;
+    const displayKey = resolveDisplaySpecKey(attr, categorySlug);
     const display = (
-      displaySpecs[attr.key] ??
-      (altFull ? displaySpecs[altFull] : "") ??
-      displaySpecs[`${attr.key}_full`] ??
+      (displayKey ? displaySpecs[displayKey] : "") ||
+      displaySpecs[attr.key] ||
+      displaySpecs[`${attr.key}_full`] ||
       ""
     ).trim();
     if (!display) continue;
@@ -81,4 +85,19 @@ export function proposeFiltersFromDisplay(
     if (derived) next[attr.key] = derived;
   }
   return next;
+}
+
+export function computeSmartSpecsTabStatus(
+  attributes: FacetAttributeDef[],
+  displaySpecs: Record<string, string>,
+  filterSpecs: Record<string, string>,
+  categorySlug?: string,
+): TabCompletion {
+  if (!attributes.length) return "idle";
+  const rows = buildSmartSpecRows(attributes, categorySlug);
+  if (!rows.length) return "idle";
+  const statuses = rows.map((r) => smartSpecRowStatus(r, displaySpecs, filterSpecs));
+  if (statuses.some((s) => s === "error")) return "error";
+  if (statuses.every((s) => s === "ok")) return "complete";
+  return "warn";
 }

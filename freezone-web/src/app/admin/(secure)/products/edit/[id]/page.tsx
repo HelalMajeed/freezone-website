@@ -10,6 +10,7 @@ import { normalizeSpecsInput } from "@/lib/spec-validation";
 import { parseFacetAttributesFromUnknown } from "@/lib/facet-attributes";
 import { buildSpecsPayloadForSave } from "@/lib/admin-product-specs-payload";
 import { validateAdminProductSpecs } from "@/lib/admin/admin-product-spec-validation";
+import { resolveDisplaySpecKey } from "@/lib/classification/filter-display-link";
 import { useCategoryAttributeSchema } from "@/lib/admin/use-category-attribute-schema";
 import { AdminProductSpecFields } from "@/components/admin/products/AdminProductSpecFields";
 import { AdminProductSmartSpecs } from "@/components/admin/products/AdminProductSmartSpecs";
@@ -117,6 +118,11 @@ export default function AdminEditProductPage() {
     setAttributes: setCategoryAttributes,
   } = useCategoryAttributeSchema(product?.categoryId, categories);
 
+  const categorySlug = useMemo(
+    () => categories.find((c) => c.id === product?.categoryId)?.slug,
+    [categories, product?.categoryId],
+  );
+
   const markDirty = useCallback(() => setDirty(true), []);
 
   const editorCtx = useMemo(() => {
@@ -193,11 +199,17 @@ export default function AdminEditProductPage() {
         apiAttrs?.length ? apiAttrs : parseFacetAttributesFromUnknown(cat?.facetKeys);
       const displayBase = normalizeSpecsInput(raw.displaySpecs ?? raw.specs);
       const filterBase = normalizeSpecsInput(raw.filterSpecs);
-      const display: Record<string, string> = {};
-      const filter: Record<string, string> = {};
+      const slug = cat?.slug;
+      const display: Record<string, string> = { ...displayBase };
+      const filter: Record<string, string> = { ...filterBase };
       for (const a of attrs) {
-        display[a.key] = displayBase[a.key] ?? "";
-        filter[a.key] = filterBase[a.key] ?? "";
+        if (!a.filterable) {
+          if (display[a.key] === undefined) display[a.key] = displayBase[a.key] ?? "";
+        } else {
+          const dk = resolveDisplaySpecKey(a, slug);
+          if (dk && display[dk] === undefined) display[dk] = displayBase[dk] ?? "";
+          if (filter[a.key] === undefined) filter[a.key] = filterBase[a.key] ?? "";
+        }
       }
       setDisplaySpecs(display);
       setFilterSpecs(filter);
@@ -215,21 +227,32 @@ export default function AdminEditProductPage() {
   useEffect(() => {
     if (!categoryAttributes.length) return;
     setDisplaySpecs((prev) => {
-      const next: Record<string, string> = {};
-      for (const a of categoryAttributes) next[a.key] = prev[a.key] ?? "";
+      const next: Record<string, string> = { ...prev };
+      for (const a of categoryAttributes) {
+        if (!a.filterable) next[a.key] = prev[a.key] ?? "";
+        const dk = resolveDisplaySpecKey(a, categorySlug);
+        if (dk) next[dk] = prev[dk] ?? "";
+      }
       return next;
     });
     setFilterSpecs((prev) => {
-      const next: Record<string, string> = {};
-      for (const a of categoryAttributes) next[a.key] = prev[a.key] ?? "";
+      const next: Record<string, string> = { ...prev };
+      for (const a of categoryAttributes) {
+        if (a.filterable) next[a.key] = prev[a.key] ?? "";
+      }
       return next;
     });
-  }, [categoryAttributes.map((a) => a.key).join("|")]);
+  }, [categoryAttributes, categorySlug]);
 
   async function saveProduct(e: React.FormEvent) {
     e.preventDefault();
     if (!product || !Number.isFinite(productId)) return;
-    const specErr = validateAdminProductSpecs(categoryAttributes, displaySpecs, filterSpecs);
+    const specErr = validateAdminProductSpecs(
+      categoryAttributes,
+      displaySpecs,
+      filterSpecs,
+      categorySlug,
+    );
     if (specErr) {
       setErr(specErr);
       return;
@@ -265,7 +288,7 @@ export default function AdminEditProductPage() {
         published: publishIntent ?? product.published,
         model: product.model ?? "",
         specs: categoryAttributes.length
-          ? buildSpecsPayloadForSave(categoryAttributes, displaySpecs, filterSpecs)
+          ? buildSpecsPayloadForSave(categoryAttributes, displaySpecs, filterSpecs, categorySlug)
           : {},
         secondaryCategoryIds: product.secondaryCategoryIds,
       }),
@@ -747,6 +770,7 @@ export default function AdminEditProductPage() {
             loading={schemaLoading}
             error={schemaError}
             categoryId={product.categoryId}
+            categorySlug={categorySlug}
             onRetry={() => reloadSchema()}
             onChangeDisplay={(key, value) => {
               setDisplaySpecs((p) => ({ ...p, [key]: value }));

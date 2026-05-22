@@ -17,7 +17,7 @@ export function AdminCategoryAttributesManager() {
   const [slug, setSlug] = useState("");
   const [nameEn, setNameEn] = useState("");
   const [attributes, setAttributes] = useState<FacetAttributeDef[]>([]);
-  const [tab, setTab] = useState<AttrTab>("all");
+  const [tab, setTab] = useState<AttrTab>("filterable");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -110,8 +110,8 @@ export function AdminCategoryAttributesManager() {
           </Link>
           <h1 className={styles.title}>سمات القسم — {nameEn || slug}</h1>
           <p className={styles.sub}>
-            هنا تحدد فلاتر القسم: الاسم، النوع (Checkbox / Select / Range)، والخيارات. عند إضافة منتج يختار الموظف قيمة
-            الفلتر ويكتب المواصفة الموسعة بجانبها. الفلاتر تظهر في صفحة القسم فقط؛ المواصفات الموسعة في صفحة المنتج.
+            إدارة الفلاتر: الاسم العربي/الإنجليزي، النوع، الخيارات، وربط كل فلتر بمواصفة عرض (displaySpecKey) تظهر في
+            صفحة المنتج. عند إضافة منتج يملأ الموظف جدولًا واحدًا: قيمة الفلتر + المواصفة الموسعة — بدون تبويبين منفصلين.
           </p>
         </div>
         <button type="button" className={styles.saveBtn} disabled={saving} onClick={() => void save()}>

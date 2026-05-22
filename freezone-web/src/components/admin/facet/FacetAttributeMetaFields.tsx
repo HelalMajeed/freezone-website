@@ -6,7 +6,20 @@ import styles from "./facet-keys-workspace.module.css";
 
 export type FacetMetaDraft = Pick<
   FacetAttributeDef,
-  "type" | "filterable" | "searchable" | "comparable" | "required" | "unit" | "options" | "displayGroup"
+  | "type"
+  | "filterable"
+  | "searchable"
+  | "comparable"
+  | "required"
+  | "unit"
+  | "options"
+  | "displayGroup"
+  | "displaySpecKey"
+  | "displaySpecNameEn"
+  | "displaySpecNameAr"
+  | "displaySpecGroup"
+  | "displaySpecRequired"
+  | "linkDisplaySpec"
 >;
 
 type Props = {
@@ -25,6 +38,12 @@ export function facetMetaFromAttribute(a: FacetAttributeDef): FacetMetaDraft {
     unit: a.unit ?? "",
     options: a.options ?? [],
     displayGroup: a.displayGroup ?? "specs",
+    displaySpecKey: a.displaySpecKey ?? "",
+    displaySpecNameEn: a.displaySpecNameEn ?? "",
+    displaySpecNameAr: a.displaySpecNameAr ?? "",
+    displaySpecGroup: a.displaySpecGroup ?? "",
+    displaySpecRequired: a.displaySpecRequired ?? false,
+    linkDisplaySpec: a.linkDisplaySpec ?? Boolean(a.displaySpecKey),
   };
 }
 
@@ -40,6 +59,12 @@ export function applyMetaToAttribute(a: FacetAttributeDef, meta: FacetMetaDraft)
     unit: meta.unit?.trim() || undefined,
     displayGroup: meta.displayGroup?.trim() || "specs",
     options: options.length ? options : undefined,
+    displaySpecKey: meta.displaySpecKey?.trim() || undefined,
+    displaySpecNameEn: meta.displaySpecNameEn?.trim() || undefined,
+    displaySpecNameAr: meta.displaySpecNameAr?.trim() || undefined,
+    displaySpecGroup: meta.displaySpecGroup?.trim() || undefined,
+    displaySpecRequired: meta.displaySpecRequired === true,
+    linkDisplaySpec: meta.linkDisplaySpec === true || Boolean(meta.displaySpecKey?.trim()),
   };
 }
 
@@ -126,6 +151,71 @@ export function FacetAttributeMetaFields({ value, onChange, localeUi }: Props) {
           {isAr ? "للمقارنة" : "Comparable"}
         </label>
       </div>
+
+      {value.filterable !== false ? (
+        <div className={styles.linkedDisplayBlock}>
+          <p className={styles.linkedDisplayTitle}>
+            {isAr ? "مواصفة العرض المرتبطة (صفحة المنتج)" : "Linked display spec (product page)"}
+          </p>
+          <label className={styles.facetMetaCheck}>
+            <input
+              type="checkbox"
+              checked={value.linkDisplaySpec !== false}
+              onChange={(e) => onChange({ ...value, linkDisplaySpec: e.target.checked })}
+            />
+            {isAr ? "له مواصفة عرض مرتبطة" : "Has linked display spec"}
+          </label>
+          {value.linkDisplaySpec !== false ? (
+            <>
+              <label className={styles.quickRenameLabel}>
+                <span>{isAr ? "مفتاح مواصفة العرض (displaySpecKey)" : "Display spec key"}</span>
+                <input
+                  className={styles.customInp}
+                  dir="ltr"
+                  placeholder="processor_full"
+                  value={value.displaySpecKey ?? ""}
+                  onChange={(e) => onChange({ ...value, displaySpecKey: e.target.value })}
+                />
+              </label>
+              <label className={styles.quickRenameLabel}>
+                <span>{isAr ? "تسمية العرض (عربي)" : "Display label (AR)"}</span>
+                <input
+                  className={styles.customInp}
+                  value={value.displaySpecNameAr ?? ""}
+                  onChange={(e) => onChange({ ...value, displaySpecNameAr: e.target.value })}
+                />
+              </label>
+              <label className={styles.quickRenameLabel}>
+                <span>{isAr ? "تسمية العرض (إنجليزي)" : "Display label (EN)"}</span>
+                <input
+                  className={styles.customInp}
+                  dir="ltr"
+                  value={value.displaySpecNameEn ?? ""}
+                  onChange={(e) => onChange({ ...value, displaySpecNameEn: e.target.value })}
+                />
+              </label>
+              <label className={styles.quickRenameLabel}>
+                <span>{isAr ? "مجموعة العرض" : "Display group"}</span>
+                <input
+                  className={styles.customInp}
+                  dir="ltr"
+                  placeholder="performance"
+                  value={value.displaySpecGroup ?? ""}
+                  onChange={(e) => onChange({ ...value, displaySpecGroup: e.target.value })}
+                />
+              </label>
+              <label className={styles.facetMetaCheck}>
+                <input
+                  type="checkbox"
+                  checked={value.displaySpecRequired === true}
+                  onChange={(e) => onChange({ ...value, displaySpecRequired: e.target.checked })}
+                />
+                {isAr ? "مواصفة العرض مطلوبة عند وجود فلتر" : "Display spec required when filter set"}
+              </label>
+            </>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

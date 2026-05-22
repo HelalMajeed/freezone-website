@@ -33,6 +33,42 @@ function parseFacetMetaFromObject(o: Record<string, unknown>, key: string): Part
   const required = typeof o.required === "boolean" ? o.required : preset.required;
   const displayGroup = typeof o.displayGroup === "string" ? o.displayGroup.trim() : preset.displayGroup;
   const unit = typeof o.unit === "string" ? o.unit.trim() : preset.unit;
+  const displaySpecKey =
+    typeof o.displaySpecKey === "string"
+      ? o.displaySpecKey.trim()
+      : typeof o.display_spec_key === "string"
+        ? o.display_spec_key.trim()
+        : undefined;
+  const displaySpecNameEn =
+    typeof o.displaySpecNameEn === "string"
+      ? o.displaySpecNameEn.trim()
+      : typeof o.display_spec_name_en === "string"
+        ? o.display_spec_name_en.trim()
+        : undefined;
+  const displaySpecNameAr =
+    typeof o.displaySpecNameAr === "string"
+      ? o.displaySpecNameAr.trim()
+      : typeof o.display_spec_name_ar === "string"
+        ? o.display_spec_name_ar.trim()
+        : undefined;
+  const displaySpecGroup =
+    typeof o.displaySpecGroup === "string"
+      ? o.displaySpecGroup.trim()
+      : typeof o.display_spec_group === "string"
+        ? o.display_spec_group.trim()
+        : undefined;
+  const displaySpecRequired =
+    typeof o.displaySpecRequired === "boolean"
+      ? o.displaySpecRequired
+      : typeof o.display_spec_required === "boolean"
+        ? o.display_spec_required
+        : undefined;
+  const linkDisplaySpec =
+    typeof o.linkDisplaySpec === "boolean"
+      ? o.linkDisplaySpec
+      : typeof o.link_display_spec === "boolean"
+        ? o.link_display_spec
+        : undefined;
   return {
     ...(type ? { type } : preset.type ? { type: preset.type } : {}),
     ...(options ? { options } : preset.options ? { options: preset.options } : {}),
@@ -42,6 +78,12 @@ function parseFacetMetaFromObject(o: Record<string, unknown>, key: string): Part
     ...(required !== undefined ? { required } : {}),
     ...(displayGroup ? { displayGroup } : {}),
     ...(unit ? { unit } : {}),
+    ...(displaySpecKey ? { displaySpecKey } : {}),
+    ...(displaySpecNameEn ? { displaySpecNameEn } : {}),
+    ...(displaySpecNameAr ? { displaySpecNameAr } : {}),
+    ...(displaySpecGroup ? { displaySpecGroup } : {}),
+    ...(displaySpecRequired !== undefined ? { displaySpecRequired } : {}),
+    ...(linkDisplaySpec !== undefined ? { linkDisplaySpec } : {}),
   };
 }
 
@@ -64,6 +106,12 @@ function enrichFacetDef(
     displayGroup: partial?.displayGroup ?? preset.displayGroup ?? "specs",
     required: partial?.required ?? preset.required ?? false,
     unit: partial?.unit ?? preset.unit,
+    displaySpecKey: partial?.displaySpecKey,
+    displaySpecNameEn: partial?.displaySpecNameEn,
+    displaySpecNameAr: partial?.displaySpecNameAr,
+    displaySpecGroup: partial?.displaySpecGroup,
+    displaySpecRequired: partial?.displaySpecRequired ?? false,
+    linkDisplaySpec: partial?.linkDisplaySpec ?? Boolean(partial?.displaySpecKey),
   };
 }
 

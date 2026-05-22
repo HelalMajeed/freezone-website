@@ -13,6 +13,12 @@ export type FacetAttributeDef = {
   displayGroup?: string;
   required?: boolean;
   unit?: string;
+  displaySpecKey?: string;
+  displaySpecNameEn?: string;
+  displaySpecNameAr?: string;
+  displaySpecGroup?: string;
+  displaySpecRequired?: boolean;
+  linkDisplaySpec?: boolean;
 };
 
 export interface Category {

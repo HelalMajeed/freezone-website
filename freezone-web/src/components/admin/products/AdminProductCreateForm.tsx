@@ -18,6 +18,7 @@ import {
 import { AdminProductPreviewPanel } from "@/components/admin/products/AdminProductPreviewPanel";
 import { buildSpecsPayloadForSave } from "@/lib/admin-product-specs-payload";
 import { validateAdminProductSpecs } from "@/lib/admin/admin-product-spec-validation";
+import { resolveDisplaySpecKey } from "@/lib/classification/filter-display-link";
 import { useCategoryAttributeSchema } from "@/lib/admin/use-category-attribute-schema";
 import { freezoneApiUrl } from "@/lib/api-internal";
 
@@ -100,6 +101,11 @@ export function AdminProductCreateForm({
     return categories[0].id;
   }, [categories, categoryId]);
 
+  const categorySlug = useMemo(
+    () => categories.find((c) => c.id === resolvedCategoryId)?.slug,
+    [categories, resolvedCategoryId],
+  );
+
   useEffect(() => {
     setSecondaryCategoryIds((prev) => prev.filter((id) => id !== resolvedCategoryId));
   }, [resolvedCategoryId]);
@@ -114,16 +120,22 @@ export function AdminProductCreateForm({
   useEffect(() => {
     if (!categoryAttributes.length) return;
     setDisplaySpecs((prev) => {
-      const next: Record<string, string> = {};
-      for (const a of categoryAttributes) next[a.key] = prev[a.key] ?? "";
+      const next: Record<string, string> = { ...prev };
+      for (const a of categoryAttributes) {
+        if (!a.filterable) next[a.key] = prev[a.key] ?? "";
+        const dk = resolveDisplaySpecKey(a, categorySlug);
+        if (dk) next[dk] = prev[dk] ?? "";
+      }
       return next;
     });
     setFilterSpecs((prev) => {
       const next: Record<string, string> = {};
-      for (const a of categoryAttributes) next[a.key] = prev[a.key] ?? "";
+      for (const a of categoryAttributes) {
+        if (a.filterable) next[a.key] = prev[a.key] ?? "";
+      }
       return next;
     });
-  }, [categoryAttributes.map((a) => a.key).join("|")]);
+  }, [categoryAttributes, categorySlug]);
 
   function parseExternalImageUrls(text: string): string[] {
     const parts = text
@@ -172,7 +184,12 @@ export function AdminProductCreateForm({
     e.preventDefault();
     setMsg("");
     setMsgIsError(false);
-    const specErr = validateAdminProductSpecs(categoryAttributes, displaySpecs, filterSpecs);
+    const specErr = validateAdminProductSpecs(
+      categoryAttributes,
+      displaySpecs,
+      filterSpecs,
+      categorySlug,
+    );
     if (specErr) {
       setMsg(specErr);
       setMsgIsError(true);
@@ -217,7 +234,7 @@ export function AdminProductCreateForm({
         model3d: model3dUrl,
         images: imageUrls,
         specs: categoryAttributes.length
-          ? buildSpecsPayloadForSave(categoryAttributes, displaySpecs, filterSpecs)
+          ? buildSpecsPayloadForSave(categoryAttributes, displaySpecs, filterSpecs, categorySlug)
           : undefined,
         secondaryCategoryIds: secondaryCategoryIds.length ? secondaryCategoryIds : undefined,
       }),
@@ -434,6 +451,7 @@ export function AdminProductCreateForm({
           loading={schemaLoading}
           error={schemaError}
           categoryId={resolvedCategoryId}
+          categorySlug={categorySlug}
           onRetry={() => reloadSchema()}
           onChangeDisplay={(key, value) => setDisplaySpecs((p) => ({ ...p, [key]: value }))}
           onChangeFilter={(key, value) => setFilterSpecs((p) => ({ ...p, [key]: value }))}

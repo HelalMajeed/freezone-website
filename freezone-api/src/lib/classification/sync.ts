@@ -35,6 +35,12 @@ export function categoryAttributeRowsToFacetDefs(rows: CategoryAttributeRow[]): 
     displayGroup: r.displayGroup,
     required: r.required,
     unit: r.unit ?? undefined,
+    displaySpecKey: r.displaySpecKey ?? undefined,
+    displaySpecNameEn: r.displaySpecNameEn ?? undefined,
+    displaySpecNameAr: r.displaySpecNameAr ?? undefined,
+    displaySpecGroup: r.displaySpecGroup ?? undefined,
+    displaySpecRequired: r.displaySpecRequired ?? false,
+    linkDisplaySpec: r.linkDisplaySpec ?? false,
   }));
 }
 
@@ -60,6 +66,12 @@ export function facetDefToCategoryAttributeData(
     required: a.required ?? preset.required ?? false,
     unit: a.unit ?? preset.unit ?? null,
     active: true,
+    displaySpecKey: a.displaySpecKey?.trim() || null,
+    displaySpecNameEn: a.displaySpecNameEn?.trim() || null,
+    displaySpecNameAr: a.displaySpecNameAr?.trim() || null,
+    displaySpecGroup: a.displaySpecGroup?.trim() || null,
+    displaySpecRequired: a.displaySpecRequired === true,
+    linkDisplaySpec: a.linkDisplaySpec === true || Boolean(a.displaySpecKey?.trim()),
   };
 }
 

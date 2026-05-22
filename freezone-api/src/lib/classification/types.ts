@@ -30,6 +30,12 @@ export type CategoryAttributeRow = {
   required: boolean;
   unit: string | null;
   active?: boolean;
+  displaySpecKey?: string | null;
+  displaySpecNameEn?: string | null;
+  displaySpecNameAr?: string | null;
+  displaySpecGroup?: string | null;
+  displaySpecRequired?: boolean;
+  linkDisplaySpec?: boolean;
 };
 
 export type ProductAttributeValueRow = {

@@ -1,5 +1,6 @@
 import type { FacetAttributeDef } from "@/lib/data";
 import { isLongMarketingFacetText, sanitizeFacetFilterToken } from "@/lib/classification/facet-filter-token";
+import { buildSmartSpecRows } from "@/lib/classification/filter-display-link";
 
 const SNAKE_KEY = /^[a-z][a-z0-9_]*$/;
 
@@ -7,6 +8,7 @@ export function validateAdminProductSpecs(
   attributes: FacetAttributeDef[],
   displaySpecs: Record<string, string>,
   filterSpecs: Record<string, string>,
+  categorySlug?: string,
 ): string | null {
   const keys = attributes.map((a) => a.key);
   const dup = keys.find((k, i) => keys.indexOf(k) !== i);
@@ -16,33 +18,83 @@ export function validateAdminProductSpecs(
     if (!SNAKE_KEY.test(attr.key)) {
       return `مفتاح غير صالح (snake_case): ${attr.key}`;
     }
-    const display = (displaySpecs[attr.key] ?? "").trim();
-    const filter = (filterSpecs[attr.key] ?? "").trim();
+  }
 
-    if (attr.required && !display && !filter) {
-      return `حقل مطلوب: ${attr.name_ar || attr.name_en || attr.key}`;
-    }
+  const rows = buildSmartSpecRows(attributes, categorySlug);
 
-    if (attr.filterable && filter) {
-      const token = sanitizeFacetFilterToken(attr.key, filter);
-      if (!token || isLongMarketingFacetText(filter)) {
-        return `قيمة الفلتر غير صالحة لـ ${attr.name_ar || attr.name_en || attr.key}: ضع النص الكامل في Display Specs وليس Filter Values (مثال: Core i7، RTX 5070)`;
+  for (const row of rows) {
+    for (const attr of row.filterAttrs) {
+      const filter = (filterSpecs[attr.key] ?? "").trim();
+
+      if (attr.required && !filter) {
+        return `قيمة فلتر مطلوبة: ${attr.name_ar || attr.name_en || attr.key}`;
+      }
+
+      if (filter) {
+        const token = sanitizeFacetFilterToken(attr.key, filter);
+        if (!token || isLongMarketingFacetText(filter)) {
+          return `هذه قيمة فلتر ويجب أن تكون قصيرة. ضع النص الكامل في مواصفة المنتج — ${attr.name_ar || attr.key}`;
+        }
+      }
+
+      if (attr.type === "SELECT" && attr.options?.length && filter && attr.filterable) {
+        if (!attr.options.includes(filter)) {
+          return `هذه القيمة غير موجودة في خيارات فلتر القسم: ${attr.key} = ${filter}`;
+        }
       }
     }
 
-    if (attr.filterable && display && !filter) {
-      const long = display.length > 48;
-      if (long) {
-        return `أدخل قيمة فلتر مختصرة لـ ${attr.name_ar || attr.key} (لا تستخدم النص الطويل في الفلتر)`;
-      }
-    }
-
-    if (attr.type === "SELECT" && attr.options?.length && filter && attr.filterable) {
-      if (!attr.options.includes(filter)) {
-        return `قيمة الفلتر غير مسموحة لـ ${attr.key}: ${filter}`;
+    if (row.displaySpecKey && row.displaySpecRequired) {
+      const display = (displaySpecs[row.displaySpecKey] ?? "").trim();
+      const anyFilter = row.filterAttrs.some((a) => (filterSpecs[a.key] ?? "").trim());
+      if (anyFilter && !display) {
+        return `مواصفة العرض المرتبطة مطلوبة: ${row.titleAr || row.displaySpecKey}`;
       }
     }
   }
 
+  for (const attr of attributes) {
+    if (attr.filterable) continue;
+    const display = (displaySpecs[attr.key] ?? "").trim();
+    if (attr.required && !display) {
+      return `حقل مطلوب: ${attr.name_ar || attr.name_en || attr.key}`;
+    }
+  }
+
   return null;
+}
+
+export type SmartSpecRowStatus = "ok" | "warn" | "error";
+
+export function smartSpecRowStatus(
+  row: ReturnType<typeof buildSmartSpecRows>[number],
+  displaySpecs: Record<string, string>,
+  filterSpecs: Record<string, string>,
+): SmartSpecRowStatus {
+  let hasError = false;
+  let hasWarn = false;
+
+  for (const attr of row.filterAttrs) {
+    const filter = (filterSpecs[attr.key] ?? "").trim();
+    if (attr.required && !filter) hasError = true;
+    if (filter) {
+      const token = sanitizeFacetFilterToken(attr.key, filter);
+      if (!token || isLongMarketingFacetText(filter)) hasError = true;
+      if (attr.options?.length && !attr.options.includes(filter)) hasError = true;
+    }
+  }
+
+  if (row.displaySpecKey) {
+    const display = (displaySpecs[row.displaySpecKey] ?? "").trim();
+    const anyFilter = row.filterAttrs.some((a) => (filterSpecs[a.key] ?? "").trim());
+    if (anyFilter && !display) hasWarn = true;
+    if (row.displaySpecRequired && anyFilter && !display) hasError = true;
+  }
+
+  if (hasError) return "error";
+  if (hasWarn) return "warn";
+  const anyFilled =
+    row.filterAttrs.some((a) => (filterSpecs[a.key] ?? "").trim()) ||
+    (row.displaySpecKey ? (displaySpecs[row.displaySpecKey] ?? "").trim() : "");
+  return anyFilled ? "ok" : "warn";
 }

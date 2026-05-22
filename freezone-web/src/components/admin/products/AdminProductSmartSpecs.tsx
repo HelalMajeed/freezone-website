@@ -4,8 +4,12 @@ import { useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import type { FacetAttributeDef } from "@/lib/data";
-import { partitionFacetAttributes } from "@/lib/classification/attribute-sets";
-import { proposeFiltersFromDisplay } from "@/lib/admin/admin-product-tab-status";
+import {
+  buildSmartSpecRows,
+  standaloneDisplayAttributes,
+} from "@/lib/classification/filter-display-link";
+import { buildFilterDeriveSuggestions, type FilterDeriveSuggestion } from "@/lib/admin/smart-spec-derive";
+import { smartSpecRowStatus } from "@/lib/admin/admin-product-spec-validation";
 import { AdminProductFormSection } from "@/components/admin/products/AdminProductFormSection";
 import { AdminLoadingState } from "@/components/admin/ui/AdminLoadingState";
 import { AdminErrorState } from "@/components/admin/ui/AdminErrorState";
@@ -13,11 +17,15 @@ import { AdminEmptyState } from "@/components/admin/ui/AdminEmptyState";
 import {
   FilterValueControl,
   DisplaySpecInput,
-  SpecTypeBadge,
-  attributeTitle,
 } from "@/components/admin/products/AdminProductAttributeControls";
 import ui from "@/components/admin/ui/AdminUi.module.css";
 import styles from "./AdminProductSmartSpecs.module.css";
+
+const STATUS_LABEL = {
+  ok: "صحيح",
+  warn: "ناقص",
+  error: "خطأ",
+} as const;
 
 type Props = {
   attributes: FacetAttributeDef[];
@@ -30,7 +38,9 @@ type Props = {
   loading?: boolean;
   error?: string | null;
   categoryId?: number;
+  categorySlug?: string;
   onRetry?: () => void;
+  hideTechnicalDetails?: boolean;
 };
 
 export function AdminProductSmartSpecs({
@@ -44,15 +54,44 @@ export function AdminProductSmartSpecs({
   loading,
   error,
   categoryId,
+  categorySlug,
   onRetry,
+  hideTechnicalDetails = true,
 }: Props) {
-  const { filterableSpecs, extendedSpecs } = partitionFacetAttributes(attributes);
-  const [derivePreview, setDerivePreview] = useState<Record<string, { before: string; after: string }> | null>(null);
-
-  const proposed = useMemo(
-    () => proposeFiltersFromDisplay(attributes, displaySpecs, filterSpecs),
-    [attributes, displaySpecs, filterSpecs],
+  const rows = useMemo(
+    () => buildSmartSpecRows(attributes, categorySlug),
+    [attributes, categorySlug],
   );
+  const extraDisplay = useMemo(
+    () => standaloneDisplayAttributes(attributes, rows),
+    [attributes, rows],
+  );
+  const [deriveModal, setDeriveModal] = useState<FilterDeriveSuggestion[] | null>(null);
+  const [deriveSelected, setDeriveSelected] = useState<Record<string, boolean>>({});
+
+  function openDeriveModal() {
+    const suggestions = buildFilterDeriveSuggestions(
+      attributes,
+      displaySpecs,
+      filterSpecs,
+      categorySlug,
+    );
+    if (!suggestions.length) return;
+    const selected: Record<string, boolean> = {};
+    for (const s of suggestions) {
+      selected[s.filterKey] = s.confidence !== "low";
+    }
+    setDeriveSelected(selected);
+    setDeriveModal(suggestions);
+  }
+
+  function applyDerive() {
+    if (!deriveModal) return;
+    for (const s of deriveModal) {
+      if (deriveSelected[s.filterKey]) onChangeFilter(s.filterKey, s.suggested);
+    }
+    setDeriveModal(null);
+  }
 
   if (loading) return <AdminLoadingState message="جاري تحميل مواصفات القسم…" />;
   if (error) return <AdminErrorState message={error} onRetry={onRetry} />;
@@ -72,142 +111,188 @@ export function AdminProductSmartSpecs({
     );
   }
 
-  function openDerivePreview() {
-    const diff: Record<string, { before: string; after: string }> = {};
-    for (const attr of filterableSpecs) {
-      const before = filterSpecs[attr.key] ?? "";
-      const after = proposed[attr.key] ?? "";
-      if (after && after !== before) diff[attr.key] = { before, after };
-    }
-    setDerivePreview(diff);
-  }
-
-  function applyDerived() {
-    if (!derivePreview) return;
-    for (const [key, { after }] of Object.entries(derivePreview)) {
-      onChangeFilter(key, after);
-    }
-    setDerivePreview(null);
-  }
-
   return (
     <AdminProductFormSection
-      title="المواصفات الذكية"
-      subtitle="نفس فلاتر القسم — اختر قيمة الفلتر واكتب المواصفة الموسعة بجانبها."
-      badge={`${filterableSpecs.length + extendedSpecs.length} حقل`}
+      title="المواصفات والفلاتر"
+      subtitle="صف واحد لكل فلتر: اختر قيمة الفلتر واكتب المواصفة التي تظهر في صفحة المنتج."
+      badge={`${rows.length} مواصفة`}
     >
-      <p className={styles.flowHelp}>
-        <strong>داخل القسم:</strong> تحدد الفلاتر وأسماءها وخياراتها (Select / Checkbox / Range).{" "}
-        <strong>هنا عند إضافة المنتج:</strong> لكل فلتر تختار قيمة الفلتر (تظهر في صفحة القسم فقط) وتكتب
-        المواصفة الموسعة (تظهر في صفحة المنتج).{" "}
-        <strong>لا تخلط:</strong> لا تضع نصًا طويلًا في خانة الفلتر.
-      </p>
+      {rows.length > 0 ? (
+        <div style={{ marginBottom: 12 }}>
+          <button type="button" className={ui.btnSm} onClick={openDeriveModal}>
+            توليد قيم الفلاتر من المواصفات
+          </button>
+        </div>
+      ) : null}
 
-      {filterableSpecs.length > 0 ? (
-        <>
-          <div style={{ marginBottom: 12 }}>
-            <button type="button" className={ui.btnSm} onClick={openDerivePreview}>
-              توليد قيم الفلاتر من المواصفات الموسعة
+      {deriveModal && deriveModal.length > 0 ? (
+        <div className={styles.deriveModal} role="dialog" aria-label="معاينة توليد الفلاتر">
+          <strong>معاينة قبل التطبيق</strong>
+          <table className={styles.specTable}>
+            <thead>
+              <tr>
+                <th>تطبيق</th>
+                <th>الحقل</th>
+                <th>الحالي</th>
+                <th>المقترح</th>
+                <th>المصدر</th>
+                <th>الثقة</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deriveModal.map((s) => (
+                <tr key={s.filterKey} className={s.confidence === "low" ? styles.rowWarn : undefined}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={deriveSelected[s.filterKey] ?? false}
+                      onChange={(e) =>
+                        setDeriveSelected((prev) => ({ ...prev, [s.filterKey]: e.target.checked }))
+                      }
+                    />
+                  </td>
+                  <td>{s.filterLabel}</td>
+                  <td>{s.current || "—"}</td>
+                  <td>{s.suggested}</td>
+                  <td dir="ltr">{s.sourceKey}</td>
+                  <td>
+                    {s.confidence === "high" ? "عالية" : s.confidence === "medium" ? "متوسطة" : "منخفضة"}
+                    {s.warning ? <span className={styles.warnText}> — {s.warning}</span> : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className={styles.deriveActions}>
+            <button type="button" className={`${ui.btnSm} ${ui.btnPrimaryOutline}`} onClick={applyDerive}>
+              تطبيق المحدد
+            </button>
+            <button type="button" className={ui.btnSm} onClick={() => setDeriveModal(null)}>
+              إلغاء
             </button>
           </div>
-          {derivePreview && Object.keys(derivePreview).length > 0 ? (
-            <div className={ui.derivePreviewBox} style={{ marginBottom: 16 }}>
-              <strong>معاينة قبل التطبيق</strong>
-              <table className={ui.table} style={{ marginTop: 8 }}>
-                <thead>
-                  <tr>
-                    <th>الحقل</th>
-                    <th>قبل</th>
-                    <th>بعد</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(derivePreview).map(([key, row]) => (
-                    <tr key={key}>
-                      <td>{key}</td>
-                      <td>{row.before || "—"}</td>
-                      <td>{row.after}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                <button type="button" className={`${ui.btnSm} ${ui.btnPrimaryOutline}`} onClick={applyDerived}>
-                  تطبيق
-                </button>
-                <button type="button" className={ui.btnSm} onClick={() => setDerivePreview(null)}>
-                  إلغاء
-                </button>
-              </div>
-            </div>
-          ) : null}
+        </div>
+      ) : null}
 
-          <h3 className={styles.sectionTitle}>فلاتر القسم + مواصفة المنتج</h3>
-          {filterableSpecs.map((attr) => {
-            const displayVal = displaySpecs[attr.key] ?? "";
-            const filterVal = filterSpecs[attr.key] ?? "";
-            return (
-              <div key={attr.key} className={styles.specCard}>
-                <div className={styles.specCardHead}>
-                  <strong>{attributeTitle(attr, locale)}</strong>
-                  <SpecTypeBadge type={attr.type} />
-                  <span className={styles.specKey}>{attr.key}</span>
-                  {attr.unit ? <span className={styles.specKey}>{attr.unit}</span> : null}
-                </div>
-                <div className={styles.pairedGrid}>
-                  <div>
-                    <span className={styles.colLabel}>قيمة الفلتر — صفحة القسم</span>
-                    <FilterValueControl
-                      attr={attr}
-                      value={filterVal}
-                      onChange={(v) => onChangeFilter(attr.key, v)}
-                      fieldStyle={fieldStyle}
-                    />
-                    <span className={styles.colHint}>تظهر في فلاتر الكتالوج فقط (قصيرة).</span>
-                  </div>
-                  <div>
-                    <span className={styles.colLabel}>مواصفة موسعة — صفحة المنتج</span>
-                    <DisplaySpecInput
-                      attr={attr}
-                      value={displayVal}
-                      onChange={(v) => onChangeDisplay(attr.key, v)}
-                      fieldStyle={fieldStyle}
-                      onBlurNormalizeFilter={(normalized) => {
-                        if (!filterVal.trim()) onChangeFilter(attr.key, normalized);
-                      }}
-                    />
-                    <span className={styles.colHint}>تظهر في تفاصيل المنتج وبطاقة المواصفات.</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </>
+      {rows.length > 0 ? (
+        <div className={styles.tableWrap}>
+          <table className={styles.specTable}>
+            <thead>
+              <tr>
+                <th>المواصفة</th>
+                <th>قيمة الفلتر</th>
+                <th>المواصفة التي تظهر في المنتج</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => {
+                const status = smartSpecRowStatus(row, displaySpecs, filterSpecs);
+                const title = locale === "ar" ? row.titleAr : row.titleEn;
+                const displayKey = row.displaySpecKey;
+                const displayVal = displayKey ? displaySpecs[displayKey] ?? "" : "";
+
+                return (
+                  <tr key={row.id}>
+                    <td className={styles.specNameCell}>
+                      <strong>{title}</strong>
+                      {!hideTechnicalDetails && displayKey ? (
+                        <span className={styles.specKey}>{displayKey}</span>
+                      ) : null}
+                    </td>
+                    <td>
+                      <div className={styles.filterStack}>
+                        {row.filterAttrs.map((attr) => (
+                          <div key={attr.key} className={styles.filterBlock}>
+                            {row.filterAttrs.length > 1 ? (
+                              <span className={styles.filterSubLabel}>
+                                {locale === "ar" ? attr.name_ar : attr.name_en}
+                              </span>
+                            ) : null}
+                            <FilterValueControl
+                              attr={attr}
+                              value={filterSpecs[attr.key] ?? ""}
+                              onChange={(v) => onChangeFilter(attr.key, v)}
+                              fieldStyle={fieldStyle}
+                              preferRadio
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                    <td>
+                      {displayKey ? (
+                        <DisplaySpecInput
+                          attr={
+                            attributes.find((a) => a.key === displayKey) ?? {
+                              key: displayKey,
+                              name_en: row.titleEn,
+                              name_ar: row.titleAr,
+                            }
+                          }
+                          value={displayVal}
+                          onChange={(v) => onChangeDisplay(displayKey, v)}
+                          fieldStyle={fieldStyle}
+                        />
+                      ) : (
+                        <span className={styles.colHint}>فلتر فقط — بدون مواصفة عرض مرتبطة</span>
+                      )}
+                    </td>
+                    <td>
+                      <span className={`${styles.statusBadge} ${styles[`status_${status}`]}`}>
+                        {STATUS_LABEL[status]}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       ) : (
-        <p style={{ fontSize: 13, color: "var(--admin-muted)" }}>
-          لا توجد فلاتر معرّفة لهذا القسم — أضف سمات قابلة للفلترة من إدارة القسم.
-        </p>
+        <p className={styles.colHint}>لا توجد فلاتر معرّفة — أضف سمات قابلة للفلترة من إدارة القسم.</p>
       )}
 
-      {extendedSpecs.length > 0 ? (
+      {extraDisplay.length > 0 ? (
         <>
           <h3 className={styles.sectionTitle}>مواصفات عرض إضافية (صفحة المنتج فقط)</h3>
-          {extendedSpecs.map((attr) => (
-            <div key={attr.key} className={styles.displayOnlyCard}>
-              <div className={styles.specCardHead}>
-                <strong>{attributeTitle(attr, locale)}</strong>
-                <SpecTypeBadge type={attr.type} />
-                <span className={styles.specKey}>{attr.key}</span>
-              </div>
-              <DisplaySpecInput
-                attr={attr}
-                value={displaySpecs[attr.key] ?? ""}
-                onChange={(v) => onChangeDisplay(attr.key, v)}
-                fieldStyle={fieldStyle}
-              />
-              <span className={styles.colHint}>لا تظهر في فلاتر القسم — عرض داخل المنتج فقط.</span>
-            </div>
-          ))}
+          <div className={styles.tableWrap}>
+            <table className={styles.specTable}>
+              <thead>
+                <tr>
+                  <th>المواصفة</th>
+                  <th colSpan={2}>نص صفحة المنتج</th>
+                  <th>الحالة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {extraDisplay.map((attr) => {
+                  const val = displaySpecs[attr.key] ?? "";
+                  const status = attr.required && !val.trim() ? "error" : val.trim() ? "ok" : "warn";
+                  return (
+                    <tr key={attr.key}>
+                      <td>
+                        <strong>{locale === "ar" ? attr.name_ar : attr.name_en}</strong>
+                      </td>
+                      <td colSpan={2}>
+                        <DisplaySpecInput
+                          attr={attr}
+                          value={val}
+                          onChange={(v) => onChangeDisplay(attr.key, v)}
+                          fieldStyle={fieldStyle}
+                        />
+                      </td>
+                      <td>
+                        <span className={`${styles.statusBadge} ${styles[`status_${status}`]}`}>
+                          {STATUS_LABEL[status]}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </>
       ) : null}
     </AdminProductFormSection>

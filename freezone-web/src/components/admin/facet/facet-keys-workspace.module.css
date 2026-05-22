@@ -507,6 +507,20 @@
   background: var(--admin-bg);
 }
 
+.linkedDisplayBlock {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--admin-border, #e7bcb9);
+}
+
+.linkedDisplayTitle {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--admin-text-warm, #5d3f3d);
+}
+
 .metaFieldsBlock {
   display: grid;
   grid-template-columns: 1fr 1fr;

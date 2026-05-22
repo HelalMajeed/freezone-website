@@ -14,6 +14,13 @@ export type FacetAttributeDef = {
   displayGroup?: string;
   required?: boolean;
   unit?: string;
+  /** Linked PDP display attribute key (e.g. processor_full). */
+  displaySpecKey?: string;
+  displaySpecNameEn?: string;
+  displaySpecNameAr?: string;
+  displaySpecGroup?: string;
+  displaySpecRequired?: boolean;
+  linkDisplaySpec?: boolean;
 };
 
 export interface Category {
