@@ -1,7 +1,9 @@
 .page {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 4px 32px;
+  width: 100%;
+  max-width: min(100%, 1280px);
+  margin-inline: auto;
+  padding: 0 clamp(4px, 1vw, 8px) clamp(20px, 4vw, 32px);
+  min-width: 0;
 }
 
 .pageHeader {
@@ -15,7 +17,7 @@
 
 .pageTitle {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: clamp(1.2rem, 2.5vw, 1.5rem);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--admin-text);
@@ -279,17 +281,22 @@
 
 .tableWrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  max-width: 100%;
+  border-radius: var(--admin-radius-lg);
 }
 
 .table {
   width: 100%;
+  min-width: min(100%, 640px);
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font-size: var(--fz-admin-font-base, 0.85rem);
 }
 
 .table th {
   text-align: start;
-  padding: 10px 12px;
+  padding: var(--fz-admin-table-pad, 10px 12px);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -300,10 +307,13 @@
 }
 
 .table td {
-  padding: 12px;
+  padding: var(--fz-admin-table-pad, 12px);
   border-bottom: 1px solid var(--admin-border);
   color: var(--admin-text);
   vertical-align: middle;
+  max-width: min(40vw, 280px);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .table tr:last-child td {
@@ -356,12 +366,27 @@
 
 .tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
   margin-bottom: 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  max-width: 100%;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+@media (min-width: 900px) {
+  .tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
 }
 
 .tab {
+  flex-shrink: 0;
+  min-height: var(--fz-touch-min, 40px);
   padding: 8px 14px;
   border-radius: var(--admin-radius-lg);
   border: 1px solid var(--admin-border);

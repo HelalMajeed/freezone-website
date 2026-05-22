@@ -257,3 +257,53 @@
   color: #b71c1c;
   width: 100%;
 }
+
+/* Mobile / tablet: stack spec rows as cards instead of wide table */
+@media (max-width: 900px) {
+  .tableWrap {
+    overflow-x: visible;
+    border: none;
+    background: transparent;
+  }
+
+  .specTable {
+    display: block;
+    min-width: 0;
+  }
+
+  .specTable thead {
+    display: none;
+  }
+
+  .specTable tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .specTable tbody tr {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: var(--fz-card-padding, 14px);
+    border: 1px solid var(--admin-border, #e7bcb9);
+    border-radius: var(--admin-radius-lg, 1rem);
+    background: var(--admin-surface, #fff);
+  }
+
+  .specTable tbody tr td {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: none;
+  }
+
+  .specTable tbody tr:last-child td {
+    border: none;
+  }
+
+  .filterStack,
+  .filterBlock {
+    width: 100%;
+  }
+}

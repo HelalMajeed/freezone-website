@@ -1,0 +1,212 @@
+/**
+ * FreeZone — adaptive layout density & responsive sizing.
+ * Comfortable (wide) → compact (laptop) → dense (mobile, touch-safe).
+ */
+
+:root {
+  --fz-density: comfortable;
+
+  /* Layout */
+  --fz-page-max: min(100%, 1440px);
+  --fz-page-max-wide: min(96vw, 1680px);
+  --fz-gutter: clamp(12px, 2vw, 32px);
+  --fz-section-gap: clamp(16px, 3vw, 48px);
+  --fz-block-gap: clamp(12px, 2vw, 28px);
+  --fz-card-gap: clamp(10px, 1.5vw, 24px);
+  --fz-inline-gap: clamp(8px, 1vw, 16px);
+
+  /* Surfaces */
+  --fz-radius-card: clamp(10px, 1vw, 16px);
+  --fz-radius-control: clamp(8px, 0.8vw, 12px);
+  --fz-card-padding: clamp(12px, 1.5vw, 24px);
+  --fz-panel-padding: clamp(12px, 2vw, 20px);
+
+  /* Typography */
+  --fz-font-xs: clamp(11px, 0.75vw, 12px);
+  --fz-font-sm: clamp(12px, 0.85vw, 14px);
+  --fz-font-base: clamp(13px, 0.95vw, 16px);
+  --fz-font-md: clamp(15px, 1.1vw, 18px);
+  --fz-font-lg: clamp(18px, 1.6vw, 26px);
+  --fz-font-xl: clamp(22px, 2.2vw, 36px);
+  --fz-line-body: 1.55;
+  --fz-line-heading: 1.2;
+
+  /* Controls */
+  --fz-control-h: clamp(40px, 4vw, 44px);
+  --fz-control-h-sm: clamp(36px, 3.5vw, 40px);
+  --fz-touch-min: 44px;
+  --fz-btn-pad-x: clamp(12px, 1.5vw, 20px);
+  --fz-btn-pad-y: clamp(8px, 1vw, 12px);
+  --fz-btn-font: var(--fz-font-sm);
+
+  /* Product grid */
+  --fz-grid-min: clamp(140px, 42vw, 220px);
+  --fz-grid-gap: var(--fz-card-gap);
+  --fz-product-img-pad: clamp(8px, 1.5vw, 24px);
+
+  /* Filters / sidebar */
+  --fz-filter-sidebar-w: clamp(240px, 22vw, 280px);
+  --fz-filter-pad: var(--fz-panel-padding);
+
+  /* Admin (storefront inherits only when not in admin-shell) */
+  --fz-admin-page-pad: clamp(16px, 2.5vw, 32px);
+  --fz-admin-sidebar-w: clamp(220px, 18vw, 256px);
+  --fz-admin-sidebar-w-collapsed: 72px;
+  --fz-admin-topbar-h: clamp(52px, 6vw, 60px);
+  --fz-admin-table-pad: clamp(8px, 1vw, 12px);
+  --fz-admin-font-base: clamp(13px, 0.9vw, 14px);
+
+  /* Bridge legacy spacing scale */
+  --space-1: clamp(3px, 0.4vw, 4px);
+  --space-2: clamp(6px, 0.8vw, 8px);
+  --space-3: clamp(10px, 1.2vw, 12px);
+  --space-4: clamp(12px, 1.5vw, 16px);
+  --space-5: clamp(14px, 1.8vw, 20px);
+  --space-6: clamp(16px, 2vw, 24px);
+  --space-8: clamp(20px, 2.5vw, 32px);
+  --space-10: clamp(24px, 3vw, 40px);
+  --space-12: clamp(28px, 3.5vw, 48px);
+}
+
+/* Laptop / medium — compact */
+@media (max-width: 1280px) {
+  :root {
+    --fz-density: compact;
+    --fz-section-gap: clamp(14px, 2.5vw, 32px);
+    --fz-card-padding: clamp(12px, 1.2vw, 18px);
+    --fz-grid-min: clamp(132px, 38vw, 200px);
+    --fz-product-img-pad: clamp(8px, 1.2vw, 18px);
+  }
+}
+
+@media (max-width: 1024px) {
+  :root {
+    --fz-filter-sidebar-w: 100%;
+    --fz-section-gap: clamp(12px, 2vw, 24px);
+    --fz-block-gap: clamp(10px, 1.5vw, 20px);
+  }
+}
+
+/* Tablet */
+@media (max-width: 768px) {
+  :root {
+    --fz-gutter: clamp(12px, 3vw, 16px);
+    --fz-section-gap: clamp(12px, 2.5vw, 20px);
+    --fz-card-gap: clamp(8px, 2vw, 14px);
+    --fz-grid-min: clamp(128px, 44vw, 180px);
+  }
+}
+
+/* Mobile — dense but touch-safe */
+@media (max-width: 640px) {
+  :root {
+    --fz-density: dense;
+    --fz-gutter: 12px;
+    --fz-section-gap: 16px;
+    --fz-card-padding: 12px;
+    --fz-panel-padding: 12px;
+    --fz-grid-min: clamp(120px, 46vw, 168px);
+    --fz-grid-gap: 10px;
+    --fz-font-base: max(13px, 0.8125rem);
+    --fz-control-h: var(--fz-touch-min);
+    --fz-control-h-sm: 40px;
+  }
+}
+
+html[data-density="comfortable"] {
+  --fz-density: comfortable;
+}
+html[data-density="compact"] {
+  --fz-density: compact;
+}
+html[data-density="dense"] {
+  --fz-density: dense;
+}
+
+/* Sync data-density from breakpoints (JS-free via media on html is not possible; use class on body from optional script — skip) */
+
+/* ─── Global utilities ─────────────────────────── */
+.fz-page {
+  width: 100%;
+  max-width: var(--fz-page-max);
+  margin-inline: auto;
+  padding-inline: var(--fz-gutter);
+}
+
+.fz-page-wide {
+  max-width: var(--fz-page-max-wide);
+}
+
+.fz-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fz-block-gap);
+}
+
+.fz-section {
+  margin-block-end: var(--fz-section-gap);
+}
+
+.fz-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--fz-grid-min), 1fr));
+  gap: var(--fz-grid-gap);
+  width: 100%;
+  min-width: 0;
+}
+
+.fz-scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  max-width: 100%;
+}
+
+.fz-scroll-x::-webkit-scrollbar {
+  height: 6px;
+}
+
+.fz-line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Prevent horizontal bleed site-wide */
+#root,
+.app-main {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Admin density bridge */
+.admin-root,
+.admin-shell.dashboard-root {
+  --fz-sidebar-w: var(--fz-admin-sidebar-w);
+  --fz-sidebar-w-collapsed: var(--fz-admin-sidebar-w-collapsed);
+  --fz-topbar-h: var(--fz-admin-topbar-h);
+  font-size: var(--fz-admin-font-base);
+}
+
+.admin-shell.dashboard-root {
+  --fz-sidebar-w: var(--fz-admin-sidebar-w);
+  --fz-sidebar-w-collapsed: var(--fz-admin-sidebar-w-collapsed);
+  --fz-topbar-h: var(--fz-admin-topbar-h);
+}
+
+@media (max-width: 1024px) {
+  .admin-shell.dashboard-root {
+    --fz-admin-sidebar-w: min(280px, 88vw);
+    --fz-admin-page-pad: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-shell.dashboard-root {
+    --fz-admin-page-pad: 12px;
+    --fz-admin-topbar-h: 52px;
+  }
+}

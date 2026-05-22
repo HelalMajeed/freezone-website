@@ -3,12 +3,12 @@
 
 .pdpLayout {
   padding-top: 0;
-  padding-bottom: 80px;
+  padding-bottom: clamp(40px, 8vw, 80px);
 }
 
-/* Wider than global 1320px `.container` so PDP + specs use horizontal space */
+/* Wider than global `.container` so PDP + specs use horizontal space */
 :global(.container).pdpWide {
-  max-width: min(96vw, 1680px);
+  max-width: var(--fz-page-max-wide, min(96vw, 1680px));
 }
 
 /* ── Breadcrumb ───────────────────────────────── */
@@ -45,10 +45,15 @@
 .productGrid {
   display: flex;
   flex-direction: column;
-  gap: 48px;
-  padding-top: 40px;
+  gap: clamp(24px, 5vw, 48px);
+  padding-top: clamp(20px, 4vw, 40px);
 }
-@media (min-width: 1024px) { .productGrid { flex-direction: row; gap: 64px; } }
+@media (min-width: 1024px) {
+  .productGrid {
+    flex-direction: row;
+    gap: clamp(32px, 4vw, 64px);
+  }
+}
 
 .mediaCol { flex: 1; min-width: 0; }
 .infoCol  { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -152,10 +157,10 @@
 
 .heroSpecs {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px 16px;
-  margin-bottom: 24px;
-  padding: 14px 16px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
+  gap: clamp(8px, 2vw, 16px);
+  margin-bottom: var(--fz-block-gap, 24px);
+  padding: var(--fz-panel-padding, 14px 16px);
   background: var(--bg-secondary);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
@@ -216,11 +221,31 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 11px 18px;
+  padding: clamp(10px, 2vw, 11px) clamp(12px, 3vw, 18px);
   border-bottom: 1px solid var(--border-light);
-  gap: 16px;
+  gap: clamp(8px, 2vw, 16px);
 }
 .attrRow:last-child { border-bottom: none; }
+
+@media (max-width: 640px) {
+  .heroSpecs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .attrRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  .attrLabel {
+    max-width: none;
+  }
+  .attrValue {
+    text-align: start;
+  }
+  .actionBtn {
+    min-height: var(--fz-touch-min, 44px);
+  }
+}
 
 .specSectionTitle {
   margin: 0;

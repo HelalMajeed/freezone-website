@@ -24,6 +24,22 @@
   gap: 8px;
   align-items: center;
   margin-bottom: 16px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .activeChips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+  .filterChip {
+    flex-shrink: 0;
+  }
 }
 
 .filterChip {
@@ -63,9 +79,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding: 14px 16px;
+  gap: var(--fz-inline-gap, 12px);
+  margin-bottom: var(--fz-block-gap, 20px);
+  padding: var(--fz-panel-padding, 14px 16px);
   background: var(--bg-primary);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
@@ -85,6 +101,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-height: var(--fz-touch-min, 44px);
   padding: 10px 18px;
   border-radius: var(--radius-md);
   border: 1.5px solid var(--border-light);
@@ -171,7 +188,7 @@
 
 /* Wider than global .container so 4-up cards match prior 3-up width */
 :global(.container).collectionWide {
-  max-width: 1600px;
+  max-width: min(96vw, 1600px);
 }
 
 .layoutGrid {
@@ -231,7 +248,7 @@
   position: fixed;
   top: 0;
   bottom: 0;
-  left: 0;
+  inset-inline-start: 0;
   width: min(420px, 92vw);
   max-width: 100%;
   background: var(--bg-primary);

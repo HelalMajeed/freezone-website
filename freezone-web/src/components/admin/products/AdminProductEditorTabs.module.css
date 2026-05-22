@@ -1,18 +1,32 @@
 .tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
   margin-bottom: 20px;
   padding: 4px;
   background: var(--admin-surface-muted, #1e293b);
   border-radius: 10px;
   border: 1px solid var(--admin-border, #334155);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  max-width: 100%;
+  scrollbar-width: thin;
+}
+
+@media (min-width: 900px) {
+  .tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
 }
 
 .tab {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
+  min-height: var(--fz-touch-min, 40px);
   padding: 8px 14px;
   border: none;
   border-radius: 8px;

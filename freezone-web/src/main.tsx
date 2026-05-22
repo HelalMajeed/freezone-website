@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { ScrollToTop } from "@/routes/ScrollToTop";
 import "./theme/tokens.css";
+import "./theme/adaptive-density.css";
 import "./globals.css";
 import "@/app/admin/admin-shell.css";
 import "@/app/admin/admin-dashboard-shell.css";

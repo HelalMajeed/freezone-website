@@ -11,6 +11,16 @@
   background: var(--gray-950);
 }
 
+@media (max-width: 640px) {
+  .wrapper {
+    height: clamp(220px, 38vh, 360px);
+    max-height: min(360px, 72vh);
+  }
+  .slide {
+    padding-bottom: clamp(64px, 12vh, 88px);
+  }
+}
+
 /* ── Slide ────────────────────────────────────── */
 .slide {
   position: absolute;

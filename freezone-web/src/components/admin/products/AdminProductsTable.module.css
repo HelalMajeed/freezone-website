@@ -39,6 +39,9 @@
 
 .tableScroll {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  max-width: 100%;
   border: 1px solid var(--admin-border, #334155);
   border-radius: 10px;
 }

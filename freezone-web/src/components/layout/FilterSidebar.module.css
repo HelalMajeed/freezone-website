@@ -5,8 +5,8 @@
 .sidebar {
   background: var(--bg-primary);
   border: 1.5px solid var(--border-light);
-  border-radius: var(--radius-xl);
-  padding: 20px;
+  border-radius: var(--fz-radius-card, var(--radius-xl));
+  padding: var(--fz-filter-pad, 20px);
   position: relative;
   box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
 }
@@ -43,9 +43,12 @@
 
 .accordionTitle {
   font-weight: 800;
-  font-size: 0.82rem;
+  font-size: var(--fz-font-sm, 0.82rem);
   flex: 1;
+  min-width: 0;
   line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .accordionIcon {
