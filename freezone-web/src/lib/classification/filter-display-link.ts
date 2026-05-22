@@ -71,6 +71,7 @@ export const CATEGORY_FILTER_DISPLAY_OVERRIDES: Record<string, Record<string, st
     panel_type: "display_full",
     screen_shape: "display_full",
     response_time_ms: "performance_full",
+    ports: "ports_full",
     hdr: "display_full",
   },
   storage: {
@@ -81,9 +82,10 @@ export const CATEGORY_FILTER_DISPLAY_OVERRIDES: Record<string, Record<string, st
   },
   networking: {
     network_type: "network_full",
-    wifi_standard: "network_full",
-    speed: "network_full",
-    ports: "network_full",
+    wifi_standard: "wireless_full",
+    speed: "wireless_full",
+    ports: "ports_full",
+    mesh_support: "wireless_full",
   },
   printers: {
     printer_type: "printer_full",

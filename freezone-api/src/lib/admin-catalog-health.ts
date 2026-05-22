@@ -51,7 +51,10 @@ function suggestedFixForIssue(issue: string, detail?: string): string {
     }
     return "صحّح قيمة الفلتر في Smart Specs — رمز قصير في الفلتر والنص الكامل في مواصفة العرض.";
   }
-  if (issue === "missing_specs") {
+    if (issue === "missing_specs") {
+    if (detail?.includes("not in category schema")) {
+      return "المنتج يحتوي مفاتيح مواصفات لا تطابق قسمه — راجع Smart Specs بعد تغيير القسم أو أعد إدخال القيم.";
+    }
     if (detail?.includes("linked display")) {
       return "أكمل مواصفة صفحة المنتج (العمود الثالث) بجانب قيمة الفلتر المختصرة.";
     }
@@ -321,6 +324,15 @@ export async function listDataQualityIssues(
       let reason: string | null = null;
       if (p._count.attributeValues === 0) reason = "no attribute values";
       else {
+        const schemaKeys = new Set(schema.map((a) => a.key));
+        for (const v of values) {
+          if (!schemaKeys.has(v.attributeKey)) {
+            reason = `spec key not in category schema: ${v.attributeKey}`;
+            break;
+          }
+        }
+      }
+      if (!reason && p._count.attributeValues > 0) {
         for (const attr of schema.filter((a) => a.filterable)) {
           const displayKey = resolveDisplaySpecKey(attr, p.category.slug);
           const filterVal = filters[attr.key]?.trim();

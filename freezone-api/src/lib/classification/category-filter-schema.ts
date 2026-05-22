@@ -272,6 +272,18 @@ function buildMonitorsSchema(): FacetAttributeDef[] {
       displaySpecNameAr: "الأداء (نص كامل)",
       linkDisplaySpec: true,
     }),
+    flt({
+      key: "ports",
+      name_en: "Ports",
+      name_ar: "المنافذ",
+      type: "SELECT",
+      displayGroup: "connectivity",
+      options: ["HDMI", "DisplayPort", "USB-C", "HDMI + DP", "HDMI + USB-C"],
+      displaySpecKey: "ports_full",
+      displaySpecNameEn: "Ports (full)",
+      displaySpecNameAr: "المنافذ (نص كامل)",
+      linkDisplaySpec: true,
+    }),
     flt({ key: "hdr", name_en: "HDR", name_ar: "HDR", type: "BOOLEAN", displayGroup: "display" }),
     flt({ key: "color", name_en: "Color", name_ar: "اللون", type: "COLOR", displayGroup: "design" }),
     ext({ key: "display_full", name_en: "Display", name_ar: "الشاشة (نص كامل)", type: "TEXT", displayGroup: "display" }),
@@ -358,14 +370,44 @@ function buildComponentPartSchema(
 }
 
 function buildNetworkingSchema(): FacetAttributeDef[] {
+  const WIRELESS_FULL = {
+    displaySpecKey: "wireless_full",
+    displaySpecNameEn: "Wireless (full)",
+    displaySpecNameAr: "اللاسلكي (نص كامل)",
+    linkDisplaySpec: true,
+    displayGroup: "connectivity",
+  };
+  const PORTS_FULL = {
+    displaySpecKey: "ports_full",
+    displaySpecNameEn: "Ports (full)",
+    displaySpecNameAr: "المنافذ (نص كامل)",
+    linkDisplaySpec: true,
+    displayGroup: "connectivity",
+  };
   return [
     brandFilter(),
     productTypeFilter(["Router", "Switch", "Access Point", "Mesh", "Modem"]),
     flt({ key: "network_type", name_en: "Network type", name_ar: "نوع الشبكة", type: "SELECT", options: ["Home", "Enterprise", "Outdoor"] }),
-    flt({ key: "wifi_standard", name_en: "Wi‑Fi standard", name_ar: "معيار الواي فاي", type: "SELECT", options: ["Wi‑Fi 5", "Wi‑Fi 6", "Wi‑Fi 6E", "Wi‑Fi 7"] }),
-    flt({ key: "speed", name_en: "Speed", name_ar: "السرعة", type: "SELECT", options: ["100 Mbps", "1 Gbps", "2.5 Gbps", "10 Gbps"] }),
-    flt({ key: "ports", name_en: "Ports", name_ar: "المنافذ", type: "RANGE" }),
-    flt({ key: "mesh_support", name_en: "Mesh", name_ar: "Mesh", type: "BOOLEAN" }),
+    flt({
+      key: "wifi_standard",
+      name_en: "Wi‑Fi standard",
+      name_ar: "معيار الواي فاي",
+      type: "SELECT",
+      options: ["Wi‑Fi 5", "Wi‑Fi 6", "Wi‑Fi 6E", "Wi‑Fi 7"],
+      ...WIRELESS_FULL,
+    }),
+    flt({
+      key: "speed",
+      name_en: "Speed",
+      name_ar: "السرعة",
+      type: "SELECT",
+      options: ["100 Mbps", "1 Gbps", "2.5 Gbps", "10 Gbps"],
+      ...WIRELESS_FULL,
+    }),
+    flt({ key: "ports", name_en: "Ports", name_ar: "المنافذ", type: "RANGE", ...PORTS_FULL }),
+    flt({ key: "mesh_support", name_en: "Mesh", name_ar: "Mesh", type: "BOOLEAN", ...WIRELESS_FULL }),
+    ext({ key: "wireless_full", name_en: "Wireless", name_ar: "اللاسلكي (نص كامل)", type: "TEXT", displayGroup: "connectivity" }),
+    ext({ key: "ports_full", name_en: "Ports", name_ar: "المنافذ (نص كامل)", type: "TEXT", displayGroup: "connectivity" }),
     ext({ key: "network_full", name_en: "Network (full)", name_ar: "الشبكة (نص كامل)", type: "TEXT", displayGroup: "connectivity" }),
     ext({ key: "model", name_en: "Model", name_ar: "الموديل", type: "TEXT", displayGroup: "identity" }),
   ];
