@@ -1,10 +1,10 @@
 import type { PrismaClient } from "@prisma/client";
-import { CLASSIFICATION_SEED_BY_SLUG } from "./seed-presets";
-import { syncCategoryAttributesFromFacetKeys } from "./sync";
+import { getCategoryFilterSchema, resolveCategorySchemaSlug } from "./category-filter-schema";
+import { categoryAttributeRowsToFacetDefs, syncCategoryAttributesFromFacetKeys } from "./sync";
 import type { CategoryAttributeRow } from "./types";
 
 /**
- * Ensure category has full classification schema (upsert). Does not delete products.
+ * Upsert missing preset attributes for a category (does not delete products or values).
  */
 export async function ensureCategorySchemaComplete(
   prisma: PrismaClient,
@@ -12,8 +12,14 @@ export async function ensureCategorySchemaComplete(
   slug: string,
   rows: CategoryAttributeRow[],
 ): Promise<CategoryAttributeRow[]> {
-  const preset = CLASSIFICATION_SEED_BY_SLUG[slug];
-  if (!preset?.length) return rows;
-  if (rows.length >= preset.length) return rows;
-  return syncCategoryAttributesFromFacetKeys(prisma, categoryId, preset);
+  const canonical = resolveCategorySchemaSlug(slug);
+  const preset = getCategoryFilterSchema(canonical);
+  if (!preset.length) return rows;
+
+  const existing = new Set(rows.map((r) => r.key));
+  const missing = preset.filter((p) => !existing.has(p.key));
+  if (!missing.length) return rows;
+
+  const merged = [...categoryAttributeRowsToFacetDefs(rows), ...missing];
+  return syncCategoryAttributesFromFacetKeys(prisma, categoryId, merged);
 }

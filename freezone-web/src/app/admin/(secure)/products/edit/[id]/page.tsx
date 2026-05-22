@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { uploadAdminImage, uploadAdminModel3d } from "@/lib/admin-upload-image";
 import { importAdminImageFromUrl } from "@/lib/admin-import-image";
 import { MediaPickerModal, type MediaRow } from "@/components/admin/MediaPickerModal";
@@ -89,6 +89,7 @@ const field: React.CSSProperties = {
 export default function AdminEditProductPage() {
   const navigate = useNavigate();
   const params = useParams();
+  const [searchParams] = useSearchParams();
   const idParam = params?.id;
   const productId = typeof idParam === "string" ? parseInt(idParam, 10) : NaN;
 
@@ -223,6 +224,13 @@ export default function AdminEditProductPage() {
   useEffect(() => {
     void loadAll();
   }, [loadAll]);
+
+  useEffect(() => {
+    if (searchParams.get("focus") === "smartSpecs") {
+      setEditorMode("simple");
+      setSimpleTab("smartSpecs");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!categoryAttributes.length) return;

@@ -36,8 +36,8 @@ const FIX_HINTS: Record<string, string> = {
   missing_image: "أضف صورة رئيسية من تبويب الوسائط في محرر المنتج.",
   missing_brand: "حدّد العلامة التجارية في بيانات المنتج الأساسية.",
   legacy_specs_only: "شغّل مزامنة المواصفات من أدوات التصنيف أو أعد إدخال السمات يدويًا.",
-  missing_specs: "أكمل قيم الفلتر ومواصفات العرض من تبويبي Filter Values و Display Specs.",
-  invalid_filter: "صحّح قيمة الفلتر — استخدم رمزًا قصيرًا (مثل RTX 5070) وليس نصًا تسويقيًا طويلًا.",
+  missing_specs: "أكمل المواصفات والفلاتر من تبويب «المواصفات والفلاتر» في الوضع البسيط.",
+  invalid_filter: "صحّح قيمة الفلتر في «المواصفات والفلاتر» — رمز قصير في الفلتر والنص الكامل في مواصفة المنتج.",
   no_attributes: "أضف سمات القسم من صفحة الأقسام → سمات القسم.",
 };
 
@@ -168,8 +168,11 @@ export default function AdminDataQualityPage() {
                       </td>
                       <td>
                         {row.productId ? (
-                          <Link className={ui.btnSm} to={`/admin/products/edit/${row.productId}`}>
-                            تعديل المنتج
+                          <Link
+                            className={ui.btnSm}
+                            to={`/admin/products/edit/${row.productId}?focus=smartSpecs`}
+                          >
+                            المواصفات والفلاتر
                           </Link>
                         ) : row.categorySlug ? (
                           <Link className={ui.btnSm} to="/admin/categories">

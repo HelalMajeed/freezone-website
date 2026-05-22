@@ -43,10 +43,12 @@ export const CATEGORY_FILTER_DISPLAY_OVERRIDES: Record<string, Record<string, st
     network_5g: "network_full",
   },
   monitors: {
+    display_resolution: "display_full",
     size_inch: "display_full",
     resolution: "display_full",
     refresh_rate: "display_full",
     panel_type: "display_full",
+    screen_shape: "display_full",
     response_time_ms: "performance_full",
     hdr: "display_full",
   },
@@ -55,6 +57,39 @@ export const CATEGORY_FILTER_DISPLAY_OVERRIDES: Record<string, Record<string, st
     storage_type: "storage_display",
     interface: "storage_display",
     read_speed: "performance_full",
+  },
+  networking: {
+    network_type: "network_full",
+    wifi_standard: "network_full",
+    speed: "network_full",
+    ports: "network_full",
+  },
+  printers: {
+    printer_type: "printer_full",
+  },
+  audio: {
+    audio_type: "audio_full",
+    connection_type: "audio_full",
+    battery_life: "battery_full",
+  },
+  security: {
+    security_type: "security_full",
+    resolution: "security_full",
+  },
+  "smart-home": {
+    device_type: "smart_home_full",
+    ecosystem: "smart_home_full",
+  },
+  cpus: { socket: "spec_full", generation: "spec_full" },
+  gpus: { gpu_model: "spec_full", vram: "spec_full" },
+  motherboards: { chipset: "spec_full", socket: "spec_full" },
+  memory: { capacity: "spec_full", memory_type: "spec_full" },
+  "power-supplies": { wattage: "spec_full" },
+  cooling: { cooling_type: "spec_full" },
+  tvs: {
+    size_inch: "display_full",
+    resolution: "display_full",
+    panel_type: "display_full",
   },
 };
 

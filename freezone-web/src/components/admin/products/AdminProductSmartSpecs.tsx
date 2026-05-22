@@ -114,9 +114,13 @@ export function AdminProductSmartSpecs({
   return (
     <AdminProductFormSection
       title="المواصفات والفلاتر"
-      subtitle="صف واحد لكل فلتر: اختر قيمة الفلتر واكتب المواصفة التي تظهر في صفحة المنتج."
+      subtitle="صف واحد لكل فلتر: قيمة الفلتر تظهر في صفحة القسم فقط؛ مواصفة المنتج تظهر في صفحة التفاصيل."
       badge={`${rows.length} مواصفة`}
     >
+      <p className={styles.flowHelp}>
+        <strong>قيمة الفلتر:</strong> مختصرة (Core i7، RTX 5070، 16 GB) — للفلاتر العامة في القسم.{" "}
+        <strong>مواصفة المنتج:</strong> النص الكامل التقني — داخل صفحة المنتج فقط.
+      </p>
       {rows.length > 0 ? (
         <div style={{ marginBottom: 12 }}>
           <button type="button" className={ui.btnSm} onClick={openDeriveModal}>
@@ -215,6 +219,8 @@ export function AdminProductSmartSpecs({
                               onChange={(v) => onChangeFilter(attr.key, v)}
                               fieldStyle={fieldStyle}
                               preferRadio
+                              categoryId={categoryId}
+                              onOptionsUpdated={() => onRetry?.()}
                             />
                           </div>
                         ))}

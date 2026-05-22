@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import type { FacetAttributeDef } from "@/lib/data";
 import { validateFacetAttributesForSave } from "@/lib/facet-attributes";
 import { FacetKeysWorkspace } from "@/components/admin/facet/FacetKeysWorkspace";
+import { AdminCategoryFilterPreview } from "@/components/admin/categories/AdminCategoryFilterPreview";
 import { freezoneApiUrl } from "@/lib/api-internal";
 import styles from "./AdminCategoryAttributesManager.module.css";
 
@@ -151,6 +152,7 @@ export function AdminCategoryAttributesManager() {
         <p>جاري التحميل…</p>
       ) : (
         <>
+          <AdminCategoryFilterPreview attributes={attributes} slug={slug} />
           <div className={styles.summary}>
             {filteredAttrs.map((a) => (
               <span key={a.key} className={a.filterable ? styles.badgeFilter : styles.badgeDisplay}>

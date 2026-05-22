@@ -9,6 +9,16 @@
   color: var(--admin-text-warm, #5d3f3d);
 }
 
+.flowHelp {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: var(--admin-radius);
+  background: var(--admin-primary-soft, rgba(233, 29, 46, 0.08));
+  border: 1px solid var(--admin-border);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .sectionTitle {
   margin: 20px 0 10px;
   font-size: 14px;
@@ -221,4 +231,29 @@
 .colorChipActive {
   border-color: var(--admin-primary, #e91d2e);
   box-shadow: 0 0 0 2px var(--admin-primary-soft);
+}
+
+.addOptionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.addOptionBtn {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-primary);
+  cursor: pointer;
+}
+
+.addOptionErr {
+  font-size: 11px;
+  color: #b71c1c;
+  width: 100%;
 }
