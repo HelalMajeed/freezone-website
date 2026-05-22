@@ -1,0 +1,46 @@
+.page {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .page {
+    padding: 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Room for fixed sticky save bar */
+.fieldPair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .fieldPair {
+    grid-template-columns: 1fr;
+  }
+
+  .page form {
+    padding-bottom: 72px;
+  }
+
+  .galleryRow {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .galleryRow input,
+  .galleryRow button {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+}

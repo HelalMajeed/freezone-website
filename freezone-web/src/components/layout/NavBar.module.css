@@ -667,9 +667,62 @@
   }
 }
 
+@media (max-width: 640px) {
+  .middleBar {
+    overflow: hidden;
+  }
+
+  .middleInner {
+    gap: 8px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .brandSlot {
+    flex: 0 1 auto;
+    max-width: 48%;
+    min-width: 0;
+    overflow: hidden;
+  }
+}
+
 @media (max-width: 480px) {
-  .middleBar { padding: 8px 0; }
-  .middleInner { gap: 12px; }
+  .topBar {
+    display: none;
+  }
+
+  .middleBar {
+    padding: 8px 0;
+  }
+
+  .middleInner {
+    gap: 6px;
+  }
+
+  .logo {
+    font-size: 1.35rem;
+    gap: 8px;
+  }
+
+  .logoMark {
+    width: 34px;
+    height: 34px;
+    font-size: 0.95rem;
+  }
+
+  .actionIcon {
+    padding: 6px 8px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .actionLabel {
+    display: none;
+  }
+
+  .actions {
+    gap: 4px;
+  }
 }
 
 @media (max-width: 1023px) {

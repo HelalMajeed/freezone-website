@@ -71,6 +71,21 @@
   gap: 16px;
 }
 
+@media (max-width: 640px) {
+  .section {
+    padding: 28px 0;
+  }
+
+  .header {
+    margin-bottom: 20px;
+  }
+
+  .card {
+    height: clamp(160px, 42vw, 220px);
+    padding: 16px;
+  }
+}
+
 @media (min-width: 640px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 1024px) { .grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 

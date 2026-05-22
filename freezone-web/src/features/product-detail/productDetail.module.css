@@ -11,6 +11,8 @@
   max-width: 100%;
   width: 100%;
   box-sizing: border-box;
+  min-width: 0;
+  overflow-x: clip;
 }
 
 /* ── Breadcrumb ───────────────────────────────── */
@@ -230,6 +232,16 @@
 .attrRow:last-child { border-bottom: none; }
 
 @media (max-width: 767px) {
+  .pdpLayout,
+  .productGrid,
+  .mediaCol,
+  .infoCol,
+  .breadcrumbBar {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
   .productGrid {
     gap: 20px;
     padding-top: 16px;
@@ -410,7 +422,32 @@
 
 .relatedGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+  width: 100%;
+  min-width: 0;
 }
-@media (min-width: 640px) { .relatedGrid { grid-template-columns: repeat(4, 1fr); } }
+
+@media (max-width: 767px) {
+  .relatedSection {
+    margin-top: 32px;
+    padding-top: 20px;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .relatedTitle {
+    font-size: 1.15rem;
+    margin-bottom: 14px;
+  }
+
+  .relatedGrid {
+    gap: 8px;
+  }
+}
+
+@media (min-width: 640px) {
+  .relatedGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

@@ -920,7 +920,8 @@
 }
 
 .iconPickerPanelCompact {
-  width: min(720px, 96vw);
+  width: min(720px, calc(100vw - 24px));
+  max-width: 100%;
 }
 
 .iconPickerHead {

@@ -364,6 +364,14 @@
 }
 
 @media (max-width: 640px) {
+  .content {
+    padding: 0 10px 10px;
+  }
+
+  .imageWrapper {
+    padding: 8px;
+  }
+
   .cornerBtn {
     width: 40px;
     height: 40px;

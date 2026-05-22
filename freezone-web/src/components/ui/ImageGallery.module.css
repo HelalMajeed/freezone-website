@@ -3,6 +3,9 @@
   flex-direction: column;
   gap: 16px;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .emptyGallery {
@@ -103,6 +106,8 @@
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   max-width: 100%;
+  width: 100%;
+  min-width: 0;
 }
 
 @media (max-width: 640px) {

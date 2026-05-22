@@ -30,6 +30,7 @@ import {
   stockWorkflowStatus,
 } from "@/lib/admin/admin-product-tab-status";
 import { freezoneApiUrl } from "@/lib/api-internal";
+import editorPage from "@/app/admin/AdminProductEditorPage.module.css";
 
 type Category = {
   id: number;
@@ -485,7 +486,7 @@ export default function AdminEditProductPage() {
   const stockMode = stockWorkflowStatus(product.inStock, product.quantity);
 
   return (
-    <div style={{ padding: 24, maxWidth: 960, margin: "0 auto" }}>
+    <div className={editorPage.page}>
       <AdminProductEditorHeader
         title={product.nameAr || product.nameEn || `منتج #${product.id}`}
         workflowStatus={workflowStatus}
@@ -670,7 +671,7 @@ export default function AdminEditProductPage() {
         {(editorMode === "advanced" && editorTab === "pricing") ||
         (editorMode === "simple" && simpleTab === "commerce") ? (
         <>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div className={editorPage.fieldPair}>
           <input
             placeholder="السعر IQD"
             value={String(product.price)}
@@ -893,6 +894,7 @@ export default function AdminEditProductPage() {
         استيراد صورة من رابط — يتم تنزيل الصورة وحفظها على الخادم (لا يُعتمد على الرابط الخارجي بعد الحفظ).
       </p>
       <div
+        className={editorPage.galleryRow}
         style={{
           display: "flex",
           flexWrap: "wrap",
@@ -914,7 +916,7 @@ export default function AdminEditProductPage() {
               void importGalleryUrlFromInput();
             }
           }}
-          style={{ ...field, flex: "1 1 260px", minWidth: 200 }}
+          style={{ ...field, flex: "1 1 260px", minWidth: 0, maxWidth: "100%" }}
         />
         <button
           type="button"

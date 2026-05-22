@@ -180,12 +180,14 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
             const items = Array.isArray(p.items) ? p.items : [];
             return (
               <SectionBlock key={sec.id} delay={delay}>
-                <section className="container" style={{ padding: "48px 16px" }}>
+                <section className="container" style={{ padding: "clamp(24px, 5vw, 48px) var(--fz-gutter, 12px)" }}>
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-                      gap: 20,
+                      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
+                      gap: 12,
+                      width: "100%",
+                      minWidth: 0,
                     }}
                   >
                     {items.map((raw, i) => {

@@ -258,7 +258,85 @@
   width: 100%;
 }
 
-/* Mobile / tablet: stack spec rows as cards instead of wide table */
+.cellLabel {
+  display: none;
+}
+
+/* Mobile: each spec = labeled card (not a wide table) */
+@media (max-width: 640px) {
+  .flowHelp {
+    padding: 8px 10px;
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+
+  .deriveModal .specTable tbody tr td::before,
+  .specTable tbody tr td::before {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--admin-muted, #926e6c);
+    margin-bottom: 6px;
+  }
+
+  .specTable tbody tr td:nth-child(1)::before {
+    content: none;
+  }
+
+  .specTable tbody tr td:nth-child(2)::before {
+    content: "قيمة الفلتر";
+  }
+
+  .specTable tbody tr td:nth-child(3)::before {
+    content: "مواصفة صفحة المنتج";
+  }
+
+  .specTable tbody tr td:nth-child(4)::before {
+    content: "الحالة";
+  }
+
+  .deriveModal .specTable tbody tr td:nth-child(1)::before {
+    content: "تطبيق";
+  }
+
+  .deriveModal .specTable tbody tr td:nth-child(2)::before {
+    content: "الحقل";
+  }
+
+  .deriveModal .specTable tbody tr td:nth-child(3)::before {
+    content: "الحالي";
+  }
+
+  .deriveModal .specTable tbody tr td:nth-child(4)::before {
+    content: "المقترح";
+  }
+
+  .deriveModal .specTable tbody tr td:nth-child(5)::before {
+    content: "المصدر";
+  }
+
+  .deriveModal .specTable tbody tr td:nth-child(6)::before {
+    content: "الثقة";
+  }
+
+  .specKey {
+    display: inline-block;
+    max-width: 100%;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--admin-surface-muted);
+    font-size: 10px;
+    overflow-wrap: anywhere;
+  }
+
+  .statusBadge {
+    align-self: flex-start;
+  }
+}
+
+/* Tablet: stack spec rows as cards instead of wide table */
 @media (max-width: 767px) {
   .tableWrap {
     overflow-x: visible;

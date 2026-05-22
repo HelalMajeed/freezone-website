@@ -508,6 +508,30 @@
   color: var(--admin-text);
 }
 
+@media (max-width: 640px) {
+  .stickySaveBar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    z-index: 40;
+    margin: 0;
+    max-width: calc(100vw - 24px);
+    box-sizing: border-box;
+  }
+
+  .stickySaveActions {
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  .stickySaveActions .btnSm {
+    min-height: 44px;
+    flex: 1;
+    max-width: 140px;
+  }
+}
+
 .stickySaveActions {
   display: flex;
   gap: 8px;
@@ -600,6 +624,68 @@
   align-items: center;
 }
 
+.editorActionsMenu {
+  position: relative;
+  margin-inline-start: auto;
+  flex-shrink: 0;
+}
+
+.editorActionsMenuBtn {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--admin-radius);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  font-size: 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--admin-text);
+}
+
+.editorActionsMenuBtn::-webkit-details-marker {
+  display: none;
+}
+
+.editorActionsMenuPanel {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-end: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: min(220px, 88vw);
+  padding: 10px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-float);
+}
+
+.editorActionsMenuPanel .btnSm {
+  width: 100%;
+  justify-content: center;
+  min-height: 44px;
+}
+
+@media (max-width: 640px) {
+  .editorHeader {
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+  }
+
+  .editorTitle {
+    font-size: 1.1rem;
+    overflow-wrap: anywhere;
+  }
+}
+
 .checklist {
   margin: 0;
   padding: 0;
@@ -642,6 +728,12 @@
 }
 
 /* Data quality & shared admin tables — mobile cards */
+@media (max-width: 640px) {
+  .tableWrap {
+    overflow-x: visible;
+  }
+}
+
 @media (max-width: 767px) {
   .pageHeader {
     flex-direction: column;

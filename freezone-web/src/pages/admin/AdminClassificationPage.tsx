@@ -10,6 +10,7 @@ import { AdminSectionCard } from "@/components/admin/ui/AdminSectionCard";
 import { AdminBadge } from "@/components/admin/ui/AdminBadge";
 import { AdminEmptyState } from "@/components/admin/ui/AdminEmptyState";
 import ui from "@/components/admin/ui/AdminUi.module.css";
+import cls from "./AdminClassificationPage.module.css";
 
 const CATEGORIES = [
   { slug: "laptops", label: "لابتوب" },
@@ -51,8 +52,8 @@ export default function AdminClassificationPage() {
       />
 
       <AdminSectionCard title="إعداد المعاينة">
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", marginBottom: 12 }}>
-          <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>
+        <div className={cls.setupRow}>
+          <label>
             القسم:
             <select
               value={slug}
@@ -60,7 +61,6 @@ export default function AdminClassificationPage() {
                 setSlug(e.target.value);
                 setRun(false);
               }}
-              style={{ marginInlineStart: 8, padding: "6px 10px", borderRadius: 8 }}
             >
               {CATEGORIES.map((c) => (
                 <option key={c.slug} value={c.slug}>
@@ -106,52 +106,55 @@ export default function AdminClassificationPage() {
           {!preview.previews?.length ? (
             <AdminEmptyState title="لا منتجات في هذا القسم" />
           ) : (
-            <div className={ui.tableWrap} style={{ marginTop: 16 }}>
-              <table className={ui.table}>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>تغيّر؟</th>
-                    <th>gpu_model</th>
-                    <th>processor_family</th>
-                    <th>screen_size</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {preview.previews
-                    .filter((p) => p.changed || !p.ok)
-                    .slice(0, 40)
-                    .map((p) => (
-                      <tr key={p.productId}>
-                        <td>#{p.productId}</td>
-                        <td>
-                          {!p.ok ? (
-                            <AdminBadge variant="error">{p.reason ?? "skip"}</AdminBadge>
-                          ) : p.changed ? (
-                            <AdminBadge variant="warn">نعم</AdminBadge>
-                          ) : (
-                            <AdminBadge variant="ok">لا</AdminBadge>
-                          )}
-                        </td>
-                        <td>
-                          {p.before?.gpu_model ?? "—"} → {p.after?.gpu_model ?? "—"}
-                        </td>
-                        <td>
-                          {p.before?.processor_family ?? "—"} → {p.after?.processor_family ?? "—"}
-                        </td>
-                        <td>
-                          {p.before?.screen_size ?? "—"} → {p.after?.screen_size ?? "—"}
-                        </td>
-                        <td>
-                          <Link className={ui.btnSm} to={`/admin/products/edit/${p.productId}`}>
-                            تعديل
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+            <div className={cls.previewList}>
+              {preview.previews
+                .filter((p) => p.changed || !p.ok)
+                .slice(0, 40)
+                .map((p) => (
+                  <article key={p.productId} className={cls.previewCard}>
+                    <div className={cls.previewHead}>
+                      <span className={cls.previewId}>#{p.productId}</span>
+                      {!p.ok ? (
+                        <AdminBadge variant="error">{p.reason ?? "skip"}</AdminBadge>
+                      ) : p.changed ? (
+                        <AdminBadge variant="warn">سيتغيّر</AdminBadge>
+                      ) : (
+                        <AdminBadge variant="ok">بدون تغيير</AdminBadge>
+                      )}
+                    </div>
+                    <div className={cls.compareStack}>
+                      <div className={cls.compareRow}>
+                        <span className={cls.compareLabel}>gpu_model</span>
+                        <span className={cls.compareValue}>
+                          <strong>قبل:</strong> {p.before?.gpu_model ?? "—"}
+                          <br />
+                          <strong>بعد:</strong> {p.after?.gpu_model ?? "—"}
+                        </span>
+                      </div>
+                      <div className={cls.compareRow}>
+                        <span className={cls.compareLabel}>processor_family</span>
+                        <span className={cls.compareValue}>
+                          <strong>قبل:</strong> {p.before?.processor_family ?? "—"}
+                          <br />
+                          <strong>بعد:</strong> {p.after?.processor_family ?? "—"}
+                        </span>
+                      </div>
+                      <div className={cls.compareRow}>
+                        <span className={cls.compareLabel}>screen_size</span>
+                        <span className={cls.compareValue}>
+                          <strong>قبل:</strong> {p.before?.screen_size ?? "—"}
+                          <br />
+                          <strong>بعد:</strong> {p.after?.screen_size ?? "—"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className={cls.previewActions}>
+                      <Link className={ui.btnSm} to={`/admin/products/edit/${p.productId}`}>
+                        تعديل المنتج
+                      </Link>
+                    </div>
+                  </article>
+                ))}
             </div>
           )}
 
