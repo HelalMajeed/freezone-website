@@ -67,6 +67,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     locale,
     variants,
     row.specs,
+    product.cat,
   );
   return Response.json(payload);
 }

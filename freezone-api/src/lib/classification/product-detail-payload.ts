@@ -32,12 +32,15 @@ export function buildProductDetailPayload(
   locale: "en" | "ar",
   variants: ProductVariantDto[] = [],
   legacySpecsJson?: unknown,
+  categorySlug?: string,
 ): ProductDetailPayload {
+  const slug = categorySlug?.trim() || product.cat;
   const { specs, specItems, groupedSpecs, attributes } = buildProductDetailSpecPresentation(
     schemaRows,
     attributeValues,
     legacySpecsJson ?? product.specs,
     locale,
+    slug,
   );
 
   return {

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { FacetAttributeDef } from "@/lib/data";
 import { partitionFacetAttributes } from "@/lib/classification/attribute-sets";
-import { facetAttributeDisplayName } from "@/lib/facet-attributes";
 import { fetchAdminProductsList } from "@/lib/admin/admin-products-api";
 import { AdminProductsTable } from "@/components/admin/products/AdminProductsTable";
 import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
@@ -19,8 +18,8 @@ export type CategoryHubTab = "overview" | "products" | "filters" | "display" | "
 const TAB_LABELS: Record<CategoryHubTab, string> = {
   overview: "نظرة عامة",
   products: "منتجات القسم",
-  filters: "الفلاتر",
-  display: "مواصفات العرض",
+  filters: "فلاتر القسم",
+  display: "مواصفات العرض (مرتبطة)",
   settings: "إعدادات القسم",
   quality: "جودة البيانات",
 };
@@ -307,40 +306,14 @@ export function AdminCategoryHub() {
       {tab === "filters" ? (
         <section className={styles.panel}>
           <p className={styles.help}>
-            هنا تعرّف الفلاتر وأسماءها وخياراتها (Select / Checkbox / Range). عند إضافة منتج يختار الموظف نفس هذه
-            الفلاتر كقيم قصيرة — والمواصفة الموسعة يكتبها بجانب كل فلتر في المحرر.
+            إدارة الفلاتر ومواصفات العرض المرتبطة في مكان واحد: اسم الفلتر، النوع، الخيارات، وربط مواصفة صفحة
+            المنتج. عند إضافة منتج يظهر كل صف في Smart Specs (قيمة فلتر مختصرة + مواصفة عرض كاملة).
           </p>
-          <table className={styles.attrTable}>
-            <thead>
-              <tr>
-                <th>الفلتر</th>
-                <th>key</th>
-                <th>النوع</th>
-                <th>الوحدة</th>
-                <th>الخيارات</th>
-                <th>إجراء</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filterableSpecs.map((a) => (
-                <tr key={a.key}>
-                  <td>{facetAttributeDisplayName(a, "ar")}</td>
-                  <td dir="ltr">{a.key}</td>
-                  <td>{a.type ?? "SELECT"}</td>
-                  <td>{a.unit ?? "—"}</td>
-                  <td>{a.options?.length ? a.options.slice(0, 4).join(", ") : "—"}</td>
-                  <td>
-                    <Link to={`/admin/categories/${categoryId}/attributes`}>تعديل</Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {filterableSpecs.length === 0 ? (
-            <p style={{ color: "var(--admin-muted)" }}>لا توجد فلاتر — أضف سمات قابلة للفلترة.</p>
-          ) : null}
-          <Link className={styles.btnGhost} to={`/admin/categories/${categoryId}/attributes`} style={{ marginTop: 12 }}>
-            محرر السمات المتقدم
+          <p style={{ margin: "0 0 12px", fontSize: 13 }}>
+            <strong>{filterableSpecs.length}</strong> فلتر نشط في هذا القسم.
+          </p>
+          <Link className={styles.btnPrimary} to={`/admin/categories/${categoryId}/attributes`}>
+            فتح إدارة فلاتر القسم
           </Link>
         </section>
       ) : null}
@@ -348,36 +321,14 @@ export function AdminCategoryHub() {
       {tab === "display" ? (
         <section className={styles.panel}>
           <p className={styles.help}>
-            مواصفات موسعة تظهر داخل صفحة المنتج وبطاقة التفاصيل فقط — لا تُستخدم في فلاتر صفحة القسم.
+            مواصفات العرض المرتبطة بفلتر تُدار من نفس محرر السمات — تظهر في PDP فقط (نص كامل)، بينما الفلاتر في
+            المتجر تبقى مختصرة.
           </p>
-          <table className={styles.attrTable}>
-            <thead>
-              <tr>
-                <th>المواصفة</th>
-                <th>key</th>
-                <th>المجموعة</th>
-                <th>النوع</th>
-                <th>مطلوب؟</th>
-                <th>إجراء</th>
-              </tr>
-            </thead>
-            <tbody>
-              {extendedSpecs.map((a) => (
-                <tr key={a.key}>
-                  <td>{facetAttributeDisplayName(a, "ar")}</td>
-                  <td dir="ltr">{a.key}</td>
-                  <td>{a.displayGroup ?? "—"}</td>
-                  <td>{a.type ?? "TEXT"}</td>
-                  <td>{a.required ? "نعم" : "—"}</td>
-                  <td>
-                    <Link to={`/admin/categories/${categoryId}/attributes`}>تعديل</Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Link className={styles.btnGhost} to={`/admin/categories/${categoryId}/attributes`} style={{ marginTop: 12 }}>
-            محرر السمات المتقدم
+          <p style={{ margin: "0 0 12px", fontSize: 13 }}>
+            <strong>{extendedSpecs.length}</strong> مواصفة عرض / موسعة في schema القسم.
+          </p>
+          <Link className={styles.btnPrimary} to={`/admin/categories/${categoryId}/attributes`}>
+            فتح إدارة فلاتر القسم
           </Link>
         </section>
       ) : null}

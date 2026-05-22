@@ -85,6 +85,8 @@ export async function fetchAdminDataQuality(tab: DataQualityTab, page = 1) {
       published: boolean;
       issue: string;
       detail?: string;
+      attributeKey?: string;
+      suggestedFix?: string;
     }[];
     summary: Record<string, number>;
   }>;

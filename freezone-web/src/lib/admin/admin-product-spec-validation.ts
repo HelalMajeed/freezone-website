@@ -33,13 +33,19 @@ export function validateAdminProductSpecs(
       if (filter) {
         const token = sanitizeFacetFilterToken(attr.key, filter);
         if (!token || isLongMarketingFacetText(filter)) {
-          return `هذه قيمة فلتر ويجب أن تكون قصيرة. ضع النص الكامل في مواصفة المنتج — ${attr.name_ar || attr.key}`;
+          return "هذه قيمة فلتر ويجب أن تكون قصيرة. ضع النص الكامل في مواصفة المنتج.";
         }
       }
 
-      if (attr.type === "SELECT" && attr.options?.length && filter && attr.filterable) {
-        if (!attr.options.includes(filter)) {
-          return `هذه القيمة غير موجودة في خيارات فلتر القسم: ${attr.key} = ${filter}`;
+      if (attr.options?.length && filter && attr.filterable) {
+        const parts =
+          attr.type === "MULTI_SELECT"
+            ? filter.split(",").map((s) => s.trim()).filter(Boolean)
+            : [filter];
+        for (const part of parts) {
+          if (!attr.options.includes(part)) {
+            return "هذه القيمة غير موجودة في خيارات فلتر القسم.";
+          }
         }
       }
     }

@@ -104,7 +104,7 @@ export default function AdminEditProductPage() {
   const [replaceImageId, setReplaceImageId] = useState<number | null>(null);
   const [galleryUrlDraft, setGalleryUrlDraft] = useState("");
   const [addingGalleryUrls, setAddingGalleryUrls] = useState(false);
-  const [editorMode, setEditorMode] = useState<EditorMode>("advanced");
+  const [editorMode, setEditorMode] = useState<EditorMode>("simple");
   const [simpleTab, setSimpleTab] = useState<ProductEditorSimpleTab>("info");
   const [editorTab, setEditorTab] = useState<ProductEditorTab>("basic");
   const [displaySpecs, setDisplaySpecs] = useState<Record<string, string>>({});

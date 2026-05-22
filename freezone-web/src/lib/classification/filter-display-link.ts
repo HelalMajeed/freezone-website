@@ -42,6 +42,27 @@ export const CATEGORY_FILTER_DISPLAY_OVERRIDES: Record<string, Record<string, st
     main_camera_mp: "camera_full",
     network_5g: "network_full",
   },
+  smartphones: {
+    chipset_family: "chipset_full",
+    ram: "ram_display",
+    storage: "storage_display",
+    screen_size: "display_full",
+    refresh_rate: "display_full",
+    battery_capacity: "battery_full",
+    main_camera_mp: "camera_full",
+    network_5g: "network_full",
+  },
+  "power-solutions": {
+    wattage: "charging_full",
+    ports: "ports_full",
+    connector_type: "charging_full",
+    fast_charging: "charging_full",
+  },
+  "power-charging": {
+    wattage: "charging_full",
+    ports: "ports_full",
+    connector_type: "charging_full",
+  },
   monitors: {
     display_resolution: "display_full",
     size_inch: "display_full",

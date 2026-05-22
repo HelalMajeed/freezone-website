@@ -3,6 +3,7 @@ import { PRODUCTS, CATEGORIES, BRANDS } from "./data";
 import { prisma, isDatabaseConfigured, isDbConnectionError } from "./prisma";
 import { productQueryMissingSecondarySupport } from "./prisma-product-secondary-fallback";
 import { facetKeysFromAttributes, parseFacetAttributesFromUnknown } from "./facet-attributes";
+import { getCategoryFilterSchema } from "./classification/category-filter-schema";
 import { categoryAttributeRowsToFacetDefs } from "./classification/sync";
 import {
   productAttributeValuesToDisplaySpecs,
@@ -113,11 +114,14 @@ function mapDbToCategory(
   },
   locale: LocaleCode,
 ): Category {
+  const presetFilterAttrs = getCategoryFilterSchema(row.slug).filter((a) => a.filterable === true);
   const facetAttributes: FacetAttributeDef[] = row.categoryAttributes?.length
     ? categoryAttributeRowsToFacetDefs(
         row.categoryAttributes.filter((a) => a.filterable === true && a.active !== false),
       )
-    : parseFacetAttributesFromUnknown(row.facetKeys);
+    : presetFilterAttrs.length > 0
+      ? presetFilterAttrs
+      : parseFacetAttributesFromUnknown(row.facetKeys);
   const facetKeys = facetAttributes.length ? facetKeysFromAttributes(facetAttributes) : undefined;
   const img = row.backgroundImageUrl?.trim() || null;
   return {

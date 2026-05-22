@@ -1,5 +1,6 @@
 import type { FacetAttributeDef } from "@/lib/data";
 import type { CategoryAttributeRow, ProductAttributeValueRow } from "./types";
+import { resolveDisplaySpecKey } from "./filter-display-link";
 import { categoryAttributeRowsToFacetDefs } from "./sync";
 import { attributeValueToPdpDisplayString, normalizeAttributeType } from "./values";
 
@@ -126,8 +127,29 @@ export function mergePdpDisplaySpecs(
   return out;
 }
 
-function shouldHideOnPdp(key: string, specs: Record<string, string>): boolean {
-  const siblings = HIDE_FILTER_IF_SIBLING_HAS_VALUE[key];
+function buildHideFilterSiblingMap(
+  schema: CategoryAttributeRow[],
+  categorySlug?: string,
+): Record<string, string[]> {
+  const map: Record<string, string[]> = { ...HIDE_FILTER_IF_SIBLING_HAS_VALUE };
+  for (const attr of schema) {
+    if (attr.filterable !== true) continue;
+    const displayKey = resolveDisplaySpecKey(attr, categorySlug);
+    if (!displayKey) continue;
+    const existing = map[attr.key] ?? [];
+    if (!existing.includes(displayKey)) {
+      map[attr.key] = [...existing, displayKey];
+    }
+  }
+  return map;
+}
+
+function shouldHideOnPdp(
+  key: string,
+  specs: Record<string, string>,
+  hideMap: Record<string, string[]>,
+): boolean {
+  const siblings = hideMap[key];
   if (!siblings?.length) return false;
   return siblings.some((s) => Boolean(specs[s]?.trim()));
 }
@@ -136,14 +158,16 @@ export function buildProductDetailSpecItems(
   schema: CategoryAttributeRow[],
   displaySpecs: Record<string, string>,
   locale: "en" | "ar",
+  categorySlug?: string,
 ): ProductDetailSpecItem[] {
+  const hideMap = buildHideFilterSiblingMap(schema, categorySlug);
   const rows: ProductDetailSpecItem[] = [];
   const sorted = [...schema]
     .filter((a) => a.active !== false)
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   for (const attr of sorted) {
-    if (shouldHideOnPdp(attr.key, displaySpecs)) continue;
+    if (shouldHideOnPdp(attr.key, displaySpecs, hideMap)) continue;
     const value = displaySpecs[attr.key]?.trim();
     if (!value) continue;
     const label = (locale === "ar" ? attr.nameAr : attr.nameEn).trim() || attr.key;
@@ -157,7 +181,7 @@ export function buildProductDetailSpecItems(
 
   const known = new Set(sorted.map((a) => a.key));
   for (const [key, raw] of Object.entries(displaySpecs)) {
-    if (known.has(key) || shouldHideOnPdp(key, displaySpecs)) continue;
+    if (known.has(key) || shouldHideOnPdp(key, displaySpecs, hideMap)) continue;
     const value = raw?.trim();
     if (!value) continue;
     rows.push({
@@ -200,6 +224,7 @@ export function buildProductDetailSpecPresentation(
   attributeValues: ProductAttributeValueRow[] | undefined,
   legacySpecs: unknown,
   locale: "en" | "ar",
+  categorySlug?: string,
 ): {
   specs: Record<string, string>;
   specItems: ProductDetailSpecItem[];
@@ -212,7 +237,7 @@ export function buildProductDetailSpecPresentation(
       ? productAttributeValuesToPdpDisplaySpecs(attributeValues, activeSchema)
       : {};
   const specs = mergePdpDisplaySpecs(fromEav, legacySpecs, activeSchema);
-  const specItems = buildProductDetailSpecItems(activeSchema, specs, locale);
+  const specItems = buildProductDetailSpecItems(activeSchema, specs, locale, categorySlug);
   const groupedSpecs = groupProductDetailSpecItems(specItems, locale);
   const attributes = categoryAttributeRowsToFacetDefs(activeSchema);
 

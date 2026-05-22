@@ -29,7 +29,42 @@ export type DataQualityIssue = {
   published: boolean;
   issue: string;
   detail?: string;
+  attributeKey?: string;
+  suggestedFix?: string;
 };
+
+function suggestedFixForIssue(issue: string, detail?: string): string {
+  if (issue === "missing_image") return "أضف صورة رئيسية من تبويب الوسائط في محرر المنتج.";
+  if (issue === "missing_brand") return "حدّد العلامة التجارية في بيانات المنتج الأساسية.";
+  if (issue === "legacy_specs_only") {
+    return "أعد إدخال المواصفات من «المواصفات والفلاتر» (Smart Specs) أو استخدم أدوات التصنيف.";
+  }
+  if (issue === "no_attributes") {
+    return "افتح القسم → إدارة الفلاتر والسمات وأكمل schema القسم (أو شغّل مزامنة السمات من API الإدارة).";
+  }
+  if (issue === "invalid_filter") {
+    if (detail?.includes("marketing") || detail?.includes("chars")) {
+      return "اختصر قيمة الفلتر وضع النص الكامل في مواصفة صفحة المنتج المرتبطة.";
+    }
+    if (detail?.includes("options") || detail?.includes("not in category")) {
+      return "اختر قيمة من خيارات فلتر القسم أو أضف الخيار من إعدادات القسم.";
+    }
+    return "صحّح قيمة الفلتر في Smart Specs — رمز قصير في الفلتر والنص الكامل في مواصفة العرض.";
+  }
+  if (issue === "missing_specs") {
+    if (detail?.includes("linked display")) {
+      return "أكمل مواصفة صفحة المنتج (العمود الثالث) بجانب قيمة الفلتر المختصرة.";
+    }
+    if (detail?.includes("required filter")) {
+      return "أكمل قيمة الفلتر المطلوبة من Smart Specs.";
+    }
+    if (detail?.includes("not in category options")) {
+      return "هذه القيمة غير موجودة في خيارات فلتر القسم — غيّر القيمة أو أضف الخيار في إعدادات القسم.";
+    }
+    return "أكمل المواصفات والفلاتر من تبويب «المواصفات والفلاتر» في الوضع البسيط.";
+  }
+  return "راجع المنتج في المحرر.";
+}
 
 function isDisplaySpecKey(key: string): boolean {
   return key.endsWith("_full") || key.endsWith("_display");
@@ -203,6 +238,7 @@ export async function listDataQualityIssues(
         published: true,
         issue: "no_attributes",
         detail: "Category has no CategoryAttribute rows",
+        suggestedFix: suggestedFixForIssue("no_attributes"),
       })),
     };
   }
@@ -241,6 +277,7 @@ export async function listDataQualityIssues(
         categoryName: p.category.nameEn,
         published: p.published,
         issue: "missing_image",
+        suggestedFix: suggestedFixForIssue("missing_image"),
       });
       continue;
     }
@@ -254,6 +291,7 @@ export async function listDataQualityIssues(
         categoryName: p.category.nameEn,
         published: p.published,
         issue: "missing_brand",
+        suggestedFix: suggestedFixForIssue("missing_brand"),
       });
       continue;
     }
@@ -273,6 +311,7 @@ export async function listDataQualityIssues(
           published: p.published,
           issue: "legacy_specs_only",
           detail: "Product.specs JSON only — no ProductAttributeValue rows",
+          suggestedFix: suggestedFixForIssue("legacy_specs_only"),
         });
       }
       continue;
@@ -314,6 +353,7 @@ export async function listDataQualityIssues(
         }
       }
       if (reason) {
+        const attrMatch = reason.match(/: ([a-z0-9_]+)(?:\s*=|$|\s)/);
         all.push({
           productId: p.id,
           nameEn: p.nameEn,
@@ -323,6 +363,8 @@ export async function listDataQualityIssues(
           published: p.published,
           issue: "missing_specs",
           detail: reason,
+          attributeKey: attrMatch?.[1],
+          suggestedFix: suggestedFixForIssue("missing_specs", reason),
         });
       }
       continue;
@@ -331,6 +373,30 @@ export async function listDataQualityIssues(
     if (tab === "invalid_filters") {
       for (const attr of schema.filter((a) => a.filterable)) {
         const raw = values.find((v) => v.attributeKey === attr.key)?.valueString ?? filters[attr.key];
+        const filterVal = raw?.trim() ?? "";
+        const opts = parseOptionsJson(attr.options);
+        if (opts?.length && filterVal) {
+          const parts =
+            attr.type === "MULTI_SELECT"
+              ? filterVal.split(",").map((s) => s.trim()).filter(Boolean)
+              : [filterVal];
+          const bad = parts.find((part) => !opts.includes(part));
+          if (bad) {
+            all.push({
+              productId: p.id,
+              nameEn: p.nameEn,
+              nameAr: p.nameAr,
+              categorySlug: p.category.slug,
+              categoryName: p.category.nameEn,
+              published: p.published,
+              issue: "invalid_filter",
+              attributeKey: attr.key,
+              detail: `${attr.key}: not in category options (${bad})`,
+              suggestedFix: suggestedFixForIssue("invalid_filter", "not in category options"),
+            });
+            break;
+          }
+        }
         const why = invalidFilterReason(attr.key, raw);
         if (why) {
           all.push({
@@ -341,7 +407,9 @@ export async function listDataQualityIssues(
             categoryName: p.category.nameEn,
             published: p.published,
             issue: "invalid_filter",
+            attributeKey: attr.key,
             detail: `${attr.key}: ${why}${raw ? ` (“${raw.slice(0, 40)}${raw.length > 40 ? "…" : ""}”)` : ""}`,
+            suggestedFix: suggestedFixForIssue("invalid_filter", why),
           });
           break;
         }
@@ -360,7 +428,9 @@ export async function listDataQualityIssues(
               categoryName: p.category.nameEn,
               published: p.published,
               issue: "invalid_filter",
+              attributeKey: key,
               detail: `${key}: ${why}`,
+              suggestedFix: suggestedFixForIssue("invalid_filter", why),
             });
           }
           break;

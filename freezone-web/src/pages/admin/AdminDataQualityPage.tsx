@@ -164,7 +164,9 @@ export default function AdminDataQualityPage() {
                         ) : null}
                       </td>
                       <td style={{ fontSize: "0.8rem", maxWidth: 260 }}>
-                        {FIX_HINTS[row.issue] ?? "راجع المنتج في المحرر."}
+                        {(row as { suggestedFix?: string }).suggestedFix ??
+                          FIX_HINTS[row.issue] ??
+                          "راجع المنتج في المحرر."}
                       </td>
                       <td>
                         {row.productId ? (
