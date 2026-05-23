@@ -147,7 +147,10 @@ export function HeroSlider({ previewHero }: { previewHero?: PreviewHero }) {
   useEffect(() => {
     if (slidesIn.length <= 1) return;
     const ms = Math.max(2500, heroBlock.autoplayMs || 7000);
-    const timer = setInterval(next, ms);
+    const timer = setInterval(
+      () => setCurrent((c) => (c + 1) % slidesIn.length),
+      ms,
+    );
     return () => clearInterval(timer);
   }, [slidesIn.length, heroBlock.autoplayMs]);
 
