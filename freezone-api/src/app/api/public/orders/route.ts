@@ -3,11 +3,14 @@ import { validateCouponRecord } from "@/lib/coupon-service";
 
 type OrderItemIn = {
   productId: number;
-  name: string;
-  price: number;
+  name?: string;
+  price?: number;
   qty: number;
   image?: string;
 };
+
+/** Cap per-line quantity to keep accidental/malicious 1e9-style payloads out of the DB and stock math. */
+const MAX_QTY_PER_LINE = 999;
 
 export async function POST(req: Request) {
   if (!isDatabaseConfigured()) {
@@ -42,17 +45,68 @@ export async function POST(req: Request) {
     return Response.json({ error: "Invalid order payload" }, { status: 400 });
   }
 
+  /** Reject ad-hoc lines: every line must reference a real product so the server controls the price. */
+  const normalizedItems = items.map((i) => ({
+    productId: Number.isFinite(i.productId) ? Math.trunc(i.productId) : NaN,
+    qty: Number.isFinite(i.qty) ? Math.trunc(i.qty) : NaN,
+  }));
+  if (normalizedItems.some((i) => !Number.isInteger(i.productId) || i.productId <= 0)) {
+    return Response.json({ error: "INVALID_ITEMS" }, { status: 400 });
+  }
+  if (normalizedItems.some((i) => !Number.isInteger(i.qty) || i.qty < 1 || i.qty > MAX_QTY_PER_LINE)) {
+    return Response.json({ error: "INVALID_QTY" }, { status: 400 });
+  }
+
   const shipping = body.shipping;
   const total = body.total;
+
+  if (!Number.isFinite(shipping) || shipping < 0 || !Number.isFinite(total) || total < 0) {
+    return Response.json({ error: "Invalid order payload" }, { status: 400 });
+  }
 
   const fulfillment = body.fulfillment === "pickup" ? "pickup" : "delivery";
   const addressLine = (cust.address ?? "").trim() || "—";
   const city = (cust.city ?? "").trim() || "—";
 
-  const lineSubtotal = items.reduce((s, i) => s + i.price * Math.max(1, i.qty), 0);
-
   try {
     const result = await prisma.$transaction(async (tx) => {
+      /**
+       * Load every referenced product in one query and price the order from the server-trusted
+       * record. The client-supplied `price`/`name`/`image` fields are ignored — they used to be
+       * stored verbatim, which let a tampered client buy a $1000 product for $1.
+       */
+      const productIds = Array.from(new Set(normalizedItems.map((i) => i.productId)));
+      const products = await tx.product.findMany({
+        where: { id: { in: productIds } },
+        include: { images: { take: 1, orderBy: { sortOrder: "asc" } } },
+      });
+      const productById = new Map(products.map((p) => [p.id, p]));
+
+      const priced: Array<{
+        productId: number;
+        qty: number;
+        unitPrice: number;
+        nameSnapshot: string;
+        imageSnapshot: string | null;
+      }> = [];
+
+      for (const line of normalizedItems) {
+        const p = productById.get(line.productId);
+        if (!p) throw new Error("UNKNOWN_PRODUCT");
+        if (!p.published) throw new Error("UNAVAILABLE");
+        if (!p.inStock) throw new Error("OUT_OF_STOCK");
+        if (p.quantity < line.qty) throw new Error("OUT_OF_STOCK");
+        priced.push({
+          productId: p.id,
+          qty: line.qty,
+          unitPrice: p.price,
+          nameSnapshot: p.nameAr || p.nameEn || `#${p.id}`,
+          imageSnapshot: p.images[0]?.url ?? null,
+        });
+      }
+
+      const lineSubtotal = priced.reduce((s, i) => s + i.unitPrice * i.qty, 0);
+
       let discountTotal = 0;
       let couponCodeOut: string | null = null;
       const code = body.couponCode?.trim().toUpperCase();
@@ -97,17 +151,17 @@ export async function POST(req: Request) {
           city,
           subtotal: lineSubtotal,
           shipping,
-          total,
+          total: expectedTotal,
           couponCode: couponCodeOut,
           discountTotal,
           notes: body.notes?.trim() || null,
           items: {
-            create: items.map((i) => ({
-              productId: Number.isFinite(i.productId) ? i.productId : null,
-              nameSnapshot: i.name,
-              priceSnapshot: i.price,
-              qty: Math.max(1, i.qty),
-              imageSnapshot: i.image ?? null,
+            create: priced.map((i) => ({
+              productId: i.productId,
+              nameSnapshot: i.nameSnapshot,
+              priceSnapshot: i.unitPrice,
+              qty: i.qty,
+              imageSnapshot: i.imageSnapshot,
             })),
           },
         },
@@ -119,15 +173,12 @@ export async function POST(req: Request) {
         data: { orderNumber },
       });
 
-      for (const line of items) {
-        const pid = Number.isFinite(line.productId) ? line.productId : null;
-        if (pid == null) continue;
-        const pr = await tx.product.findUnique({ where: { id: pid } });
-        if (!pr) continue;
-        const nextQty = Math.max(0, pr.quantity - Math.max(1, line.qty));
+      for (const line of priced) {
+        const p = productById.get(line.productId)!;
+        const nextQty = Math.max(0, p.quantity - line.qty);
         await tx.product.update({
-          where: { id: pid },
-          data: { quantity: nextQty, inStock: nextQty > 0 && pr.inStock },
+          where: { id: line.productId },
+          data: { quantity: nextQty, inStock: nextQty > 0 && p.inStock },
         });
       }
 
@@ -142,6 +193,18 @@ export async function POST(req: Request) {
     }
     if (msg === "COUPON_MISMATCH" || msg === "COUPON_REQUIRED" || msg === "TOTAL_MISMATCH") {
       return Response.json({ error: "تأكد من الكوبون والمجاميع وحاول مجدداً" }, { status: 400 });
+    }
+    if (msg === "UNKNOWN_PRODUCT" || msg === "UNAVAILABLE") {
+      return Response.json(
+        { error: "أحد المنتجات لم يعد متوفراً، حدّث السلة وحاول مجدداً", code: "UNKNOWN_PRODUCT" },
+        { status: 400 },
+      );
+    }
+    if (msg === "OUT_OF_STOCK") {
+      return Response.json(
+        { error: "الكمية المطلوبة غير متوفرة في المخزون", code: "OUT_OF_STOCK" },
+        { status: 400 },
+      );
     }
     console.error("[public/orders POST]", e);
     return Response.json({ error: "Order save failed" }, { status: 500 });
