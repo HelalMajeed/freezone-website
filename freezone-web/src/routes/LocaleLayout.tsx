@@ -1,6 +1,7 @@
 import { Suspense, lazy, useLayoutEffect } from "react";
 import { Link, Outlet, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Toaster } from "react-hot-toast";
 import { NavBar } from "@/components/layout/NavBar";
 import { SetDocumentLocale } from "@/components/providers/SetDocumentLocale";
 import { PageTransition } from "@/components/motion/PageTransition";
@@ -142,6 +143,7 @@ export function LocaleLayout() {
           </ThemeApplier>
         </StorefrontProvider>
       </div>
+      <Toaster position="top-center" toastOptions={{ duration: 3500 }} />
     </>
   );
 }

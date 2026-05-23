@@ -8,6 +8,7 @@ import { SiteLogo } from "./SiteLogo";
 import { motion, useReducedMotion } from "framer-motion";
 import { EASE_OUT } from "@/lib/motion";
 import { usePublicSite } from "@/components/providers/StorefrontProvider";
+import toast from "react-hot-toast";
 
 const footerContainer = {
   hidden: {},
@@ -152,7 +153,14 @@ export function Footer() {
           <div className={styles.newsletter}>
             <h5 className={styles.newsTitle}>{t("newsTitle")}</h5>
             <p className={styles.newsDesc}>{t("newsDesc")}</p>
-            <form className={styles.inputGroup} onSubmit={e => { e.preventDefault(); alert(t("subscribed")); }}>
+            <form
+              className={styles.inputGroup}
+              onSubmit={(e) => {
+                e.preventDefault();
+                toast.success(t("subscribed"));
+                (e.currentTarget as HTMLFormElement).reset();
+              }}
+            >
               <input type="tel" inputMode="tel" autoComplete="tel" placeholder={t("phonePlaceholder")} className={styles.input} required />
               <button type="submit" className={styles.submitBtn}><Send size={15} /></button>
             </form>

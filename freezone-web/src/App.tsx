@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { LocaleLayout } from "@/routes/LocaleLayout";
 import { freezoneAdminRouteBranch } from "@/routes/admin-panel-routes";
+import { ConfirmDialogHost } from "@/components/ui/ConfirmDialog";
 import HomePage from "@/pages/HomePage";
 import ProductsPage from "@/pages/ProductsPage";
 import ProductDetailPage from "@/pages/ProductDetailPage";
@@ -21,6 +22,7 @@ function SuspensePage({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
+    <>
     <Routes>
       <Route path="/" element={<Navigate to="/en" replace />} />
 
@@ -91,5 +93,7 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/en" replace />} />
     </Routes>
+    <ConfirmDialogHost />
+    </>
   );
 }

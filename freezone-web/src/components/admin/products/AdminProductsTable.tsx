@@ -11,6 +11,7 @@ import {
 } from "@/lib/admin/admin-products-api";
 import { formatAdminDate, productQualityHints } from "@/lib/admin/product-row-quality-hint";
 import { freezoneApiUrl } from "@/lib/api-internal";
+import { confirmDialog } from "@/lib/confirm";
 import styles from "./AdminProductsTable.module.css";
 
 type CategoryOpt = { id: number; nameEn: string; nameAr?: string; slug: string };
@@ -135,7 +136,14 @@ export function AdminProductsTable({
 
   async function safeDelete(p: AdminProductRow) {
     const label = p.nameAr || p.nameEn || `#${p.id}`;
-    if (!confirm(`حذف المنتج «${label}» نهائيًا؟ لا يمكن التراجع.`)) return;
+    const ok = await confirmDialog({
+      title: "حذف منتج",
+      message: `حذف المنتج «${label}» نهائيًا؟ لا يمكن التراجع.`,
+      confirmLabel: "حذف",
+      cancelLabel: "إلغاء",
+      danger: true,
+    });
+    if (!ok) return;
     setActingId(p.id);
     try {
       const res = await fetch(freezoneApiUrl(`/api/admin/products/${p.id}`), {

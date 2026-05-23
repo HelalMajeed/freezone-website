@@ -10,6 +10,7 @@ import { Link, useRouter } from "@/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "@/i18n/hooks";
 import { freezoneApiUrl } from "@/lib/api-internal";
+import toast from "react-hot-toast";
 import clsx from "clsx";
 
 type Fulfillment = "delivery" | "pickup";
@@ -105,11 +106,11 @@ export default function CheckoutPage() {
 
   const goToPayment = () => {
     if (!form.name.trim() || !form.phone.trim()) {
-      alert(t("fillError"));
+      toast.error(t("fillError"));
       return;
     }
     if (!isPickup && !form.address.trim()) {
-      alert(t("fillAddressError"));
+      toast.error(t("fillAddressError"));
       return;
     }
     const allowed = isPickup ? PAYMENT_FOR_PICKUP : PAYMENT_FOR_DELIVERY;
@@ -186,12 +187,12 @@ export default function CheckoutPage() {
         orderNumber = data.orderNumber;
       } else if (res.status === 503 && data.code === "NO_DATABASE") {
         orderNumber = saveLocalOrder().orderNumber;
-        alert(t("orderLocalFallback"));
+        toast.success(t("orderLocalFallback"));
       } else if (res.status === 400) {
-        alert(typeof data.error === "string" && data.error.trim() ? data.error : t("orderValidationError"));
+        toast.error(typeof data.error === "string" && data.error.trim() ? data.error : t("orderValidationError"));
         return;
       } else {
-        alert(typeof data.error === "string" && data.error.trim() ? data.error : t("orderServerError"));
+        toast.error(typeof data.error === "string" && data.error.trim() ? data.error : t("orderServerError"));
         return;
       }
     } catch {

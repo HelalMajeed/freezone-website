@@ -9,6 +9,7 @@ import { springSnappy } from "@/lib/motion";
 import { usePublicSite } from "@/components/providers/StorefrontProvider";
 import { useLocale } from "@/i18n/hooks";
 import { staticPublicSite } from "@/lib/site-public";
+import toast from "react-hot-toast";
 
 export default function ContactPage() {
   const locale = useLocale();
@@ -95,7 +96,8 @@ export default function ContactPage() {
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  alert("Message sent successfully!");
+                  toast.success("Message sent successfully!");
+                  (e.currentTarget as HTMLFormElement).reset();
                 }}
               >
                 <div className={styles.formGroup}>
