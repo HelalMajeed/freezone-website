@@ -179,6 +179,28 @@ model Product {
   @@index([importBatchId])
 }
 
+/// Cross-session progress marker for the FreeZone overhaul — replaces the
+/// `.claude-state.md` file when querying the running system. Each sprint+step
+/// owns a row; rerunning the same step updates `status` + `finishedAt`.
+model ProgressState {
+  id         Int       @id @default(autoincrement())
+  sprint     String
+  step       String
+  /// pending | in_progress | completed | blocked | skipped
+  status     String    @default("pending")
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  notes      String?
+  /// Free-form session identifier so two parallel workers do not stomp on each other.
+  owner      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([sprint, step])
+  @@index([status])
+  @@index([sprint])
+}
+
 /// One row per importer run. Holds the advisory lock + per-handle result log.
 model ImportBatch {
   id         String    @id @default(cuid())

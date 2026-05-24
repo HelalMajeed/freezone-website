@@ -1,0 +1,155 @@
+name: Import — Global Iraq
+
+# Sprint 0 scaffold. Cron is intentionally absent: the workflow is opt-in via
+# manual dispatch until the smart category resolver (Sprint 1) and warranty
+# doubling (Sprint 3) land. Sprint 4 will add the cron trigger.
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "How many handles to import this run (1..100)"
+        required: true
+        default: "50"
+      autoPublish:
+        description: "Auto-publish products that pass the quality gate"
+        required: true
+        type: choice
+        default: "false"
+        options:
+          - "false"
+          - "true"
+
+concurrency:
+  group: import-globaliraq
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  run-batch:
+    name: run-batch (limit=${{ inputs.limit }} autoPublish=${{ inputs.autoPublish }})
+    runs-on: ubuntu-latest
+    env:
+      API_URL: https://freezone-website.fly.dev
+    steps:
+      - name: Configure batch parameters
+        id: cfg
+        run: |
+          limit="${{ inputs.limit }}"
+          if ! [[ "$limit" =~ ^[0-9]+$ ]] || [ "$limit" -lt 1 ] || [ "$limit" -gt 100 ]; then
+            echo "::error::limit must be 1..100"
+            exit 2
+          fi
+          echo "limit=$limit" >> "$GITHUB_OUTPUT"
+          echo "autoPublish=${{ inputs.autoPublish }}" >> "$GITHUB_OUTPUT"
+
+      - name: Login + run import batch
+        id: kickoff
+        env:
+          ADMIN_PASSWORD: ${{ secrets.FREEZONE_ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          : "${ADMIN_PASSWORD:?FREEZONE_ADMIN_PASSWORD secret is not set}"
+
+          login=$(curl -sS -i -X POST \
+            -H "Content-Type: application/json" \
+            -d "{\"password\":\"${ADMIN_PASSWORD}\"}" \
+            "${API_URL}/api/admin/login")
+          cookie=$(printf "%s\n" "$login" | grep -i '^set-cookie:' | grep -o 'fz_admin_session=[^;]*' | head -1)
+          if [ -z "$cookie" ]; then
+            echo "::error::admin login did not return a session cookie"
+            exit 1
+          fi
+
+          payload=$(jq -nc \
+            --argjson limit "${{ steps.cfg.outputs.limit }}" \
+            --argjson auto "${{ steps.cfg.outputs.autoPublish == 'true' }}" \
+            '{limit:$limit,autoPublish:$auto}')
+
+          resp=$(curl -sS -X POST \
+            -H "Content-Type: application/json" \
+            -H "Cookie: $cookie" \
+            -d "$payload" \
+            "${API_URL}/api/admin/import/globaliraq/run-batch")
+          echo "$resp"
+          batch_id=$(printf "%s" "$resp" | jq -r '.batchId // empty')
+          if [ -z "$batch_id" ]; then
+            echo "::error::run-batch did not return a batchId — body was: $resp"
+            exit 1
+          fi
+          echo "cookie=$cookie" >> "$GITHUB_OUTPUT"
+          echo "batchId=$batch_id" >> "$GITHUB_OUTPUT"
+
+      - name: Poll until batch finishes
+        id: poll
+        env:
+          BATCH_ID: ${{ steps.kickoff.outputs.batchId }}
+          COOKIE: ${{ steps.kickoff.outputs.cookie }}
+        run: |
+          set -euo pipefail
+          mkdir -p import-logs
+          for attempt in $(seq 1 720); do
+            body=$(curl -sS -H "Cookie: $COOKIE" "${API_URL}/api/admin/import/globaliraq/batches/${BATCH_ID}")
+            status=$(printf "%s" "$body" | jq -r '.batch.status // empty')
+            if [ -z "$status" ]; then
+              echo "::warning::status missing from response (attempt $attempt)"
+              sleep 5
+              continue
+            fi
+            echo "[poll] attempt=$attempt status=$status"
+            if [ "$status" != "running" ]; then
+              printf "%s" "$body" > "import-logs/batch-${BATCH_ID}.json"
+              echo "status=$status" >> "$GITHUB_OUTPUT"
+              echo "final_body<<EOF" >> "$GITHUB_OUTPUT"
+              printf "%s\n" "$body" >> "$GITHUB_OUTPUT"
+              echo "EOF" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::batch did not finish within polling window"
+          exit 1
+
+      - name: Push the log to the import-logs branch
+        env:
+          BATCH_ID: ${{ steps.kickoff.outputs.batchId }}
+        run: |
+          set -euo pipefail
+          ts=$(date -u +%Y%m%dT%H%M%SZ)
+          fname="import-logs/${ts}_${BATCH_ID}.json"
+          mv "import-logs/batch-${BATCH_ID}.json" "$fname"
+
+          git config user.name "freezone-import-bot"
+          git config user.email "bot@freezone-iq.com"
+          git fetch origin import-logs:import-logs || git checkout --orphan import-logs
+          if git rev-parse --verify import-logs >/dev/null 2>&1; then
+            git checkout import-logs
+            git pull --rebase origin import-logs || true
+          else
+            git checkout --orphan import-logs
+            git rm -rf . || true
+          fi
+          mkdir -p import-logs
+          mv "$fname" "import-logs/$(basename "$fname")" 2>/dev/null || cp -r "$fname" "import-logs/"
+          git add import-logs
+          git -c commit.gpgsign=false commit -m "log: import batch ${BATCH_ID}" || true
+          git push origin import-logs
+
+      - name: Open failure issue
+        if: steps.poll.outputs.status != 'completed' && steps.poll.outputs.status != 'completed_with_errors'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = "${{ steps.poll.outputs.status }}";
+            const batchId = "${{ steps.kickoff.outputs.batchId }}";
+            const body = `Batch \`${batchId}\` finished with status \`${status}\`.\n\nSee the log committed to \`import-logs/\` for details.`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `import: batch ${batchId} ended ${status}`,
+              body,
+              labels: ["blocker", "urgent"],
+            });
