@@ -167,7 +167,7 @@ export async function getProductsCatalog(locale: LocaleCode): Promise<Product[]>
     let rows;
     try {
       rows = await prisma.product.findMany({
-        where: { published: true },
+        where: { published: true, deletedAt: null },
         include: {
           ...storefrontProductIncludeBase,
           secondaryCategories: { include: { category: { select: { slug: true } } } },
@@ -178,7 +178,7 @@ export async function getProductsCatalog(locale: LocaleCode): Promise<Product[]>
       if (catalogQueryMissingClassificationSupport(e)) {
         console.warn("[catalog] loading products without classification tables (run migrate).");
         rows = await prisma.product.findMany({
-          where: { published: true },
+          where: { published: true, deletedAt: null },
           include: { ...storefrontProductIncludeLegacy },
           orderBy: { id: "asc" },
         });
@@ -187,7 +187,7 @@ export async function getProductsCatalog(locale: LocaleCode): Promise<Product[]>
       } else {
         console.warn("[catalog] loading products without secondaryCategories.");
         rows = await prisma.product.findMany({
-          where: { published: true },
+          where: { published: true, deletedAt: null },
           include: { ...storefrontProductIncludeLegacy },
           orderBy: { id: "asc" },
         });
@@ -271,7 +271,7 @@ export async function getProductById(id: number, locale: LocaleCode): Promise<Pr
     let row;
     try {
       row = await prisma.product.findFirst({
-        where: { id, published: true },
+        where: { id, published: true, deletedAt: null },
         include: {
           ...storefrontProductIncludeBase,
           secondaryCategories: { include: { category: { select: { slug: true } } } },
@@ -280,7 +280,7 @@ export async function getProductById(id: number, locale: LocaleCode): Promise<Pr
     } catch (e) {
       if (!productQueryMissingSecondarySupport(e)) throw e;
       row = await prisma.product.findFirst({
-        where: { id, published: true },
+        where: { id, published: true, deletedAt: null },
         include: { ...storefrontProductIncludeBase },
       });
     }

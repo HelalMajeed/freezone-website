@@ -154,6 +154,9 @@ model Product {
   /// Free-text warranty label shown on PDP + admin edit. Default copy for imports: "ضمان سنتين وكالة".
   warranty            String?
   published           Boolean                    @default(true)
+  /// Soft-delete marker — when set, the row is hidden from storefront queries
+  /// but the data is retained for recovery / audit.
+  deletedAt           DateTime?
   createdAt           DateTime                   @default(now())
   updatedAt           DateTime                   @updatedAt
   images              ProductImage[]
@@ -178,6 +181,7 @@ model Product {
   @@index([sourceHandle])
   @@index([importBatchId])
   @@index([published, categoryId])
+  @@index([deletedAt])
 }
 
 /// Cross-session progress marker for the FreeZone overhaul — replaces the

@@ -24,7 +24,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   }
 
   const row = await prisma.product.findFirst({
-    where: { id, published: true },
+    where: { id, published: true, deletedAt: null },
     select: {
       categoryId: true,
       specs: true,

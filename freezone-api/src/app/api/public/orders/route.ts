@@ -77,7 +77,7 @@ export async function POST(req: Request) {
        */
       const productIds = Array.from(new Set(normalizedItems.map((i) => i.productId)));
       const products = await tx.product.findMany({
-        where: { id: { in: productIds } },
+        where: { id: { in: productIds }, deletedAt: null },
         include: { images: { take: 1, orderBy: { sortOrder: "asc" } } },
       });
       const productById = new Map(products.map((p) => [p.id, p]));
