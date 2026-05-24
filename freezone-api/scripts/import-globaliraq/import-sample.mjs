@@ -5,13 +5,23 @@
 //     1. Creates a single ImportBatch row in the target DB (via Prisma) and uses
 //        its `lockOwner` field as a distributed lock — refuses to start if another
 //        batch is already `running` against the same source.
-//     2. Resolves a category by --category-slug (`staging-imports` by default)
-//        and reads existing brand list via the admin API.
+//     2. Resolves the target category (Phase 0: always the stable `needs-review`
+//        fallback; Phase 1 plugs in product_type/vendor matching).
 //     3. For each handle:
-//          POST /api/admin/products        (without images)
-//          for each image:
-//            POST /api/admin/media/import-image  (pulls Shopify CDN into /uploads)
-//        Records the per-handle outcome in ImportBatch.results.
+//          - skip if a Product with the same `sourceHandle` already exists
+//          - prisma.product.create  (specs JSON + warranty + source* preserved)
+//          - POST /api/admin/media/import-image (per image, FreeZone-mirrored copy)
+//          - POST /api/admin/products/:id/variants (every Shopify variant)
+//
+//   Why direct Prisma instead of POST /api/admin/products?
+//     The HTTP route runs `validateProductSpecsAgainstCategory`, which hard-fails
+//     on any spec key not registered as a `CategoryAttribute` for the target
+//     category. Imported products carry arbitrary keys parsed from `body_html`
+//     and the per-category schema isn't authored yet, so a pure HTTP path either
+//     drops specs (unacceptable — spec data must be preserved) or pollutes the
+//     attribute schema with auto-generated keys. Writing Product.specs JSON
+//     directly preserves the data verbatim and leaves CategoryAttribute curation
+//     to a separate admin workflow.
 //
 // Modes:
 //   --dry-run            (default)  print + write data/dry-run-<batchId>.json,
@@ -21,7 +31,7 @@
 // Env required for --live:
 //   DATABASE_URL                postgres URL of the target FreeZone DB
 //   FREEZONE_API_URL            e.g. https://freezone-website.fly.dev or http://127.0.0.1:4000
-//   FREEZONE_ADMIN_PASSWORD     admin login password
+//   FREEZONE_ADMIN_PASSWORD     admin login password (used for image-import + variants endpoints)
 //
 // Hard caps protect the production DB from a runaway:
 //   - default --limit must be passed; it is also capped at SAMPLE_MAX (=10).
@@ -32,13 +42,11 @@ import { resolve } from "node:path";
 import { acquireLocalLock, LockedError } from "./lib/lock.mjs";
 import {
   login,
-  listCategories,
-  createCategory,
   importImage,
-  createProduct,
   upsertVariants,
   AdminApiError,
 } from "./lib/api-client.mjs";
+import { ensureNeedsReviewCategory } from "./lib/category-resolve.mjs";
 
 const DATA_DIR = resolve(import.meta.dirname, "data");
 const MAPPED_DIR = resolve(DATA_DIR, "mapped");
@@ -50,9 +58,6 @@ function parseArgs(argv) {
     limit: 0,
     live: false,
     continueOnError: false,
-    categorySlug: "staging-imports",
-    categoryNameAr: "وارد قيد المراجعة (Global Iraq)",
-    categoryNameEn: "Staging imports (Global Iraq)",
     source: "globaliraq",
   };
   for (const a of argv) {
@@ -62,9 +67,6 @@ function parseArgs(argv) {
     const m = /^--([^=]+)=(.*)$/.exec(a);
     if (!m) continue;
     if (m[1] === "limit") out.limit = Number.parseInt(m[2], 10) || 0;
-    else if (m[1] === "category-slug") out.categorySlug = m[2];
-    else if (m[1] === "category-name-ar") out.categoryNameAr = m[2];
-    else if (m[1] === "category-name-en") out.categoryNameEn = m[2];
     else out[m[1]] = m[2];
   }
   if (out.limit <= 0) {
@@ -134,31 +136,31 @@ async function main() {
       console.log(`[import] live batch id=${batch.id}`);
 
       ({ cookie } = await login(apiUrl, adminPw));
-      const category = await ensureCategory(apiUrl, cookie, args);
-      console.log(`[import] category id=${category.id} slug=${category.slug}`);
+      const category = await ensureNeedsReviewCategory(prisma);
+      console.log(`[import] fallback category id=${category.id} slug=${category.slug}`);
 
       const results = [];
       let succeeded = 0;
       let failed = 0;
+      let skipped = 0;
       for (const [i, entry] of entries.entries()) {
         console.log(`[import] (${i + 1}/${entries.length}) ${entry.handle}`);
         const { mapped } = entry;
-        /** Strip `specs` before POST: the staging category has no CategoryAttribute schema
-         *  defined yet, so `validateProductSpecsAgainstCategory` would reject every key
-         *  we extracted from body_html. Warranty already has its own column; the rest
-         *  of the body content lives in descAr/descEn and in data/mapped/<handle>.json
-         *  for the admin to re-attach once the staging schema is configured. */
-        const { specs: _specs, ...productWithoutSpecs } = mapped.productPayload;
-        void _specs;
-        const payload = {
-          ...productWithoutSpecs,
-          categoryId: category.id,
-          importBatchId: batch.id,
-        };
+
+        /** Idempotency: skip handles already in the DB so re-runs don't dupe. */
+        const dupe = await prisma.product.findFirst({
+          where: { sourceHandle: mapped.productPayload.sourceHandle },
+          select: { id: true },
+        });
+        if (dupe) {
+          console.log(`[import]   skipped — already imported (product id=${dupe.id})`);
+          results.push({ handle: entry.handle, status: "skipped", productId: dupe.id });
+          skipped += 1;
+          continue;
+        }
+
         try {
-          const productCreated = await createProduct(apiUrl, cookie, payload);
-          const productId = productCreated?.id || productCreated?.product?.id;
-          if (!productId) throw new Error("createProduct returned no id: " + JSON.stringify(productCreated));
+          const productId = await createProductViaPrisma(prisma, mapped, category.id, batch.id);
 
           /** Pull each Shopify image into FreeZone storage. Keep a sourceUrl → localUrl map
            *  so we can resolve variant.image_id references to the mirrored /uploads/ path. */
@@ -241,9 +243,10 @@ async function main() {
           succeeded,
           failed,
           results,
+          notes: `sample limit=${args.limit}; skipped=${skipped} (dedupe)`,
         },
       });
-      console.log(`[import] batch ${batch.id} done: ok=${succeeded} failed=${failed}`);
+      console.log(`[import] batch ${batch.id} done: ok=${succeeded} failed=${failed} skipped=${skipped}`);
     } finally {
       try { await prisma.$disconnect(); } catch { /* ignore */ }
     }
@@ -259,18 +262,39 @@ async function main() {
   }
 }
 
-async function ensureCategory(apiUrl, cookie, args) {
-  const list = await listCategories(apiUrl, cookie);
-  const arr = Array.isArray(list) ? list : list?.categories;
-  const existing = (arr || []).find((c) => c.slug === args.categorySlug);
-  if (existing) return existing;
-  console.log(`[import] creating category nameEn="${args.categoryNameEn}"`);
-  const created = await createCategory(apiUrl, cookie, {
-    nameEn: args.categoryNameEn,
-    nameAr: args.categoryNameAr,
+/**
+ * Direct-Prisma product create. See the file header for why this bypasses the
+ * HTTP /api/admin/products route. The shape mirrors the mapped payload from
+ * map-product.mjs and preserves `specs` JSON verbatim.
+ */
+async function createProductViaPrisma(prisma, mapped, categoryId, batchId) {
+  const p = mapped.productPayload;
+  const row = await prisma.product.create({
+    data: {
+      categoryId,
+      brand: p.brand || "—",
+      sku: (p.sku || "").trim() || "—",
+      model: typeof p.model === "string" ? p.model.trim() : "",
+      quantity: Number.isFinite(p.quantity) ? p.quantity : 1,
+      nameEn: p.nameEn,
+      nameAr: p.nameAr || p.nameEn,
+      descEn: p.descEn ?? "",
+      descAr: p.descAr ?? "",
+      price: p.price,
+      oldPrice: p.oldPrice ?? null,
+      warranty: p.warranty || null,
+      specs: (p.specs && typeof p.specs === "object" ? p.specs : {}),
+      published: false,
+      isNew: p.isNew !== false,
+      sourceUrl: p.sourceUrl ?? null,
+      sourceHandle: p.sourceHandle ?? null,
+      sourcePrice: typeof p.sourcePrice === "number" ? p.sourcePrice : null,
+      importedAt: new Date(),
+      importBatchId: batchId,
+    },
+    select: { id: true },
   });
-  /** API may wrap the row under .category — handle both shapes. */
-  return created?.category || created;
+  return row.id;
 }
 
 async function runDryRun(entries, batchId, args) {
@@ -293,6 +317,7 @@ async function runDryRun(entries, batchId, args) {
       oldPrice: mapped.productPayload.oldPrice,
       sourcePrice: mapped.productPayload.sourcePrice,
       warranty: mapped.productPayload.warranty,
+      specsKeys: mapped.productPayload.specs ? Object.keys(mapped.productPayload.specs) : [],
       imageCount: mapped.images.length,
       variantCount: mapped.variants.length,
       flags: mapped.flags,
