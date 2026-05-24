@@ -177,6 +177,7 @@ model Product {
   @@index([brandId])
   @@index([sourceHandle])
   @@index([importBatchId])
+  @@index([published, categoryId])
 }
 
 /// Cross-session progress marker for the FreeZone overhaul — replaces the
@@ -255,6 +256,7 @@ model ProductVariant {
 
   @@unique([productId, sourceVariantId], map: "ProductVariant_productId_sourceVariantId_key")
   @@index([productId])
+  @@index([productId, active])
 }
 
 /// Placed checkout orders (persisted; replaces localStorage-only demo when DB available)
@@ -281,6 +283,8 @@ model Order {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   items         OrderLineItem[]
+
+  @@index([createdAt(sort: Desc)])
 }
 
 model OrderLineItem {

@@ -173,12 +173,25 @@ export async function POST(req: Request) {
         data: { orderNumber },
       });
 
+      /** Atomic decrement guarded by the WHERE clause — `updateMany` only
+       *  affects rows whose current `quantity` is still >= the requested qty,
+       *  so a concurrent transaction that already drained the stock leaves
+       *  `count === 0` and we surface OUT_OF_STOCK. This replaces the previous
+       *  read-then-update pattern that left a window for oversell. */
       for (const line of priced) {
-        const p = productById.get(line.productId)!;
-        const nextQty = Math.max(0, p.quantity - line.qty);
-        await tx.product.update({
-          where: { id: line.productId },
-          data: { quantity: nextQty, inStock: nextQty > 0 && p.inStock },
+        const updated = await tx.product.updateMany({
+          where: { id: line.productId, quantity: { gte: line.qty } },
+          data: { quantity: { decrement: line.qty } },
+        });
+        if (updated.count === 0) throw new Error("OUT_OF_STOCK");
+      }
+      /** Sync `inStock` for rows that just hit zero. Best-effort — the
+       *  `quantity` column is the source of truth for buyers and the catalog
+       *  endpoints already gate on `quantity > 0`. */
+      for (const line of priced) {
+        await tx.product.updateMany({
+          where: { id: line.productId, quantity: 0 },
+          data: { inStock: false },
         });
       }
 

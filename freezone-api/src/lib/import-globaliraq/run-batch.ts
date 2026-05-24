@@ -1,18 +1,20 @@
 // In-process orchestrator for the Global Iraq importer.
 //
 // Wires together: sitemap walk → handle dedupe → Shopify scrape → FreeZone
-// payload mapping → Prisma writes → image mirroring (via importExternalImage
-// directly) → variant upsert (via Prisma).
+// payload mapping → smart category match → CategoryAttribute backfill →
+// product create (loop-back call into the admin route, so spec validation +
+// EAV persistence + audit log all happen) → image mirroring → variant upsert.
 //
-// Sprint 0 keeps two known compromises documented separately as GitHub issues:
-//   * direct-Prisma write for Product (bypasses spec validator) — superseded by
-//     Sprint 1's resolveCategory + ensureCategoryAttributes flow.
-//   * needs-review is the only target category — superseded by Sprint 1's
-//     resolveCategory.
+// Sprint 1 replaced Sprint 0's direct-Prisma Product write with a call into
+// the admin POST route, after first ensuring the target category's
+// CategoryAttribute schema covers every key we want to persist (so the
+// validator never rejects an import). See `ensureCategoryAttributes`.
 
 import { prisma } from "@/lib/prisma";
 import { importExternalImage } from "@/lib/import-external-image";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
+import { signAdminSession } from "@/lib/admin-session";
+import * as adminProductsRoute from "@/app/api/admin/products/route";
 import { fetchProductUrls, fetchShopifyProduct, handleFromUrl } from "./sitemap";
 import {
   shopifyToFreezone,
@@ -20,7 +22,8 @@ import {
   type MappedVariant,
   type ShopifyProduct,
 } from "./map-product";
-import { ensureNeedsReviewCategory } from "./category-resolve";
+import { resolveCategoryForImport } from "./category-resolve";
+import { ensureCategoryAttributes } from "./category-attributes";
 
 const GLOBALIRAQ_BASE = "https://globaliraq.iq";
 const GLOBALIRAQ_LOCALE = "ar";
@@ -112,8 +115,6 @@ export async function runImportBatch(opts: RunBatchOptions): Promise<RunBatchRes
     },
   });
 
-  const category = await ensureNeedsReviewCategory();
-
   const results: HandleResult[] = [];
   const errors: RunBatchResult["errors"] = [];
   let succeeded = 0;
@@ -142,7 +143,14 @@ export async function runImportBatch(opts: RunBatchOptions): Promise<RunBatchRes
           continue;
         }
 
-        const productId = await createProductRow(mapped, category.id, batch.id);
+        /** Sprint 1 path: smart-match the target category from Shopify metadata,
+         *  then guarantee every spec key has a CategoryAttribute so the admin
+         *  POST validator accepts the payload. */
+        const { category, matchedSlug } = await resolveCategoryForImport(mapped.sourceMeta);
+        const specKeys = Object.keys(mapped.productPayload.specs ?? {});
+        await ensureCategoryAttributes(category.id, specKeys);
+
+        const productId = await createProductViaAdminRoute(mapped, category.id, batch.id);
         const { imageCount, localByShopifyUrl } = await mirrorImages(productId, mapped);
         const variantCount = await upsertVariants(productId, mapped.variants, localByShopifyUrl);
 
@@ -150,6 +158,7 @@ export async function runImportBatch(opts: RunBatchOptions): Promise<RunBatchRes
           mapped,
           imageCount,
           categorySlug: category.slug,
+          matchedSlug,
         });
 
         results.push({
@@ -230,38 +239,55 @@ async function loadSitemap(baseUrl: string): Promise<string[]> {
   return urls;
 }
 
-async function createProductRow(
+/**
+ * Loop-back call into the public admin route so spec validation, EAV
+ * persistence, audit logging, and storefront revalidation all run exactly
+ * as if a human admin had clicked save. The admin route requires
+ * `isAdminAuthenticatedFromRequest`, so we mint a fresh signed session token
+ * — same code path as the login endpoint, no network involved.
+ */
+async function createProductViaAdminRoute(
   mapped: MappedProduct,
   categoryId: number,
   batchId: string,
 ): Promise<number> {
   const p = mapped.productPayload;
-  const row = await prisma.product.create({
-    data: {
-      categoryId,
-      brand: p.brand || "—",
-      sku: (p.sku || "").trim() || "—",
-      model: p.model?.trim() ?? "",
-      quantity: Number.isFinite(p.quantity) ? p.quantity : 1,
-      nameEn: p.nameEn,
-      nameAr: p.nameAr || p.nameEn,
-      descEn: p.descEn,
-      descAr: p.descAr,
-      price: p.price,
-      oldPrice: p.oldPrice ?? null,
-      warranty: p.warranty || null,
-      specs: (p.specs && typeof p.specs === "object" ? p.specs : {}) as object,
-      published: false,
-      isNew: p.isNew !== false,
-      sourceUrl: p.sourceUrl ?? null,
-      sourceHandle: p.sourceHandle,
-      sourcePrice: typeof p.sourcePrice === "number" ? p.sourcePrice : null,
-      importedAt: new Date(),
-      importBatchId: batchId,
-    },
-    select: { id: true },
+  const body = {
+    categoryId,
+    brand: p.brand || "—",
+    sku: (p.sku || "").trim() || "—",
+    model: typeof p.model === "string" ? p.model.trim() : "",
+    quantity: Number.isFinite(p.quantity) ? p.quantity : 1,
+    nameEn: p.nameEn,
+    nameAr: p.nameAr || p.nameEn,
+    descEn: p.descEn,
+    descAr: p.descAr,
+    price: p.price,
+    oldPrice: p.oldPrice ?? null,
+    warranty: p.warranty || null,
+    specs: p.specs && typeof p.specs === "object" ? p.specs : {},
+    published: false,
+    isNew: p.isNew !== false,
+    sourceUrl: p.sourceUrl ?? null,
+    sourceHandle: p.sourceHandle,
+    sourcePrice: typeof p.sourcePrice === "number" ? p.sourcePrice : null,
+    importedAt: new Date().toISOString(),
+    importBatchId: batchId,
+  };
+  const cookie = `fz_admin_session=${encodeURIComponent(signAdminSession())}`;
+  const req = new Request("http://127.0.0.1/internal/api/admin/products", {
+    method: "POST",
+    headers: { "content-type": "application/json", cookie },
+    body: JSON.stringify(body),
   });
-  return row.id;
+  const res = await adminProductsRoute.POST(req);
+  const data = (await res.json()) as { id?: number; error?: string };
+  if (!res.ok || typeof data.id !== "number") {
+    throw new Error(
+      `admin POST /api/admin/products failed: ${res.status} ${data.error ?? "no id in response"}`,
+    );
+  }
+  return data.id;
 }
 
 async function mirrorImages(
@@ -347,7 +373,7 @@ async function upsertVariants(
 async function maybeAutoPublish(
   productId: number,
   autoPublish: boolean,
-  ctx: { mapped: MappedProduct; imageCount: number; categorySlug: string },
+  ctx: { mapped: MappedProduct; imageCount: number; categorySlug: string; matchedSlug: string | null },
 ): Promise<"published" | "draft"> {
   if (!autoPublish) return "draft";
   const p = ctx.mapped.productPayload;
@@ -356,6 +382,8 @@ async function maybeAutoPublish(
     !!p.nameAr &&
     !!p.nameEn &&
     p.price > 0 &&
+    /** Only auto-publish into a smart-matched real category, never into needs-review. */
+    ctx.matchedSlug !== null &&
     ctx.categorySlug !== "needs-review" &&
     Object.keys(p.specs).length > 0 &&
     !!p.warranty;
