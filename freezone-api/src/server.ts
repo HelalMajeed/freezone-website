@@ -41,6 +41,7 @@ import * as adminProductsBulk from "./app/api/admin/products/bulk/route";
 import * as adminImportGlobaliraqBatches from "./app/api/admin/import/globaliraq/batches/route";
 import * as adminImportGlobaliraqBatchesId from "./app/api/admin/import/globaliraq/batches/[id]/route";
 import * as adminImportGlobaliraqRunBatch from "./app/api/admin/import/globaliraq/run-batch/route";
+import * as seoSitemap from "./app/api/seo/sitemap.xml/route";
 import * as adminTheme from "./app/api/admin/theme/route";
 import * as adminUpload from "./app/api/admin/upload/route";
 import * as dashboardLogin from "./app/api/dashboard/auth/login/route";
@@ -241,6 +242,10 @@ async function main() {
   app.get("/health", (_req, res) => {
     res.setHeader("Cache-Control", "no-store");
     res.type("application/json").send({ ok: true, service: "freezone-api", at: new Date().toISOString() });
+  });
+
+  app.get("/api/seo/sitemap.xml", async (_req, res) => {
+    await sendWebResponse(res, await seoSitemap.GET());
   });
 
   app.get("/api/public/site", async (req, res) => {
