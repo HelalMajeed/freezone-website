@@ -38,6 +38,7 @@ import * as adminProductsIdImages from "./app/api/admin/products/[id]/images/rou
 import * as adminProductsIdVariants from "./app/api/admin/products/[id]/variants/route";
 import * as adminImportGlobaliraqBatches from "./app/api/admin/import/globaliraq/batches/route";
 import * as adminImportGlobaliraqBatchesId from "./app/api/admin/import/globaliraq/batches/[id]/route";
+import * as adminImportGlobaliraqRunBatch from "./app/api/admin/import/globaliraq/run-batch/route";
 import * as adminTheme from "./app/api/admin/theme/route";
 import * as adminUpload from "./app/api/admin/upload/route";
 import * as dashboardLogin from "./app/api/dashboard/auth/login/route";
@@ -368,6 +369,9 @@ async function main() {
       await adminImportGlobaliraqBatchesId.GET(webRequestFromExpress(req), ctxId(req.params.id)),
     );
   });
+  app.post("/api/admin/import/globaliraq/run-batch", async (req, res) => {
+    await sendWebResponse(res, await adminImportGlobaliraqRunBatch.POST(webRequestFromExpress(req)));
+  });
 
   app.post("/api/dashboard/auth/login", async (req, res) => {
     await sendWebResponse(res, await dashboardLogin.POST(webRequestFromExpress(req)));
@@ -440,7 +444,7 @@ async function main() {
     res.status(404).type("application/json").send(JSON.stringify({ ok: false, error: "NOT_FOUND" }));
   });
 
-  app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  app.use(async (err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
     if (err instanceof multer.MulterError) {
       if (err.code === "LIMIT_FILE_SIZE") {
         res.status(413).type("application/json").send(JSON.stringify({ ok: false, error: "FILE_TOO_LARGE" }));
@@ -449,7 +453,11 @@ async function main() {
       res.status(400).type("application/json").send(JSON.stringify({ ok: false, error: err.message }));
       return;
     }
-    console.error("[api] Unhandled error:", err);
+    const { captureError } = await import("./lib/observability/index.js");
+    captureError(err, {
+      tags: { source: "express-unhandled" },
+      extra: { method: req.method, path: req.originalUrl.split("?")[0] },
+    });
     if (res.headersSent) return;
     res.status(500).type("application/json").send(JSON.stringify({ ok: false, error: "INTERNAL_ERROR" }));
   });

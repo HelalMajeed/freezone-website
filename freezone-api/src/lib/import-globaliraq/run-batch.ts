@@ -1,0 +1,365 @@
+// In-process orchestrator for the Global Iraq importer.
+//
+// Wires together: sitemap walk → handle dedupe → Shopify scrape → FreeZone
+// payload mapping → Prisma writes → image mirroring (via importExternalImage
+// directly) → variant upsert (via Prisma).
+//
+// Sprint 0 keeps two known compromises documented separately as GitHub issues:
+//   * direct-Prisma write for Product (bypasses spec validator) — superseded by
+//     Sprint 1's resolveCategory + ensureCategoryAttributes flow.
+//   * needs-review is the only target category — superseded by Sprint 1's
+//     resolveCategory.
+
+import { prisma } from "@/lib/prisma";
+import { importExternalImage } from "@/lib/import-external-image";
+import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
+import { fetchProductUrls, fetchShopifyProduct, handleFromUrl } from "./sitemap";
+import {
+  shopifyToFreezone,
+  type MappedProduct,
+  type MappedVariant,
+  type ShopifyProduct,
+} from "./map-product";
+import { ensureNeedsReviewCategory } from "./category-resolve";
+
+const GLOBALIRAQ_BASE = "https://globaliraq.iq";
+const GLOBALIRAQ_LOCALE = "ar";
+const SOURCE = "globaliraq";
+
+const SITEMAP_CACHE_TTL_MS = 10 * 60 * 1000;
+let sitemapCache: { fetchedAt: number; urls: string[] } | null = null;
+
+export interface RunBatchOptions {
+  limit: number;
+  autoPublish?: boolean;
+  /** Free-form identifier so concurrent runners stay distinct in the lock log. */
+  owner?: string;
+  /** Override for tests. */
+  baseUrl?: string;
+  /** Stop after this many consecutive failures (default 3). */
+  consecutiveFailureLimit?: number;
+}
+
+export interface RunBatchResult {
+  batchId: string;
+  processed: number;
+  succeeded: number;
+  failed: number;
+  skipped: number;
+  errors: Array<{ handle: string; message: string }>;
+}
+
+interface HandleResult {
+  handle: string;
+  status: "ok" | "failed" | "skipped";
+  productId?: number;
+  imageCount?: number;
+  variantCount?: number;
+  error?: string;
+  publishStatus?: "published" | "draft";
+}
+
+/** Hard sanity cap so a typo (`limit=10000`) can never write more than this in one go. */
+const MAX_LIMIT_PER_RUN = 100;
+
+/**
+ * Run a single batch of the importer. Long-running; the caller (HTTP route)
+ * usually invokes this via `setImmediate(...)` and returns the batch id so the
+ * client can poll `GET /api/admin/import/globaliraq/batches/:id` for progress.
+ */
+export async function runImportBatch(opts: RunBatchOptions): Promise<RunBatchResult> {
+  const limit = clampLimit(opts.limit);
+  const baseUrl = opts.baseUrl ?? GLOBALIRAQ_BASE;
+  const failureLimit = opts.consecutiveFailureLimit ?? 3;
+
+  /** Refuse to overlap an in-flight batch. */
+  const open = await prisma.importBatch.findFirst({
+    where: { source: SOURCE, status: "running" },
+  });
+  if (open) {
+    throw Object.assign(new Error("Another import batch is already running"), {
+      code: "BATCH_IN_FLIGHT",
+      openBatchId: open.id,
+    });
+  }
+
+  /** Pull every handle from the sitemap (cached) and subtract anything we already imported. */
+  const sitemapUrls = await loadSitemap(baseUrl);
+  const knownHandles = new Set(
+    (
+      await prisma.product.findMany({
+        where: { sourceHandle: { not: null } },
+        select: { sourceHandle: true },
+      })
+    ).map((p) => p.sourceHandle as string),
+  );
+  const pending: Array<{ handle: string; url: string }> = [];
+  for (const url of sitemapUrls) {
+    const handle = handleFromUrl(url);
+    if (!handle) continue;
+    if (knownHandles.has(handle)) continue;
+    pending.push({ handle, url });
+    if (pending.length >= limit) break;
+  }
+
+  const batch = await prisma.importBatch.create({
+    data: {
+      source: SOURCE,
+      status: "running",
+      total: pending.length,
+      lockOwner: opts.owner ?? "run-batch-endpoint",
+      notes: `limit=${limit} autoPublish=${opts.autoPublish ? "true" : "false"}`,
+    },
+  });
+
+  const category = await ensureNeedsReviewCategory();
+
+  const results: HandleResult[] = [];
+  const errors: RunBatchResult["errors"] = [];
+  let succeeded = 0;
+  let failed = 0;
+  let skipped = 0;
+  let consecutiveFailures = 0;
+
+  try {
+    for (const { handle, url } of pending) {
+      try {
+        const shopify = (await fetchShopifyProduct(url)) as unknown as ShopifyProduct;
+        const mapped = shopifyToFreezone(shopify, {
+          baseUrl,
+          source: SOURCE,
+          importBatchId: batch.id,
+        });
+
+        /** Second dedupe check inside the loop in case a parallel batch wrote the row. */
+        const dupe = await prisma.product.findFirst({
+          where: { sourceHandle: handle },
+          select: { id: true },
+        });
+        if (dupe) {
+          results.push({ handle, status: "skipped", productId: dupe.id });
+          skipped += 1;
+          continue;
+        }
+
+        const productId = await createProductRow(mapped, category.id, batch.id);
+        const { imageCount, localByShopifyUrl } = await mirrorImages(productId, mapped);
+        const variantCount = await upsertVariants(productId, mapped.variants, localByShopifyUrl);
+
+        const publishStatus = await maybeAutoPublish(productId, opts.autoPublish === true, {
+          mapped,
+          imageCount,
+          categorySlug: category.slug,
+        });
+
+        results.push({
+          handle,
+          status: "ok",
+          productId,
+          imageCount,
+          variantCount,
+          publishStatus,
+        });
+        succeeded += 1;
+        consecutiveFailures = 0;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        results.push({ handle, status: "failed", error: message });
+        errors.push({ handle, message });
+        failed += 1;
+        consecutiveFailures += 1;
+        /** Brittle source → bail out so we don't spam the upstream. */
+        if (consecutiveFailures >= failureLimit) {
+          await prisma.importBatch.update({
+            where: { id: batch.id },
+            data: {
+              status: "halted_consecutive_failures",
+              finishedAt: new Date(),
+              succeeded,
+              failed,
+              results: results as unknown as object,
+              notes: `${batch.notes ?? ""}\nHalted after ${failureLimit} consecutive failures`.trim(),
+            },
+          });
+          revalidateStorefrontData();
+          return { batchId: batch.id, processed: results.length, succeeded, failed, skipped, errors };
+        }
+      }
+    }
+
+    await prisma.importBatch.update({
+      where: { id: batch.id },
+      data: {
+        status: failed === 0 ? "completed" : "completed_with_errors",
+        finishedAt: new Date(),
+        succeeded,
+        failed,
+        results: results as unknown as object,
+        notes: `${batch.notes ?? ""}\nskipped(dedupe)=${skipped}`.trim(),
+      },
+    });
+    revalidateStorefrontData();
+    return { batchId: batch.id, processed: results.length, succeeded, failed, skipped, errors };
+  } catch (e) {
+    await prisma.importBatch.update({
+      where: { id: batch.id },
+      data: {
+        status: "failed",
+        finishedAt: new Date(),
+        succeeded,
+        failed,
+        results: results as unknown as object,
+        notes: `${batch.notes ?? ""}\nFatal: ${e instanceof Error ? e.message : String(e)}`.trim(),
+      },
+    });
+    throw e;
+  }
+}
+
+function clampLimit(raw: number): number {
+  if (!Number.isFinite(raw) || raw <= 0) return 0;
+  return Math.min(MAX_LIMIT_PER_RUN, Math.floor(raw));
+}
+
+async function loadSitemap(baseUrl: string): Promise<string[]> {
+  if (sitemapCache && Date.now() - sitemapCache.fetchedAt < SITEMAP_CACHE_TTL_MS) {
+    return sitemapCache.urls;
+  }
+  const urls = await fetchProductUrls(baseUrl, { locale: GLOBALIRAQ_LOCALE });
+  sitemapCache = { fetchedAt: Date.now(), urls };
+  return urls;
+}
+
+async function createProductRow(
+  mapped: MappedProduct,
+  categoryId: number,
+  batchId: string,
+): Promise<number> {
+  const p = mapped.productPayload;
+  const row = await prisma.product.create({
+    data: {
+      categoryId,
+      brand: p.brand || "—",
+      sku: (p.sku || "").trim() || "—",
+      model: p.model?.trim() ?? "",
+      quantity: Number.isFinite(p.quantity) ? p.quantity : 1,
+      nameEn: p.nameEn,
+      nameAr: p.nameAr || p.nameEn,
+      descEn: p.descEn,
+      descAr: p.descAr,
+      price: p.price,
+      oldPrice: p.oldPrice ?? null,
+      warranty: p.warranty || null,
+      specs: (p.specs && typeof p.specs === "object" ? p.specs : {}) as object,
+      published: false,
+      isNew: p.isNew !== false,
+      sourceUrl: p.sourceUrl ?? null,
+      sourceHandle: p.sourceHandle,
+      sourcePrice: typeof p.sourcePrice === "number" ? p.sourcePrice : null,
+      importedAt: new Date(),
+      importBatchId: batchId,
+    },
+    select: { id: true },
+  });
+  return row.id;
+}
+
+async function mirrorImages(
+  productId: number,
+  mapped: MappedProduct,
+): Promise<{ imageCount: number; localByShopifyUrl: Map<string, string> }> {
+  const localByShopifyUrl = new Map<string, string>();
+  let imageCount = 0;
+  for (const img of mapped.images) {
+    try {
+      const imported = await importExternalImage(img.sourceUrl, { productId });
+      const agg = await prisma.productImage.aggregate({
+        where: { productId },
+        _max: { sortOrder: true },
+      });
+      await prisma.productImage.create({
+        data: {
+          productId,
+          url: imported.url,
+          sortOrder: (agg._max.sortOrder ?? -1) + 1,
+          originalSourceUrl: imported.originalSourceUrl,
+        },
+      });
+      localByShopifyUrl.set(img.sourceUrl, imported.url);
+      imageCount += 1;
+    } catch (e) {
+      /** Image failure does not fail the whole product — record + keep going. */
+      console.error(`[import] image failed for ${img.sourceUrl}: ${e instanceof Error ? e.message : e}`);
+    }
+  }
+  return { imageCount, localByShopifyUrl };
+}
+
+async function upsertVariants(
+  productId: number,
+  variants: MappedVariant[],
+  localByShopifyUrl: Map<string, string>,
+): Promise<number> {
+  let count = 0;
+  for (const v of variants) {
+    const data = {
+      sku: v.sku || "",
+      labelEn: v.labelEn || "",
+      labelAr: v.labelAr || v.labelEn || "",
+      priceOverride: v.priceOverride,
+      oldPrice: v.oldPrice,
+      optionName1: v.optionName1,
+      optionValue1: v.optionValue1,
+      optionName2: v.optionName2,
+      optionValue2: v.optionValue2,
+      optionName3: v.optionName3,
+      optionValue3: v.optionValue3,
+      imageUrl: v.imageSourceUrl ? (localByShopifyUrl.get(v.imageSourceUrl) ?? null) : null,
+      sourceRawJson: v.sourceRawJson as unknown as object,
+      quantity: v.quantity,
+      active: v.active,
+      sortOrder: v.sortOrder,
+    };
+    if (v.sourceVariantId) {
+      const existing = await prisma.productVariant.findFirst({
+        where: { productId, sourceVariantId: v.sourceVariantId },
+        select: { id: true },
+      });
+      if (existing) {
+        await prisma.productVariant.update({ where: { id: existing.id }, data });
+      } else {
+        await prisma.productVariant.create({
+          data: { ...data, productId, sourceVariantId: v.sourceVariantId },
+        });
+      }
+    } else {
+      await prisma.productVariant.create({ data: { ...data, productId, sourceVariantId: null } });
+    }
+    count += 1;
+  }
+  return count;
+}
+
+/**
+ * Sprint 3 will flesh out the publish gates (image fetch HTTP 200, etc.).
+ * Sprint 0 only flips `published` when caller asks and minimal data is present.
+ */
+async function maybeAutoPublish(
+  productId: number,
+  autoPublish: boolean,
+  ctx: { mapped: MappedProduct; imageCount: number; categorySlug: string },
+): Promise<"published" | "draft"> {
+  if (!autoPublish) return "draft";
+  const p = ctx.mapped.productPayload;
+  const okay =
+    ctx.imageCount > 0 &&
+    !!p.nameAr &&
+    !!p.nameEn &&
+    p.price > 0 &&
+    ctx.categorySlug !== "needs-review" &&
+    Object.keys(p.specs).length > 0 &&
+    !!p.warranty;
+  if (!okay) return "draft";
+  await prisma.product.update({ where: { id: productId }, data: { published: true } });
+  return "published";
+}
