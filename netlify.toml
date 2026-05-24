@@ -12,6 +12,14 @@
   SKIP_WAIT_API = "1"
   VITE_API_URL = "https://freezone-website.fly.dev"
 
+# Proxy the crawler-facing sitemap to the API's dynamic generator (built from
+# the live catalog). Must come before the SPA catch-all so it isn't swallowed.
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "https://freezone-website.fly.dev/api/seo/sitemap.xml"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { LocaleCode } from "@/lib/layout-cms";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import ProductDetailClient from "@/features/product-detail/ProductDetailClient";
+import { ProductJsonLd } from "@/components/seo/ProductJsonLd";
 import { productsShareAnyCategory } from "@/lib/productCategoryMembership";
 import { getProductDetail } from "@/lib/product-detail";
 
@@ -39,13 +40,19 @@ export default function ProductDetailPage() {
     .filter((p) => p.id !== detail.product.id && productsShareAnyCategory(p, detail.product))
     .slice(0, 4);
 
+  const baseUrl =
+    import.meta.env.VITE_PUBLIC_SITE_URL || (typeof window !== "undefined" ? window.location.origin : "https://freezone-iq.com");
+
   return (
-    <ProductDetailClient
-      product={detail.product}
-      categories={catalog.categories}
-      relatedProducts={relatedProducts}
-      groupedSpecs={detail.groupedSpecs}
-      attributes={detail.attributes}
-    />
+    <>
+      <ProductJsonLd product={detail.product} locale={lc} baseUrl={baseUrl} />
+      <ProductDetailClient
+        product={detail.product}
+        categories={catalog.categories}
+        relatedProducts={relatedProducts}
+        groupedSpecs={detail.groupedSpecs}
+        attributes={detail.attributes}
+      />
+    </>
   );
 }
