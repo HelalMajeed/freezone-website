@@ -35,50 +35,50 @@ model ProductSecondaryCategory {
 }
 
 model Category {
-  id        Int       @id @default(autoincrement())
-  parentId  Int?
-  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children  Category[] @relation("CategoryTree")
-  slug      String    @unique
-  nameEn    String
-  nameAr    String
+  id                    Int                        @id @default(autoincrement())
+  parentId              Int?
+  parent                Category?                  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children              Category[]                 @relation("CategoryTree")
+  slug                  String                     @unique
+  nameEn                String
+  nameAr                String
   /// Legacy emoji — unused in UI when backgroundImageUrl is set; prefer background image
-  icon      String    @default("")
-  color     String    @default("#64748b")
+  icon                  String                     @default("")
+  color                 String                     @default("#64748b")
   /// Hero / category tile background (https URL, same-origin upload, or external)
-  backgroundImageUrl String?
-  sortOrder Int       @default(0)
-  active    Boolean   @default(true)
+  backgroundImageUrl    String?
+  sortOrder             Int                        @default(0)
+  active                Boolean                    @default(true)
   /// Legacy JSON facet list — kept in sync with `categoryAttributes` for backward compatibility
-  facetKeys Json?
-  categoryAttributes CategoryAttribute[]
-  products  Product[]
+  facetKeys             Json?
+  categoryAttributes    CategoryAttribute[]
+  products              Product[]
   secondaryProductLinks ProductSecondaryCategory[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
 
   @@index([parentId, sortOrder])
 }
 
 /// Per-category attribute schema (source of truth for filters + product spec fields).
 model CategoryAttribute {
-  id           Int      @id @default(autoincrement())
-  categoryId   Int
-  category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  key          String
-  nameEn       String
-  nameAr       String
+  id                  Int      @id @default(autoincrement())
+  categoryId          Int
+  category            Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  key                 String
+  nameEn              String
+  nameAr              String
   /// SELECT | MULTI_SELECT | RANGE | BOOLEAN | TEXT | COLOR
-  type         String   @default("SELECT")
-  options      Json?
-  filterable   Boolean  @default(true)
-  searchable   Boolean  @default(false)
-  comparable   Boolean  @default(false)
-  displayGroup String   @default("specs")
-  sortOrder    Int      @default(0)
-  required     Boolean  @default(false)
-  unit         String?
-  active       Boolean  @default(true)
+  type                String   @default("SELECT")
+  options             Json?
+  filterable          Boolean  @default(true)
+  searchable          Boolean  @default(false)
+  comparable          Boolean  @default(false)
+  displayGroup        String   @default("specs")
+  sortOrder           Int      @default(0)
+  required            Boolean  @default(false)
+  unit                String?
+  active              Boolean  @default(true)
   /// When set, filter value stores under `key`; long PDP text stores under `displaySpecKey`.
   displaySpecKey      String?
   displaySpecNameEn   String?
@@ -86,8 +86,8 @@ model CategoryAttribute {
   displaySpecGroup    String?
   displaySpecRequired Boolean  @default(false)
   linkDisplaySpec     Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   @@unique([categoryId, key])
   @@index([categoryId, sortOrder])
@@ -119,104 +119,158 @@ model ProductAttributeValue {
 }
 
 model Product {
-  id          Int             @id @default(autoincrement())
-  categoryId  Int
-  category    Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  id                  Int                        @id @default(autoincrement())
+  categoryId          Int
+  category            Category                   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   /// Legacy display string — prefer brandRef when brandId set
-  brand       String
-  brandId     Int?
-  brandRef    Brand?          @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  brand               String
+  brandId             Int?
+  brandRef            Brand?                     @relation(fields: [brandId], references: [id], onDelete: SetNull)
   /// Optional SKU / internal code
-  sku         String          @default("")
+  sku                 String                     @default("")
   /// Product model name (e.g. ROG Strix G16) — identity alongside brand
-  model       String          @default("")
+  model               String                     @default("")
   /// Stock count; treat 0 as out of stock when inStock is true
-  quantity    Int             @default(100)
-  nameEn      String
-  nameAr      String
-  descEn      String          @default("")
-  descAr      String          @default("")
-  price       Int
+  quantity            Int                        @default(100)
+  nameEn              String
+  nameAr              String
+  descEn              String                     @default("")
+  descAr              String                     @default("")
+  price               Int
   /// Set for discount display (compare-at price)
-  oldPrice    Int?
+  oldPrice            Int?
   /// Legacy helper + component type mapping
-  storage     String          @default("")
+  storage             String                     @default("")
   /// Arbitrary key/value filter facets
-  specs       Json?
-  inStock     Boolean         @default(true)
-  featured    Boolean         @default(false)
-  isNew       Boolean         @default(false)
-  icon        String          @default("📦")
-  rating      Float           @default(4.5)
-  reviews     Int             @default(0)
-  sales       Int             @default(0)
-  model3d     String?
-  published   Boolean         @default(true)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  images      ProductImage[]
-  orderLines  OrderLineItem[]
-  variants    ProductVariant[]
+  specs               Json?
+  inStock             Boolean                    @default(true)
+  featured            Boolean                    @default(false)
+  isNew               Boolean                    @default(false)
+  icon                String                     @default("📦")
+  rating              Float                      @default(4.5)
+  reviews             Int                        @default(0)
+  sales               Int                        @default(0)
+  model3d             String?
+  /// Free-text warranty label shown on PDP + admin edit. Default copy for imports: "ضمان سنتين وكالة".
+  warranty            String?
+  published           Boolean                    @default(true)
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+  images              ProductImage[]
+  orderLines          OrderLineItem[]
+  variants            ProductVariant[]
   secondaryCategories ProductSecondaryCategory[]
-  attributeValues ProductAttributeValue[]
+  attributeValues     ProductAttributeValue[]
+
+  /// Import provenance — only set when the row originated from an external scrape (e.g. Global Iraq).
+  sourceUrl     String?
+  /// Stable external identifier (e.g. Shopify handle) used for dedupe + re-runs.
+  sourceHandle  String?
+  /// Original list price as scraped, BEFORE the FreeZone markup multiplier is applied to `price`.
+  sourcePrice   Int?
+  importedAt    DateTime?
+  importBatchId String?
+  importBatch   ImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
 
   @@index([published])
   @@index([categoryId])
   @@index([brandId])
+  @@index([sourceHandle])
+  @@index([importBatchId])
+}
+
+/// One row per importer run. Holds the advisory lock + per-handle result log.
+model ImportBatch {
+  id         String    @id @default(cuid())
+  /// Free-form identifier of the origin (e.g. "globaliraq").
+  source     String
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  /// running | completed | failed | dry_run | cancelled
+  status     String    @default("running")
+  total      Int       @default(0)
+  succeeded  Int       @default(0)
+  failed     Int       @default(0)
+  notes      String?
+  /// Hostname:pid that currently owns the batch — used to refuse concurrent runs.
+  lockOwner  String?
+  /// Per-handle results: [{ handle, status, productId?, error? }, ...]
+  results    Json?
+  products   Product[]
+
+  @@index([source, status])
 }
 
 /// Scaffold: future SKU/options per product — not yet used in checkout UI
 model ProductVariant {
-  id            Int      @id @default(autoincrement())
-  productId     Int
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  sku           String   @default("")
-  labelEn       String   @default("")
-  labelAr       String   @default("")
-  priceOverride Int?
-  quantity      Int      @default(0)
-  active        Boolean  @default(true)
-  sortOrder     Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  productId       Int
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku             String   @default("")
+  labelEn         String   @default("")
+  labelAr         String   @default("")
+  priceOverride   Int?
+  /// Compare-at / original price (e.g. the Shopify variant price before our markup is applied).
+  oldPrice        Int?
+  /// Up to three option dimensions captured from Shopify (e.g. Color/Size/Material).
+  optionName1     String?
+  optionValue1    String?
+  optionName2     String?
+  optionValue2    String?
+  optionName3     String?
+  optionValue3    String?
+  /// Per-variant image URL (must be a FreeZone-hosted /uploads/* path when set).
+  imageUrl        String?
+  /// Stable id of the source variant — Shopify variant.id, stringified. Used for idempotency.
+  sourceVariantId String?
+  /// Raw Shopify variant JSON kept verbatim for audit.
+  sourceRawJson   Json?
+  quantity        Int      @default(0)
+  active          Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([productId, sourceVariantId], map: "ProductVariant_productId_sourceVariantId_key")
+  @@index([productId])
 }
 
 /// Placed checkout orders (persisted; replaces localStorage-only demo when DB available)
 model Order {
-  id              Int             @id @default(autoincrement())
-  orderNumber     String          @unique
+  id            Int             @id @default(autoincrement())
+  orderNumber   String          @unique
   /// pending | confirmed | processing | shipped | delivered | cancelled
-  status          String          @default("pending")
+  status        String          @default("pending")
   /// delivery | pickup
-  fulfillment     String          @default("delivery")
-  paymentMethod   String
-  customerName    String
-  customerPhone   String
-  customerEmail   String?
-  addressLine     String          @db.Text
-  city            String
-  subtotal        Int
-  shipping        Int
-  total           Int
+  fulfillment   String          @default("delivery")
+  paymentMethod String
+  customerName  String
+  customerPhone String
+  customerEmail String?
+  addressLine   String          @db.Text
+  city          String
+  subtotal      Int
+  shipping      Int
+  total         Int
   /// Coupon applied at checkout (validated server-side)
-  couponCode      String?
-  discountTotal   Int             @default(0)
-  notes           String?         @db.Text
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  items           OrderLineItem[]
+  couponCode    String?
+  discountTotal Int             @default(0)
+  notes         String?         @db.Text
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  items         OrderLineItem[]
 }
 
 model OrderLineItem {
-  id             Int      @id @default(autoincrement())
-  orderId        Int
-  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId      Int?
-  product        Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
-  nameSnapshot   String
-  priceSnapshot  Int
-  qty            Int
-  imageSnapshot  String?
+  id            Int      @id @default(autoincrement())
+  orderId       Int
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     Int?
+  product       Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  nameSnapshot  String
+  priceSnapshot Int
+  qty           Int
+  imageSnapshot String?
 }
 
 model Coupon {
@@ -249,11 +303,11 @@ model AuditLog {
 }
 
 model ProductImage {
-  id                Int      @id @default(autoincrement())
+  id                Int     @id @default(autoincrement())
   productId         Int
-  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product           Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   url               String
-  sortOrder         Int      @default(0)
+  sortOrder         Int     @default(0)
   /// Remote URL used only for import reference — storefront uses `url` (local upload).
   originalSourceUrl String?
 
@@ -262,121 +316,121 @@ model ProductImage {
 
 /// Single-row site configuration (row id = 1)
 model SiteConfig {
-  id                    Int     @id @default(1)
-  storeNameEn           String  @default("Store")
-  storeNameAr           String  @default("المتجر")
-  taglineEn             String  @default("")
-  taglineAr             String  @default("")
-  logoUrl               String?
+  id                     Int      @id @default(1)
+  storeNameEn            String   @default("Store")
+  storeNameAr            String   @default("المتجر")
+  taglineEn              String   @default("")
+  taglineAr              String   @default("")
+  logoUrl                String?
   /// Navbar / mobile drawer logo image height in CSS pixels (width stays auto)
-  headerLogoHeightPx    Int     @default(48)
-  phone                 String  @default("")
-  email                 String  @default("")
-  addressEn             String  @default("")
-  addressAr             String  @default("")
-  whatsapp              String  @default("")
-  zainCashWallet        String  @default("")
-  qiCardMerchantId      String  @default("")
-  freeDeliveryThreshold Int     @default(100000)
-  standardShippingFee   Int     @default(5000)
-  promoBarTextEn        String  @default("")
-  promoBarTextAr        String  @default("")
-  promoBarEnabled       Boolean @default(true)
+  headerLogoHeightPx     Int      @default(48)
+  phone                  String   @default("")
+  email                  String   @default("")
+  addressEn              String   @default("")
+  addressAr              String   @default("")
+  whatsapp               String   @default("")
+  zainCashWallet         String   @default("")
+  qiCardMerchantId       String   @default("")
+  freeDeliveryThreshold  Int      @default(100000)
+  standardShippingFee    Int      @default(5000)
+  promoBarTextEn         String   @default("")
+  promoBarTextAr         String   @default("")
+  promoBarEnabled        Boolean  @default(true)
   /// Tier-1 navbar strip (dark bar): background
-  topBarBgColor         String  @default("#0a0e1a")
+  topBarBgColor          String   @default("#0a0e1a")
   /// Left contact links (phone / WhatsApp) text + icon color
-  topBarContactColor    String  @default("rgba(255,255,255,0.65)")
+  topBarContactColor     String   @default("rgba(255,255,255,0.65)")
   /// Optional override for visible text next to phone icon (empty = show phone number)
-  topBarPhoneLabelEn    String  @default("")
-  topBarPhoneLabelAr    String  @default("")
-  topBarWhatsappLabelEn String  @default("WhatsApp")
-  topBarWhatsappLabelAr String  @default("واتساب")
+  topBarPhoneLabelEn     String   @default("")
+  topBarPhoneLabelAr     String   @default("")
+  topBarWhatsappLabelEn  String   @default("WhatsApp")
+  topBarWhatsappLabelAr  String   @default("واتساب")
   /// Lucide keys: phone, message-circle, zap, etc.
-  topBarPhoneIconKey    String  @default("phone")
-  topBarWhatsappIconKey String  @default("message-circle")
-  topBarPromoIconKey    String  @default("zap")
+  topBarPhoneIconKey     String   @default("phone")
+  topBarWhatsappIconKey  String   @default("message-circle")
+  topBarPromoIconKey     String   @default("zap")
   /// Promo message (right/center) icon + text color
-  topBarPromoColor      String  @default("#10b981")
+  topBarPromoColor       String   @default("#10b981")
   /// Optional full URL or path; empty = no link on promo text
-  topBarPromoHref       String?
+  topBarPromoHref        String?
   /// Optional; empty = tel: / wa.me from phone & whatsapp fields
-  topBarPhoneHref       String?
-  topBarWhatsappHref    String?
+  topBarPhoneHref        String?
+  topBarWhatsappHref     String?
   /// Tier-1 strip: show social icons (URLs from SocialLink)
-  topBarSocialEnabled     Boolean @default(true)
+  topBarSocialEnabled    Boolean  @default(true)
   /// Icon size in px (clamped in UI)
-  topBarSocialIconSizePx  Int     @default(20)
+  topBarSocialIconSizePx Int      @default(20)
   /// Gap between icons in px
-  topBarSocialGapPx       Int     @default(14)
+  topBarSocialGapPx      Int      @default(14)
   /// CSS color for icons; empty resolves to logo crimson (#B00000) in API
-  topBarSocialColor       String  @default("#B00000")
-  maintenanceMode       Boolean @default(false)
+  topBarSocialColor      String   @default("#B00000")
+  maintenanceMode        Boolean  @default(false)
   /// Ticker: "left" = scroll content left (default CSS), "right" = reverse
-  tickerDirection       String  @default("left")
+  tickerDirection        String   @default("left")
   /// Marquee loop duration in seconds (CSS animation)
-  tickerDurationSec     Float   @default(40)
+  tickerDurationSec      Float    @default(40)
   /// Hero autoplay interval ms
-  heroAutoplayMs        Int     @default(7000)
+  heroAutoplayMs         Int      @default(7000)
   /// Dark overlay on hero images: 0 = none, 100 = full black (alpha of rgba(0,0,0,a))
-  heroScrimOpacityPct   Int     @default(25)
+  heroScrimOpacityPct    Int      @default(25)
   /// Hero prev/next chevrons: base color (hex), combined with heroNavArrowOpacityPct → rgba
-  heroNavArrowColor       String @default("#ffffff")
+  heroNavArrowColor      String   @default("#ffffff")
   /// Chevron opacity 0–100
-  heroNavArrowOpacityPct  Int    @default(80)
+  heroNavArrowOpacityPct Int      @default(80)
   /// Arrow button box fill (hex), combined with heroNavBoxOpacityPct → rgba
-  heroNavBoxColor         String @default("#ffffff")
+  heroNavBoxColor        String   @default("#ffffff")
   /// Box fill opacity 0–100
-  heroNavBoxOpacityPct    Int    @default(8)
+  heroNavBoxOpacityPct   Int      @default(8)
   /// Trust bar strip under hero — background base (hex, same family as --gray-950)
-  trustBarBgColor       String  @default("#030712")
+  trustBarBgColor        String   @default("#030712")
   /// Trust bar background opacity 0–100 (100 = solid)
-  trustBarBgOpacityPct  Int     @default(100)
+  trustBarBgOpacityPct   Int      @default(100)
   /// Trust bar label text color (CSS color string)
-  trustBarTextColor     String  @default("#f8fafc")
+  trustBarTextColor      String   @default("#f8fafc")
   /// Trust bar Lucide icon color (CSS color string)
   /// Empty = follow theme primary (logo / Design); explicit CSS color overrides
-  trustBarIconColor     String  @default("")
+  trustBarIconColor      String   @default("")
   /// Serialized mega-menu (null = use app default `lib/default-nav.ts`)
-  navItemsJson          Json?
+  navItemsJson           Json?
   /// SEO
-  metaTitleEn           String?
-  metaTitleAr           String?
-  metaDescriptionEn     String? @db.Text
-  metaDescriptionAr     String? @db.Text
-  seoKeywords           String? @db.Text
+  metaTitleEn            String?
+  metaTitleAr            String?
+  metaDescriptionEn      String?  @db.Text
+  metaDescriptionAr      String?  @db.Text
+  seoKeywords            String?  @db.Text
   /// Design tokens JSON: colors, radius, fonts — consumed by storefront theme layer
-  themeTokens           Json?
+  themeTokens            Json?
   /// Homepage copy overrides: featured block titles, showroom header, FAQ (see `lib/home-page-copy.ts`)
-  homePageCopyJson      Json?
-  updatedAt             DateTime @updatedAt
+  homePageCopyJson       Json?
+  updatedAt              DateTime @updatedAt
 }
 
 model HeroSlide {
-  id               Int      @id @default(autoincrement())
-  sortOrder        Int      @default(0)
+  id               Int     @id @default(autoincrement())
+  sortOrder        Int     @default(0)
   /// "structured" = badge/title/desc/buttons; "freeform" = use freeformLayers
-  layoutMode       String   @default("structured")
+  layoutMode       String  @default("structured")
   /// Free-form overlay layers (text/button) as JSON — see `HeroFreeformLayer` in code
   freeformLayers   Json?
-  badgeEn          String   @default("")
-  badgeAr          String   @default("")
-  titleLine1En     String   @default("")
-  titleLine1Ar     String   @default("")
-  titleLine2En     String   @default("")
-  titleLine2Ar     String   @default("")
-  descEn           String   @default("")
-  descAr           String   @default("")
+  badgeEn          String  @default("")
+  badgeAr          String  @default("")
+  titleLine1En     String  @default("")
+  titleLine1Ar     String  @default("")
+  titleLine2En     String  @default("")
+  titleLine2Ar     String  @default("")
+  descEn           String  @default("")
+  descAr           String  @default("")
   imageUrl         String
-  primaryLabelEn   String   @default("")
-  primaryLabelAr   String   @default("")
-  primaryHref      String   @default("/products")
+  primaryLabelEn   String  @default("")
+  primaryLabelAr   String  @default("")
+  primaryHref      String  @default("/products")
   /// Optional structured CTA: `{ kind:"product"|"category"|"brand"|"url", ... }` — resolved to `primaryHref` for storefront
   primaryLink      Json?
-  secondaryLabelEn String   @default("")
-  secondaryLabelAr String   @default("")
-  secondaryHref    String   @default("/contact")
+  secondaryLabelEn String  @default("")
+  secondaryLabelAr String  @default("")
+  secondaryHref    String  @default("/contact")
   secondaryLink    Json?
-  active           Boolean  @default(true)
+  active           Boolean @default(true)
   stats            Json?
 }
 
@@ -401,33 +455,33 @@ model TrustBarItem {
 
 /// Homepage circular category strip
 model HomeSpotlightItem {
-  id       Int     @id @default(autoincrement())
-  labelEn  String
-  labelAr  String
-  href     String  @default("/products")
+  id        Int     @id @default(autoincrement())
+  labelEn   String
+  labelAr   String
+  href      String  @default("/products")
   /// Custom image in circle; if null and iconKey set, use Lucide
-  imageUrl String?
-  iconKey  String?
-  sortOrder Int    @default(0)
-  active   Boolean @default(true)
+  imageUrl  String?
+  iconKey   String?
+  sortOrder Int     @default(0)
+  active    Boolean @default(true)
 }
 
 model SocialLink {
-  id            Int     @id @default(autoincrement())
-  platform      String
-  url           String
-  sortOrder     Int     @default(0)
+  id           Int     @id @default(autoincrement())
+  platform     String
+  url          String
+  sortOrder    Int     @default(0)
   /// When false, link appears in footer only (not in tier-1 top strip)
-  showInTopBar  Boolean @default(true)
+  showInTopBar Boolean @default(true)
 }
 
 model ShowroomMedia {
-  id        Int    @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   kind      String /// image | video (embed URL or file URL)
   url       String
   titleEn   String?
   titleAr   String?
-  sortOrder Int    @default(0)
+  sortOrder Int     @default(0)
 }
 
 model PromoBanner {
@@ -471,34 +525,34 @@ model CmsPage {
 }
 
 model CmsPageSection {
-  id                Int      @id @default(autoincrement())
-  pageId            Int
-  page              CmsPage  @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  sortOrder         Int      @default(0)
+  id               Int      @id @default(autoincrement())
+  pageId           Int
+  page             CmsPage  @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  sortOrder        Int      @default(0)
   /// hero | banner_slider | featured_products | categories_showcase | brands_strip | testimonials | faq | cta | split_richtext | trust_bar | tabbed_products | promo_grid | legacy_block
-  type              String
-  visible           Boolean  @default(true)
-  draftPayload      Json
-  publishedPayload  Json?
-  updatedAt         DateTime @updatedAt
+  type             String
+  visible          Boolean  @default(true)
+  draftPayload     Json
+  publishedPayload Json?
+  updatedAt        DateTime @updatedAt
 }
 
 /// Dashboard user with role-based access (replaces single-password admin auth).
 /// Roles: superadmin | admin | editor | viewer
 model AdminUser {
-  id            Int            @id @default(autoincrement())
-  email         String         @unique
-  passwordHash  String
-  name          String
-  role          String         @default("editor")
-  active        Boolean        @default(true)
-  avatarUrl     String?
-  lastLoginAt   DateTime?
-  failedLogins  Int            @default(0)
-  lockedUntil   DateTime?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  sessions      AdminSession[]
+  id           Int            @id @default(autoincrement())
+  email        String         @unique
+  passwordHash String
+  name         String
+  role         String         @default("editor")
+  active       Boolean        @default(true)
+  avatarUrl    String?
+  lastLoginAt  DateTime?
+  failedLogins Int            @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  sessions     AdminSession[]
 
   @@index([active])
   @@index([role])

@@ -38,6 +38,7 @@ export function mapDbToProduct(
     model3d: string | null;
     sku: string;
     model?: string;
+    warranty?: string | null;
     createdAt: Date;
     category: { slug: string; categoryAttributes?: CategoryAttributeRow[] };
     images: { url: string; sortOrder: number }[];
@@ -76,6 +77,7 @@ export function mapDbToProduct(
     model3d: row.model3d,
     sku: row.sku?.trim() || undefined,
     model: row.model?.trim() || undefined,
+    warranty: row.warranty?.trim() || undefined,
     specs: specMaps.display,
     ...(Object.keys(specMaps.filterValues).length ? { filterValues: specMaps.filterValues } : {}),
   };

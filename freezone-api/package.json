@@ -29,7 +29,12 @@
     "fly:deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/fly-deploy.ps1",
     "admin:auth-print": "node scripts/configure-admin-auth.mjs",
     "admin:auth-fly": "node scripts/configure-admin-auth.mjs --apply-fly",
-    "db:seed:dashboard": "tsx prisma/seed-dashboard-superadmin.ts"
+    "db:seed:dashboard": "tsx prisma/seed-dashboard-superadmin.ts",
+    "import:globaliraq:discover": "node scripts/import-globaliraq/discover.mjs",
+    "import:globaliraq:scrape": "node scripts/import-globaliraq/scrape-product.mjs",
+    "import:globaliraq:sample": "node scripts/import-globaliraq/import-sample.mjs",
+    "import:globaliraq:verify": "node scripts/import-globaliraq/verify.mjs",
+    "import:globaliraq:dry-delete": "node scripts/import-globaliraq/dry-run-delete.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

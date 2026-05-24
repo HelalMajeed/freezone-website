@@ -39,6 +39,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     attributeValues: true,
     images: { orderBy: { sortOrder: "asc" } as const },
     brandRef: { select: { id: true, nameEn: true, nameAr: true } },
+    /** Render variant list in admin edit screen + verify importer wrote them. */
+    variants: { orderBy: { sortOrder: "asc" } as const },
   };
 
   try {
@@ -122,6 +124,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     reviews?: number;
     sales?: number;
     published?: boolean;
+    warranty?: string | null;
     secondaryCategoryIds?: number[] | null;
   } | null;
   if (!body) return Response.json({ error: "body" }, { status: 400 });
@@ -174,6 +177,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
         ...(typeof body.reviews === "number" ? { reviews: body.reviews } : {}),
         ...(typeof body.sales === "number" ? { sales: body.sales } : {}),
         ...(body.published !== undefined ? { published: body.published } : {}),
+        ...(body.warranty !== undefined ? { warranty: body.warranty?.trim() || null } : {}),
       },
     });
 
