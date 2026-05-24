@@ -130,15 +130,27 @@ export function parseAndDoubleWarranty(
     return text.replace(/شهر/u, "شهرين");
   }
 
-  // 5) English "N year(s)" / "N month(s)".
-  const en = text.match(/(\d+)\s*(years?|months?)/i);
+  // 5) English "N year(s)" / "N month(s)" — separator may be a space or a
+  //    hyphen ("3-Year Manufacturer Warranty"). Hyphenated compound adjectives
+  //    keep the original unit form ("6-Year"); spaced forms pluralise.
+  const en = text.match(/(\d+)([\s-]*)(years?|months?)/i);
   if (en) {
     const n = parseInt(en[1], 10);
     if (Number.isFinite(n)) {
       const doubled = n * 2;
-      const isMonth = /month/i.test(en[2]);
-      const unit = isMonth ? (doubled === 1 ? "month" : "months") : doubled === 1 ? "year" : "years";
-      return text.replace(en[0], `${doubled} ${unit}`);
+      const sep = en[2];
+      const unitRaw = en[3];
+      const isHyphen = sep.includes("-");
+      const isMonth = /month/i.test(unitRaw);
+      let unit: string;
+      if (isHyphen) {
+        unit = unitRaw;
+      } else {
+        const base = isMonth ? "month" : "year";
+        unit = doubled === 1 ? base : `${base}s`;
+        if (/^[A-Z]/.test(unitRaw)) unit = unit.charAt(0).toUpperCase() + unit.slice(1);
+      }
+      return text.replace(en[0], `${doubled}${sep}${unit}`);
     }
   }
 

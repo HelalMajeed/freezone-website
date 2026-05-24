@@ -128,6 +128,8 @@ export interface MappedProduct {
     handle: string;
     url: string | null;
     product_type: string | null;
+    vendor: string | null;
+    title: string | null;
     tags: string[] | string;
   };
 }
@@ -241,6 +243,8 @@ export function shopifyToFreezone(shopify: ShopifyProduct, opts: MapOptions = {}
       handle: shopify.handle,
       url: sourceUrl,
       product_type: shopify.product_type ?? null,
+      vendor: shopify.vendor ?? null,
+      title: modelName || null,
       tags: shopify.tags ?? [],
     },
   };

@@ -97,3 +97,18 @@ test("unparseable text → returned unchanged", () => {
 test("digit years above 10 keep digit form: 8 سنوات → 16 سنة", () => {
   assert.equal(parseAndDoubleWarranty("ضمان 8 سنوات"), "ضمان 16 سنة");
 });
+
+test("hyphenated compound: 3-Year Manufacturer Warranty → 6-Year", () => {
+  assert.equal(
+    parseAndDoubleWarranty("Warranty : 3-Year Manufacturer Warranty"),
+    "Warranty : 6-Year Manufacturer Warranty",
+  );
+});
+
+test("hyphenated lowercase: 1-year → 2-year (compound kept singular)", () => {
+  assert.equal(parseAndDoubleWarranty("1-year limited warranty"), "2-year limited warranty");
+});
+
+test("spaced form still pluralises: 1 Year → 2 Years (capital preserved)", () => {
+  assert.equal(parseAndDoubleWarranty("1 Year Warranty"), "2 Years Warranty");
+});
