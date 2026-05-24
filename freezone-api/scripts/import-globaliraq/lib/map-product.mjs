@@ -39,7 +39,8 @@ export function shopifyToFreezone(shopify, { source = "globaliraq", baseUrl, imp
   /** Warranty lives on its own column AND in specs — the latter lets the existing PDP
    *  hero-specs builder (lib/product-detail-hero-specs.ts) surface it without UI work. */
   specs.warranty = warrantyAr;
-  if (shopify.vendor) specs.brandSource = shopify.vendor;
+  /** snake_case key required by validateProductSpecsAgainstSchema. */
+  if (shopify.vendor) specs.brand_source = shopify.vendor;
 
   /** Shopify gives up to three option names (`options[].name`); per-variant values come
    *  from option1/option2/option3. We mirror that into the FreeZone variant columns. */

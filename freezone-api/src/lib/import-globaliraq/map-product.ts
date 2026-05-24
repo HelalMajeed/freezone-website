@@ -140,7 +140,8 @@ export function shopifyToFreezone(shopify: ShopifyProduct, opts: MapOptions = {}
 
   const specs = extractFlatSpecs(shopify.body_html ?? "");
   specs.warranty = warrantyAr;
-  if (shopify.vendor) specs.brandSource = shopify.vendor;
+  /** snake_case key required by validateProductSpecsAgainstSchema. */
+  if (shopify.vendor) specs.brand_source = shopify.vendor;
 
   const optionNames: Array<string | null> = (shopify.options ?? []).map((o) => o?.name ?? null);
   const imageById = new Map<string, string>();

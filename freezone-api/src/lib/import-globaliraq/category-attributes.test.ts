@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import {
   ensureCategoryAttributes,
   humanize,
+  snakeCaseAttributeKey,
   type AttributeStore,
 } from "./category-attributes";
 
@@ -87,11 +88,11 @@ test("deduplicates keys in the input", async () => {
 
 test("sortOrder continues past the existing max", async () => {
   const fixture = makeStore([
-    { categoryId: 99, key: "existing-a", sortOrder: 5 },
-    { categoryId: 99, key: "existing-b", sortOrder: 6 },
+    { categoryId: 99, key: "existing_a", sortOrder: 5 },
+    { categoryId: 99, key: "existing_b", sortOrder: 6 },
   ]);
-  await ensureCategoryAttributes(99, ["new-1", "new-2"], fixture.store);
-  const newRows = fixture.rows.filter((r) => r.key.startsWith("new-"));
+  await ensureCategoryAttributes(99, ["new_one", "new_two"], fixture.store);
+  const newRows = fixture.rows.filter((r) => r.key.startsWith("new_"));
   assert.equal(newRows[0].sortOrder, 7);
   assert.equal(newRows[1].sortOrder, 8);
 });
@@ -101,6 +102,49 @@ test("respects categoryId isolation", async () => {
   const result = await ensureCategoryAttributes(2, ["ram"], fixture.store);
   assert.deepEqual(result.created, ["ram"]);
   assert.equal(fixture.rows.length, 2);
+});
+
+test("snakeCaseAttributeKey: camelCase → snake_case", () => {
+  assert.equal(snakeCaseAttributeKey("brandSource"), "brand_source");
+  assert.equal(snakeCaseAttributeKey("warrantyText"), "warranty_text");
+});
+
+test("snakeCaseAttributeKey: kebab-case + spaces → snake_case", () => {
+  assert.equal(snakeCaseAttributeKey("disk-type"), "disk_type");
+  assert.equal(snakeCaseAttributeKey("disk type main"), "disk_type_main");
+  assert.equal(snakeCaseAttributeKey("Display: Full HD"), "display_full_hd");
+});
+
+test("snakeCaseAttributeKey: collapses repeated separators + trims", () => {
+  assert.equal(snakeCaseAttributeKey("__ram___ddr5__"), "ram_ddr5");
+  assert.equal(snakeCaseAttributeKey("  RGB  "), "rgb");
+});
+
+test("snakeCaseAttributeKey: prefixes leading digit", () => {
+  assert.equal(snakeCaseAttributeKey("2024_model"), "k_2024_model");
+  assert.equal(snakeCaseAttributeKey("5g_band"), "k_5g_band");
+});
+
+test("snakeCaseAttributeKey: empty / whitespace → empty string", () => {
+  assert.equal(snakeCaseAttributeKey(""), "");
+  assert.equal(snakeCaseAttributeKey("   "), "");
+});
+
+test("ensureCategoryAttributes: normalises camelCase input keys", async () => {
+  const fixture = makeStore();
+  const result = await ensureCategoryAttributes(
+    7,
+    ["brandSource", "warrantyText", "disk-type"],
+    fixture.store,
+  );
+  assert.deepEqual(
+    result.created.sort(),
+    ["brand_source", "disk_type", "warranty_text"],
+  );
+  assert.deepEqual(
+    fixture.rows.map((r) => r.key).sort(),
+    ["brand_source", "disk_type", "warranty_text"],
+  );
 });
 
 test("humanize converts snake_case to Title Case", () => {

@@ -50,8 +50,12 @@ export async function ensureCategoryAttributes(
   specKeys: Iterable<string>,
   store: AttributeStore = defaultPrisma as unknown as AttributeStore,
 ): Promise<EnsureAttributesResult> {
-  /** Deduplicate + drop empties before the round-trip. */
-  const cleanKeys = Array.from(new Set([...specKeys].map((k) => (k ?? "").trim()).filter(Boolean)));
+  /** Deduplicate, drop empties, and snake_case the key so it never trips the
+   *  validator's `/^[a-z][a-z0-9_]*$/` schema check (a camelCase or kebab-case
+   *  attribute key poisons the whole category's validation). */
+  const cleanKeys = Array.from(
+    new Set([...specKeys].map((k) => snakeCaseAttributeKey(k ?? "")).filter(Boolean)),
+  );
   if (cleanKeys.length === 0) return { reused: [], created: [] };
 
   const existing = await store.categoryAttribute.findMany({
@@ -90,6 +94,21 @@ export async function ensureCategoryAttributes(
    *  between findMany and createMany. */
   await store.categoryAttribute.createMany({ data, skipDuplicates: true });
   return { reused, created: missing };
+}
+
+/** Normalize an arbitrary spec key into the snake_case form the validator
+ *  accepts: lowercase letters, digits, underscores; must start with a letter. */
+export function snakeCaseAttributeKey(input: string): string {
+  let s = input
+    .trim()
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  if (!s) return "";
+  if (!/^[a-z]/.test(s)) s = `k_${s}`;
+  return s.slice(0, 40);
 }
 
 /** Convert snake_case_key → "Snake Case Key" for display. Pure helper. */
