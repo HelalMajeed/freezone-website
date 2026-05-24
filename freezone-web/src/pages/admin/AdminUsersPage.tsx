@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
+import { confirmDialog } from "@/lib/confirm";
 import {
   dashboardApi,
   DashboardApiError,
@@ -134,20 +136,24 @@ export function DashboardUsersPage() {
 
   const onDelete = async (u: DashboardUserDetail) => {
     if (u.id === currentUser?.id) {
-      alert(lang === "ar" ? "لا يمكن حذف حسابك الحالي." : "You can't delete your own account.");
+      toast.error(lang === "ar" ? "لا يمكن حذف حسابك الحالي." : "You can't delete your own account.");
       return;
     }
-    const sure = window.confirm(
-      lang === "ar"
-        ? `هل تريد حذف ${u.name}؟ لا يمكن التراجع.`
-        : `Delete ${u.name}? This can't be undone.`,
-    );
+    const sure = await confirmDialog({
+      title: lang === "ar" ? "حذف مستخدم" : "Delete user",
+      message:
+        lang === "ar"
+          ? `هل تريد حذف ${u.name}؟ لا يمكن التراجع.`
+          : `Delete ${u.name}? This can't be undone.`,
+      confirmLabel: lang === "ar" ? "حذف" : "Delete",
+      danger: true,
+    });
     if (!sure) return;
     try {
       await dashboardApi.delete(`/api/dashboard/users/${u.id}`);
       load();
     } catch (e) {
-      if (e instanceof DashboardApiError) alert(e.code);
+      if (e instanceof DashboardApiError) toast.error(e.code);
     }
   };
 
@@ -156,7 +162,7 @@ export function DashboardUsersPage() {
       await dashboardApi.patch(`/api/dashboard/users/${u.id}`, { unlock: true });
       load();
     } catch (e) {
-      if (e instanceof DashboardApiError) alert(e.code);
+      if (e instanceof DashboardApiError) toast.error(e.code);
     }
   };
 

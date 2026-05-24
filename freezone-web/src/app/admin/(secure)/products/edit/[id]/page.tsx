@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { uploadAdminImage, uploadAdminModel3d } from "@/lib/admin-upload-image";
 import { importAdminImageFromUrl } from "@/lib/admin-import-image";
+import { confirmDialog } from "@/lib/confirm";
 import { MediaPickerModal, type MediaRow } from "@/components/admin/MediaPickerModal";
 import { normalizeSpecsInput } from "@/lib/spec-validation";
 import { parseFacetAttributesFromUnknown } from "@/lib/facet-attributes";
@@ -383,7 +384,7 @@ export default function AdminEditProductPage() {
   }
 
   async function deleteImage(imageId: number) {
-    if (!confirm("حذف هذه الصورة؟")) return;
+    if (!(await confirmDialog({ title: "حذف صورة", message: "حذف هذه الصورة؟", confirmLabel: "حذف", danger: true }))) return;
     const res = await fetch(freezoneApiUrl(`/api/admin/product-images/${imageId}`), { method: "DELETE", credentials: "include" });
     if (!res.ok) {
       setErr("فشل حذف الصورة");
@@ -573,13 +574,20 @@ export default function AdminEditProductPage() {
         <label style={{ color: "var(--admin-muted)", fontSize: 13 }}>القسم الرئيسي</label>
         <select
           value={product.categoryId}
-          onChange={(e) => {
+          onChange={async (e) => {
             const categoryId = Number(e.target.value);
-            if (categoryId !== product.categoryId) {
-              const hasSpecs = Object.values(displaySpecs).some((v) => v.trim()) || Object.values(filterSpecs).some((v) => v.trim());
-              if (hasSpecs && !confirm("تغيير القسم قد يغيّر الفلاتر والمواصفات المطلوبة. هل تريد المتابعة؟ القيم الحالية تُحفظ حتى تحدّث السمات.")) {
-                return;
-              }
+            if (categoryId === product.categoryId) return;
+            const hasSpecs = Object.values(displaySpecs).some((v) => v.trim()) || Object.values(filterSpecs).some((v) => v.trim());
+            if (
+              hasSpecs &&
+              !(await confirmDialog({
+                title: "تغيير القسم",
+                message: "تغيير القسم قد يغيّر الفلاتر والمواصفات المطلوبة. هل تريد المتابعة؟ القيم الحالية تُحفظ حتى تحدّث السمات.",
+                confirmLabel: "متابعة",
+              }))
+            ) {
+              /** Controlled <select> snaps back to product.categoryId on the next render. */
+              return;
             }
             markDirty();
             setProduct({
@@ -895,8 +903,8 @@ export default function AdminEditProductPage() {
           const form = document.getElementById("admin-product-edit-form") as HTMLFormElement | null;
           form?.requestSubmit();
         }}
-        onDiscard={() => {
-          if (confirm("تجاهل التغييرات غير المحفوظة؟")) {
+        onDiscard={async () => {
+          if (await confirmDialog({ title: "تجاهل التغييرات", message: "تجاهل التغييرات غير المحفوظة؟", confirmLabel: "تجاهل", danger: true })) {
             setDirty(false);
             void loadAll();
           }

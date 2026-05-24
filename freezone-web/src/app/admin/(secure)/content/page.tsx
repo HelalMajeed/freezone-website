@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { freezoneApiUrl } from "@/lib/api-internal";
+import { confirmDialog } from "@/lib/confirm";
 import { SECTION_TYPES } from "@/lib/cms-section-defaults";
 import {
   FeaturedProductsSectionEditor,
@@ -150,9 +151,12 @@ export default function AdminContentBuilderPage() {
 
   async function publishAll() {
     if (
-      !confirm(
-        "سيُنسَخ محتوى «المسودة» الحالي لكل مكوّنات الصفحة إلى «المنشور». الزوار يرون النسخة المنشورة فقط. متابعة؟",
-      )
+      !(await confirmDialog({
+        title: "نشر الصفحة",
+        message:
+          "سيُنسَخ محتوى «المسودة» الحالي لكل مكوّنات الصفحة إلى «المنشور». الزوار يرون النسخة المنشورة فقط. متابعة؟",
+        confirmLabel: "نشر",
+      }))
     ) {
       return;
     }
@@ -222,7 +226,7 @@ export default function AdminContentBuilderPage() {
   }
 
   async function deleteSection(id: number) {
-    if (!confirm("حذف هذا المكوّن؟")) return;
+    if (!(await confirmDialog({ title: "حذف مكوّن", message: "حذف هذا المكوّن؟", confirmLabel: "حذف", danger: true }))) return;
     await fetch(freezoneApiUrl(`/api/admin/cms-page/sections/${id}`), { method: "DELETE", credentials: "include" });
     setSelectedId(null);
     await load();
