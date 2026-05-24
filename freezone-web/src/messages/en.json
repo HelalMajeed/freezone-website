@@ -575,5 +575,11 @@
     "langEn": "English",
     "langAr": "Arabic",
     "reload": "Reload"
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "body": "We couldn't find the page you were looking for. The link may have changed or the page was removed.",
+    "home": "Back to home",
+    "browse": "Browse products"
   }
 }

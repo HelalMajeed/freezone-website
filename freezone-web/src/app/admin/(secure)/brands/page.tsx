@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { uploadAdminImage } from "@/lib/admin-upload-image";
 import { freezoneApiUrl } from "@/lib/api-internal";
+import { confirmDialog } from "@/lib/confirm";
 
 type BrandRow = {
   id: number;
@@ -84,7 +85,7 @@ export default function AdminBrandsPage() {
   }
 
   async function remove(id: number) {
-    if (!confirm("حذف العلامة؟ سيتم فصل المنتجات المرتبطة.")) return;
+    if (!(await confirmDialog({ title: "حذف علامة", message: "حذف العلامة؟ سيتم فصل المنتجات المرتبطة.", confirmLabel: "حذف", danger: true }))) return;
     const res = await fetch(freezoneApiUrl(`/api/admin/brands/${id}`), { method: "DELETE", credentials: "include" });
     if (!res.ok) setErr("فشل الحذف");
     else void load();

@@ -8,6 +8,7 @@ import { fetchStorefrontBootstrap } from "@/lib/storefront-bootstrap";
 import type { AdminProductRow } from "./admin-product-types";
 import { adminProductInCategory, brandLabel, parseAdminProductsFromApi } from "./admin-product-types";
 import { freezoneApiUrl } from "@/lib/api-internal";
+import { confirmDialog } from "@/lib/confirm";
 import { readWishlistIds, toggleWishlistId } from "./admin-wishlist";
 import { AdminProductCard } from "./AdminProductCard";
 import { AdminProductQuickView } from "./AdminProductQuickView";
@@ -127,7 +128,15 @@ export function AdminProductCatalog({ rawList, products: productsProp, categorie
 
   const deleteProduct = useCallback(
     async (id: number) => {
-      if (!window.confirm("حذف المنتج نهائياً من قاعدة البيانات؟ لا يمكن التراجع.")) return;
+      if (
+        !(await confirmDialog({
+          title: "حذف منتج",
+          message: "حذف المنتج نهائياً من قاعدة البيانات؟ لا يمكن التراجع.",
+          confirmLabel: "حذف",
+          danger: true,
+        }))
+      )
+        return;
       setMutatingId(id);
       try {
         const res = await fetch(freezoneApiUrl(`/api/admin/products/${id}`), {

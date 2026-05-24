@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { freezoneApiUrl } from "@/lib/api-internal";
+import { confirmDialog } from "@/lib/confirm";
 
 type Row = {
   id: number;
@@ -88,7 +89,7 @@ export default function AdminMediaPage() {
   }
 
   async function remove(id: number) {
-    if (!confirm("حذف السجل من المكتبة؟ (ملف القرص يبقى كما هو حسب إعداد الخادم)")) return;
+    if (!(await confirmDialog({ title: "حذف من المكتبة", message: "حذف السجل من المكتبة؟ (ملف القرص يبقى كما هو حسب إعداد الخادم)", confirmLabel: "حذف", danger: true }))) return;
     await fetch(freezoneApiUrl(`/api/admin/media/${id}`), { method: "DELETE", credentials: "include" });
     setEditId(null);
     load();
