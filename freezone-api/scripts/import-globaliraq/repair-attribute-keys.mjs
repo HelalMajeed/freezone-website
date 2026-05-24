@@ -21,15 +21,15 @@ const dryRun = process.argv.includes("--dry-run");
 
 const prisma = new PrismaClient();
 try {
-  const bad = await prisma.categoryAttribute.findMany({
-    where: { NOT: { key: { mode: "default" } } },
+  const all = await prisma.categoryAttribute.findMany({
     select: { id: true, key: true, categoryId: true, nameEn: true },
     orderBy: { id: "asc" },
   });
-  const offenders = bad.filter((row) => !SNAKE.test(row.key));
+  const offenders = all.filter((row) => !SNAKE.test(row.key));
   if (offenders.length === 0) {
     console.log("[repair] no offending CategoryAttribute keys — nothing to do");
-    return;
+    await prisma.$disconnect();
+    process.exit(0);
   }
   console.log(`[repair] found ${offenders.length} key(s) not in snake_case:`);
   let deleted = 0;
