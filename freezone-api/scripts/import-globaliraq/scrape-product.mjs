@@ -90,7 +90,7 @@ async function main() {
           sourcePrice: mapped.productPayload.sourcePrice,
           oldPrice: mapped.productPayload.oldPrice,
           price: mapped.productPayload.price,
-          warranty: mapped.productPayload.specs?.warranty,
+          warranty: mapped.productPayload.warranty,
           flags: mapped.flags,
         });
         console.log("ok");

@@ -63,6 +63,8 @@ export interface Product {
   sku?: string;
   /** Product model name (e.g. ROG Strix G16). */
   model?: string;
+  /** Warranty label shown on PDP + admin. Free-form text, optional. */
+  warranty?: string;
   /** Full display strings on product detail page. */
   specs?: Record<string, string>;
   /** Normalized short values for category/search filters only. */

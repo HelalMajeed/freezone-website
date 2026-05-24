@@ -36,6 +36,7 @@ import {
   createCategory,
   importImage,
   createProduct,
+  upsertVariants,
   AdminApiError,
 } from "./lib/api-client.mjs";
 
@@ -152,7 +153,10 @@ async function main() {
           const productId = productCreated?.id || productCreated?.product?.id;
           if (!productId) throw new Error("createProduct returned no id: " + JSON.stringify(productCreated));
 
+          /** Pull each Shopify image into FreeZone storage. Keep a sourceUrl → localUrl map
+           *  so we can resolve variant.image_id references to the mirrored /uploads/ path. */
           const imageResults = [];
+          const localBySourceUrl = new Map();
           for (const img of mapped.images) {
             try {
               const r = await importImage(apiUrl, cookie, {
@@ -161,12 +165,53 @@ async function main() {
                 alt: img.alt,
               });
               imageResults.push({ sourceUrl: img.sourceUrl, url: r?.url, ok: true });
+              if (r?.url) localBySourceUrl.set(img.sourceUrl, r.url);
             } catch (e) {
               imageResults.push({ sourceUrl: img.sourceUrl, ok: false, error: errMessage(e) });
               if (!args.continueOnError) throw e;
             }
           }
-          results.push({ handle: entry.handle, status: "ok", productId, imageResults });
+
+          /** Rewrite per-variant imageSourceUrl to the mirrored /uploads/ path so the variants
+           *  endpoint's "must be local" check passes. Unknown mappings fall through as null. */
+          const variantPayload = mapped.variants.map((v) => ({
+            sourceVariantId: v.sourceVariantId,
+            sku: v.sku,
+            labelEn: v.labelEn,
+            labelAr: v.labelAr,
+            priceOverride: v.priceOverride,
+            oldPrice: v.oldPrice,
+            optionName1: v.optionName1,
+            optionValue1: v.optionValue1,
+            optionName2: v.optionName2,
+            optionValue2: v.optionValue2,
+            optionName3: v.optionName3,
+            optionValue3: v.optionValue3,
+            imageUrl: v.imageSourceUrl ? (localBySourceUrl.get(v.imageSourceUrl) ?? null) : null,
+            sourceRawJson: v.sourceRawJson,
+            quantity: v.quantity,
+            active: v.active,
+            sortOrder: v.sortOrder,
+          }));
+
+          let variantsResult = null;
+          if (variantPayload.length > 0) {
+            try {
+              variantsResult = await upsertVariants(apiUrl, cookie, productId, variantPayload);
+            } catch (e) {
+              if (!args.continueOnError) throw e;
+              variantsResult = { error: errMessage(e) };
+            }
+          }
+
+          results.push({
+            handle: entry.handle,
+            status: "ok",
+            productId,
+            imageResults,
+            variantsAttempted: variantPayload.length,
+            variantsResult,
+          });
           succeeded += 1;
         } catch (e) {
           results.push({ handle: entry.handle, status: "failed", error: errMessage(e) });
@@ -240,7 +285,7 @@ async function runDryRun(entries, batchId, args) {
       price: mapped.productPayload.price,
       oldPrice: mapped.productPayload.oldPrice,
       sourcePrice: mapped.productPayload.sourcePrice,
-      warranty: mapped.productPayload.specs?.warranty,
+      warranty: mapped.productPayload.warranty,
       imageCount: mapped.images.length,
       variantCount: mapped.variants.length,
       flags: mapped.flags,

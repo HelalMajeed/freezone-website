@@ -80,6 +80,11 @@ export async function attachImages(baseUrl, cookie, productId, images) {
   });
 }
 
+/** Upsert the full variant set for a product (idempotent — keyed by sourceVariantId). */
+export async function upsertVariants(baseUrl, cookie, productId, variants) {
+  return await postJson(baseUrl, cookie, `/api/admin/products/${productId}/variants`, { variants });
+}
+
 async function getJson(baseUrl, cookie, path) {
   const url = trimBase(baseUrl) + path;
   const res = await fetch(url, { headers: { cookie } });

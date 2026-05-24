@@ -40,6 +40,7 @@ const AdminUsersPage = lazy(() => import("@/pages/admin/AdminUsersPage"));
 const AdminProfilePage = lazy(() => import("@/pages/admin/AdminProfilePage"));
 const AdminDashboardAuditPage = lazy(() => import("@/pages/admin/AdminDashboardAuditPage"));
 const AdminOffersPage = lazy(() => import("@/app/admin/(secure)/offers/page"));
+const AdminGlobaliraqImportPage = lazy(() => import("@/app/admin/(secure)/import/globaliraq/page"));
 const AdminDataQualityPage = lazy(() => import("@/pages/admin/AdminDataQualityPage"));
 const AdminClassificationPage = lazy(() => import("@/pages/admin/AdminClassificationPage"));
 
@@ -260,6 +261,14 @@ export const freezoneAdminRouteBranch = (
           element={
             <SuspensePage>
               <AdminOffersPage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="import/globaliraq"
+          element={
+            <SuspensePage>
+              <AdminGlobaliraqImportPage />
             </SuspensePage>
           }
         />

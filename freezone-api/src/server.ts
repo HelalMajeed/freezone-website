@@ -35,6 +35,9 @@ import * as adminProductImagesId from "./app/api/admin/product-images/[id]/route
 import * as adminProducts from "./app/api/admin/products/route";
 import * as adminProductsId from "./app/api/admin/products/[id]/route";
 import * as adminProductsIdImages from "./app/api/admin/products/[id]/images/route";
+import * as adminProductsIdVariants from "./app/api/admin/products/[id]/variants/route";
+import * as adminImportGlobaliraqBatches from "./app/api/admin/import/globaliraq/batches/route";
+import * as adminImportGlobaliraqBatchesId from "./app/api/admin/import/globaliraq/batches/[id]/route";
 import * as adminTheme from "./app/api/admin/theme/route";
 import * as adminUpload from "./app/api/admin/upload/route";
 import * as dashboardLogin from "./app/api/dashboard/auth/login/route";
@@ -283,6 +286,12 @@ async function main() {
   app.post("/api/admin/products/:id/images", async (req, res) => {
     await sendWebResponse(res, await adminProductsIdImages.POST(webRequestFromExpress(req), ctxId(req.params.id)));
   });
+  app.get("/api/admin/products/:id/variants", async (req, res) => {
+    await sendWebResponse(res, await adminProductsIdVariants.GET(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+  app.post("/api/admin/products/:id/variants", async (req, res) => {
+    await sendWebResponse(res, await adminProductsIdVariants.POST(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
   app.put("/api/admin/products/:id/images", async (req, res) => {
     await sendWebResponse(res, await adminProductsIdImages.PUT(webRequestFromExpress(req), ctxId(req.params.id)));
   });
@@ -348,6 +357,16 @@ async function main() {
 
   app.get("/api/admin/audit", async (req, res) => {
     await sendWebResponse(res, await adminAudit.GET(webRequestFromExpress(req)));
+  });
+
+  app.get("/api/admin/import/globaliraq/batches", async (req, res) => {
+    await sendWebResponse(res, await adminImportGlobaliraqBatches.GET(webRequestFromExpress(req)));
+  });
+  app.get("/api/admin/import/globaliraq/batches/:id", async (req, res) => {
+    await sendWebResponse(
+      res,
+      await adminImportGlobaliraqBatchesId.GET(webRequestFromExpress(req), ctxId(req.params.id)),
+    );
   });
 
   app.post("/api/dashboard/auth/login", async (req, res) => {

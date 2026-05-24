@@ -36,17 +36,44 @@ export function shopifyToFreezone(shopify, { source = "globaliraq", baseUrl, imp
   const descPlain = htmlToPlainText(descHtml);
 
   const specs = extractFlatSpecs(shopify.body_html || "");
+  /** Warranty lives on its own column AND in specs — the latter lets the existing PDP
+   *  hero-specs builder (lib/product-detail-hero-specs.ts) surface it without UI work. */
   specs.warranty = warrantyAr;
   if (shopify.vendor) specs.brandSource = shopify.vendor;
 
-  const variants = (shopify.variants || []).map((v) => ({
-    sku: (v.sku || "").trim(),
-    labelEn: (v.title || v.option1 || "").trim(),
-    labelAr: (v.title || v.option1 || "").trim(),
-    priceOverride: parsePriceToInt(v.price),
-    quantity: Number.isFinite(v.inventory_quantity) ? Math.max(0, v.inventory_quantity) : 0,
-    active: v.available !== false,
-  }));
+  /** Shopify gives up to three option names (`options[].name`); per-variant values come
+   *  from option1/option2/option3. We mirror that into the FreeZone variant columns. */
+  const optionNames = Array.isArray(shopify.options) ? shopify.options.map((o) => o?.name || null) : [];
+
+  /** Build an imageId→variantImage URL lookup so variant.image_id resolves to a sourceUrl. */
+  const imageById = new Map(
+    (shopify.images || []).filter((i) => i && i.id != null).map((i) => [String(i.id), i.src]),
+  );
+
+  const variants = (shopify.variants || []).map((v, i) => {
+    const priceOverride = parsePriceToInt(v.price);
+    return {
+      sku: (v.sku || "").trim(),
+      labelEn: (v.title || v.option1 || "").trim(),
+      labelAr: (v.title || v.option1 || "").trim(),
+      /** Markup applied per variant so checkout always pulls the FreeZone-sale price. */
+      priceOverride: priceOverride != null ? Math.round(priceOverride * markup) : null,
+      oldPrice: priceOverride,
+      optionName1: optionNames[0] ?? null,
+      optionValue1: v.option1 ?? null,
+      optionName2: optionNames[1] ?? null,
+      optionValue2: v.option2 ?? null,
+      optionName3: optionNames[2] ?? null,
+      optionValue3: v.option3 ?? null,
+      /** sourceUrl of the matched product image — the importer downloads it via /api/admin/media/import-image. */
+      imageSourceUrl: v.image_id != null ? imageById.get(String(v.image_id)) || null : null,
+      sourceVariantId: v.id != null ? String(v.id) : null,
+      sourceRawJson: v,
+      quantity: Number.isFinite(v.inventory_quantity) ? Math.max(0, v.inventory_quantity) : 0,
+      active: v.available !== false,
+      sortOrder: i,
+    };
+  });
 
   const images = (shopify.images || [])
     .filter((img) => typeof img.src === "string" && img.src.startsWith("http"))
@@ -54,6 +81,7 @@ export function shopifyToFreezone(shopify, { source = "globaliraq", baseUrl, imp
       sourceUrl: img.src,
       alt: img.alt || `${modelName} — image ${i + 1}`,
       position: typeof img.position === "number" ? img.position : i + 1,
+      shopifyImageId: img.id != null ? String(img.id) : null,
     }))
     .sort((a, b) => a.position - b.position);
 
@@ -69,6 +97,7 @@ export function shopifyToFreezone(shopify, { source = "globaliraq", baseUrl, imp
       descAr: descPlain.slice(0, 8000),
       price: price ?? 0,
       oldPrice: oldPrice ?? undefined,
+      warranty: warrantyAr,
       specs,
       quantity: variants.reduce((sum, v) => sum + (v.quantity || 0), 0) || 1,
       published: false,

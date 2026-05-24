@@ -124,9 +124,21 @@ export async function POST(req: Request) {
     oldPrice?: number | null;
     storage?: string;
     model3d?: string | null;
+    /** Warranty label shown on PDP + admin. Optional. */
+    warranty?: string | null;
     images?: string[];
     specs?: Record<string, unknown>;
     secondaryCategoryIds?: number[];
+    /** Caller can opt the row out of publishing (useful for imports — review first). */
+    published?: boolean;
+    isNew?: boolean;
+    featured?: boolean;
+    /** Import provenance — set by the Global Iraq scraper, ignored otherwise. */
+    sourceUrl?: string | null;
+    sourceHandle?: string | null;
+    sourcePrice?: number | null;
+    importedAt?: string | null;
+    importBatchId?: string | null;
   } | null;
 
   if (!body?.categoryId || !body.nameEn || typeof body.price !== "number") {
@@ -167,8 +179,19 @@ export async function POST(req: Request) {
         oldPrice: body.oldPrice ?? null,
         storage: body.storage ?? "",
         model3d: body.model3d?.trim() || null,
+        warranty: body.warranty?.trim() || null,
         specs: specCheck.specs as object,
-        published: true,
+        /** Default to published=true (existing behaviour) — importer passes published=false explicitly. */
+        published: body.published !== undefined ? !!body.published : true,
+        ...(body.isNew !== undefined ? { isNew: !!body.isNew } : {}),
+        ...(body.featured !== undefined ? { featured: !!body.featured } : {}),
+        ...(body.sourceUrl ? { sourceUrl: body.sourceUrl } : {}),
+        ...(body.sourceHandle ? { sourceHandle: body.sourceHandle } : {}),
+        ...(typeof body.sourcePrice === "number" && Number.isFinite(body.sourcePrice)
+          ? { sourcePrice: Math.round(body.sourcePrice) }
+          : {}),
+        ...(body.importedAt ? { importedAt: new Date(body.importedAt) } : {}),
+        ...(body.importBatchId ? { importBatchId: body.importBatchId } : {}),
       },
     });
 

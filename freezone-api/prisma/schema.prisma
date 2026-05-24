@@ -151,6 +151,8 @@ model Product {
   reviews             Int                        @default(0)
   sales               Int                        @default(0)
   model3d             String?
+  /// Free-text warranty label shown on PDP + admin edit. Default copy for imports: "ضمان سنتين وكالة".
+  warranty            String?
   published           Boolean                    @default(true)
   createdAt           DateTime                   @default(now())
   updatedAt           DateTime                   @updatedAt
@@ -201,18 +203,36 @@ model ImportBatch {
 
 /// Scaffold: future SKU/options per product — not yet used in checkout UI
 model ProductVariant {
-  id            Int      @id @default(autoincrement())
-  productId     Int
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  sku           String   @default("")
-  labelEn       String   @default("")
-  labelAr       String   @default("")
-  priceOverride Int?
-  quantity      Int      @default(0)
-  active        Boolean  @default(true)
-  sortOrder     Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  productId       Int
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku             String   @default("")
+  labelEn         String   @default("")
+  labelAr         String   @default("")
+  priceOverride   Int?
+  /// Compare-at / original price (e.g. the Shopify variant price before our markup is applied).
+  oldPrice        Int?
+  /// Up to three option dimensions captured from Shopify (e.g. Color/Size/Material).
+  optionName1     String?
+  optionValue1    String?
+  optionName2     String?
+  optionValue2    String?
+  optionName3     String?
+  optionValue3    String?
+  /// Per-variant image URL (must be a FreeZone-hosted /uploads/* path when set).
+  imageUrl        String?
+  /// Stable id of the source variant — Shopify variant.id, stringified. Used for idempotency.
+  sourceVariantId String?
+  /// Raw Shopify variant JSON kept verbatim for audit.
+  sourceRawJson   Json?
+  quantity        Int      @default(0)
+  active          Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([productId, sourceVariantId], map: "ProductVariant_productId_sourceVariantId_key")
+  @@index([productId])
 }
 
 /// Placed checkout orders (persisted; replaces localStorage-only demo when DB available)
