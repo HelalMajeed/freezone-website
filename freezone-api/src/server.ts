@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import express from "express";
 import "express-async-errors";
 import multer from "multer";
+import { rateLimitCheck, ipKeyFromExpressReq } from "./lib/rate-limit";
 
 import * as adminAudit from "./app/api/admin/audit/route";
 import * as adminAuditLog from "./app/api/admin/audit-log/route";
@@ -36,6 +37,7 @@ import * as adminProducts from "./app/api/admin/products/route";
 import * as adminProductsId from "./app/api/admin/products/[id]/route";
 import * as adminProductsIdImages from "./app/api/admin/products/[id]/images/route";
 import * as adminProductsIdVariants from "./app/api/admin/products/[id]/variants/route";
+import * as adminProductsBulk from "./app/api/admin/products/bulk/route";
 import * as adminImportGlobaliraqBatches from "./app/api/admin/import/globaliraq/batches/route";
 import * as adminImportGlobaliraqBatchesId from "./app/api/admin/import/globaliraq/batches/[id]/route";
 import * as adminImportGlobaliraqRunBatch from "./app/api/admin/import/globaliraq/run-batch/route";
@@ -111,17 +113,98 @@ function ctxId(id: string): { params: Promise<{ id: string }> } {
   return { params: Promise.resolve({ id }) };
 }
 
+/**
+ * Parse the `CORS_ORIGINS` env var into the allow-list the `cors` middleware uses.
+ * Falls back to the production origins when unset so a fresh deploy is never
+ * accidentally wide-open.
+ */
+function resolveCorsOrigins(): (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => void {
+  const raw = process.env.CORS_ORIGINS?.trim();
+  const explicit = raw
+    ? raw.split(",").map((s) => s.trim()).filter(Boolean)
+    : [
+        "https://freezone-iq.com",
+        "https://freezone-website.fly.dev",
+        /^https:\/\/[a-z0-9-]+\.netlify\.app$/i.source,
+        "http://127.0.0.1:3000",
+        "http://localhost:3000",
+      ];
+  const exact = new Set<string>();
+  const patterns: RegExp[] = [];
+  for (const entry of explicit) {
+    if (entry.startsWith("^") || entry.includes("\\.")) {
+      try { patterns.push(new RegExp(entry, "i")); continue; } catch { /* fall through to exact */ }
+    }
+    exact.add(entry);
+  }
+  return (origin, cb) => {
+    /** Same-origin / server-to-server / curl have no Origin header — allow. */
+    if (!origin) return cb(null, true);
+    if (exact.has(origin)) return cb(null, true);
+    for (const p of patterns) {
+      if (p.test(origin)) return cb(null, true);
+    }
+    cb(null, false);
+  };
+}
+
+/** Lightweight security headers — no `helmet` dep, just the ones that matter
+ *  for an API + SPA shell. CSP lives on the Netlify side (the SPA serves
+ *  index.html), so we keep this server-side set conservative. */
+function applySecurityHeaders(_req: express.Request, res: express.Response, next: express.NextFunction) {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "interest-cohort=()");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  next();
+}
+
+interface RateLimitRule { limit: number; windowMs: number; scope: string; }
+const RATE_LIMITS: Record<string, RateLimitRule> = {
+  "POST /api/public/orders":              { scope: "public/orders",          limit: 5,  windowMs: 60_000 },
+  "POST /api/public/coupon/validate":     { scope: "public/coupon-validate", limit: 10, windowMs: 60_000 },
+  "POST /api/pc-build":                   { scope: "public/pc-build",        limit: 10, windowMs: 60_000 },
+  "POST /api/admin/login":                { scope: "admin/login",            limit: 5,  windowMs: 10 * 60_000 },
+  "POST /api/dashboard/auth/login":       { scope: "dashboard/login",        limit: 5,  windowMs: 10 * 60_000 },
+};
+
+function rateLimitMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const key = `${req.method} ${req.path}`;
+  const rule = RATE_LIMITS[key];
+  if (!rule) return next();
+  const decision = rateLimitCheck(rule.scope, ipKeyFromExpressReq(req), rule.limit, rule.windowMs);
+  res.setHeader("X-RateLimit-Limit", String(rule.limit));
+  res.setHeader("X-RateLimit-Remaining", String(decision.remaining));
+  if (!decision.ok) {
+    const retrySec = Math.ceil((decision.retryAfterMs ?? rule.windowMs) / 1000);
+    res.setHeader("Retry-After", String(retrySec));
+    res.status(429).type("application/json").send(JSON.stringify({
+      ok: false,
+      error: "Too many requests",
+      code: "RATE_LIMITED",
+      retryAfterSec: retrySec,
+    }));
+    return;
+  }
+  next();
+}
+
 async function main() {
   const app = express();
   app.set("trust proxy", 1);
+  app.use(applySecurityHeaders);
   app.use(
     cors({
-      origin: true,
+      origin: resolveCorsOrigins(),
       credentials: true,
     }),
   );
   app.use(cookieParser());
-  app.use(express.json({ limit: "15mb" }));
+  /** 1 MB is enough for every JSON payload we actually accept; admin upload
+   *  uses multipart so the limit there is set in `multer` separately. */
+  app.use(express.json({ limit: "1mb" }));
+  app.use(rateLimitMiddleware);
 
   /** Opt-in JSON access logs: set `LOG_HTTP=1` (avoid noisy stdout in production by default). */
   if (process.env.LOG_HTTP === "1") {
@@ -274,6 +357,9 @@ async function main() {
   });
   app.post("/api/admin/products", async (req, res) => {
     await sendWebResponse(res, await adminProducts.POST(webRequestFromExpress(req)));
+  });
+  app.post("/api/admin/products/bulk", async (req, res) => {
+    await sendWebResponse(res, await adminProductsBulk.POST(webRequestFromExpress(req)));
   });
   app.get("/api/admin/products/:id", async (req, res) => {
     await sendWebResponse(res, await adminProductsId.GET(webRequestFromExpress(req), ctxId(req.params.id)));

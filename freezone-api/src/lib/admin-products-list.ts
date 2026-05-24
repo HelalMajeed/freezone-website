@@ -10,6 +10,8 @@ export type AdminProductsListQuery = {
   /** @deprecated use stockMode */
   inStock: boolean | null;
   stockMode: "in" | "out" | "unset" | null;
+  /** "active" (default, hides soft-deleted) | "deleted" (only) | "all" */
+  deletedMode: "active" | "deleted" | "all";
   sort: "id_desc" | "id_asc" | "price_asc" | "price_desc" | "name_asc";
 };
 
@@ -38,11 +40,16 @@ export function parseAdminProductsListQuery(url: URL): AdminProductsListQuery {
     sortRaw === "name_asc"
       ? sortRaw
       : "id_desc";
-  return { page, pageSize, search, categoryId, brand, published, inStock, stockMode, sort };
+  const deletedRaw = url.searchParams.get("deleted");
+  const deletedMode: AdminProductsListQuery["deletedMode"] =
+    deletedRaw === "all" ? "all" : deletedRaw === "only" || deletedRaw === "deleted" ? "deleted" : "active";
+  return { page, pageSize, search, categoryId, brand, published, inStock, stockMode, deletedMode, sort };
 }
 
 export function adminProductsWhere(q: AdminProductsListQuery): Prisma.ProductWhereInput {
   const where: Prisma.ProductWhereInput = {};
+  if (q.deletedMode === "active") where.deletedAt = null;
+  else if (q.deletedMode === "deleted") where.deletedAt = { not: null };
   if (q.categoryId != null) where.categoryId = q.categoryId;
   if (q.brand) where.brand = { contains: q.brand, mode: "insensitive" };
   if (q.published !== null) where.published = q.published;

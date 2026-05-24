@@ -54,6 +54,7 @@ export async function GET(req: Request) {
         ]);
       } else {
         rows = await prisma.product.findMany({
+          where,
           include: {
             ...adminListIncludeBase,
             secondaryCategories: { select: { categoryId: true } },
@@ -78,6 +79,7 @@ export async function GET(req: Request) {
         ]);
       } else {
         rows = await prisma.product.findMany({
+          where,
           include: { ...adminListIncludeBase },
           orderBy: { id: "desc" },
           take,
