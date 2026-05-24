@@ -377,8 +377,17 @@ async function maybeAutoPublish(
 ): Promise<"published" | "draft"> {
   if (!autoPublish) return "draft";
   const p = ctx.mapped.productPayload;
+
+  /** Gate 1: at least one ProductImage actually persisted with a local /uploads/ URL.
+   *  This proves the image was mirrored into FreeZone storage (importExternalImage
+   *  only ever returns a /uploads/... path), so it is served from our own origin. */
+  const localImages = await prisma.productImage.count({
+    where: { productId, url: { startsWith: "/uploads/" } },
+  });
+
   const okay =
     ctx.imageCount > 0 &&
+    localImages > 0 &&
     !!p.nameAr &&
     !!p.nameEn &&
     p.price > 0 &&

@@ -13,8 +13,28 @@
 // `imageSourceUrl` pointer the caller resolves to a /uploads/... URL once the
 // images have been mirrored.
 
+import { parseAndDoubleWarranty } from "./warranty";
+
 export const DEFAULT_MARKUP = 1.35;
 export const DEFAULT_WARRANTY_AR = "ضمان سنتين وكالة";
+
+/** Scan a Shopify body_html blob for an existing warranty phrase so we can
+ *  double it instead of always falling back to the default. Returns the first
+ *  short line mentioning ضمان / كفالة / warranty, or null. */
+export function findWarrantyInText(html: string): string | null {
+  if (!html) return null;
+  const text = html
+    .replace(/<br\s*\/?\s*>/gi, "\n")
+    .replace(/<\/(?:p|li|div|h[1-6])>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ");
+  for (const rawLine of text.split(/\n+/)) {
+    const line = rawLine.replace(/\s+/g, " ").trim();
+    if (!line || line.length > 120) continue;
+    if (/(ضمان|كفالة|warranty)/i.test(line)) return line;
+  }
+  return null;
+}
 
 export interface ShopifyImage {
   id?: number | string;
@@ -139,7 +159,11 @@ export function shopifyToFreezone(shopify: ShopifyProduct, opts: MapOptions = {}
   const descPlain = htmlToPlainText(descHtml);
 
   const specs = extractFlatSpecs(shopify.body_html ?? "");
-  specs.warranty = warrantyAr;
+  /** Source warranty: prefer an explicit `<li>Warranty: …</li>` spec, else scan
+   *  the body text. Double whatever we find; fall back to the policy default. */
+  const sourceWarranty = specs.warranty ?? findWarrantyInText(shopify.body_html ?? "");
+  const finalWarranty = parseAndDoubleWarranty(sourceWarranty, warrantyAr);
+  specs.warranty = finalWarranty;
   /** snake_case key required by validateProductSpecsAgainstSchema. */
   if (shopify.vendor) specs.brand_source = shopify.vendor;
 
@@ -195,7 +219,7 @@ export function shopifyToFreezone(shopify: ShopifyProduct, opts: MapOptions = {}
       descAr: descPlain.slice(0, 8000),
       price: price ?? 0,
       oldPrice,
-      warranty: warrantyAr,
+      warranty: finalWarranty,
       specs,
       quantity: variants.reduce((sum, v) => sum + (v.quantity || 0), 0) || 1,
       published: false,
