@@ -9,6 +9,7 @@ import { fetchStorefrontBootstrap } from "@/lib/storefront-bootstrap";
 import { StorefrontProvider } from "@/components/providers/StorefrontProvider";
 import { ThemeApplier } from "@/components/providers/ThemeApplier";
 import { StoreJsonLd } from "@/components/seo/StoreJsonLd";
+import { HreflangLinks } from "@/components/seo/HreflangLinks";
 import { StorefrontPrefetch } from "@/components/storefront/StorefrontPrefetch";
 import { setLocale } from "@/i18n/i18n";
 import { LocaleRouteFallback } from "@/routes/LocaleRouteFallback";
@@ -112,6 +113,7 @@ export function LocaleLayout() {
   return (
     <>
       <SetDocumentLocale locale={locale} dir={dir} />
+      <HreflangLinks baseUrl={baseUrl} />
       <StoreJsonLd site={site} locale={locale} baseUrl={baseUrl} />
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
         <StorefrontPrefetch />
