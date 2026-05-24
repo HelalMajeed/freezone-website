@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import type { ProductTabMode } from "@/lib/home-section-products";
 import { FEATURED_PRODUCT_RAIL_PRESETS } from "@/lib/cms-section-defaults";
+import { confirmDialog } from "@/lib/confirm";
 
 const TAB_MODES: { value: ProductTabMode; label: string }[] = [
   { value: "new", label: "وافدون جدد (isNew)" },
@@ -347,11 +348,13 @@ export function FeaturedProductsSectionEditor({
             <button
               key={preset.id}
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 if (
-                  !confirm(
-                    `استبدال إعدادات القسم الحالي بقالب «${preset.labelAr}»؟ (يمكنك التراجع عبر إعادة التحميل إن لم تحفظ)`,
-                  )
+                  !(await confirmDialog({
+                    title: "تطبيق قالب",
+                    message: `استبدال إعدادات القسم الحالي بقالب «${preset.labelAr}»؟ (يمكنك التراجع عبر إعادة التحميل إن لم تحفظ)`,
+                    confirmLabel: "استبدال",
+                  }))
                 )
                   return;
                 onChange({ ...preset.payload });
