@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { partitionFacetAttributes } from "@/lib/classification/attribute-sets";
 import { parseFacetAttributesFromUnknown } from "@/lib/facet-attributes";
 import { freezoneApiUrl } from "@/lib/api-internal";
+import { confirmDialog } from "@/lib/confirm";
 import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
 import { AdminLoadingState } from "@/components/admin/ui/AdminLoadingState";
 import styles from "./AdminCategoriesManager.module.css";
@@ -191,7 +192,7 @@ export function AdminCategoriesManager() {
       setMsg("هذا القسم يحتوي منتجات. عطّله بدل الحذف.");
       return;
     }
-    if (!confirm(`حذف القسم «${row.nameAr || row.nameEn}»؟`)) return;
+    if (!(await confirmDialog({ title: "حذف قسم", message: `حذف القسم «${row.nameAr || row.nameEn}»؟`, confirmLabel: "حذف", danger: true }))) return;
     const res = await fetch(freezoneApiUrl(`/api/admin/categories/${row.id}`), {
       method: "DELETE",
       credentials: "include",

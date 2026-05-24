@@ -3,9 +3,11 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { LocaleLayout } from "@/routes/LocaleLayout";
 import { freezoneAdminRouteBranch } from "@/routes/admin-panel-routes";
 import { ConfirmDialogHost } from "@/components/ui/ConfirmDialog";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import HomePage from "@/pages/HomePage";
 import ProductsPage from "@/pages/ProductsPage";
 import ProductDetailPage from "@/pages/ProductDetailPage";
+import NotFoundPage from "@/pages/NotFoundPage";
 
 const CartPage = lazy(() => import("@/app/locale/cart/page"));
 const CheckoutPage = lazy(() => import("@/app/locale/checkout/page"));
@@ -23,6 +25,7 @@ function SuspensePage({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <>
+    <ErrorBoundary>
     <Routes>
       <Route path="/" element={<Navigate to="/en" replace />} />
 
@@ -87,13 +90,17 @@ export default function App() {
           }
         />
         <Route path="pc-builder" element={<PcBuilderPage />} />
+        {/* Locale-scoped 404 — keeps the storefront chrome + language. */}
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
 
       {freezoneAdminRouteBranch}
 
+      {/* Non-locale unknown paths bounce to the default locale root. */}
       <Route path="*" element={<Navigate to="/en" replace />} />
     </Routes>
     <ConfirmDialogHost />
+    </ErrorBoundary>
     </>
   );
 }

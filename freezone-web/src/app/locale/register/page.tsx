@@ -5,6 +5,7 @@ import { Link } from "@/navigation";
 import { SiteLogo } from "@/components/layout/SiteLogo";
 import { Phone, Shield, UserPlus, User } from "lucide-react";
 import { motion } from "framer-motion";
+import toast from "react-hot-toast";
 import { useTranslations } from "@/i18n/hooks";
 
 export default function RegisterPage() {
@@ -12,7 +13,7 @@ export default function RegisterPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    alert(t("loginPending"));
+    toast(t("loginPending"));
   };
 
   return (
