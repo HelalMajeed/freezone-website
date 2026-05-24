@@ -143,8 +143,15 @@ async function main() {
       for (const [i, entry] of entries.entries()) {
         console.log(`[import] (${i + 1}/${entries.length}) ${entry.handle}`);
         const { mapped } = entry;
+        /** Strip `specs` before POST: the staging category has no CategoryAttribute schema
+         *  defined yet, so `validateProductSpecsAgainstCategory` would reject every key
+         *  we extracted from body_html. Warranty already has its own column; the rest
+         *  of the body content lives in descAr/descEn and in data/mapped/<handle>.json
+         *  for the admin to re-attach once the staging schema is configured. */
+        const { specs: _specs, ...productWithoutSpecs } = mapped.productPayload;
+        void _specs;
         const payload = {
-          ...mapped.productPayload,
+          ...productWithoutSpecs,
           categoryId: category.id,
           importBatchId: batch.id,
         };
