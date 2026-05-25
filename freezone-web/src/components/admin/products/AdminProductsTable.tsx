@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { LayoutGrid, LayoutList, Table2, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import type { AdminProductRow } from "@/components/admin/products-catalog/admin-product-types";
 import { brandLabel, formatIqd } from "@/components/admin/products-catalog/admin-product-types";
@@ -49,6 +50,21 @@ const CATALOG_LABELS: Record<string, string> = {
   PUBLISHED: "منشور",
   ARCHIVED: "مؤرشف",
 };
+
+/** table = جدول تفصيلي، list = قائمة مدمجة، grid = بطاقات (مربعات) */
+type ProductViewMode = "table" | "list" | "grid";
+
+const VIEW_MODE_STORAGE_KEY = "admin-products-view-mode";
+
+function loadViewMode(): ProductViewMode {
+  try {
+    const v = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    if (v === "table" || v === "list" || v === "grid") return v;
+  } catch {
+    /* ignore */
+  }
+  return "table";
+}
 
 function paramsFromSearch(sp: URLSearchParams): AdminProductsListParams {
   const publishedRaw = sp.get("published");
@@ -103,8 +119,18 @@ export function AdminProductsTable({
   const [savedFilters, setSavedFilters] = useState<SavedProductFilter[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [smartCounts, setSmartCounts] = useState<Record<string, number>>({});
+  const [viewMode, setViewMode] = useState<ProductViewMode>(loadViewMode);
   const [density, setDensity] = useState<"compact" | "comfortable" | "spacious">("comfortable");
   const [bulkPriceOpen, setBulkPriceOpen] = useState(false);
+
+  function setViewModePersisted(mode: ProductViewMode) {
+    setViewMode(mode);
+    try {
+      localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode);
+    } catch {
+      /* ignore */
+    }
+  }
 
   useEffect(() => {
     const next = paramsFromSearch(searchParams);
@@ -225,15 +251,15 @@ export function AdminProductsTable({
   }
 
   async function safeDelete(p: AdminProductRow) {
-    const label = p.nameAr || p.nameEn || `#${p.id}`;
+    const displayName = p.nameAr || p.nameEn || `منتج #${p.id}`;
     const ok = await confirmDialog({
       title: "حذف منتج",
-      message: `لتأكيد الحذف الناعم، اكتب اسم المنتج بالضبط:`,
+      message: `سيتم إخفاء «${displayName}» من المتجر (حذف ناعم). للتأكيد اكتب رقم المنتج:`,
       confirmLabel: "حذف",
       cancelLabel: "إلغاء",
       danger: true,
-      confirmMatch: label,
-      confirmMatchLabel: `اكتب: ${label}`,
+      confirmMatch: String(p.id),
+      confirmMatchLabel: `اكتب رقم المنتج: ${p.id}`,
     });
     if (!ok) return;
     setActingId(p.id);
@@ -242,12 +268,19 @@ export function AdminProductsTable({
         method: "DELETE",
         credentials: "include",
       });
-      if (!res.ok) throw new Error("failed");
-      toast.success("تم الحذف");
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(body.error || "failed");
+      toast.success(`تم حذف المنتج #${p.id}`);
+      setSelected((prev) => {
+        const next = new Set(prev);
+        next.delete(p.id);
+        return next;
+      });
       await load();
-    } catch {
-      setError("تعذّر حذف المنتج");
-      toast.error("تعذّر حذف المنتج");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "تعذّر حذف المنتج";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setActingId(null);
     }
@@ -306,6 +339,38 @@ export function AdminProductsTable({
     setSavedFilters((f) => [entry, ...f].slice(0, 20));
     toast.success("تم حفظ الفلتر");
   }
+
+  function renderProductActions(p: AdminProductRow, busy: boolean, status: string) {
+    return (
+      <>
+        <Link to={`/admin/products/edit/${p.id}`} className={styles.actionLink}>
+          تعديل
+        </Link>
+        <a href={`/ar/product/${p.id}`} target="_blank" rel="noreferrer" className={styles.actionLink}>
+          معاينة
+        </a>
+        <button type="button" className={styles.actionLink} disabled={busy} onClick={() => void duplicateProduct(p)}>
+          نسخ
+        </button>
+        <button type="button" className={styles.actionLink} disabled={busy} onClick={() => void togglePublish(p)}>
+          {status === "PUBLISHED" ? "إلغاء نشر" : "نشر"}
+        </button>
+        <button
+          type="button"
+          className={styles.deleteBtn}
+          disabled={busy}
+          title={`حذف المنتج #${p.id}`}
+          onClick={() => void safeDelete(p)}
+        >
+          <Trash2 size={14} aria-hidden />
+          حذف
+        </button>
+      </>
+    );
+  }
+
+  const tableDensityClass =
+    density === "compact" ? styles.densityCompact : density === "spacious" ? styles.densitySpacious : "";
 
   return (
     <div className={styles.wrap}>
@@ -518,22 +583,111 @@ export function AdminProductsTable({
             {icon} {label} ({smartCounts[key] ?? 0})
           </button>
         ))}
-        <select
-          className={styles.select}
-          value={density}
-          onChange={(e) => setDensity(e.target.value as typeof density)}
-        >
-          <option value="compact">مدمج</option>
-          <option value="comfortable">مريح</option>
-          <option value="spacious">واسع</option>
-        </select>
+        <div className={styles.viewToggle} role="group" aria-label="طريقة عرض المنتجات">
+          <button
+            type="button"
+            className={`${styles.viewToggleBtn} ${viewMode === "table" ? styles.viewToggleBtnOn : ""}`}
+            onClick={() => setViewModePersisted("table")}
+            title="جدول تفصيلي"
+          >
+            <Table2 size={16} aria-hidden />
+            جدول
+          </button>
+          <button
+            type="button"
+            className={`${styles.viewToggleBtn} ${viewMode === "list" ? styles.viewToggleBtnOn : ""}`}
+            onClick={() => setViewModePersisted("list")}
+            title="قائمة مدمجة"
+          >
+            <LayoutList size={16} aria-hidden />
+            قائمة
+          </button>
+          <button
+            type="button"
+            className={`${styles.viewToggleBtn} ${viewMode === "grid" ? styles.viewToggleBtnOn : ""}`}
+            onClick={() => setViewModePersisted("grid")}
+            title="بطاقات مربعة"
+          >
+            <LayoutGrid size={16} aria-hidden />
+            مربعات
+          </button>
+        </div>
+        {viewMode === "table" ? (
+          <select
+            className={styles.select}
+            value={density}
+            onChange={(e) => setDensity(e.target.value as typeof density)}
+            aria-label="كثافة الجدول"
+          >
+            <option value="compact">مدمج</option>
+            <option value="comfortable">مريح</option>
+            <option value="spacious">واسع</option>
+          </select>
+        ) : null}
       </div>
 
       {error ? <p className={styles.muted}>{error}</p> : null}
       {loading ? (
-        <TableSkeleton rows={density === "compact" ? 14 : 8} cols={8} />
+        <TableSkeleton rows={viewMode === "grid" ? 6 : density === "compact" ? 14 : 8} cols={viewMode === "table" ? 8 : 4} />
+      ) : viewMode === "grid" ? (
+        <div className={styles.productGrid}>
+          {items.map((p) => {
+            const thumb = p.images[0]?.url;
+            const busy = actingId === p.id;
+            const status = p.catalogStatus ?? (p.published ? "PUBLISHED" : "DRAFT");
+            const displayName = p.nameEn || p.nameAr;
+            return (
+              <article key={p.id} className={styles.productCard}>
+                <div className={styles.productCardMedia}>
+                  {thumb ? (
+                    <img src={thumb} alt="" />
+                  ) : (
+                    <span className={styles.thumbPlaceholder} style={{ width: "100%", height: "100%", fontSize: "2.5rem" }}>
+                      {p.icon || "📦"}
+                    </span>
+                  )}
+                  <label style={{ position: "absolute", top: 8, insetInlineStart: 8 }}>
+                    <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} aria-label={`تحديد ${p.id}`} />
+                  </label>
+                </div>
+                <div className={styles.productCardBody}>
+                  <h3 className={styles.productCardTitle}>{displayName}</h3>
+                  <span className={styles.productCardMeta}>
+                    #{p.id} · {CATALOG_LABELS[status] ?? status}
+                    {!categoryHub ? ` · ${p.category.nameEn}` : ""}
+                  </span>
+                  <span className={styles.productCardPrice}>{formatIqd(p.price)}</span>
+                  <div className={styles.productCardActions}>{renderProductActions(p, busy, status)}</div>
+                </div>
+              </article>
+            );
+          })}
+          {items.length === 0 ? <p className={styles.muted}>لا توجد منتجات.</p> : null}
+        </div>
+      ) : viewMode === "list" ? (
+        <div className={styles.compactList}>
+          {items.map((p) => {
+            const thumb = p.images[0]?.url;
+            const busy = actingId === p.id;
+            const status = p.catalogStatus ?? (p.published ? "PUBLISHED" : "DRAFT");
+            return (
+              <div key={p.id} className={styles.compactRow}>
+                <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} aria-label={`تحديد ${p.id}`} />
+                {thumb ? <img src={thumb} alt="" className={styles.thumb} /> : <span className={styles.thumbPlaceholder}>{p.icon || "📦"}</span>}
+                <div className={styles.compactMain}>
+                  <strong>{p.nameEn || p.nameAr}</strong>
+                  <div className={styles.sub}>
+                    #{p.id} · {formatIqd(p.price)} · {CATALOG_LABELS[status] ?? status}
+                  </div>
+                </div>
+                <div className={styles.actions}>{renderProductActions(p, busy, status)}</div>
+              </div>
+            );
+          })}
+          {items.length === 0 ? <p className={styles.muted}>لا توجد منتجات.</p> : null}
+        </div>
       ) : (
-        <div className={styles.tableScroll}>
+        <div className={`${styles.tableScroll} ${tableDensityClass}`}>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -666,38 +820,7 @@ export function AdminProductsTable({
                       <td className={styles.mono}>{formatAdminDate(p.updatedAt ?? p.createdAt)}</td>
                     ) : null}
                     <td>
-                      <div className={styles.actions}>
-                        <Link to={`/admin/products/edit/${p.id}`} className={styles.actionLink}>
-                          تعديل
-                        </Link>
-                        <a href={`/ar/product/${p.id}`} target="_blank" rel="noreferrer" className={styles.actionLink}>
-                          معاينة
-                        </a>
-                        <button
-                          type="button"
-                          className={styles.actionLink}
-                          disabled={busy}
-                          onClick={() => void duplicateProduct(p)}
-                        >
-                          نسخ
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.actionLink}
-                          disabled={busy}
-                          onClick={() => void togglePublish(p)}
-                        >
-                          {status === "PUBLISHED" ? "إلغاء نشر" : "نشر"}
-                        </button>
-                        <button
-                          type="button"
-                          className={`${styles.actionLink} ${styles.actionDanger}`}
-                          disabled={busy}
-                          onClick={() => void safeDelete(p)}
-                        >
-                          حذف
-                        </button>
-                      </div>
+                      <div className={styles.actions}>{renderProductActions(p, busy, status)}</div>
                     </td>
                   </tr>
                 );
