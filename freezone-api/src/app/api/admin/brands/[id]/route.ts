@@ -1,13 +1,13 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { auditContext, guardAdminMutate } from "@/lib/admin-route-guard";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const mutateGuard = await guardAdminMutate(req);
+  if (!mutateGuard.ok) return mutateGuard.response;
+  const audit = auditContext(mutateGuard.actor, req);
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -35,7 +35,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       },
     });
     revalidateStorefrontData();
-    await logAdminAction("brand.update", "Brand", { entityId: id });
+    await logAdminAction("brand.update", "Brand", { entityId: id, ...audit });
     return Response.json({ ok: true });
   } catch (e) {
     return handleRouteDbError(e);
@@ -43,9 +43,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 }
 
 export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const mutateGuard = await guardAdminMutate(req);
+  if (!mutateGuard.ok) return mutateGuard.response;
+  const audit = auditContext(mutateGuard.actor, req);
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -59,7 +59,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
     });
     await prisma.brand.delete({ where: { id } });
     revalidateStorefrontData();
-    await logAdminAction("brand.delete", "Brand", { entityId: id });
+    await logAdminAction("brand.delete", "Brand", { entityId: id, ...audit });
     return Response.json({ ok: true });
   } catch (e) {
     return handleRouteDbError(e);

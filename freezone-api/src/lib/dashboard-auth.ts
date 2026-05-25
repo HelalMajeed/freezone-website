@@ -6,57 +6,37 @@
  * change, account disable). Cookie stores only an opaque random token; the
  * server keeps the SHA-256 hash and looks it up.
  */
-import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
-import { promisify } from "node:util";
+import { createHash, randomBytes } from "node:crypto";
+import type { AdminRole } from "@prisma/client";
 import { prisma } from "./prisma";
-
-const scrypt = promisify(scryptCb) as (
-  password: string | Buffer,
-  salt: string | Buffer,
-  keylen: number,
-) => Promise<Buffer>;
+import { hashPasswordScrypt, verifyPassword } from "./password-hash";
 
 const DASHBOARD_COOKIE = "fz_dashboard_session";
 const SESSION_TTL_DAYS = 7;
-const SCRYPT_KEYLEN = 64;
-const SCRYPT_N = 16384; // CPU/memory cost — 2^14
-const SCRYPT_R = 8;
-const SCRYPT_P = 1;
 
-/** Roles ordered by privilege (low → high). */
-export const ROLES = ["viewer", "editor", "admin", "superadmin"] as const;
-export type Role = (typeof ROLES)[number];
+export type Role = AdminRole;
 
-export function isRole(value: unknown): value is Role {
+export const ROLES: AdminRole[] = ["CATALOG_EDITOR", "CATALOG_MANAGER", "SUPER_ADMIN"];
+
+const ROLE_RANK: Record<AdminRole, number> = {
+  CATALOG_EDITOR: 0,
+  CATALOG_MANAGER: 1,
+  SUPER_ADMIN: 2,
+};
+
+export function isRole(value: unknown): value is AdminRole {
   return typeof value === "string" && (ROLES as readonly string[]).includes(value);
 }
 
-/** True if `role` is at least as privileged as `minRole`. */
-export function roleAtLeast(role: Role, minRole: Role): boolean {
-  return ROLES.indexOf(role) >= ROLES.indexOf(minRole);
+export function roleAtLeast(role: AdminRole, minRole: AdminRole): boolean {
+  return ROLE_RANK[role] >= ROLE_RANK[minRole];
 }
-
-// ─── Password hashing ────────────────────────────────────────────────────────
 
 export async function hashPassword(password: string): Promise<string> {
-  if (!password || password.length < 8) throw new Error("PASSWORD_TOO_SHORT");
-  const salt = randomBytes(16);
-  const derived = await scrypt(password.normalize("NFKC"), salt, SCRYPT_KEYLEN);
-  return `scrypt$${SCRYPT_N}$${SCRYPT_R}$${SCRYPT_P}$${salt.toString("base64")}$${derived.toString("base64")}`;
+  return hashPasswordScrypt(password);
 }
 
-export async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  try {
-    const parts = stored.split("$");
-    if (parts.length !== 6 || parts[0] !== "scrypt") return false;
-    const salt = Buffer.from(parts[4], "base64");
-    const expected = Buffer.from(parts[5], "base64");
-    const candidate = await scrypt(password.normalize("NFKC"), salt, expected.length);
-    return candidate.length === expected.length && timingSafeEqual(candidate, expected);
-  } catch {
-    return false;
-  }
-}
+export { verifyPassword };
 
 // ─── Session tokens ──────────────────────────────────────────────────────────
 

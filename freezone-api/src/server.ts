@@ -70,6 +70,9 @@ process.chdir(path.join(__dirname, ".."));
 
 dotenv.config({ path: [".env.local", ".env"] });
 
+import { assertAdminSecretsConfigured } from "./lib/admin-secrets";
+assertAdminSecretsConfigured();
+
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
 function webRequestFromExpress(req: express.Request): Request {

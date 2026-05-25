@@ -37,7 +37,7 @@ async function main() {
       where: { email },
       data: {
         passwordHash,
-        role: "superadmin",
+        role: "SUPER_ADMIN",
         active: true,
         failedLogins: 0,
         lockedUntil: null,
@@ -51,7 +51,7 @@ async function main() {
         email,
         name,
         passwordHash,
-        role: "superadmin",
+        role: "SUPER_ADMIN",
         active: true,
       },
     });

@@ -2,8 +2,15 @@ import { createHmac, timingSafeEqual, randomBytes } from "crypto";
 
 const COOKIE_NAME = "fz_admin_session";
 
-function getSecret() {
-  return process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || "change-me-in-production";
+function getSecret(): string {
+  const secret = process.env.ADMIN_SESSION_SECRET?.trim();
+  if (secret) return secret;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("ADMIN_SESSION_SECRET is required in production");
+  }
+  const fallback = process.env.ADMIN_PASSWORD?.trim();
+  if (fallback) return fallback;
+  return "dev-only-insecure-admin-session-secret-min-32-chars!!";
 }
 
 export function signAdminSession(): string {

@@ -1,5 +1,5 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { auditContext, guardAdminMutate, guardAdminRead } from "@/lib/admin-route-guard";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
@@ -13,9 +13,8 @@ import {
 } from "@/lib/admin-products-list";
 
 export async function GET(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const readGuard = await guardAdminRead(req);
+  if (!readGuard.ok) return readGuard.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -104,9 +103,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const mutateGuard = await guardAdminMutate(req);
+  if (!mutateGuard.ok) return mutateGuard.response;
+  const audit = auditContext(mutateGuard.actor, req);
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -217,7 +216,11 @@ export async function POST(req: Request) {
     }
 
     revalidateStorefrontData();
-    await logAdminAction("product.create", "Product", { entityId: product.id, payload: { nameEn: product.nameEn } });
+    await logAdminAction("product.create", "Product", {
+      entityId: product.id,
+      payload: { nameEn: product.nameEn },
+      ...audit,
+    });
     return Response.json({ id: product.id });
   } catch (e) {
     return handleRouteDbError(e);

@@ -12,7 +12,7 @@ async function readId(ctx: Ctx): Promise<number | null> {
 
 /** GET /api/dashboard/users/:id */
 export async function GET(req: Request, ctx: Ctx): Promise<Response> {
-  const g = await guardDashboard(req, "superadmin");
+  const g = await guardDashboard(req, "SUPER_ADMIN");
   if (!g.ok) return g.response;
   const id = await readId(ctx);
   if (id == null) return jsonError(400, "INVALID_ID");
@@ -49,7 +49,7 @@ export async function GET(req: Request, ctx: Ctx): Promise<Response> {
  * Setting password rotates all sessions for the target user.
  */
 export async function PATCH(req: Request, ctx: Ctx): Promise<Response> {
-  const g = await guardDashboard(req, "superadmin");
+  const g = await guardDashboard(req, "SUPER_ADMIN");
   if (!g.ok) return g.response;
   const id = await readId(ctx);
   if (id == null) return jsonError(400, "INVALID_ID");
@@ -70,10 +70,10 @@ export async function PATCH(req: Request, ctx: Ctx): Promise<Response> {
   if (typeof body.role === "string") {
     if (!isRole(body.role)) return jsonError(400, "INVALID_ROLE");
     // Prevent demoting the only remaining superadmin
-    if (body.role !== "superadmin") {
+    if (body.role !== "SUPER_ADMIN") {
       const current = await prisma.adminUser.findUnique({ where: { id }, select: { role: true } });
-      if (current?.role === "superadmin") {
-        const superCount = await prisma.adminUser.count({ where: { role: "superadmin", active: true } });
+      if (current?.role === "SUPER_ADMIN") {
+        const superCount = await prisma.adminUser.count({ where: { role: "SUPER_ADMIN", active: true } });
         if (superCount <= 1) return jsonError(409, "LAST_SUPERADMIN");
       }
     }
@@ -131,7 +131,7 @@ export async function PATCH(req: Request, ctx: Ctx): Promise<Response> {
  * Refuses to delete the last active superadmin or yourself.
  */
 export async function DELETE(req: Request, ctx: Ctx): Promise<Response> {
-  const g = await guardDashboard(req, "superadmin");
+  const g = await guardDashboard(req, "SUPER_ADMIN");
   if (!g.ok) return g.response;
   const id = await readId(ctx);
   if (id == null) return jsonError(400, "INVALID_ID");
@@ -140,8 +140,8 @@ export async function DELETE(req: Request, ctx: Ctx): Promise<Response> {
   const target = await prisma.adminUser.findUnique({ where: { id }, select: { role: true, email: true } });
   if (!target) return jsonError(404, "USER_NOT_FOUND");
 
-  if (target.role === "superadmin") {
-    const superCount = await prisma.adminUser.count({ where: { role: "superadmin", active: true } });
+  if (target.role === "SUPER_ADMIN") {
+    const superCount = await prisma.adminUser.count({ where: { role: "SUPER_ADMIN", active: true } });
     if (superCount <= 1) return jsonError(409, "LAST_SUPERADMIN");
   }
 

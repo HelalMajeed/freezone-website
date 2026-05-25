@@ -7,7 +7,7 @@ import { guardDashboard, jsonError, jsonOk } from "@/lib/dashboard-guard";
  * Superadmin: list all dashboard users.
  */
 export async function GET(req: Request): Promise<Response> {
-  const g = await guardDashboard(req, "superadmin");
+  const g = await guardDashboard(req, "SUPER_ADMIN");
   if (!g.ok) return g.response;
 
   const users = await prisma.adminUser.findMany({
@@ -35,7 +35,7 @@ export async function GET(req: Request): Promise<Response> {
  * Body: { email, name, password, role }
  */
 export async function POST(req: Request): Promise<Response> {
-  const g = await guardDashboard(req, "superadmin");
+  const g = await guardDashboard(req, "SUPER_ADMIN");
   if (!g.ok) return g.response;
 
   const body = (await req.json().catch(() => ({}))) as {
@@ -48,7 +48,7 @@ export async function POST(req: Request): Promise<Response> {
   const email = (body.email ?? "").trim().toLowerCase();
   const name = (body.name ?? "").trim();
   const password = body.password ?? "";
-  const role = body.role ?? "editor";
+  const role = body.role ?? "CATALOG_EDITOR";
 
   if (!email || !email.includes("@")) return jsonError(400, "INVALID_EMAIL");
   if (!name) return jsonError(400, "MISSING_NAME");
