@@ -273,7 +273,7 @@ export default function AdminDashboardPage() {
                   <Kpi
                     label="بانتظار الفريق"
                     value={opQ.data.teamPendingReview}
-                    href="/admin/review-queue"
+                    href="/admin/products?catalogStatus=PENDING_REVIEW"
                     tone={opQ.data.teamPendingReview > 0 ? "warning" : undefined}
                   />
                   <Kpi
