@@ -13,6 +13,25 @@ import type { CategoryAttributeRow, ProductAttributeValueRow } from "./classific
 
 export type LocaleCode = "en" | "ar";
 
+/**
+ * Absolute origin that serves the persistent /uploads volume. Imported product
+ * images are stored as same-origin relative paths (/uploads/products/...), but
+ * the storefront runs on a different host (Netlify) that does not serve that
+ * path, so the browser would render them broken. Rewriting to an absolute URL
+ * on the API origin makes `<img>` load directly from where the files live.
+ * Override via PUBLIC_UPLOADS_ORIGIN if the API ever moves.
+ */
+const UPLOADS_ORIGIN = (process.env.PUBLIC_UPLOADS_ORIGIN || "https://freezone-website.fly.dev").replace(/\/$/, "");
+
+/** Make a stored image URL absolute. Leaves already-absolute (http) URLs and
+ *  non-/uploads paths untouched. */
+export function absolutizeUploadUrl(url: string): string {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith("/uploads/")) return `${UPLOADS_ORIGIN}${url}`;
+  return url;
+}
+
 export function mapDbToProduct(
   row: {
     id: number;
@@ -46,7 +65,7 @@ export function mapDbToProduct(
   },
   locale: LocaleCode,
 ): Product {
-  const imgs = [...row.images].sort((a, b) => a.sortOrder - b.sortOrder).map((i) => i.url);
+  const imgs = [...row.images].sort((a, b) => a.sortOrder - b.sortOrder).map((i) => absolutizeUploadUrl(i.url));
   const extraSlugs =
     row.secondaryCategories?.map((l) => l.category.slug).filter((s) => s && s !== row.category.slug) ?? [];
   const brandName = row.brandRef
