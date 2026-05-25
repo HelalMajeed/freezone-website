@@ -13,18 +13,18 @@ import type { AdminProductRow } from "@/components/admin/products-catalog/admin-
 import type { AdminCategoryRow } from "@/components/admin/categories/AdminCategoriesManager";
 import styles from "./AdminCategoryHub.module.css";
 
-export type CategoryHubTab = "overview" | "products" | "filters" | "display" | "settings" | "quality";
+export type CategoryHubTab = "overview" | "products" | "filters" | "settings" | "quality";
 
 const TAB_LABELS: Record<CategoryHubTab, string> = {
   overview: "نظرة عامة",
   products: "منتجات القسم",
-  filters: "فلاتر القسم",
-  display: "مواصفات العرض (مرتبطة)",
+  filters: "الفلاتر والمواصفات",
   settings: "إعدادات القسم",
   quality: "جودة البيانات",
 };
 
 function parseTab(raw: string | null): CategoryHubTab {
+  if (raw === "display") return "filters";
   const t = (raw ?? "overview") as CategoryHubTab;
   return t in TAB_LABELS ? t : "overview";
 }
@@ -192,8 +192,8 @@ export function AdminCategoryHub() {
       />
 
       <p className={styles.explain}>
-        منتجات هذا القسم تظهر في صفحة القسم للمستخدم. <strong>الفلاتر</strong> تتحكم في الشريط الجانبي.{" "}
-        <strong>مواصفات العرض</strong> داخل صفحة المنتج. الصور والسعر في البطاقة وصفحة المنتج.
+        منتجات هذا القسم تظهر في صفحة القسم للمستخدم. <strong>الفلاتر والمواصفات</strong> تتحكم في الشريط
+        الجانبي وفي تفاصيل صفحة المنتج (قيم مختصرة + مواصفات عرض كاملة). الصور والسعر في البطاقة وصفحة المنتج.
       </p>
 
       <nav className={styles.tabs} aria-label="أقسام إدارة القسم">
@@ -306,27 +306,33 @@ export function AdminCategoryHub() {
       {tab === "filters" ? (
         <section className={styles.panel}>
           <p className={styles.help}>
-            إدارة الفلاتر ومواصفات العرض المرتبطة في مكان واحد: اسم الفلتر، النوع، الخيارات، وربط مواصفة صفحة
-            المنتج. عند إضافة منتج يظهر كل صف في Smart Specs (قيمة فلتر مختصرة + مواصفة عرض كاملة).
+            إدارة الفلاتر ومواصفات العرض في مكان واحد: اسم الفلتر، النوع، الخيارات، وربط مواصفة صفحة المنتج. عند
+            إضافة منتج يظهر كل صف في Smart Specs (قيمة فلتر مختصرة + مواصفة عرض كاملة).
           </p>
-          <p style={{ margin: "0 0 12px", fontSize: 13 }}>
-            <strong>{filterableSpecs.length}</strong> فلتر نشط في هذا القسم.
+          <p style={{ margin: "0 0 8px", fontSize: 13 }}>
+            <strong>{filterableSpecs.length}</strong> فلتر نشط · <strong>{extendedSpecs.length}</strong> مواصفة عرض
+            / موسعة
           </p>
-          <Link className={styles.btnPrimary} to={`/admin/categories/${categoryId}/attributes`}>
-            فتح إدارة فلاتر القسم
-          </Link>
-        </section>
-      ) : null}
-
-      {tab === "display" ? (
-        <section className={styles.panel}>
-          <p className={styles.help}>
-            مواصفات العرض المرتبطة بفلتر تُدار من نفس محرر السمات — تظهر في PDP فقط (نص كامل)، بينما الفلاتر في
-            المتجر تبقى مختصرة.
-          </p>
-          <p style={{ margin: "0 0 12px", fontSize: 13 }}>
-            <strong>{extendedSpecs.length}</strong> مواصفة عرض / موسعة في schema القسم.
-          </p>
+          {filterableSpecs.length > 0 ? (
+            <table className={styles.attrTable} style={{ marginBottom: 12 }}>
+              <thead>
+                <tr>
+                  <th>السمة</th>
+                  <th>النوع</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...filterableSpecs, ...extendedSpecs].slice(0, 8).map((a) => (
+                  <tr key={a.key}>
+                    <td>{a.name_ar || a.name_en}</td>
+                    <td>{a.type}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p style={{ color: "var(--admin-muted)", fontSize: 13 }}>لا توجد سمات بعد — أضفها من المحرّر.</p>
+          )}
           <Link className={styles.btnPrimary} to={`/admin/categories/${categoryId}/attributes`}>
             فتح إدارة فلاتر القسم
           </Link>
