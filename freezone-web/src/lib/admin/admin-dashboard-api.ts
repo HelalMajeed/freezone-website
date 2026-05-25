@@ -3,6 +3,10 @@ import { freezoneApiUrl, getInternalApiFetchSignal } from "@/lib/api-internal";
 export type AdminDashboardPayload = {
   dbConnected?: boolean;
   connectionFailed?: boolean;
+  meta?: {
+    catalogScope: string;
+    generatedAt: string;
+  };
   stats: {
     totalProducts: number;
     activeProducts: number;

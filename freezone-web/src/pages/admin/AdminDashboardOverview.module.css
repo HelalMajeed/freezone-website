@@ -1,3 +1,38 @@
+.trashBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: var(--fz-radius);
+  background: var(--fz-brand-50, rgba(37, 99, 235, 0.08));
+  border: 1px solid var(--fz-brand-100, rgba(37, 99, 235, 0.25));
+  font-size: 13px;
+  color: var(--fz-text-soft);
+}
+
+.trashBanner strong {
+  color: var(--fz-text);
+}
+
+.trashBannerLink {
+  margin-inline-start: auto;
+  font-weight: 600;
+  color: var(--fz-brand);
+  white-space: nowrap;
+}
+
+.staleApiBanner {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: var(--fz-radius);
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  font-size: 13px;
+  color: var(--fz-danger);
+}
+
 .kpiLink {
   text-decoration: none;
 }

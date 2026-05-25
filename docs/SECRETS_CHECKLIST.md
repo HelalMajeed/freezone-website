@@ -9,6 +9,9 @@
 | `NETLIFY_SITE_ID` | ✅ | Netlify site |
 | `DATABASE_URL_PROD` | ⚠️ | backup workflow (proxy أو internal URL) |
 | `SENTRY_DSN` | ⚠️ | CI smoke / deploy hooks |
+| `FLY_API_TOKEN` | ✅ required | GitHub Actions `Deploy production` → Fly API |
+| `NETLIFY_AUTH_TOKEN` | ✅ required | GitHub Actions → Netlify storefront + admin |
+| `NETLIFY_SITE_ID` | ✅ required | Netlify site for `freezone-web` build |
 | `PGPASSWORD` / `PGUSER` | ⚠️ | backup مجدول (إن لم يُستخدم URL كامل) |
 
 ## Fly.io (`freezone-website`)

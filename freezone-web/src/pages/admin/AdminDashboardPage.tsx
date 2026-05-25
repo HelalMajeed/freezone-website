@@ -124,6 +124,27 @@ export default function AdminDashboardPage() {
 
       {stats ? (
         <>
+          {(stats.deletedProducts ?? 0) > 0 ? (
+            <div className={s.trashBanner} role="status">
+              <strong>{stats.deletedProducts} منتج في سلة المهملات</strong>
+              <span>
+                العداد القديم كان يحسبها ضمن «مسودة» و«إجمالي 187». الواقع:{" "}
+                <strong>{stats.publishedProducts} على المتجر</strong> و{" "}
+                <strong>{stats.totalProducts} نشط</strong>
+                {(stats.draftProducts ?? 0) > 0 ? ` و${stats.draftProducts} مسودة` : ""}.
+              </span>
+              <Link to="/admin/products?deleted=only" className={s.trashBannerLink}>
+                عرض المحذوف →
+              </Link>
+            </div>
+          ) : null}
+
+          {d?.meta?.catalogScope === "active-v2" ? null : (
+            <div className={s.staleApiBanner} role="alert">
+              الواجهة لا تزال تتصل بـ API قديم — حدّث الصفحة (Ctrl+F5) أو انتظر اكتمال نشر Fly.
+            </div>
+          )}
+
           <div className={dashUi.kpiGrid}>
             <Kpi
               label="على المتجر"

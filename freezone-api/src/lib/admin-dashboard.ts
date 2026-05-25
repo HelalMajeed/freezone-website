@@ -164,6 +164,10 @@ export async function buildAdminDashboardPayload(prisma: PrismaClient) {
   }
 
   return {
+    meta: {
+      catalogScope: "active-v2",
+      generatedAt: new Date().toISOString(),
+    },
     stats: {
       totalProducts,
       activeProducts: totalProducts,
