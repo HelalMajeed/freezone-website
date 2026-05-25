@@ -25,6 +25,9 @@ import { ShippingSection } from "@/components/admin/products/editor/ShippingSect
 import { InternalNotesSection } from "@/components/admin/products/editor/InternalNotesSection";
 import { ProductCommentsSection } from "@/components/admin/products/editor/ProductCommentsSection";
 import { duplicateAdminProduct } from "@/lib/admin/admin-products-api";
+import { ProductReadinessPanel } from "@/components/admin/products/editor/ProductReadinessPanel";
+import { KeyboardShortcutsModal } from "@/components/admin/KeyboardShortcutsModal";
+import editorStyles from "./ProductEditorWorkspace.module.css";
 
 type TabId =
   | "basic"
@@ -62,6 +65,8 @@ export function ProductEditorWorkspace({ productId }: { productId: number }) {
   const [brands, setBrands] = useState<Array<{ id: number; nameAr: string; nameEn: string }>>([]);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [loading, setLoading] = useState(true);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [publishBlocked, setPublishBlocked] = useState(false);
 
   const form = useForm<ProductEditorValues>({
     resolver: zodResolver(productEditorSchema),
@@ -190,6 +195,10 @@ export function ProductEditorWorkspace({ productId }: { productId: number }) {
         e.preventDefault();
         void persist({ catalogStatus: "PUBLISHED" });
       }
+      if (e.key === "?" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setShortcutsOpen(true);
+      }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
         e.preventDefault();
         void (async () => {
@@ -215,7 +224,19 @@ export function ProductEditorWorkspace({ productId }: { productId: number }) {
   const missingFields = Object.entries(formState.errors).map(([k]) => k);
 
   return (
-    <div dir="rtl" style={{ maxWidth: 960, margin: "0 auto", padding: "0 16px 80px", marginInlineStart: reviewMode ? 300 : 0 }}>
+    <div
+      dir="rtl"
+      className={editorStyles.workspace}
+      style={{ maxWidth: 960, margin: "0 auto", padding: "0 16px 80px", marginInlineStart: reviewMode ? 300 : 0 }}
+    >
+      <KeyboardShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <ProductReadinessPanel
+        values={watch()}
+        imageCount={images.length}
+        requiredAttrCount={0}
+        filledAttrCount={Object.keys(watch("specs") ?? {}).length}
+        onPublishBlocked={setPublishBlocked}
+      />
       <ProductCommentsSection productId={productId} readOnly={reviewMode && !hasRole("admin")} />
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
         <div>
@@ -255,10 +276,18 @@ export function ProductEditorWorkspace({ productId }: { productId: number }) {
             </button>
           ) : null}
           {hasRole("admin") && !reviewMode ? (
-            <button type="button" onClick={() => void persist({ catalogStatus: "PUBLISHED" })}>
+            <button
+              type="button"
+              disabled={publishBlocked}
+              title={publishBlocked ? "أكمل جاهزية المنتج 100%" : undefined}
+              onClick={() => void persist({ catalogStatus: "PUBLISHED" })}
+            >
               نشر
             </button>
           ) : null}
+          <button type="button" onClick={() => setShortcutsOpen(true)}>
+            ?
+          </button>
         </div>
       </header>
 

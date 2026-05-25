@@ -355,6 +355,9 @@ export function AdminCategoriesManager() {
                         <Link to={`/admin/categories/${r.id}/attributes`} onClick={() => setOpenMenuId(null)}>
                           محرر السمات
                         </Link>
+                        <Link to={`/admin/categories/${r.id}/stats`} onClick={() => setOpenMenuId(null)}>
+                          تحليلات القسم
+                        </Link>
                         <button
                           type="button"
                           disabled={applyingTemplateId === r.id}

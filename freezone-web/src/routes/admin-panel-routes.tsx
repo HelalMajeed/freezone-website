@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route } from "react-router-dom";
 import { AdminDashboardGuard } from "@/routes/AdminDashboardGuard";
+import { AdminRouteErrorBoundary } from "@/components/admin/AdminRouteErrorBoundary";
 import { AdminChrome } from "@/components/admin/AdminChrome";
 import { AdminAppShell } from "@/components/admin/AdminAppShell";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
@@ -46,6 +47,9 @@ const AdminDataQualityPage = lazy(() => import("@/pages/admin/AdminDataQualityPa
 const AdminClassificationPage = lazy(() => import("@/pages/admin/AdminClassificationPage"));
 const AdminReviewQueuePage = lazy(() => import("@/pages/admin/AdminReviewQueuePage"));
 const AdminProductsImportPage = lazy(() => import("@/pages/admin/AdminProductsImportPage"));
+const AdminInboxPage = lazy(() => import("@/pages/admin/AdminInboxPage"));
+const AdminMePage = lazy(() => import("@/pages/admin/AdminMePage"));
+const AdminCategoryStatsPage = lazy(() => import("@/pages/admin/AdminCategoryStatsPage"));
 
 function SuspensePage({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<div style={{ padding: 48, textAlign: "center" }}>…</div>}>{children}</Suspense>;
@@ -72,7 +76,13 @@ export const freezoneAdminRouteBranch = (
       }
     />
     <Route element={<AdminDashboardGuard />}>
-      <Route element={<AdminAppShell />}>
+      <Route
+        element={
+          <AdminRouteErrorBoundary>
+            <AdminAppShell />
+          </AdminRouteErrorBoundary>
+        }
+      >
         <Route index element={<AdminDashboardPage />} />
         <Route
           path="data-quality"
@@ -144,6 +154,30 @@ export const freezoneAdminRouteBranch = (
           element={
             <SuspensePage>
               <AdminProductsImportPage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="inbox"
+          element={
+            <SuspensePage>
+              <AdminInboxPage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="me"
+          element={
+            <SuspensePage>
+              <AdminMePage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="categories/:id/stats"
+          element={
+            <SuspensePage>
+              <AdminCategoryStatsPage />
             </SuspensePage>
           }
         />

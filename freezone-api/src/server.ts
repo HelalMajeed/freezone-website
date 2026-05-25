@@ -24,7 +24,11 @@ import * as adminCmsPageSectionsId from "./app/api/admin/cms-page/sections/[id]/
 import * as adminCoupons from "./app/api/admin/coupons/route";
 import * as adminCatalogConfig from "./app/api/admin/catalog-config/route";
 import * as adminDashboard from "./app/api/admin/dashboard/route";
+import * as adminDashboardSmart from "./app/api/admin/dashboard/smart/route";
 import * as adminDashboardStats from "./app/api/admin/dashboard-stats/route";
+import * as adminSearch from "./app/api/admin/search/route";
+import * as adminActivityFeed from "./app/api/admin/activity-feed/route";
+import * as adminInbox from "./app/api/admin/inbox/route";
 import * as adminDataQuality from "./app/api/admin/data-quality/route";
 import * as adminClassificationPreview from "./app/api/admin/classification-preview/route";
 import * as adminLogin from "./app/api/admin/login/route";
@@ -49,6 +53,8 @@ import * as adminOperatorStats from "./app/api/admin/operator-stats/route";
 import * as adminCategoryTemplates from "./app/api/admin/category-templates/route";
 import * as adminCategoriesApplyTemplate from "./app/api/admin/categories/[id]/apply-template/route";
 import * as adminImportProductsCsv from "./app/api/admin/import/products-csv/route";
+import * as adminCategoriesStats from "./app/api/admin/categories/[id]/stats/route";
+import * as adminProductsSmartFilters from "./app/api/admin/products/smart-filters/route";
 import * as adminUploadProductImage from "./app/api/admin/upload/product-image/route";
 import * as adminImportGlobaliraqBatches from "./app/api/admin/import/globaliraq/batches/route";
 import * as adminImportGlobaliraqBatchesId from "./app/api/admin/import/globaliraq/batches/[id]/route";
@@ -325,6 +331,21 @@ async function main() {
   app.get("/api/admin/dashboard", async (req, res) => {
     await sendWebResponse(res, await adminDashboard.GET(webRequestFromExpress(req)));
   });
+  app.get("/api/admin/dashboard/smart", async (req, res) => {
+    await sendWebResponse(res, await adminDashboardSmart.GET(webRequestFromExpress(req)));
+  });
+  app.get("/api/admin/search", async (req, res) => {
+    await sendWebResponse(res, await adminSearch.GET(webRequestFromExpress(req)));
+  });
+  app.get("/api/admin/activity-feed", async (req, res) => {
+    await sendWebResponse(res, await adminActivityFeed.GET(webRequestFromExpress(req)));
+  });
+  app.get("/api/admin/inbox", async (req, res) => {
+    await sendWebResponse(res, await adminInbox.GET(webRequestFromExpress(req)));
+  });
+  app.get("/api/admin/products/smart-filters", async (req, res) => {
+    await sendWebResponse(res, await adminProductsSmartFilters.GET(webRequestFromExpress(req)));
+  });
   app.get("/api/admin/data-quality", async (req, res) => {
     await sendWebResponse(res, await adminDataQuality.GET(webRequestFromExpress(req)));
   });
@@ -379,6 +400,12 @@ async function main() {
     await sendWebResponse(
       res,
       await adminCategoriesApplyTemplate.POST(webRequestFromExpress(req), ctxId(req.params.id)),
+    );
+  });
+  app.get("/api/admin/categories/:id/stats", async (req, res) => {
+    await sendWebResponse(
+      res,
+      await adminCategoriesStats.GET(webRequestFromExpress(req), ctxId(req.params.id)),
     );
   });
 

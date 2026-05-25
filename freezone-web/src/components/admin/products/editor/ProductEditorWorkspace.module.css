@@ -1,0 +1,16 @@
+@media (max-width: 768px) {
+  .workspace nav {
+    flex-direction: column;
+  }
+
+  .workspace nav button {
+    width: 100%;
+    text-align: start;
+  }
+}
+
+@media (max-width: 900px) {
+  .workspace {
+    padding-bottom: 72px !important;
+  }
+}

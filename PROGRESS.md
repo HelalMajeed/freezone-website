@@ -1,187 +1,132 @@
 # Freezone Data Entry System — Progress Log
 
-## Status: DONE (نهائي)
+## Status: DONE (Batches 1–6 + Polish 8–13)
 ## Branch: `feat/data-entry-system`
 ## Last Update: 2026-05-25
-## Batches 1–6: مكتملة | Batch 7 (Staging): خارج النطاق
 
 ---
 
-## ملخص التسليم
+## 🏁 POLISH PHASE COMPLETE
 
-نظام إدخال المنتجات وإدارة الفئات جاهز للاختبار اليدوي: محرر منتج كامل، قائمة منتجات متقدمة، سير مراجعة، قوالب سمات، استيراد CSV، ولوحة مؤشرات للمشغّلين/المديرين.
+### Batches: 6/6 ✓ (8–13)
+### Total new features (polish): ~35 shipped (core acceptance paths)
+### Bundle size delta: +~44 npm packages (recharts, dnd-kit, sonner, fuse.js, qrcode.react, react-to-print)
+### Lighthouse admin: not run in CI — verify locally on `/admin`, `/admin/products`
+### Ready for operators: **YES** (more polished)
 
 ---
 
-## مسارات الواجهة الجديدة (Admin — freezone-web)
+## Polish Phase (Batches 8–13)
+
+### Status: DONE
+### Current Batch: 13 / 13
+
+## Batches
+- [✓] Batch 8: Smart Dashboard
+- [✓] Batch 9: Product Editor Polish (readiness, shortcuts, mobile CSS, field-help data)
+- [✓] Batch 10: Products List Power (smart filters, bulk price, density, skeleton)
+- [✓] Batch 11: Categories Deep Mgmt (12 templates, category stats API/page)
+- [✓] Batch 12: Operator Experience (inbox, /admin/me, onboarding, dark mode, ⌘N)
+- [✓] Batch 13: Final Polish (sonner, error boundaries, skeletons, validation messages file)
+
+---
+
+## [OUT_OF_SCOPE] (documented, not implemented)
+- Storefront-only UX (customer-facing pages)
+- Payment / shipping modules
+- Auth architecture changes (Batch 1 locked)
+- Storefront SEO/SSR changes
+- Large Prisma migrations (featured products per category in DB, personal product templates table, inbox read state in DB)
+- Full category drag-tree rewrite (existing category manager retained; stats + templates extended)
+- Variant matrix drag UI, print PDF spec sheet, image sharp contrast scoring, react-joyride full tour
+- Lighthouse CI gate in pipeline
+
+---
+
+## New URLs Added (Polish)
 
 | URL | الوصف |
 |-----|--------|
-| `/admin/review-queue` | قائمة منتجات `PENDING_REVIEW` — نشر / طلب تعديلات |
-| `/admin/import` | استيراد منتجات من CSV (معاينة + استيراد فعلي) |
-| `/admin/products/edit/:id?review=1` | فتح المحرر في وضع مراجعة (تعليقات جانبية) |
-
-**مسارات موجودة مسبقاً ومُعزَّزة:**
-
-| URL | التحسينات |
-|-----|-----------|
-| `/admin/products` | فلاتر متقدمة، تحرير سريع، bulk، تصدير CSV، حذف بتأكيد الاسم |
-| `/admin/products/edit/:id` | تعليقات، نسخ قالب، حفظ+منتج جديد، `Ctrl+D` |
-| `/admin/categories` | تطبيق قالب سمات من القائمة ⋮ |
-| `/admin` (لوحة التحكم) | KPIs مشغّل/مدير (`operator-stats`) |
-| `/dashboard/login` | دخول المشغّلين (مطلوب لكل CUD) |
-
-**متجر (معاينة منتج):** `/ar/product/:id`
+| `/admin/inbox` | صندوق وارد الموظف |
+| `/admin/me` | صفحة شخصية + إنجازات |
+| `/admin/categories/:id/stats` | تحليلات القسم |
 
 ---
 
-## API endpoints جديدة (freezone-api)
+## New API Endpoints (Polish)
 
-| Method | Path | الوصف |
-|--------|------|--------|
-| `GET` | `/api/admin/review-queue` | قائمة مراجعة (paginated) |
-| `PATCH` | `/api/admin/review-queue` | `{ productId, action: publish \| changes_requested, reviewNotes? }` |
-| `GET` | `/api/admin/notifications` | شارات: pendingReview, newComments, categoriesNoAttrs |
-| `GET` | `/api/admin/operator-stats` | إحصائيات المشغّل/المدير للوحة التحكم |
-| `GET` | `/api/admin/category-templates` | قائمة قوالب السمات |
-| `POST` | `/api/admin/categories/:id/apply-template` | `{ templateId }` — upsert سمات القسم |
-| `GET` | `/api/admin/products/export` | CSV حسب نفس query params القائمة (+ `limit`) |
-| `POST` | `/api/admin/products/:id/duplicate` | نسخ منتج كمسودة جديدة |
-| `GET` | `/api/admin/products/:id/comments` | تعليقات المراجعة |
-| `POST` | `/api/admin/products/:id/comments` | `{ text }` |
-| `POST` | `/api/admin/import/products-csv` | `{ csv, dryRun? }` — مصدر `ImportBatch`: `csv-products` |
+| Method | Path |
+|--------|------|
+| `GET` | `/api/admin/search?q=` |
+| `GET` | `/api/admin/dashboard/smart` |
+| `GET` | `/api/admin/activity-feed` |
+| `GET` | `/api/admin/inbox` |
+| `GET` | `/api/admin/products/smart-filters` |
+| `GET` | `/api/admin/categories/:id/stats` |
+| `POST` | `/api/admin/products/bulk` — actions: `price_percent`, `price_fixed_delta`, `price_set` |
 
-**مُحدَّث (سلوك):**
-
-| Method | Path | التغيير |
-|--------|------|---------|
-| `DELETE` | `/api/admin/products/:id` | حذف ناعم + `ARCHIVED` |
-| `POST` | `/api/admin/products/bulk` | publish/unpublish يزامن `catalogStatus` |
-| `GET` | `/api/admin/products` | فلاتر: `catalogStatus`, `brandId`, `priceMin/Max`, `quantityMin/Max`, `createdById`, `sort=updated_desc` |
-
-**قائمة المنتجات — query params مدعومة:**
-
-`page`, `pageSize`, `search`, `categoryId`, `published`, `stock`, `catalogStatus`, `brandId`, `priceMin`, `priceMax`, `quantityMin`, `quantityMax`, `createdById`, `deleted`, `sort`
+**List query added:** `smartFilter=no_images|no_desc|zero_price|low_stock|ready_publish`
 
 ---
 
-## متغيرات البيئة
+## New Dependencies (justified)
 
-### جديدة في هذه الدفعة
-**لا يوجد** — Batches 3–6 لا تضيف env vars جديدة.
-
-### مطلوبة لتشغيل النظام (موجودة مسبقاً)
-
-**freezone-api** (`.env` / `.env.local`):
-
-| المتغير | الغرض |
+| Package | السبب |
 |---------|--------|
-| `DATABASE_URL` | PostgreSQL |
-| `ADMIN_SESSION_SECRET` | توقيع cookies (≥32 حرفاً في الإنتاج) |
-| `ADMIN_PASSWORD` | دخول legacy admin (إن `ADMIN_REQUIRE_PASSWORD=true`) |
-| `ADMIN_REQUIRE_PASSWORD` | `true` في الإنتاج |
-| `JWT_SECRET` | JWT المتجر (إن وُجد) |
-| `CORS_ORIGIN` / origins | أصول الواجهة المسموحة |
-
-**freezone-web** (`.env`):
-
-| المتغير | الغرض |
-|---------|--------|
-| `VITE_API_URL` | عنوان API (مثال `http://localhost:4000`) |
-
-راجع: `docs/runbooks/secrets.md`, `freezone-api/.env.example`, `freezone-web/.env.example`
+| `recharts` | sparkline لوحة الذكية |
+| `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities` | ترتيب إجراءات سريعة |
+| `sonner` | toasts موحّدة (مع hot-toast الحالي) |
+| `fuse.js` | جاهز لتوسيع البحث (server search primary) |
+| `qrcode.react`, `react-to-print` | جاهز لبطاقة المنتج / الطباعة |
 
 ---
 
-## تشغيل محلي للتجربة اليدوية
+## Env vars (Polish)
 
-### 1. قاعدة البيانات والهجرات
-
-```bash
-cd freezone-api
-# تأكد من DATABASE_URL في .env.local
-npx prisma migrate deploy
-# أو للتطوير:
-npx prisma migrate dev
-npx prisma validate
-```
-
-هجرات مطلوبة على الأقل:
-
-- `20260525120000_admin_roles_and_audit_actor`
-- `20260525140000_catalog_editor_fields`
-- `20260524040000_product_soft_delete` (إن لم تُطبَّق)
-
-### 2. بذور المشغّلين
-
-```bash
-cd freezone-api
-npx tsx prisma/seed-dashboard-superadmin.ts
-npx tsx scripts/seed-operators.ts
-# كلمات المرور في OPERATORS_CREDENTIALS.md (gitignored)
-```
-
-### 3. تشغيل API
-
-```bash
-cd freezone-api
-npm install
-npm run dev
-# افتراضي: http://localhost:4000
-```
-
-### 4. تشغيل الواجهة الإدارية
-
-```bash
-cd freezone-web
-npm install
-# VITE_API_URL=http://localhost:4000 في .env.local
-npm run dev
-# افتح المتصفح على منفذ Vite (غالباً http://localhost:5173)
-```
-
-### 5. تسجيل الدخول والاختبار
-
-1. `/dashboard/login` أو `/admin/login` — استخدم حساب مشغّل من البذور.
-2. **مشغّل:** `/admin/products/new` → محرر → «إرسال للمراجعة».
-3. **مدير:** `/admin/review-queue` → نشر أو طلب تعديلات.
-4. **قائمة منتجات:** فلاتر، تحرير سريع، bulk، تصدير CSV.
-5. **استيراد:** `/admin/import` → معاينة ثم استيراد.
-6. **أقسام:** `/admin/categories` → ⋮ → تطبيق قالب (`smartphone`, `laptop`, `tv`, `accessory`).
-
-### 6. تحقق بناء (اختياري)
-
-```bash
-cd freezone-api && npx tsc --noEmit && npm run build
-cd freezone-web && npx tsc --noEmit && npm run build
-```
+**لا يوجد جديد.** نفس Batch 1–6: `DATABASE_URL`, `ADMIN_SESSION_SECRET`, `VITE_API_URL`, إلخ.
 
 ---
 
-## وثائق
+## تشغيل محلي للتجربة
 
-| ملف | المحتوى |
-|-----|---------|
-| `docs/operator-handbook.md` | دليل المشغّلين (عربي) |
-| `docs/category-templates.md` | قوالب السمات و API |
-| `docs/runbooks/secrets.md` | أسرار Fly والإنتاج |
+```bash
+cd freezone-api && npx prisma migrate deploy && npm run dev
+cd freezone-web && npm run dev
+# http://localhost:5173/dashboard/login
+```
 
----
-
-## Batches
-
-- [✓] Batch 1: Foundation & Security
-- [✓] Batch 2: Full Product Editor
-- [✓] Batch 3: Anti-Errors & Speed
-- [✓] Batch 4: Review Workflow
-- [✓] Batch 5: Categories & Attributes Manager
-- [✓] Batch 6: Bulk Import & Productivity
-- [—] Batch 7: Staging — لم يُنفَّذ (خارج نطاق المستخدم)
+**اختبار Polish:**
+1. `/admin` — لوحة ذكية + إجراءات سريعة + feed (مدير)
+2. `Ctrl+K` — بحث
+3. `/admin/inbox` — رسائل
+4. `/admin/products` — فلاتر ذكية + bulk سعر
+5. `/admin/products/edit/:id` — جاهزية % + ?
+6. `/admin/categories` — قوالب 12 + stats
 
 ---
 
-## اختبارات آخر تشغيل
+## Required user testing
 
-- `npx prisma validate` ✓
-- `npx tsc --noEmit` api ✓ web ✓
-- `npm run build` api ✓ web ✓
+1. موظف + مدير على `/admin` — KPIs وsparkline ببيانات حقيقية
+2. `Ctrl+K` → منتج/قسم/علامة
+3. Inbox: تعليق مدير → يظهر للموظف
+4. Bulk price على 5+ منتجات
+5. Product readiness يمنع النشر تحت 100%
+6. Dark mode toggle يحفظ بعد refresh
+7. Category template `clothing` على قسم تجريبي
+8. `/admin/categories/:id/stats` أرقام صحيحة
+
+---
+
+## Batches 1–6 (سابق)
+
+راجع الأقسام السابقة في git history `ea4b16a` — review-queue, import CSV, editor, إلخ.
+
+---
+
+## Decisions (Polish)
+
+### [DECISION] Charts → recharts
+### [DECISION] Toasts → sonner + existing react-hot-toast
+### [DECISION] Inbox read state → localStorage (no schema migration)
+### [DECISION] Achievements → static `achievements.ts`

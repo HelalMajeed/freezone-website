@@ -8,6 +8,10 @@ import { fetchAdminDashboard } from "@/lib/admin/admin-dashboard-api";
 import { Badge, Card, Button } from "@/components/dashboard/ui";
 import dashUi from "@/components/dashboard/ui/ui.module.css";
 import s from "./AdminDashboardOverview.module.css";
+import { SmartDashboard } from "@/components/admin/dashboard/SmartDashboard";
+import { ActivityFeed } from "@/components/admin/dashboard/ActivityFeed";
+import { AdminQuickActions } from "@/components/admin/AdminQuickActions";
+import { useDashboardAuth } from "@/lib/dashboard/auth-store";
 
 function formatDate(iso: string) {
   try {
@@ -88,6 +92,7 @@ async function fetchOperatorStats(): Promise<OperatorStats | null> {
 }
 
 export default function AdminDashboardPage() {
+  const hasRole = useDashboardAuth((s) => s.hasRole);
   const qc = useQueryClient();
   const q = useQuery({
     queryKey: ["admin-dashboard"],
@@ -114,7 +119,15 @@ export default function AdminDashboardPage() {
 
   return (
     <>
-      <div className="dashboard-page-header">
+      <AdminQuickActions />
+      <SmartDashboard />
+      {hasRole("admin") ? (
+        <div style={{ marginTop: 24 }}>
+          <ActivityFeed />
+        </div>
+      ) : null}
+
+      <div className="dashboard-page-header" style={{ marginTop: 32 }}>
         <div>
           <h1 className="dashboard-page-title">لوحة التحكم</h1>
           <div className="dashboard-page-subtitle">

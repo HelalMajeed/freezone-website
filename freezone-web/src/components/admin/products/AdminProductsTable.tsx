@@ -19,6 +19,8 @@ import { formatAdminDate, productQualityHints } from "@/lib/admin/product-row-qu
 import { freezoneApiUrl } from "@/lib/api-internal";
 import { confirmDialog } from "@/lib/confirm";
 import { useDashboardAuth } from "@/lib/dashboard/auth-store";
+import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
+import { BulkPriceModal } from "@/components/admin/BulkPriceModal";
 import styles from "./AdminProductsTable.module.css";
 
 type CategoryOpt = { id: number; nameEn: string; nameAr?: string; slug: string };
@@ -100,6 +102,9 @@ export function AdminProductsTable({
   const [brands, setBrands] = useState<BrandOpt[]>([]);
   const [savedFilters, setSavedFilters] = useState<SavedProductFilter[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [smartCounts, setSmartCounts] = useState<Record<string, number>>({});
+  const [density, setDensity] = useState<"compact" | "comfortable" | "spacious">("comfortable");
+  const [bulkPriceOpen, setBulkPriceOpen] = useState(false);
 
   useEffect(() => {
     const next = paramsFromSearch(searchParams);
@@ -109,6 +114,13 @@ export function AdminProductsTable({
     }
     setParams(next);
   }, [searchParams, lockedCategoryId]);
+
+  useEffect(() => {
+    void fetch(freezoneApiUrl("/api/admin/products/smart-filters"), { credentials: "include" })
+      .then((r) => r.json())
+      .then((j: { data?: Record<string, number> }) => setSmartCounts(j.data ?? {}))
+      .catch(() => setSmartCounts({}));
+  }, []);
 
   useEffect(() => {
     setSavedFilters(loadSavedProductFilters(user?.id ?? null));
@@ -297,6 +309,12 @@ export function AdminProductsTable({
 
   return (
     <div className={styles.wrap}>
+      <BulkPriceModal
+        ids={[...selected]}
+        open={bulkPriceOpen}
+        onClose={() => setBulkPriceOpen(false)}
+        onDone={() => void load()}
+      />
       <div className={styles.filters}>
         <input
           type="search"
@@ -455,6 +473,9 @@ export function AdminProductsTable({
           <button type="button" className={styles.pageBtn} onClick={() => void runBulk("unpublish")}>
             إلغاء نشر
           </button>
+          <button type="button" className={styles.pageBtn} onClick={() => setBulkPriceOpen(true)}>
+            تعديل سعر جماعي
+          </button>
           <button type="button" className={`${styles.pageBtn} ${styles.actionDanger}`} onClick={() => void runBulk("soft_delete")}>
             حذف ناعم
           </button>
@@ -478,9 +499,39 @@ export function AdminProductsTable({
         </div>
       )}
 
+      <div className={styles.filters} style={{ marginTop: 0 }}>
+        {(
+          [
+            ["no_images", "بدون صور", "🔴"],
+            ["no_desc", "بدون وصف", "🟠"],
+            ["ready_publish", "جاهز للنشر", "🟢"],
+            ["low_stock", "مخزون منخفض", "⚠️"],
+            ["zero_price", "سعر = 0", "💰"],
+          ] as const
+        ).map(([key, label, icon]) => (
+          <button
+            key={key}
+            type="button"
+            className={styles.pageBtn}
+            onClick={() => patchParams({ smartFilter: key })}
+          >
+            {icon} {label} ({smartCounts[key] ?? 0})
+          </button>
+        ))}
+        <select
+          className={styles.select}
+          value={density}
+          onChange={(e) => setDensity(e.target.value as typeof density)}
+        >
+          <option value="compact">مدمج</option>
+          <option value="comfortable">مريح</option>
+          <option value="spacious">واسع</option>
+        </select>
+      </div>
+
       {error ? <p className={styles.muted}>{error}</p> : null}
       {loading ? (
-        <p className={styles.muted}>جاري التحميل…</p>
+        <TableSkeleton rows={density === "compact" ? 14 : 8} cols={8} />
       ) : (
         <div className={styles.tableScroll}>
           <table className={styles.table}>

@@ -28,6 +28,7 @@ export type AdminProductsListQuery = {
   createdById: number | null;
   /** "active" (default, hides soft-deleted) | "deleted" (only) | "all" */
   deletedMode: "active" | "deleted" | "all";
+  smartFilter: "no_images" | "no_desc" | "zero_price" | "low_stock" | "ready_publish" | null;
   sort: "id_desc" | "id_asc" | "price_asc" | "price_desc" | "name_asc" | "updated_desc";
 };
 
@@ -80,6 +81,15 @@ export function parseAdminProductsListQuery(url: URL): AdminProductsListQuery {
   const deletedRaw = url.searchParams.get("deleted");
   const deletedMode: AdminProductsListQuery["deletedMode"] =
     deletedRaw === "all" ? "all" : deletedRaw === "only" || deletedRaw === "deleted" ? "deleted" : "active";
+  const smartRaw = url.searchParams.get("smartFilter");
+  const smartFilter: AdminProductsListQuery["smartFilter"] =
+    smartRaw === "no_images" ||
+    smartRaw === "no_desc" ||
+    smartRaw === "zero_price" ||
+    smartRaw === "low_stock" ||
+    smartRaw === "ready_publish"
+      ? smartRaw
+      : null;
   return {
     page,
     pageSize,
@@ -97,6 +107,7 @@ export function parseAdminProductsListQuery(url: URL): AdminProductsListQuery {
     quantityMax,
     createdById,
     deletedMode,
+    smartFilter,
     sort,
   };
 }
@@ -131,6 +142,20 @@ export function adminProductsWhere(q: AdminProductsListQuery): Prisma.ProductWhe
     where.quantity = { lte: 0 };
   } else if (q.inStock !== null) {
     where.inStock = q.inStock;
+  }
+  if (q.smartFilter === "no_images") {
+    where.images = { none: {} };
+  } else if (q.smartFilter === "no_desc") {
+    where.OR = [{ descAr: "" }, { descEn: "" }];
+  } else if (q.smartFilter === "zero_price") {
+    where.price = 0;
+  } else if (q.smartFilter === "low_stock") {
+    where.inStock = true;
+    where.quantity = { gt: 0, lt: 5 };
+  } else if (q.smartFilter === "ready_publish") {
+    where.catalogStatus = "DRAFT";
+    where.price = { gt: 0 };
+    where.images = { some: {} };
   }
   if (q.search) {
     const s = q.search;

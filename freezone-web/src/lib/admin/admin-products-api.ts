@@ -24,6 +24,7 @@ export type AdminProductsListParams = {
   priceMax?: string;
   quantityMin?: string;
   quantityMax?: string;
+  smartFilter?: string;
 };
 
 export type AdminProductsListResult = {
@@ -52,6 +53,7 @@ function buildSearchParams(params: AdminProductsListParams): URLSearchParams {
   if (params.priceMax) sp.set("priceMax", params.priceMax);
   if (params.quantityMin) sp.set("quantityMin", params.quantityMin);
   if (params.quantityMax) sp.set("quantityMax", params.quantityMax);
+  if (params.smartFilter) sp.set("smartFilter", params.smartFilter);
   return sp;
 }
 
@@ -86,15 +88,23 @@ export async function fetchAdminProductsList(
 }
 
 export async function bulkAdminProductsAction(
-  action: "publish" | "unpublish" | "soft_delete" | "restore" | "change_category",
+  action:
+    | "publish"
+    | "unpublish"
+    | "soft_delete"
+    | "restore"
+    | "change_category"
+    | "price_percent"
+    | "price_fixed_delta"
+    | "price_set",
   ids: number[],
-  categoryId?: number,
+  extra?: { categoryId?: number; percent?: number; delta?: number; price?: number },
 ): Promise<{ affected: number }> {
   const res = await fetch(freezoneApiUrl("/api/admin/products/bulk"), {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action, ids, categoryId }),
+    body: JSON.stringify({ action, ids, ...extra }),
   });
   const j = (await res.json()) as { affected?: number; error?: string };
   if (!res.ok) throw new Error(j.error ?? "bulk failed");

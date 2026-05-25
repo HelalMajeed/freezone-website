@@ -34,7 +34,13 @@ import {
   UserRound,
   ClipboardCheck,
   Upload,
+  Inbox,
+  Moon,
+  Sun,
 } from "lucide-react";
+import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
+import { AdminOnboardingTour } from "@/components/admin/AdminOnboardingTour";
+import { isDarkMode, setDarkMode } from "@/lib/admin/admin-user-prefs";
 import { useDashboardAuth } from "@/lib/dashboard/auth-store";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import type { LegacyRoleAlias } from "@/lib/dashboard/api";
@@ -70,6 +76,8 @@ function makeAdminNavGroups(t: TFunction): { label: string; items: NavItem[]; mi
           badgeKey: "pendingReview",
         },
         { href: "/admin/import", label: "استيراد CSV", icon: Upload, minRole: "editor" },
+        { href: "/admin/inbox", label: "صندوق الوارد", icon: Inbox, minRole: "editor", badgeKey: "newComments" },
+        { href: "/admin/me", label: "صفحتي", icon: UserRound, minRole: "editor" },
         { href: "/admin/brands", label: "العلامات التجارية", icon: Tag, minRole: "editor" },
         { href: "/admin/media", label: "الوسائط", icon: Images, minRole: "editor" },
       ],
@@ -159,7 +167,23 @@ export function AdminAppShell() {
   });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [dark, setDark] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setDark(isDarkMode());
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        navigate("/admin/products/new");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [navigate]);
 
   useEffect(() => {
     try {
@@ -335,7 +359,21 @@ export function AdminAppShell() {
               />
             </div>
 
+            <AdminGlobalSearch />
+
             <div className={s.topbarRight}>
+              <button
+                type="button"
+                className={s.langToggle}
+                title="وضع داكن"
+                onClick={() => {
+                  const next = !dark;
+                  setDark(next);
+                  setDarkMode(next);
+                }}
+              >
+                {dark ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
               <button type="button" className={s.langToggle} title="تحديث" onClick={() => window.location.reload()}>
                 <RefreshCw size={16} />
               </button>
@@ -393,6 +431,7 @@ export function AdminAppShell() {
 
           <main className="dashboard-content">
             <Outlet />
+            <AdminOnboardingTour />
           </main>
         </div>
       </div>

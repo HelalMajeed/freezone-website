@@ -4,7 +4,16 @@ import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 
-const ACTIONS = ["publish", "unpublish", "soft_delete", "restore", "change_category"] as const;
+const ACTIONS = [
+  "publish",
+  "unpublish",
+  "soft_delete",
+  "restore",
+  "change_category",
+  "price_percent",
+  "price_fixed_delta",
+  "price_set",
+] as const;
 type BulkAction = (typeof ACTIONS)[number];
 
 /**
@@ -30,7 +39,14 @@ export async function POST(req: Request) {
   }
 
   const body = (await req.json().catch(() => null)) as
-    | { action?: string; ids?: number[]; categoryId?: number }
+    | {
+        action?: string;
+        ids?: number[];
+        categoryId?: number;
+        percent?: number;
+        delta?: number;
+        price?: number;
+      }
     | null;
 
   const action = body?.action as BulkAction | undefined;
@@ -101,6 +117,31 @@ export async function POST(req: Request) {
           })
         ).count;
         break;
+      case "price_percent": {
+        const pct = typeof body?.percent === "number" ? body.percent : 0;
+        const rows = await prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true, price: true } });
+        for (const row of rows) {
+          const next = Math.max(0, Math.round(row.price * (1 + pct / 100)));
+          await prisma.product.update({ where: { id: row.id }, data: { price: next } });
+          affected++;
+        }
+        break;
+      }
+      case "price_fixed_delta": {
+        const delta = typeof body?.delta === "number" ? body.delta : 0;
+        const rows = await prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true, price: true } });
+        for (const row of rows) {
+          const next = Math.max(0, row.price + delta);
+          await prisma.product.update({ where: { id: row.id }, data: { price: next } });
+          affected++;
+        }
+        break;
+      }
+      case "price_set": {
+        const price = typeof body?.price === "number" ? Math.max(0, Math.round(body.price)) : 0;
+        affected = (await prisma.product.updateMany({ where: { id: { in: ids } }, data: { price } })).count;
+        break;
+      }
     }
     revalidateStorefrontData();
     await logAdminAction("product.bulk", "Product", {
