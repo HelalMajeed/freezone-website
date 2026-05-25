@@ -48,11 +48,33 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "pricing", label: "التسعير" },
   { id: "inventory", label: "المخزون" },
   { id: "attributes", label: "السمات" },
-  { id: "variants", label: "متغيرات" },
+  { id: "variants", label: "المتغيرات" },
   { id: "seo", label: "SEO" },
   { id: "shipping", label: "الشحن" },
-  { id: "notes", label: "داخلي" },
+  { id: "notes", label: "ملاحظات داخلية" },
 ];
+
+/** COUNT: 10 tabs — basic, description, images, pricing, inventory, attributes, variants, seo, shipping, notes */
+
+const TAB_FIELDS: Record<TabId, (keyof ProductEditorValues)[]> = {
+  basic: ["nameAr", "nameEn", "slug", "sku", "categoryId", "secondaryCategoryIds", "brandId", "brand", "catalogStatus"],
+  description: ["shortDescAr", "shortDescEn", "descAr", "descEn", "keyFeatures", "whatsInBox"],
+  images: [],
+  pricing: ["price", "priceUsd", "costPrice", "salePrice", "saleStartAt", "saleEndAt"],
+  inventory: ["quantity", "lowStockThreshold", "availability", "prepTimeDays"],
+  attributes: ["specs"],
+  variants: [],
+  seo: ["metaTitleAr", "metaTitleEn", "metaDescAr", "metaDescEn", "seoKeywords"],
+  shipping: ["weightKg", "dimLengthCm", "dimWidthCm", "dimHeightCm", "requiresSpecialHandling", "excludedProvinces"],
+  notes: ["internalNotes", "sourceSupplier", "purchaseInvoiceRef"],
+};
+
+function tabForField(field: string): TabId {
+  for (const [tabId, fields] of Object.entries(TAB_FIELDS) as [TabId, (keyof ProductEditorValues)[]][]) {
+    if (fields.includes(field as keyof ProductEditorValues)) return tabId;
+  }
+  return "basic";
+}
 
 export function ProductEditorWorkspace({ productId }: { productId: number }) {
   const navigate = useNavigate();
@@ -222,12 +244,18 @@ export function ProductEditorWorkspace({ productId }: { productId: number }) {
     saveState === "saving" ? "جارٍ الحفظ…" : saveState === "saved" ? "تم الحفظ" : formState.isDirty ? "غير محفوظ" : "";
 
   const missingFields = Object.entries(formState.errors).map(([k]) => k);
+  const tabsWithErrors = new Set(missingFields.map((f) => tabForField(f)));
+
+  const focusFirstErrorTab = () => {
+    const first = missingFields[0];
+    if (first) setTab(tabForField(first));
+  };
 
   return (
     <div
       dir="rtl"
       className={editorStyles.workspace}
-      style={{ maxWidth: 960, margin: "0 auto", padding: "0 16px 80px", marginInlineStart: reviewMode ? 300 : 0 }}
+      style={{ marginInlineStart: reviewMode ? 300 : 0 }}
     >
       <KeyboardShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <ProductReadinessPanel
@@ -238,13 +266,15 @@ export function ProductEditorWorkspace({ productId }: { productId: number }) {
         onPublishBlocked={setPublishBlocked}
       />
       <ProductCommentsSection productId={productId} readOnly={reviewMode && !hasRole("admin")} />
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+      <header className={editorStyles.header}>
         <div>
           <Link to="/admin/products">← المنتجات</Link>
           <h1 style={{ margin: "8px 0 0" }}>تعديل منتج #{productId}</h1>
-          <span style={{ fontSize: 13, color: "#94a3b8" }}>{saveLabel}</span>
+          <span style={{ fontSize: 13, color: "#94a3b8" }}>
+            {saveLabel} · {TABS.length} تبويبات
+          </span>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div className={editorStyles.headerActions}>
           <button type="button" disabled={!formState.isValid} onClick={() => void persist()}>
             حفظ مسودة
           </button>
@@ -292,33 +322,23 @@ export function ProductEditorWorkspace({ productId }: { productId: number }) {
       </header>
 
       {missingFields.length > 0 ? (
-        <div
-          role="alert"
-          style={{
-            marginBottom: 12,
-            padding: 12,
-            borderRadius: 8,
-            background: "#422006",
-            color: "#fde68a",
-            fontSize: 13,
-          }}
-        >
-          <strong>ينقص للحفظ الكامل:</strong> {missingFields.join("، ")}
+        <div role="alert" className={editorStyles.alert}>
+          <strong>ينقص للحفظ الكامل:</strong> {missingFields.join("، ")}{" "}
+          <button type="button" onClick={focusFirstErrorTab} style={{ marginInlineStart: 8, textDecoration: "underline" }}>
+            انتقل للتبويب
+          </button>
         </div>
       ) : null}
 
-      <nav style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+      <nav className={editorStyles.tabNav} aria-label="تبويبات محرر المنتج" data-tabs-count={TABS.length}>
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
+            data-tab={t.id}
+            className={`${editorStyles.tabBtn} ${tab === t.id ? editorStyles.tabBtnActive : ""} ${tabsWithErrors.has(t.id) ? editorStyles.tabBtnError : ""}`}
             onClick={() => setTab(t.id)}
-            style={{
-              padding: "6px 12px",
-              borderRadius: 8,
-              border: tab === t.id ? "2px solid #10b981" : "1px solid #334155",
-              background: tab === t.id ? "#0f172a" : "transparent",
-            }}
+            aria-current={tab === t.id ? "page" : undefined}
           >
             {t.label}
           </button>
@@ -326,9 +346,15 @@ export function ProductEditorWorkspace({ productId }: { productId: number }) {
       </nav>
 
       <form
-        onSubmit={handleSubmit(() => {
-          void persist();
-        })}
+        onSubmit={handleSubmit(
+          () => {
+            void persist();
+          },
+          () => {
+            focusFirstErrorTab();
+            toast.error("راجع الحقول المطلوبة في التبويب المحدد");
+          },
+        )}
       >
         {tab === "basic" ? (
           <BasicInfoSection
