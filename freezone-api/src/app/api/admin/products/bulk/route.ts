@@ -1,5 +1,5 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { auditContext, guardAdminMutate } from "@/lib/admin-route-guard";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
@@ -22,9 +22,9 @@ type BulkAction = (typeof ACTIONS)[number];
  * delete for one-offs.
  */
 export async function POST(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const mutateGuard = await guardAdminMutate(req);
+  if (!mutateGuard.ok) return mutateGuard.response;
+  const audit = auditContext(mutateGuard.actor, req);
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -95,6 +95,7 @@ export async function POST(req: Request) {
     revalidateStorefrontData();
     await logAdminAction("product.bulk", "Product", {
       payload: { action, count: ids.length, affected, ids: ids.slice(0, 20) },
+      ...audit,
     });
     return Response.json({ ok: true, action, affected });
   } catch (e) {

@@ -1,7 +1,7 @@
 import type { AdminRole } from "@prisma/client";
 import { getCurrentDashboardUser, type CurrentUser } from "./dashboard-auth";
 import { isAdminAuthenticatedFromRequest } from "./admin-session";
-import { clientIpFromRequest } from "./dashboard-guard";
+import { clientIpFromRequest, clientUserAgentFromRequest } from "./dashboard-guard";
 
 export type { AdminRole };
 
@@ -78,6 +78,10 @@ export function actorForAudit(actor: AdminActor): { userId: number | null; userE
 
 export function clientIp(req: Request): string | null {
   return clientIpFromRequest(req);
+}
+
+export function clientUserAgent(req: Request): string | null {
+  return clientUserAgentFromRequest(req);
 }
 
 function jsonAdminError(status: number, message: string, code: string): Response {

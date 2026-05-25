@@ -22,6 +22,7 @@ import * as adminCmsPageReorder from "./app/api/admin/cms-page/reorder/route";
 import * as adminCmsPageSections from "./app/api/admin/cms-page/sections/route";
 import * as adminCmsPageSectionsId from "./app/api/admin/cms-page/sections/[id]/route";
 import * as adminCoupons from "./app/api/admin/coupons/route";
+import * as adminCatalogConfig from "./app/api/admin/catalog-config/route";
 import * as adminDashboard from "./app/api/admin/dashboard/route";
 import * as adminDashboardStats from "./app/api/admin/dashboard-stats/route";
 import * as adminDataQuality from "./app/api/admin/data-quality/route";
@@ -38,6 +39,8 @@ import * as adminProductsId from "./app/api/admin/products/[id]/route";
 import * as adminProductsIdImages from "./app/api/admin/products/[id]/images/route";
 import * as adminProductsIdVariants from "./app/api/admin/products/[id]/variants/route";
 import * as adminProductsBulk from "./app/api/admin/products/bulk/route";
+import * as adminProductsCheckUnique from "./app/api/admin/products/check-unique/route";
+import * as adminUploadProductImage from "./app/api/admin/upload/product-image/route";
 import * as adminImportGlobaliraqBatches from "./app/api/admin/import/globaliraq/batches/route";
 import * as adminImportGlobaliraqBatchesId from "./app/api/admin/import/globaliraq/batches/[id]/route";
 import * as adminImportGlobaliraqRunBatch from "./app/api/admin/import/globaliraq/run-batch/route";
@@ -304,6 +307,9 @@ async function main() {
     await sendWebResponse(res, await adminLogout.POST(webRequestFromExpress(req)));
   });
 
+  app.get("/api/admin/catalog-config", async (req, res) => {
+    await sendWebResponse(res, await adminCatalogConfig.GET(webRequestFromExpress(req)));
+  });
   app.get("/api/admin/dashboard-stats", async (req, res) => {
     await sendWebResponse(res, await adminDashboardStats.GET(webRequestFromExpress(req)));
   });
@@ -361,6 +367,9 @@ async function main() {
     );
   });
 
+  app.get("/api/admin/products/check-unique", async (req, res) => {
+    await sendWebResponse(res, await adminProductsCheckUnique.GET(webRequestFromExpress(req)));
+  });
   app.get("/api/admin/products", async (req, res) => {
     await sendWebResponse(res, await adminProducts.GET(webRequestFromExpress(req)));
   });
@@ -529,6 +538,32 @@ async function main() {
         if (cookie) headers.set("cookie", cookie);
         const webReq = new Request(url, { method: "POST", headers, body: form });
         await sendWebResponse(res, await adminUpload.POST(webReq));
+      } catch (e) {
+        next(e);
+      }
+    },
+  );
+
+  app.post(
+    "/api/admin/upload/product-image",
+    upload.single("file"),
+    async (req, res, next) => {
+      try {
+        const proto = req.get("x-forwarded-proto") || req.protocol;
+        const host = req.get("x-forwarded-host") || req.get("host") || "localhost";
+        const url = `${proto}://${host}${req.originalUrl}`;
+        const form = new FormData();
+        if (req.file) {
+          const file = new File([new Uint8Array(req.file.buffer)], req.file.originalname, {
+            type: req.file.mimetype || "application/octet-stream",
+          });
+          form.set("file", file);
+        }
+        const headers = new Headers();
+        const cookie = req.headers.cookie;
+        if (cookie) headers.set("cookie", cookie);
+        const webReq = new Request(url, { method: "POST", headers, body: form });
+        await sendWebResponse(res, await adminUploadProductImage.POST(webReq));
       } catch (e) {
         next(e);
       }

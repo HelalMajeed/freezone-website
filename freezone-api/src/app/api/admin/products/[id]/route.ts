@@ -16,6 +16,9 @@ import {
   stripSecondaryMatchingPrimary,
 } from "@/lib/sync-product-secondary-categories";
 import { productQueryMissingSecondarySupport } from "@/lib/prisma-product-secondary-fallback";
+import { parseAdminProductPatch } from "@/lib/admin-product-patch";
+import { buildProductUpdateData } from "@/lib/admin-product-update";
+import type { AdminRole } from "@prisma/client";
 
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const readGuard = await guardAdminRead(req);
@@ -99,40 +102,24 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const id = parseInt((await ctx.params).id, 10);
   if (!Number.isFinite(id)) return Response.json({ error: "bad id" }, { status: 400 });
 
-  const body = (await req.json().catch(() => null)) as {
-    categoryId?: number;
-    brand?: string;
-    brandId?: number | null;
-    sku?: string;
-    model?: string;
-    quantity?: number;
-    nameEn?: string;
-    nameAr?: string;
-    descEn?: string;
-    descAr?: string;
-    price?: number;
-    oldPrice?: number | null;
-    originalPrice?: number | null;
-    warranty?: string;
-    sourceUrl?: string | null;
-    storage?: string;
-    model3d?: string | null;
-    specs?: Record<string, unknown> | null;
-    inStock?: boolean;
-    featured?: boolean;
-    isNew?: boolean;
-    icon?: string;
-    rating?: number;
-    reviews?: number;
-    sales?: number;
-    published?: boolean;
-    secondaryCategoryIds?: number[] | null;
-  } | null;
-  if (!body) return Response.json({ error: "body" }, { status: 400 });
+  const raw = await req.json().catch(() => null);
+  const parsed = parseAdminProductPatch(raw);
+  if (!parsed.ok) {
+    return Response.json({ ok: false, error: parsed.error, code: "VALIDATION" }, { status: 400 });
+  }
+  const body = parsed.data;
+
+  const role: AdminRole =
+    mutateGuard.actor.kind === "dashboard" ? mutateGuard.actor.user.role : "SUPER_ADMIN";
 
   try {
     const existing = await prisma.product.findUnique({ where: { id } });
     if (!existing) return Response.json({ error: "not found" }, { status: 404 });
+
+    const built = await buildProductUpdateData(existing, body, role);
+    if (!built.ok) {
+      return Response.json({ ok: false, error: built.error, code: "FORBIDDEN" }, { status: built.status });
+    }
 
     const nextCategoryId = body.categoryId ?? existing.categoryId;
     let finalSpecs: object = (existing.specs as object) ?? {};
@@ -152,36 +139,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
     await prisma.product.update({
       where: { id },
-      data: {
-        ...(body.categoryId !== undefined ? { categoryId: body.categoryId } : {}),
-        ...(body.brand !== undefined ? { brand: body.brand } : {}),
-        ...(body.brandId !== undefined
-          ? { brandId: body.brandId != null && Number.isFinite(body.brandId) ? body.brandId : null }
-          : {}),
-        ...(body.sku !== undefined ? { sku: body.sku.trim() || "—" } : {}),
-        ...(body.model !== undefined ? { model: body.model.trim() } : {}),
-        ...(typeof body.quantity === "number" ? { quantity: body.quantity } : {}),
-        ...(body.nameEn !== undefined ? { nameEn: body.nameEn } : {}),
-        ...(body.nameAr !== undefined ? { nameAr: body.nameAr } : {}),
-        ...(body.descEn !== undefined ? { descEn: body.descEn } : {}),
-        ...(body.descAr !== undefined ? { descAr: body.descAr } : {}),
-        ...(typeof body.price === "number" ? { price: body.price } : {}),
-        ...(body.oldPrice !== undefined ? { oldPrice: body.oldPrice } : {}),
-        ...(body.originalPrice !== undefined ? { originalPrice: body.originalPrice } : {}),
-        ...(body.warranty !== undefined ? { warranty: body.warranty.trim() } : {}),
-        ...(body.sourceUrl !== undefined ? { sourceUrl: body.sourceUrl?.trim() || null } : {}),
-        ...(body.storage !== undefined ? { storage: body.storage } : {}),
-        ...(body.model3d !== undefined ? { model3d: body.model3d?.trim() || null } : {}),
-        specs: finalSpecs as object,
-        ...(body.inStock !== undefined ? { inStock: body.inStock } : {}),
-        ...(body.featured !== undefined ? { featured: body.featured } : {}),
-        ...(body.isNew !== undefined ? { isNew: body.isNew } : {}),
-        ...(body.icon !== undefined ? { icon: body.icon } : {}),
-        ...(typeof body.rating === "number" ? { rating: body.rating } : {}),
-        ...(typeof body.reviews === "number" ? { reviews: body.reviews } : {}),
-        ...(typeof body.sales === "number" ? { sales: body.sales } : {}),
-        ...(body.published !== undefined ? { published: body.published } : {}),
-      },
+      data: { ...built.data, specs: finalSpecs as object },
     });
 
     if (body.secondaryCategoryIds !== undefined) {

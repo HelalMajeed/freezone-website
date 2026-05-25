@@ -11,6 +11,7 @@ export type AuditLogInput = {
   after?: unknown;
   actor?: AdminActor;
   ip?: string | null;
+  userAgent?: string | null;
 };
 
 type LegacyOpts = {
@@ -18,6 +19,7 @@ type LegacyOpts = {
   payload?: unknown;
   actor?: AdminActor;
   ip?: string | null;
+  userAgent?: string | null;
 };
 
 async function persistAuditLog(input: AuditLogInput): Promise<void> {
@@ -36,6 +38,7 @@ async function persistAuditLog(input: AuditLogInput): Promise<void> {
       userId: auditActor.userId,
       userEmail: auditActor.userEmail,
       ip: input.ip?.slice(0, 64) ?? null,
+      userAgent: input.userAgent?.slice(0, 512) ?? null,
     };
     if (Object.keys(payload).length > 0) {
       data.payload = payload as Prisma.InputJsonValue;
@@ -68,5 +71,6 @@ export async function logAdminAction(
     after: opts?.payload,
     actor: opts?.actor,
     ip: opts?.ip,
+    userAgent: opts?.userAgent,
   });
 }

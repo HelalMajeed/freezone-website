@@ -4,6 +4,7 @@ import {
   requireAdminRole,
   type AdminActor,
   clientIp,
+  clientUserAgent,
 } from "./admin-auth";
 
 const MUTATE_ROLES: AdminRole[] = ["CATALOG_EDITOR", "CATALOG_MANAGER", "SUPER_ADMIN"];
@@ -27,5 +28,9 @@ export async function guardAdminMutate(
 }
 
 export function auditContext(actor: AdminActor, req: Request) {
-  return { actor, ip: clientIp(req) };
+  return {
+    actor,
+    ip: clientIp(req),
+    userAgent: clientUserAgent(req),
+  };
 }

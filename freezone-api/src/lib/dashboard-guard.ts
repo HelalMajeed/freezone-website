@@ -41,3 +41,8 @@ export function clientIpFromRequest(req: Request): string | null {
   if (fwd) return fwd.split(",")[0].trim();
   return req.headers.get("x-real-ip");
 }
+
+export function clientUserAgentFromRequest(req: Request): string | null {
+  const ua = req.headers.get("user-agent");
+  return ua ? ua.slice(0, 512) : null;
+}

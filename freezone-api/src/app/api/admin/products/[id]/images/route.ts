@@ -1,5 +1,5 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { auditContext, guardAdminMutate, guardAdminRead } from "@/lib/admin-route-guard";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
@@ -39,9 +39,9 @@ function parseAppendImages(body: { urls?: unknown; images?: unknown } | null): I
 
 /** Append images after existing ones (preserves current rows and their ids). */
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const mutateGuard = await guardAdminMutate(req);
+  if (!mutateGuard.ok) return mutateGuard.response;
+  const audit = auditContext(mutateGuard.actor, req);
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -84,6 +84,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     await logAdminAction("productImages.append", "Product", {
       entityId: productId,
       payload: { added: images.length },
+      ...audit,
     });
     return Response.json({ ok: true, added: images.length });
   } catch (e) {
@@ -93,9 +94,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
 /** Replace all gallery images in order (URLs must already exist, e.g. after upload). */
 export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const mutateGuard = await guardAdminMutate(req);
+  if (!mutateGuard.ok) return mutateGuard.response;
+  const audit = auditContext(mutateGuard.actor, req);
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -130,6 +131,7 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     await logAdminAction("productImages.replace", "Product", {
       entityId: productId,
       payload: { count: images.length },
+      ...audit,
     });
     return Response.json({ ok: true, count: images.length });
   } catch (e) {
@@ -139,9 +141,9 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
 
 /** Reorder existing images by id list (must all belong to this product). */
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const mutateGuard = await guardAdminMutate(req);
+  if (!mutateGuard.ok) return mutateGuard.response;
+  const audit = auditContext(mutateGuard.actor, req);
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -168,7 +170,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       orderedIds.map((id, sortOrder) => prisma.productImage.update({ where: { id }, data: { sortOrder } })),
     );
     revalidateStorefrontData();
-    await logAdminAction("productImages.reorder", "Product", { entityId: productId });
+    await logAdminAction("productImages.reorder", "Product", { entityId: productId, ...audit });
     return Response.json({ ok: true });
   } catch (e) {
     return handleRouteDbError(e);

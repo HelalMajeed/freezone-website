@@ -1,5 +1,5 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { auditContext, guardAdminMutate, guardAdminRead } from "@/lib/admin-route-guard";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
@@ -26,9 +26,8 @@ type VariantInput = {
 };
 
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const readGuard = await guardAdminRead(req);
+  if (!readGuard.ok) return readGuard.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -56,9 +55,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
  * payload can't leave us with cdn.shopify.com URLs in production data.
  */
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const mutateGuard = await guardAdminMutate(req);
+  if (!mutateGuard.ok) return mutateGuard.response;
+  const audit = auditContext(mutateGuard.actor, req);
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -132,6 +131,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     await logAdminAction("product.variants.upsert", "ProductVariant", {
       entityId: id,
       payload: { count: out.length },
+      ...audit,
     });
     return Response.json({ ok: true, variants: out });
   } catch (e) {
