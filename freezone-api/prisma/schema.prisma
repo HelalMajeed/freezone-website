@@ -160,8 +160,6 @@ model Product {
   reviews             Int                        @default(0)
   sales               Int                        @default(0)
   model3d             String?
-  /// Free-text warranty label shown on PDP + admin edit. Default copy for imports: "ضمان سنتين وكالة".
-  warranty            String?
   published           Boolean                    @default(true)
   /// Soft-delete marker — when set, the row is hidden from storefront queries
   /// but the data is retained for recovery / audit.
@@ -174,13 +172,8 @@ model Product {
   secondaryCategories ProductSecondaryCategory[]
   attributeValues     ProductAttributeValue[]
 
-  /// Import provenance — only set when the row originated from an external scrape (e.g. Global Iraq).
-  sourceUrl     String?
-  /// Stable external identifier (e.g. Shopify handle) used for dedupe + re-runs.
-  sourceHandle  String?
   /// Original list price as scraped, BEFORE the FreeZone markup multiplier is applied to `price`.
   sourcePrice   Int?
-  importedAt    DateTime?
   importBatchId String?
   importBatch   ImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
 

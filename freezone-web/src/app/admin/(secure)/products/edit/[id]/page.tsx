@@ -65,7 +65,6 @@ type ProductRow = {
   price: number;
   oldPrice: number | null;
   originalPrice: number | null;
-  warranty: string;
   sourceHandle: string | null;
   sourceUrl: string | null;
   importedAt: string | null;
@@ -80,33 +79,12 @@ type ProductRow = {
   sales: number;
   published: boolean;
   images: ImgRow[];
+  /** Read-only mirror of ProductVariant rows — populated when the row was imported. */
   variants?: ProductVariantRow[];
   category: { id: number; slug: string; nameEn: string };
   specs?: Record<string, unknown> | null;
   displaySpecs?: Record<string, unknown> | null;
   filterSpecs?: Record<string, unknown> | null;
-  /** Read-only mirror of ProductVariant rows — populated when the row was imported. */
-  variants?: AdminProductVariantRow[];
-};
-
-type AdminProductVariantRow = {
-  id: number;
-  sku: string;
-  labelEn: string;
-  labelAr: string;
-  priceOverride: number | null;
-  oldPrice: number | null;
-  optionName1: string | null;
-  optionValue1: string | null;
-  optionName2: string | null;
-  optionValue2: string | null;
-  optionName3: string | null;
-  optionValue3: string | null;
-  imageUrl: string | null;
-  sourceVariantId: string | null;
-  quantity: number;
-  active: boolean;
-  sortOrder: number;
 };
 
 type ApiProductPayload = Omit<ProductRow, "secondaryCategoryIds"> & {
@@ -343,7 +321,6 @@ export default function AdminEditProductPage() {
         sales: product.sales,
         published: publishIntent ?? product.published,
         model: product.model ?? "",
-        warranty: product.warranty ?? "",
         specs: categoryAttributes.length
           ? buildSpecsPayloadForSave(categoryAttributes, displaySpecs, filterSpecs, categorySlug)
           : {},

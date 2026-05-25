@@ -54,8 +54,6 @@ export interface Product {
   oldPrice: number | null;
   /** Source cost before markup (admin review / import). */
   originalPrice?: number | null;
-  /** Warranty line shown on PDP. */
-  warranty?: string;
   storage: string;
   inStock: boolean;
   featured: boolean;
