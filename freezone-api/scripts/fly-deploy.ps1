@@ -65,7 +65,7 @@ Invoke-Fly ssh console -a $app -C "cd /app && npx prisma migrate deploy"
 
 if ($env:FLY_RUN_CLASSIFICATION_REPAIR -eq "1") {
   Write-Host "==> classification:repair via SSH ($app) [manual opt-in]" -ForegroundColor Cyan
-  Write-Host "    (seed attributes + sync legacy specs — does NOT run prisma db seed)" -ForegroundColor DarkGray
+  Write-Host "    (seed attributes + sync legacy specs; does NOT run prisma db seed)" -ForegroundColor DarkGray
   Invoke-Fly ssh console -a $app -C "sh -lc 'cd /app && npm run classification:repair'"
 } else {
   Write-Host "==> skip classification:repair (set FLY_RUN_CLASSIFICATION_REPAIR=1 to run after deploy)" -ForegroundColor Yellow

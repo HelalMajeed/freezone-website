@@ -30,7 +30,7 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
       - name: Prisma migrate deploy
-        run: flyctl ssh console -a freezone-website -C "cd /app && npx prisma migrate deploy"
+        run: flyctl ssh console -a freezone-website -C "sh -lc 'cd /app && npx prisma migrate deploy'"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
