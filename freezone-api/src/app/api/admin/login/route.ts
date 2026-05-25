@@ -1,8 +1,12 @@
+import { isAdminDirectLoginEnabled } from "@/lib/admin-direct-login";
 import { signAdminSession, adminPasswordMatches, jsonWithSessionCookie } from "@/lib/admin-session";
 
 export async function GET(_req: Request) {
+  const direct = isAdminDirectLoginEnabled();
   return Response.json({
-    requirePassword: process.env.ADMIN_REQUIRE_PASSWORD === "true",
+    requirePassword: direct ? false : process.env.ADMIN_REQUIRE_PASSWORD === "true",
+    authBypass: direct,
+    directLogin: direct,
   });
 }
 

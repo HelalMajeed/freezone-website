@@ -1,20 +1,28 @@
+import { isAdminDirectLoginEnabled } from "./admin-direct-login";
+
 /**
  * Fail loudly when production admin secrets are missing or weak.
  * Called once at API startup (see server.ts).
  */
 export function assertAdminSecretsConfigured(): void {
   const isProd = process.env.NODE_ENV === "production";
-  const skipAuth = process.env.ADMIN_SKIP_AUTH === "true";
-
-  if (skipAuth && isProd) {
-    throw new Error(
-      "ADMIN_SKIP_AUTH must not be enabled in production. Remove the env var and restart.",
-    );
-  }
+  const directLogin = isAdminDirectLoginEnabled();
 
   const sessionSecret = process.env.ADMIN_SESSION_SECRET?.trim();
   const password = process.env.ADMIN_PASSWORD?.trim();
   const requirePassword = process.env.ADMIN_REQUIRE_PASSWORD === "true";
+
+  if (directLogin) {
+    console.warn(
+      "[freezone-api] Direct admin login enabled (ADMIN_SKIP_AUTH / ADMIN_DIRECT_LOGIN). Password not required.",
+    );
+    if (isProd && (!sessionSecret || sessionSecret.length < 32)) {
+      throw new Error(
+        "ADMIN_SESSION_SECRET must be set (≥32 chars) even with direct login. See docs/runbooks/secrets.md",
+      );
+    }
+    return;
+  }
 
   if (isProd) {
     if (!sessionSecret || sessionSecret.length < 32) {

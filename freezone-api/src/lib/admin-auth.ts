@@ -1,5 +1,6 @@
 import type { AdminRole } from "@prisma/client";
 import { getCurrentDashboardUser, type CurrentUser } from "./dashboard-auth";
+import { isAdminDirectLoginEnabled } from "./admin-direct-login";
 import { isAdminAuthenticatedFromRequest } from "./admin-session";
 import { clientIpFromRequest, clientUserAgentFromRequest } from "./dashboard-guard";
 
@@ -52,6 +53,9 @@ export async function requireAdminRole(
   const user = await getCurrentDashboardUser(req);
   if (!user) {
     if (isAdminAuthenticatedFromRequest(req)) {
+      if (isAdminDirectLoginEnabled()) {
+        return { ok: true, actor: { kind: "legacy", role: "SUPER_ADMIN", email: "legacy@admin" } };
+      }
       return {
         ok: false,
         response: jsonAdminError(
