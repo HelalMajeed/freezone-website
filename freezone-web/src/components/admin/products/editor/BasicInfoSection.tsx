@@ -5,6 +5,7 @@ import type { Control, UseFormRegister, UseFormSetValue, UseFormWatch } from "re
 import { AdminProductFormSection } from "@/components/admin/products/AdminProductFormSection";
 import type { ProductEditorValues } from "@/lib/admin/product-editor-schema";
 import { checkFieldUnique } from "@/lib/admin/product-editor-api";
+import { findArabicTypoHints } from "@/lib/arabic-typo-hints";
 
 type Cat = { id: number; nameAr: string; nameEn: string; slug: string };
 type Brand = { id: number; nameAr: string; nameEn: string };
@@ -33,8 +34,10 @@ export function BasicInfoSection({
   brands: Brand[];
   productId: number;
 }) {
+  const nameAr = watch("nameAr");
   const nameEn = watch("nameEn");
   const slug = watch("slug");
+  const nameArHints = findArabicTypoHints(nameAr ?? "");
   const sku = watch("sku");
   const [slugOk, setSlugOk] = useState<boolean | null>(null);
   const [skuOk, setSkuOk] = useState<boolean | null>(null);
@@ -73,6 +76,11 @@ export function BasicInfoSection({
       <label>
         الاسم (عربي) *
         <input {...register("nameAr")} style={{ width: "100%" }} dir="rtl" />
+        {nameArHints.map((h) => (
+          <span key={h} style={{ display: "block", color: "#fbbf24", fontSize: 12, marginTop: 4 }}>
+            {h}
+          </span>
+        ))}
       </label>
       <label>
         الاسم (إنجليزي) *

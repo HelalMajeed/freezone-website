@@ -4,6 +4,7 @@ import { useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Trash2 } from "lucide-react";
 import { FacetKeysPicker, type FacetImportCategoryOption, type FacetKeysEditorHandle } from "@/components/admin/FacetKeysPicker";
+import { findArabicTypoHints } from "@/lib/arabic-typo-hints";
 import styles from "./admin-categories.module.css";
 import type { CategoryCardData } from "./CategoryCard";
 import type { FacetAttributeDef } from "@/lib/data";
@@ -94,6 +95,13 @@ export function CategoryDetailsDrawer({
                   onChange={(e) => onChangeCat({ nameAr: e.target.value })}
                   placeholder="الاسم عربي"
                 />
+                {cat
+                  ? findArabicTypoHints(cat.nameAr).map((h) => (
+                      <div key={h} style={{ color: "#fbbf24", fontSize: 12, marginTop: 4 }}>
+                        {h}
+                      </div>
+                    ))
+                  : null}
               </div>
               <div>
                 <div className={styles.label}>Name EN</div>
