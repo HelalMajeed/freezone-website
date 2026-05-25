@@ -1,87 +1,75 @@
-# Freezone Autonomous Execution — Progress Log
+# Freezone Data Entry System — Progress Log
 
 ## Status: IN_PROGRESS
-## Started: 2026-05-25
-## Last Update: 2026-05-25 (session resume)
-## Current Batch: 1/6
-## Current Step: 1.7 — Batch 1 wrap-up (image/variant routes still legacy auth)
+## Current Batch: 3 / 7
+## Current Step: 3.0 — Anti-Errors & Speed (pending)
+## Last Update: 2026-05-25
 
 ---
 
-## Batches Status
-- [▶] Batch 1: Foundation & Security — ~95% (commits pushed; image/variant CUD auth pending)
-- [ ] Batch 2: Full Product Editor
-- [ ] Batch 3: Anti-Errors & Speed
-- [ ] Batch 4: Review Workflow
-- [ ] Batch 5: Categories & Attributes Manager
-- [ ] Batch 6: Bulk Import & Productivity
+## Batches
+- [✓] Batch 1: Foundation & Security — DONE
+- [✓] Batch 2: Full Product Editor — DONE (core sections + API; variant matrix editor UI basic)
+- [ ] Batch 3: Anti-Errors & Speed — PENDING
+- [ ] Batch 4: Review Workflow — PENDING
+- [ ] Batch 5: Categories & Attributes Manager — PENDING
+- [ ] Batch 6: Bulk Import & Productivity — PENDING
+- [ ] Batch 7: Staging Environment — PENDING
 
 ---
 
 ## Decisions Log
 
-### [DECISION] 2026-05-25 @ schema.prisma
-**الموقف:** AdminUser.role كان String (`editor`/`admin`/`superadmin`) والبرومت يطلب enum `AdminRole`.
-**القرار:** enum + migration SQL يحوّل القيم القديمة — لا تطبيق على الإنتاج من الوكيل.
+### [DECISION] 2026-05-25 — Product.specs vs EAV
+**القرار:** الحفظ عبر `persistProductSpecsForProduct` → `ProductAttributeValue` + sync إلى `Product.specs` للتوافق.  
+**البديل المرفوض:** إزالة `specs` JSON فوراً (breaking للمتجر).
 
-### [DECISION] 2026-05-25 @ dashboard-auth hashing
-**القرار:** argon2id للحسابات الجديدة؛ scrypt يبقى للتحقق من المستخدمين الحاليين.
+### [DECISION] 2026-05-25 — catalogStatus vs published
+**القرار:** `catalogStatus` enum جديد + مزامنة `published` عند تغيير الحالة.  
+**السبب:** سير مراجعة Batch 4 دون كسر استعلامات `published` الحالية.
 
-### [DECISION] 2026-05-25 @ legacy admin cookie
-**القرار:** legacy `fz_admin_session` للقراءة فقط؛ CUD يتطلب `/dashboard/login` session.
+### [DECISION] 2026-05-25 — صور المنتج
+**القرار:** `POST /api/admin/upload/product-image` + sharp WebP بأربعة أحجام.  
+**البديل المرفوض:** رفع ملف واحد بدون تحقق أبعاد.
 
-### [DECISION] 2026-05-25 @ admin-audit API
-**الموقف:** عشرات الاستدعاءات بصيغة قديمة `logAdminAction(action, entity, opts)`.
-**القرار:** overload يدعم الصيغتين + `actor`/`ip` اختياريين لتجنّب كسر 20+ route دفعة واحدة.
-
-### [DECISION] 2026-05-25 @ web nav roles
-**الموقف:** AdminAppShell يستخدم مفاتيح `editor`/`admin`/`superadmin`.
-**القرار:** `LegacyRoleAlias` في الواجهة + `hasRole()` يطبّع إلى `AdminRole` — لا إعادة كتابة كل عناصر القائمة الآن.
+### [DECISION] 2026-05-25 — محرر المنتج
+**القرار:** استبدال صفحة التعديل الضخمة بـ `ProductEditorWorkspace` + أقسام منفصلة.  
+**البديل المرفوض:** الإبقاء على ملف 1100+ سطر.
 
 ---
 
 ## Blockers Log
-_(none — tsc api + web pass after role fixes)_
+_(none)_
 
 ---
 
-## Files Changed (Batch 1)
-- `freezone-api/prisma/schema.prisma` — `AdminRole` enum, `AuditLog` actor fields
-- `freezone-api/prisma/migrations/20260525120000_admin_roles_and_audit_actor/migration.sql` — **create-only**
-- `freezone-api/src/lib/admin-secrets.ts`, `password-hash.ts`, `admin-auth.ts`, `admin-route-guard.ts`, `admin-audit.ts`
-- `freezone-api/src/lib/dashboard-auth.ts`, `admin-session.ts`, `middleware/requireRole.ts`
-- `freezone-api/src/server.ts` — startup secret assertion
-- `freezone-api/scripts/seed-operators.ts`
-- `freezone-api/src/app/api/admin/products/*`, `categories/*`, `brands/*` — dashboard session for CUD + audit actor
-- `freezone-api/src/app/api/dashboard/users/*` — `SUPER_ADMIN` role checks
-- `freezone-web/src/lib/dashboard/api.ts`, `auth-store.ts` — new roles + legacy aliases
-- `freezone-web` users/profile/shell — role labels
-- `docs/runbooks/secrets.md`, `.gitignore` — `OPERATORS_CREDENTIALS.md`
+## Files Changed (cumulative)
+- Batch 1: roles, audit, guards, seeds, secrets runbook
+- Batch 2: schema migration `20260525140000_catalog_editor_fields`, product PATCH zod, image upload, check-unique, editor sections (10 tabs), TipTap + DOMPurify
 
 ---
 
-## Tests Status (Batch 1 partial)
-- `npx prisma validate` — pass
-- `npx tsc --noEmit` (freezone-api) — pass
-- `npx tsc --noEmit` (freezone-web) — pass
-- `npm run build` (freezone-api) — pass
-- `npm run build` (freezone-web) — pending this step
-- `seed-operators.ts` run — pending (needs DB + migration applied locally)
-- Git: `b0dd018`, `dbbe976`, `40d4659`, `7eccbf5` pushed to `origin/feat/data-entry-system`
+## Tests Status
+- `npx prisma validate` ✓
+- `npx tsc --noEmit` api ✓ web ✓
+- `npm run build` api ✓ web ✓ (last run)
 
 ---
 
-## Next Steps
-1. `npm run build` api + web
-2. Git commits on `feat/data-entry-system` + push
-3. User: apply migration on Fly DB, run seeds, set `ADMIN_SESSION_SECRET`
-4. Batch 2: product editor sections (TipTap, attributes, images sharp, …)
+## Next Step (resume)
+1. Batch 3: inline validation summary, bulk quick-edit, CSV export, delete confirm by name
+2. Batch 4: review-queue page, ProductComment API, notifications poll
+3. Batch 5: categories tree + attribute templates
+4. Batch 6: import + dashboards + operator-handbook.md
+5. Batch 7: fly.staging + seed-staging + deploy-staging workflow
 
 ---
 
-## What Requires User Action (Before Operators Work)
-1. Apply migration `20260525120000_admin_roles_and_audit_actor` on production/staging DB
-2. `npx tsx scripts/seed-operators.ts` (passwords in `OPERATORS_CREDENTIALS.md`)
-3. `npx tsx prisma/seed-dashboard-superadmin.ts` for SUPER_ADMIN owner
+## Required User Actions (Before Operators Start)
+1. Apply migrations on DB (do not auto-apply to production from agent):
+   - `20260525120000_admin_roles_and_audit_actor`
+   - `20260525140000_catalog_editor_fields`
+2. `npx tsx prisma/seed-dashboard-superadmin.ts`
+3. `npx tsx scripts/seed-operators.ts`
 4. Fly secrets per `docs/runbooks/secrets.md`
-5. Operators login: `/dashboard/login` (not legacy admin password for edits)
+5. Operators use `/dashboard/login` for all edits
