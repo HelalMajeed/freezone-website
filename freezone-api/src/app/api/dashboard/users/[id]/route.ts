@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { hashPassword, isRole, revokeAllUserSessions } from "@/lib/dashboard-auth";
-import { guardDashboard, jsonError, jsonOk } from "@/lib/dashboard-guard";
+import { requireSuperAdminRead } from "@/lib/admin-auth";
+import { jsonError, jsonOk } from "@/lib/dashboard-guard";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -12,7 +13,7 @@ async function readId(ctx: Ctx): Promise<number | null> {
 
 /** GET /api/dashboard/users/:id */
 export async function GET(req: Request, ctx: Ctx): Promise<Response> {
-  const g = await guardDashboard(req, "SUPER_ADMIN");
+  const g = await requireSuperAdminRead(req);
   if (!g.ok) return g.response;
   const id = await readId(ctx);
   if (id == null) return jsonError(400, "INVALID_ID");
@@ -49,7 +50,7 @@ export async function GET(req: Request, ctx: Ctx): Promise<Response> {
  * Setting password rotates all sessions for the target user.
  */
 export async function PATCH(req: Request, ctx: Ctx): Promise<Response> {
-  const g = await guardDashboard(req, "SUPER_ADMIN");
+  const g = await requireSuperAdminRead(req);
   if (!g.ok) return g.response;
   const id = await readId(ctx);
   if (id == null) return jsonError(400, "INVALID_ID");
@@ -109,13 +110,15 @@ export async function PATCH(req: Request, ctx: Ctx): Promise<Response> {
     await revokeAllUserSessions(id);
   }
 
+  const actorId = g.actor.kind === "dashboard" ? g.actor.user.id : null;
   await prisma.auditLog.create({
     data: {
       action: "dashboard.user.update",
       entity: "AdminUser",
       entityId: String(id),
+      userId: actorId,
       payload: {
-        by: g.user.id,
+        by: actorId,
         changedFields: Object.keys(data).filter((k) => k !== "passwordHash"),
         passwordRotated: !!data.passwordHash,
       },
@@ -131,11 +134,11 @@ export async function PATCH(req: Request, ctx: Ctx): Promise<Response> {
  * Refuses to delete the last active superadmin or yourself.
  */
 export async function DELETE(req: Request, ctx: Ctx): Promise<Response> {
-  const g = await guardDashboard(req, "SUPER_ADMIN");
+  const g = await requireSuperAdminRead(req);
   if (!g.ok) return g.response;
   const id = await readId(ctx);
   if (id == null) return jsonError(400, "INVALID_ID");
-  if (id === g.user.id) return jsonError(409, "CANT_DELETE_SELF");
+  if (g.actor.kind === "dashboard" && id === g.actor.user.id) return jsonError(409, "CANT_DELETE_SELF");
 
   const target = await prisma.adminUser.findUnique({ where: { id }, select: { role: true, email: true } });
   if (!target) return jsonError(404, "USER_NOT_FOUND");
@@ -146,12 +149,14 @@ export async function DELETE(req: Request, ctx: Ctx): Promise<Response> {
   }
 
   await prisma.adminUser.delete({ where: { id } });
+  const actorId = g.actor.kind === "dashboard" ? g.actor.user.id : null;
   await prisma.auditLog.create({
     data: {
       action: "dashboard.user.delete",
       entity: "AdminUser",
       entityId: String(id),
-      payload: { by: g.user.id, email: target.email },
+      userId: actorId,
+      payload: { by: actorId, email: target.email },
     },
   });
   return jsonOk({ deleted: true });
