@@ -8,6 +8,8 @@ export type AdminDashboardPayload = {
     activeProducts: number;
     publishedProducts: number;
     draftProducts: number;
+    deletedProducts: number;
+    staleImportDrafts: number;
     inStockProducts: number;
     outOfStockProducts: number;
     stockNotSetProducts: number;
@@ -29,6 +31,7 @@ export type AdminDashboardPayload = {
     nameAr: string;
     published: boolean;
     inStock: boolean;
+    quantity: number;
     updatedAt: string;
     categorySlug: string;
     categoryName: string;
@@ -43,6 +46,7 @@ export type AdminDashboardPayload = {
     filterableAttributes: number;
     displaySpecAttributes: number;
     productsMissingSpecs: number;
+    status: "healthy" | "warning" | "empty";
   }[];
   warnings: { level: "warning" | "error"; message: string; href?: string }[];
 };

@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { ACTIVE_PRODUCT_WHERE } from "./admin-product-scope";
 
 export type AdminProductsListQuery = {
   page: number;
@@ -48,7 +49,7 @@ export function parseAdminProductsListQuery(url: URL): AdminProductsListQuery {
 
 export function adminProductsWhere(q: AdminProductsListQuery): Prisma.ProductWhereInput {
   const where: Prisma.ProductWhereInput = {};
-  if (q.deletedMode === "active") where.deletedAt = null;
+  if (q.deletedMode === "active") Object.assign(where, ACTIVE_PRODUCT_WHERE);
   else if (q.deletedMode === "deleted") where.deletedAt = { not: null };
   if (q.categoryId != null) where.categoryId = q.categoryId;
   if (q.brand) where.brand = { contains: q.brand, mode: "insensitive" };

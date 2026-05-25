@@ -1,5 +1,9 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import {
+  ACTIVE_PRODUCT_WHERE,
+  PUBLISHED_LIVE_WHERE,
+} from "@/lib/admin-product-scope";
 
 export async function GET(req: Request) {
   if (!isAdminAuthenticatedFromRequest(req)) {
@@ -20,12 +24,14 @@ export async function GET(req: Request) {
   try {
     const [productCount, orderCount, categoryCount, brandCount, mediaCount, lowStock, pendingOrders] =
       await Promise.all([
-        prisma.product.count(),
+        prisma.product.count({ where: ACTIVE_PRODUCT_WHERE }),
         prisma.order.count(),
-        prisma.category.count(),
+        prisma.category.count({ where: { active: true } }),
         prisma.brand.count(),
         prisma.mediaAsset.count(),
-        prisma.product.count({ where: { quantity: { lt: 5 }, published: true } }),
+        prisma.product.count({
+          where: { ...PUBLISHED_LIVE_WHERE, inStock: true, quantity: { gt: 0, lt: 5 } },
+        }),
         prisma.order.count({ where: { status: "pending" } }),
       ]);
     return Response.json({

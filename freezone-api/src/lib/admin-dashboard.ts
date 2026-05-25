@@ -3,6 +3,14 @@ import {
   computeCatalogHealthSummary,
   getCategoryHealthRows,
 } from "./admin-catalog-health";
+import {
+  ACTIVE_PRODUCT_WHERE,
+  DELETED_PRODUCT_WHERE,
+  DRAFT_ACTIVE_WHERE,
+  mergeProductWhere,
+  PUBLISHED_LIVE_WHERE,
+  STALE_IMPORT_DRAFT_WHERE,
+} from "./admin-product-scope";
 
 function arCount(n: number, one: string, few: string, many: string): string {
   if (n === 1) return one;
@@ -13,8 +21,10 @@ function arCount(n: number, one: string, few: string, many: string): string {
 export async function buildAdminDashboardPayload(prisma: PrismaClient) {
   const [
     totalProducts,
-    activeProducts,
+    publishedProducts,
     draftProducts,
+    deletedProducts,
+    staleImportDrafts,
     inStockProducts,
     outOfStockProducts,
     stockNotSetProducts,
@@ -28,20 +38,34 @@ export async function buildAdminDashboardPayload(prisma: PrismaClient) {
     recentProducts,
     categoryHealth,
   ] = await Promise.all([
-    prisma.product.count(),
-    prisma.product.count({ where: { published: true } }),
-    prisma.product.count({ where: { published: false } }),
-    prisma.product.count({ where: { inStock: true, quantity: { gt: 0 } } }),
-    prisma.product.count({ where: { inStock: false } }),
-    prisma.product.count({ where: { inStock: true, quantity: { lte: 0 } } }),
+    prisma.product.count({ where: ACTIVE_PRODUCT_WHERE }),
+    prisma.product.count({ where: PUBLISHED_LIVE_WHERE }),
+    prisma.product.count({ where: DRAFT_ACTIVE_WHERE }),
+    prisma.product.count({ where: DELETED_PRODUCT_WHERE }),
+    prisma.product.count({ where: STALE_IMPORT_DRAFT_WHERE }),
+    prisma.product.count({
+      where: mergeProductWhere(ACTIVE_PRODUCT_WHERE, { inStock: true, quantity: { gt: 0 } }),
+    }),
+    prisma.product.count({
+      where: mergeProductWhere(ACTIVE_PRODUCT_WHERE, { inStock: false }),
+    }),
+    prisma.product.count({
+      where: mergeProductWhere(ACTIVE_PRODUCT_WHERE, { inStock: true, quantity: { lte: 0 } }),
+    }),
     prisma.category.count({ where: { active: true } }),
     prisma.brand.count(),
     prisma.order.count(),
     prisma.mediaAsset.count(),
-    prisma.product.count({ where: { quantity: { lt: 5 }, published: true } }),
+    prisma.product.count({
+      where: mergeProductWhere(PUBLISHED_LIVE_WHERE, {
+        inStock: true,
+        quantity: { gt: 0, lt: 5 },
+      }),
+    }),
     prisma.order.count({ where: { status: "pending" } }),
     computeCatalogHealthSummary(prisma),
     prisma.product.findMany({
+      where: ACTIVE_PRODUCT_WHERE,
       take: 12,
       orderBy: { updatedAt: "desc" },
       select: {
@@ -50,6 +74,7 @@ export async function buildAdminDashboardPayload(prisma: PrismaClient) {
         nameAr: true,
         published: true,
         inStock: true,
+        quantity: true,
         updatedAt: true,
         category: { select: { slug: true, nameEn: true } },
         images: { select: { url: true }, take: 1, orderBy: { sortOrder: "asc" } },
@@ -59,6 +84,32 @@ export async function buildAdminDashboardPayload(prisma: PrismaClient) {
   ]);
 
   const warnings: { level: "warning" | "error"; message: string; href?: string }[] = [];
+
+  if (staleImportDrafts > 0) {
+    warnings.push({
+      level: "warning",
+      message: arCount(
+        staleImportDrafts,
+        "مسودة استيراد واحدة لم تُنشر — راجع أو احذف",
+        "مسودتا استيراد لم تُنشر — راجع أو احذف",
+        "مسودات استيراد لم تُنشر — راجع أو احذف",
+      ),
+      href: "/admin/products?published=false",
+    });
+  }
+  if (deletedProducts > 0) {
+    warnings.push({
+      level: "warning",
+      message: arCount(
+        deletedProducts,
+        "منتج محذوف في سلة المهملات",
+        "منتجان محذوفان في سلة المهملات",
+        "منتجات محذوفة في سلة المهملات",
+      ),
+      href: "/admin/products?deleted=only",
+    });
+  }
+
   const nImg = health.productsMissingImages;
   if (nImg > 0) {
     warnings.push({
@@ -99,13 +150,27 @@ export async function buildAdminDashboardPayload(prisma: PrismaClient) {
       href: "/admin/data-quality?tab=legacy_specs",
     });
   }
+  if (lowStock > 0) {
+    warnings.push({
+      level: "warning",
+      message: arCount(
+        lowStock,
+        "منتج منشور بمخزون منخفض (<5)",
+        "منتجان منشوران بمخزون منخفض",
+        "منتجات منشورة بمخزون منخفض",
+      ),
+      href: "/admin/products?published=true&stock=in",
+    });
+  }
 
   return {
     stats: {
       totalProducts,
-      activeProducts,
-      publishedProducts: activeProducts,
+      activeProducts: totalProducts,
+      publishedProducts,
       draftProducts,
+      deletedProducts,
+      staleImportDrafts,
       inStockProducts,
       outOfStockProducts,
       stockNotSetProducts,
@@ -127,6 +192,7 @@ export async function buildAdminDashboardPayload(prisma: PrismaClient) {
       nameAr: p.nameAr,
       published: p.published,
       inStock: p.inStock,
+      quantity: p.quantity,
       updatedAt: p.updatedAt.toISOString(),
       categorySlug: p.category.slug,
       categoryName: p.category.nameEn,

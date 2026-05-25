@@ -17,25 +17,42 @@ function formatDate(iso: string) {
   }
 }
 
-function stockLabel(inStock: boolean): { label: string; tone: "success" | "warning" | "neutral" } {
+function stockLabel(
+  inStock: boolean,
+  quantity: number,
+): { label: string; tone: "success" | "warning" | "neutral" } {
   if (!inStock) return { label: "غير متوفر", tone: "warning" };
-  return { label: "متوفر", tone: "success" };
+  if (quantity <= 0) return { label: "مخزون غير محدد", tone: "warning" };
+  if (quantity < 5) return { label: `مخزون منخفض (${quantity})`, tone: "warning" };
+  return { label: `متوفر (${quantity})`, tone: "success" };
+}
+
+function categoryStatusLabel(status: "healthy" | "warning" | "empty"): {
+  label: string;
+  tone: "success" | "warning" | "neutral";
+} {
+  if (status === "healthy") return { label: "سليم", tone: "success" };
+  if (status === "warning") return { label: "يحتاج مراجعة", tone: "warning" };
+  return { label: "فارغ", tone: "neutral" };
 }
 
 function Kpi({
   label,
+  hint,
   value,
   href,
   tone,
 }: {
   label: string;
+  hint?: string;
   value: number | string;
   href: string;
   tone?: "warning" | "danger";
 }) {
   return (
-    <Link to={href} className={dashUi.kpi} style={{ textDecoration: "none" }}>
+    <Link to={href} className={`${dashUi.kpi} ${s.kpiLink}`}>
       <div className={dashUi.kpiLabel}>{label}</div>
+      {hint ? <div className={s.kpiHint}>{hint}</div> : null}
       <div
         className={dashUi.kpiValue}
         style={
@@ -68,12 +85,17 @@ export default function AdminDashboardPage() {
 
   if (loading) return <div className="dashboard-loader" />;
 
+  const catalogSum =
+    stats != null ? stats.publishedProducts + stats.draftProducts : 0;
+
   return (
     <>
       <div className="dashboard-page-header">
         <div>
           <h1 className="dashboard-page-title">لوحة التحكم</h1>
-          <div className="dashboard-page-subtitle">نظرة عامة على المتجر وجودة الكتالوج</div>
+          <div className="dashboard-page-subtitle">
+            أرقام المنتجات النشطة فقط (بدون المحذوف) — «على المتجر» = منشور ويظهر للزوار
+          </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <Button
@@ -103,11 +125,46 @@ export default function AdminDashboardPage() {
       {stats ? (
         <>
           <div className={dashUi.kpiGrid}>
-            <Kpi label="إجمالي المنتجات" value={stats.totalProducts} href="/admin/products" />
-            <Kpi label="منشور" value={stats.publishedProducts} href="/admin/products?published=true" />
-            <Kpi label="مسودة" value={stats.draftProducts} href="/admin/products?published=false" />
+            <Kpi
+              label="على المتجر"
+              hint="منشور + غير محذوف"
+              value={stats.publishedProducts}
+              href="/admin/products?published=true"
+            />
+            <Kpi
+              label="إجمالي نشط"
+              hint="كل المنتجات غير المحذوفة"
+              value={stats.totalProducts}
+              href="/admin/products"
+            />
+            <Kpi
+              label="مسودات"
+              hint="غير منشور"
+              value={stats.draftProducts}
+              href="/admin/products?published=false"
+              tone={stats.draftProducts > 0 ? "warning" : undefined}
+            />
+            {(stats.deletedProducts ?? 0) > 0 ? (
+              <Kpi
+                label="محذوف"
+                hint="سلة المهملات"
+                value={stats.deletedProducts}
+                href="/admin/products?deleted=only"
+                tone="warning"
+              />
+            ) : null}
+            {(stats.staleImportDrafts ?? 0) > 0 ? (
+              <Kpi
+                label="مسودات استيراد"
+                hint="بقايا استيراد — راجع"
+                value={stats.staleImportDrafts}
+                href="/admin/products?published=false"
+                tone="warning"
+              />
+            ) : null}
             <Kpi
               label="غير متوفر"
+              hint="inStock = لا"
               value={stats.outOfStockProducts}
               href="/admin/products?stock=out"
               tone={stats.outOfStockProducts > 0 ? "warning" : undefined}
@@ -115,8 +172,18 @@ export default function AdminDashboardPage() {
             {stats.stockNotSetProducts > 0 ? (
               <Kpi
                 label="مخزون غير محدد"
+                hint="متوفر لكن الكمية ≤ 0"
                 value={stats.stockNotSetProducts}
                 href="/admin/products?stock=unset"
+                tone="warning"
+              />
+            ) : null}
+            {stats.lowStock > 0 ? (
+              <Kpi
+                label="مخزون منخفض"
+                hint="منشور، كمية 1–4"
+                value={stats.lowStock}
+                href="/admin/products?published=true"
                 tone="warning"
               />
             ) : null}
@@ -124,7 +191,15 @@ export default function AdminDashboardPage() {
             <Kpi label="علامات" value={stats.brandsCount} href="/admin/brands" />
           </div>
 
-          <h3 style={{ margin: "28px 0 12px", fontSize: 15, fontWeight: 700 }}>يتطلب إجراء</h3>
+          {stats.totalProducts !== catalogSum && stats.deletedProducts === 0 ? (
+            <p className={s.integrityNote}>
+              ملاحظة: مجموع المنشور + المسودات ({stats.publishedProducts + stats.draftProducts}) يختلف عن الإجمالي
+              النشط ({stats.totalProducts}) — راجع قاعدة البيانات.
+            </p>
+          ) : null}
+
+          <h3 className={s.sectionTitle}>يتطلب إجراء</h3>
+          <p className={s.sectionHint}>منتجات نشطة فقط — نفس قواعد صفحة جودة البيانات</p>
           <div className={dashUi.kpiGrid}>
             <Kpi
               label="صور ناقصة"
@@ -152,59 +227,70 @@ export default function AdminDashboardPage() {
                 tone="warning"
               />
             ) : null}
+            {(stats.productsLegacySpecsOnly ?? 0) > 0 ? (
+              <Kpi
+                label="مواصفات قديمة"
+                value={stats.productsLegacySpecsOnly}
+                href="/admin/data-quality?tab=legacy_specs"
+                tone="warning"
+              />
+            ) : null}
             {stats.pendingOrders > 0 ? (
               <Kpi label="طلبات معلّقة" value={stats.pendingOrders} href="/admin/orders?status=pending" tone="warning" />
             ) : null}
           </div>
 
           <div className={dashUi.twoCol} style={{ marginTop: 24 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <div className={s.columnStack}>
               <Card
                 title="أولويات اليوم"
                 action={
-                  <Link to="/admin/data-quality" style={{ fontSize: 12, color: "var(--fz-brand)" }}>
+                  <Link to="/admin/data-quality" className={s.cardActionLink}>
                     جودة البيانات
                   </Link>
                 }
               >
                 {d?.warnings?.length ? (
-                  <ul style={{ margin: 0, paddingInlineStart: 18, color: "var(--fz-text-soft)" }}>
+                  <ul className={s.priorityList}>
                     {d.warnings.map((w, i) => (
-                      <li key={i} style={{ marginBottom: 8 }}>
+                      <li key={i} className={s.priorityItem}>
+                        <Badge tone={w.level === "error" ? "danger" : "warning"}>
+                          {w.level === "error" ? "عاجل" : "تنبيه"}
+                        </Badge>
                         {w.href ? (
-                          <Link to={w.href} style={{ color: "var(--fz-brand)" }}>
+                          <Link to={w.href} className={s.priorityLink}>
                             {w.message}
                           </Link>
                         ) : (
-                          w.message
+                          <span>{w.message}</span>
                         )}
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p style={{ margin: 0, color: "var(--fz-text-muted)" }}>لا توجد تنبيهات عاجلة.</p>
+                  <p className={s.emptyCopy}>لا توجد تنبيهات عاجلة — الكتالوج بحالة جيدة.</p>
                 )}
               </Card>
 
               <Card
                 title="آخر المنتجات"
                 action={
-                  <Link to="/admin/products" style={{ fontSize: 12, color: "var(--fz-brand)" }}>
+                  <Link to="/admin/products" className={s.cardActionLink}>
                     كل المنتجات
                   </Link>
                 }
               >
                 {!d?.recentProducts?.length ? (
-                  <p className={dashUi.empty}>لا منتجات بعد — ابدأ من الأقسام.</p>
+                  <p className={dashUi.empty}>لا منتجات نشطة بعد — ابدأ من الأقسام.</p>
                 ) : (
                   d.recentProducts.map((p) => {
-                    const stock = stockLabel(p.inStock);
+                    const stock = stockLabel(p.inStock, p.quantity ?? 0);
                     return (
                       <div className={s.productRow} key={p.id}>
                         <div className={s.productThumb}>
                           {p.imageUrl ? <img src={p.imageUrl} alt="" /> : "—"}
                         </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className={s.productMain}>
                           <div className={s.productName}>
                             #{p.id} {p.nameAr || p.nameEn}
                           </div>
@@ -212,11 +298,13 @@ export default function AdminDashboardPage() {
                             {p.categoryName} · {formatDate(p.updatedAt)}
                           </div>
                         </div>
-                        <Badge tone={p.published ? "success" : "neutral"}>
-                          {p.published ? "منشور" : "مسودة"}
-                        </Badge>
-                        <Badge tone={stock.tone}>{stock.label}</Badge>
-                        <Link to={`/admin/products/edit/${p.id}`} style={{ fontSize: 12, color: "var(--fz-brand)" }}>
+                        <div className={s.productBadges}>
+                          <Badge tone={p.published ? "success" : "neutral"}>
+                            {p.published ? "منشور" : "مسودة"}
+                          </Badge>
+                          <Badge tone={stock.tone}>{stock.label}</Badge>
+                        </div>
+                        <Link to={`/admin/products/edit/${p.id}`} className={s.editLink}>
                           تعديل
                         </Link>
                       </div>
@@ -226,46 +314,58 @@ export default function AdminDashboardPage() {
               </Card>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <div className={s.columnStack}>
               <Card title="صحة الكتالوج حسب القسم">
-                <div className={dashUi.tableWrap}>
-                  <table className={dashUi.table}>
+                <div className={`${dashUi.tableWrap} ${s.healthTableWrap}`}>
+                  <table className={`${dashUi.table} ${s.healthTable}`}>
                     <thead>
                       <tr>
                         <th>القسم</th>
-                        <th>منتجات</th>
+                        <th>منتجات نشطة</th>
                         <th>فلاتر</th>
                         <th>عرض</th>
-                        <th>مشاكل</th>
+                        <th>مواصفات ناقصة</th>
+                        <th>الحالة</th>
                         <th />
                       </tr>
                     </thead>
                     <tbody>
-                      {d?.categoryHealth?.map((c) => (
-                        <tr key={c.categoryId}>
-                          <td>
-                            <Link to={`/admin/categories/${c.categoryId}`} style={{ fontWeight: 600 }}>
-                              {c.name}
-                            </Link>
-                            <div style={{ fontSize: 11, color: "var(--fz-text-muted)" }}>{c.slug}</div>
-                          </td>
-                          <td>{c.productCount}</td>
-                          <td>{c.filterableAttributes}</td>
-                          <td>{c.displaySpecAttributes}</td>
-                          <td>
-                            {c.productsMissingSpecs > 0 ? (
-                              <Badge tone="warning">{c.productsMissingSpecs}</Badge>
-                            ) : (
-                              <Badge tone="success">سليم</Badge>
-                            )}
-                          </td>
-                          <td>
-                            <Link to={`/admin/categories/${c.categoryId}`} style={{ fontSize: 12, color: "var(--fz-brand)" }}>
-                              إدارة
-                            </Link>
-                          </td>
-                        </tr>
-                      ))}
+                      {d?.categoryHealth?.map((c) => {
+                        const st = categoryStatusLabel(c.status);
+                        return (
+                          <tr key={c.categoryId}>
+                            <td>
+                              <Link to={`/admin/categories/${c.categoryId}`} className={s.categoryNameLink}>
+                                {c.name}
+                              </Link>
+                              <div className={s.categorySlug}>{c.slug}</div>
+                            </td>
+                            <td>{c.productCount}</td>
+                            <td>{c.filterableAttributes}</td>
+                            <td>{c.displaySpecAttributes}</td>
+                            <td>
+                              {c.productsMissingSpecs > 0 ? (
+                                <Link
+                                  to={`/admin/data-quality?tab=missing_specs`}
+                                  className={s.issueCountLink}
+                                >
+                                  {c.productsMissingSpecs}
+                                </Link>
+                              ) : (
+                                "0"
+                              )}
+                            </td>
+                            <td className={s.statusCell}>
+                              <Badge tone={st.tone}>{st.label}</Badge>
+                            </td>
+                            <td>
+                              <Link to={`/admin/categories/${c.categoryId}`} className={s.cardActionLink}>
+                                إدارة
+                              </Link>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

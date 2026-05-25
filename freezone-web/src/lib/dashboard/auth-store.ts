@@ -26,7 +26,7 @@ const ROLE_RANK: Record<Role, number> = {
 const LEGACY_USER: DashboardUser = {
   id: 0,
   email: "legacy@admin",
-  name: "مسؤول (جلسة قديمة)",
+  name: "مسؤول — دخول كلمة المرور",
   role: "superadmin",
   avatarUrl: null,
 };

@@ -1,15 +1,20 @@
 import type { PrismaClient } from "@prisma/client";
-import {
-  isLongMarketingFacetText,
-  MAX_FACET_FILTER_TOKEN_LEN,
-  sanitizeFacetFilterToken,
-} from "./classification/facet-filter-token";
-import { sanitizeStoredScreenSize } from "./classification/laptop-filter-extract";
 import { resolveDisplaySpecKey } from "./classification/filter-display-link";
 import { loadCategoryAttributeSchema } from "./classification/persist";
 import { parseOptionsJson } from "./classification/values";
 import { productAttributeValuesToFilterValues } from "./classification/values";
 import type { CategoryAttributeRow, ProductAttributeValueRow } from "./classification/types";
+import { ACTIVE_PRODUCT_WHERE, mergeProductWhere } from "./admin-product-scope";
+import {
+  hasInvalidFilters,
+  hasLegacySpecsOnly,
+  invalidFilterReason,
+  mapAttributeValues,
+  missingSpecsReason,
+  type ProductQualityInput,
+} from "./admin-product-quality";
+
+export { invalidFilterReason } from "./admin-product-quality";
 
 export type CatalogHealthSummary = {
   productsMissingSpecs: number;
@@ -73,21 +78,6 @@ function isDisplaySpecKey(key: string): boolean {
   return key.endsWith("_full") || key.endsWith("_display");
 }
 
-export function invalidFilterReason(attributeKey: string, raw: string | undefined | null): string | null {
-  if (!raw?.trim()) return null;
-  const t = raw.trim();
-  if (t.length > MAX_FACET_FILTER_TOKEN_LEN) return `value exceeds ${MAX_FACET_FILTER_TOKEN_LEN} chars`;
-  if (isLongMarketingFacetText(t)) return "marketing or display text in filter";
-  const key = attributeKey.toLowerCase();
-  if (key === "screen_size" || key === "size_inch") {
-    if (!sanitizeStoredScreenSize(t)) return "screen size out of laptop range (10–20 inch)";
-  }
-  const sanitized = sanitizeFacetFilterToken(attributeKey, t);
-  if (!sanitized) return "filter token failed sanitization";
-  if (sanitized !== t && isLongMarketingFacetText(t)) return "filter not normalized";
-  return null;
-}
-
 function rowToFilterValues(
   rows: ProductAttributeValueRow[],
   schema: CategoryAttributeRow[],
@@ -104,9 +94,41 @@ function rowsToDisplayMap(rows: ProductAttributeValueRow[]): Record<string, stri
   return out;
 }
 
+function toQualityInput(
+  p: {
+    brand: string;
+    brandId: number | null;
+    categoryId: number;
+    specs: unknown;
+    category: { slug: string };
+    attributeValues: {
+      attributeKey: string;
+      displayValue: string | null;
+      valueString: string | null;
+      valueNumber: number | null;
+      valueBoolean: boolean | null;
+      valueJson: unknown;
+    }[];
+    _count: { attributeValues: number };
+  },
+): ProductQualityInput {
+  const attributeValues = mapAttributeValues(p.attributeValues);
+  return {
+    brand: p.brand,
+    brandId: p.brandId,
+    categoryId: p.categoryId,
+    categorySlug: p.category.slug,
+    specs: p.specs,
+    attributeValues,
+    attributeValueCount: p._count.attributeValues,
+  };
+}
+
 export async function computeCatalogHealthSummary(prisma: PrismaClient): Promise<CatalogHealthSummary> {
   const [productsMissingImages, categoriesWithoutAttributes] = await Promise.all([
-    prisma.product.count({ where: { images: { none: {} } } }),
+    prisma.product.count({
+      where: mergeProductWhere(ACTIVE_PRODUCT_WHERE, { images: { none: {} } }),
+    }),
     prisma.category.count({
       where: { active: true, categoryAttributes: { none: {} } },
     }),
@@ -117,14 +139,14 @@ export async function computeCatalogHealthSummary(prisma: PrismaClient): Promise
   });
   const schemaByCategory = new Map<number, CategoryAttributeRow[]>();
   for (const cat of categories) {
-    const schema = await loadCategoryAttributeSchema(
-      (args) => prisma.categoryAttribute.findMany(args),
+    schemaByCategory.set(
       cat.id,
+      await loadCategoryAttributeSchema((args) => prisma.categoryAttribute.findMany(args), cat.id),
     );
-    schemaByCategory.set(cat.id, schema);
   }
 
   const products = await prisma.product.findMany({
+    where: ACTIVE_PRODUCT_WHERE,
     include: {
       category: { select: { slug: true } },
       attributeValues: true,
@@ -138,64 +160,14 @@ export async function computeCatalogHealthSummary(prisma: PrismaClient): Promise
   let productsMissingBrand = 0;
 
   for (const p of products) {
-    if (!p.brand?.trim() && p.brandId == null) productsMissingBrand++;
+    const q = toQualityInput(p);
+    if (!q.brand?.trim() && q.brandId == null) productsMissingBrand++;
+    if (hasLegacySpecsOnly(q)) productsLegacySpecsOnly++;
 
     const schema = schemaByCategory.get(p.categoryId) ?? [];
-    const values: ProductAttributeValueRow[] = p.attributeValues.map((v) => ({
-      attributeKey: v.attributeKey,
-      displayValue: v.displayValue,
-      valueString: v.valueString,
-      valueNumber: v.valueNumber,
-      valueBoolean: v.valueBoolean,
-      valueJson: v.valueJson,
-    }));
-
-    const legacy =
-      p.specs && typeof p.specs === "object" && !Array.isArray(p.specs)
-        ? Object.keys(p.specs as Record<string, unknown>).length > 0
-        : false;
-
-    if (p._count.attributeValues === 0 && legacy) {
-      productsLegacySpecsOnly++;
-    }
-
     if (schema.length > 0) {
-      const filterable = schema.filter((a) => a.filterable);
-      const filters = rowToFilterValues(values, schema);
-      const display = rowsToDisplayMap(values);
-
-      let missing = false;
-      if (p._count.attributeValues === 0) {
-        missing = true;
-      } else {
-        const hasGpuDisplay = Boolean(display.gpu_full?.trim() || display.gpu?.trim());
-        const hasCpuDisplay = Boolean(display.processor_full?.trim() || display.processor?.trim());
-        if (hasGpuDisplay && !filters.gpu_model && filterable.some((a) => a.key === "gpu_model")) {
-          missing = true;
-        }
-        if (hasCpuDisplay && !filters.processor_family && filterable.some((a) => a.key === "processor_family")) {
-          missing = true;
-        }
-      }
-      if (missing) productsMissingSpecs++;
-
-      let invalid = false;
-      for (const attr of filterable) {
-        const raw = values.find((v) => v.attributeKey === attr.key)?.valueString ?? filters[attr.key];
-        if (invalidFilterReason(attr.key, raw)) {
-          invalid = true;
-          break;
-        }
-      }
-      if (!invalid) {
-        for (const [key, val] of Object.entries(filters)) {
-          if (invalidFilterReason(key, val)) {
-            invalid = true;
-            break;
-          }
-        }
-      }
-      if (invalid) productsInvalidFilters++;
+      if (missingSpecsReason(q, schema)) productsMissingSpecs++;
+      if (hasInvalidFilters(q, schema)) productsInvalidFilters++;
     }
   }
 
@@ -247,6 +219,7 @@ export async function listDataQualityIssues(
   }
 
   const products = await prisma.product.findMany({
+    where: ACTIVE_PRODUCT_WHERE,
     include: {
       category: { select: { slug: true, nameEn: true } },
       images: { select: { id: true }, take: 1 },
@@ -300,11 +273,7 @@ export async function listDataQualityIssues(
     }
 
     if (tab === "legacy_specs") {
-      const legacy =
-        p.specs && typeof p.specs === "object" && !Array.isArray(p.specs)
-          ? Object.keys(p.specs as Record<string, unknown>).length > 0
-          : false;
-      if (legacy && p._count.attributeValues === 0) {
+      if (hasLegacySpecsOnly(toQualityInput(p))) {
         all.push({
           productId: p.id,
           nameEn: p.nameEn,
@@ -321,49 +290,7 @@ export async function listDataQualityIssues(
     }
 
     if (tab === "missing_specs" && schema.length > 0) {
-      let reason: string | null = null;
-      if (p._count.attributeValues === 0) reason = "no attribute values";
-      else {
-        const schemaKeys = new Set(schema.map((a) => a.key));
-        for (const v of values) {
-          if (!schemaKeys.has(v.attributeKey)) {
-            reason = `spec key not in category schema: ${v.attributeKey}`;
-            break;
-          }
-        }
-      }
-      if (!reason && p._count.attributeValues > 0) {
-        for (const attr of schema.filter((a) => a.filterable)) {
-          const displayKey = resolveDisplaySpecKey(attr, p.category.slug);
-          const filterVal = filters[attr.key]?.trim();
-          const displayVal = displayKey ? display[displayKey]?.trim() : "";
-          if (attr.required && !filterVal) {
-            reason = `required filter missing: ${attr.key}`;
-            break;
-          }
-          if (displayKey && (attr.displaySpecRequired || filterVal) && !displayVal) {
-            reason = `linked display missing: ${displayKey} (filter ${attr.key})`;
-            break;
-          }
-          if (filterVal && attr.options) {
-            const opts = parseOptionsJson(attr.options);
-            if (opts?.length && !opts.includes(filterVal)) {
-              reason = `filter not in category options: ${attr.key}=${filterVal}`;
-              break;
-            }
-          }
-        }
-        if (!reason && (display.gpu_full || display.gpu) && !filters.gpu_model) {
-          reason = "gpu_model missing (gpu_full present)";
-        }
-        if (
-          !reason &&
-          (display.processor_full || display.processor) &&
-          !filters.processor_family
-        ) {
-          reason = "processor_family missing (processor_full present)";
-        }
-      }
+      const reason = missingSpecsReason(toQualityInput(p), schema);
       if (reason) {
         const attrMatch = reason.match(/: ([a-z0-9_]+)(?:\s*=|$|\s)/);
         all.push({
@@ -464,35 +391,62 @@ export async function getCategoryHealthRows(prisma: PrismaClient) {
       id: true,
       slug: true,
       nameEn: true,
-      _count: { select: { products: true, categoryAttributes: true } },
+      _count: { select: { categoryAttributes: true } },
     },
     orderBy: { sortOrder: "asc" },
   });
 
+  const schemaByCategory = new Map<number, CategoryAttributeRow[]>();
+  for (const cat of categories) {
+    schemaByCategory.set(
+      cat.id,
+      await loadCategoryAttributeSchema((args) => prisma.categoryAttribute.findMany(args), cat.id),
+    );
+  }
+
+  const activeProducts = await prisma.product.findMany({
+    where: ACTIVE_PRODUCT_WHERE,
+    include: {
+      category: { select: { slug: true } },
+      attributeValues: true,
+      _count: { select: { attributeValues: true } },
+    },
+  });
+
+  const missingByCategory = new Map<number, number>();
+  const countByCategory = new Map<number, number>();
+  for (const p of activeProducts) {
+    countByCategory.set(p.categoryId, (countByCategory.get(p.categoryId) ?? 0) + 1);
+    const schema = schemaByCategory.get(p.categoryId) ?? [];
+    if (schema.length > 0 && missingSpecsReason(toQualityInput(p), schema)) {
+      missingByCategory.set(p.categoryId, (missingByCategory.get(p.categoryId) ?? 0) + 1);
+    }
+  }
+
   const rows = [];
   for (const cat of categories) {
-    const schema = await loadCategoryAttributeSchema(
-      (args) => prisma.categoryAttribute.findMany(args),
-      cat.id,
-    );
+    const schema = schemaByCategory.get(cat.id) ?? [];
     const filterableCount = schema.filter((a) => a.filterable).length;
     const displayCount = schema.filter((a) => isDisplaySpecKey(a.key) || !a.filterable).length;
-
-    const productIds = await prisma.product.findMany({
-      where: { categoryId: cat.id },
-      select: { id: true, attributeValues: { select: { id: true } } },
-    });
-    const missingSpecs = productIds.filter((p) => p.attributeValues.length === 0).length;
+    const productCount = countByCategory.get(cat.id) ?? 0;
+    const productsMissingSpecs = missingByCategory.get(cat.id) ?? 0;
+    const status: "healthy" | "warning" | "empty" =
+      productCount === 0
+        ? "empty"
+        : productsMissingSpecs > 0 || cat._count.categoryAttributes === 0
+          ? "warning"
+          : "healthy";
 
     rows.push({
       categoryId: cat.id,
       slug: cat.slug,
       name: cat.nameEn,
-      productCount: cat._count.products,
+      productCount,
       attributeCount: cat._count.categoryAttributes,
       filterableAttributes: filterableCount,
       displaySpecAttributes: displayCount,
-      productsMissingSpecs: missingSpecs,
+      productsMissingSpecs,
+      status,
     });
   }
   return rows;

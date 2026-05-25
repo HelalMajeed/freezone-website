@@ -7,24 +7,55 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 
+const ACTIVE = { deletedAt: null };
+const LIVE = { deletedAt: null, published: true };
+
 const prisma = new PrismaClient();
 try {
-  const [products, productsPublished, categories, brands, orders] = await Promise.all([
+  const [
+    productsAll,
+    productsActive,
+    productsLive,
+    productsDraftActive,
+    productsDeleted,
+    staleImportDrafts,
+    categories,
+    brands,
+    orders,
+  ] = await Promise.all([
     prisma.product.count(),
-    prisma.product.count({ where: { published: true } }),
-    prisma.category.count(),
+    prisma.product.count({ where: ACTIVE }),
+    prisma.product.count({ where: LIVE }),
+    prisma.product.count({ where: { ...ACTIVE, published: false } }),
+    prisma.product.count({ where: { deletedAt: { not: null } } }),
+    prisma.product.count({
+      where: {
+        ...ACTIVE,
+        published: false,
+        OR: [
+          { sourceHandle: { not: null } },
+          { importedAt: { not: null } },
+          { importBatchId: { not: null } },
+        ],
+      },
+    }),
+    prisma.category.count({ where: { active: true } }),
     prisma.brand.count(),
     prisma.order.count(),
   ]);
   console.log(
     JSON.stringify(
       {
-        products,
-        productsPublished,
-        productsUnpublished: products - productsPublished,
-        categories,
+        productsAll,
+        productsActive,
+        productsLiveStorefront: productsLive,
+        productsDraftActive,
+        productsDeleted,
+        staleImportDrafts,
+        categoriesActive: categories,
         brands,
         orders,
+        note: "Storefront uses productsLiveStorefront (published + not deleted). Dashboard KPIs use productsActive.",
       },
       null,
       2,

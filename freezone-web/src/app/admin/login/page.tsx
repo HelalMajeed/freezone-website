@@ -167,7 +167,7 @@ export default function AdminLoginPage() {
               )}
               {legacyErr && <div className={s.errorBanner}>{legacyErr}</div>}
               <Button type="submit" variant="secondary" className={s.fullBtn}>
-                دخول (جلسة قديمة)
+                دخول بكلمة المرور
               </Button>
             </form>
           )}
