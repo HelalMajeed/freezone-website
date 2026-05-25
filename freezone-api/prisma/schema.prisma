@@ -8,6 +8,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Dashboard / data-entry operator roles (ordered by privilege in application code).
+enum AdminRole {
+  SUPER_ADMIN
+  CATALOG_MANAGER
+  CATALOG_EDITOR
+}
+
 model Brand {
   id        Int       @id @default(autoincrement())
   slug      String    @unique
@@ -326,12 +333,18 @@ model Coupon {
 
 /// Append-only admin change log (extend over time)
 model AuditLog {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   action    String
   entity    String
   entityId  String?
   payload   Json?
-  createdAt DateTime @default(now())
+  userId    Int?
+  userEmail String?
+  ip        String?
+  createdAt DateTime  @default(now())
+
+  @@index([entity, createdAt])
+  @@index([userId, createdAt])
 }
 
 model ProductImage {
@@ -569,14 +582,13 @@ model CmsPageSection {
   updatedAt        DateTime @updatedAt
 }
 
-/// Dashboard user with role-based access (replaces single-password admin auth).
-/// Roles: superadmin | admin | editor | viewer
+/// Dashboard user with role-based access (data-entry operators).
 model AdminUser {
   id           Int            @id @default(autoincrement())
   email        String         @unique
   passwordHash String
   name         String
-  role         String         @default("editor")
+  role         AdminRole      @default(CATALOG_EDITOR)
   active       Boolean        @default(true)
   avatarUrl    String?
   lastLoginAt  DateTime?
