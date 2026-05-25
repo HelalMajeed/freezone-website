@@ -12,6 +12,17 @@
   SKIP_WAIT_API = "1"
   VITE_API_URL = "https://freezone-website.fly.dev"
 
+# Product/CMS images live on the Fly volume (/uploads/...). The SPA references
+# them with same-origin relative paths, so Netlify must proxy /uploads/* to the
+# API origin — otherwise the catch-all below returns index.html (text/html) and
+# every image renders broken. Mirrors the dev Vite proxy. Must precede the
+# SPA catch-all.
+[[redirects]]
+  from = "/uploads/*"
+  to = "https://freezone-website.fly.dev/uploads/:splat"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
