@@ -62,16 +62,26 @@ export async function POST(req: Request) {
     let affected = 0;
     switch (action) {
       case "publish":
-        affected = (await prisma.product.updateMany({ where: { id: { in: ids } }, data: { published: true } })).count;
+        affected = (
+          await prisma.product.updateMany({
+            where: { id: { in: ids } },
+            data: { published: true, catalogStatus: "PUBLISHED" },
+          })
+        ).count;
         break;
       case "unpublish":
-        affected = (await prisma.product.updateMany({ where: { id: { in: ids } }, data: { published: false } })).count;
+        affected = (
+          await prisma.product.updateMany({
+            where: { id: { in: ids } },
+            data: { published: false, catalogStatus: "DRAFT" },
+          })
+        ).count;
         break;
       case "soft_delete":
         affected = (
           await prisma.product.updateMany({
             where: { id: { in: ids }, deletedAt: null },
-            data: { deletedAt: new Date(), published: false },
+            data: { deletedAt: new Date(), published: false, catalogStatus: "ARCHIVED" },
           })
         ).count;
         break;

@@ -302,3 +302,31 @@
   color: var(--admin-muted);
   font-weight: 600;
 }
+
+.bulkBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  background: rgba(59, 130, 246, 0.08);
+  border-radius: 8px;
+  border: 1px solid var(--admin-border, #334155);
+}
+
+.inlineInput,
+.inlineSelect {
+  width: 88px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--admin-border, #334155);
+  background: var(--admin-surface-muted, #1e293b);
+  color: var(--admin-text, #f1f5f9);
+  font-size: 0.78rem;
+  font-family: inherit;
+}
+
+.inlineSelect {
+  width: auto;
+  min-width: 120px;
+}

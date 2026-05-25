@@ -44,6 +44,8 @@ const AdminOffersPage = lazy(() => import("@/app/admin/(secure)/offers/page"));
 const AdminGlobaliraqImportPage = lazy(() => import("@/app/admin/(secure)/import/globaliraq/page"));
 const AdminDataQualityPage = lazy(() => import("@/pages/admin/AdminDataQualityPage"));
 const AdminClassificationPage = lazy(() => import("@/pages/admin/AdminClassificationPage"));
+const AdminReviewQueuePage = lazy(() => import("@/pages/admin/AdminReviewQueuePage"));
+const AdminProductsImportPage = lazy(() => import("@/pages/admin/AdminProductsImportPage"));
 
 function SuspensePage({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<div style={{ padding: 48, textAlign: "center" }}>…</div>}>{children}</Suspense>;
@@ -126,6 +128,22 @@ export const freezoneAdminRouteBranch = (
           element={
             <SuspensePage>
               <AdminProductsPage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="review-queue"
+          element={
+            <SuspensePage>
+              <AdminReviewQueuePage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="import"
+          element={
+            <SuspensePage>
+              <AdminProductsImportPage />
             </SuspensePage>
           }
         />

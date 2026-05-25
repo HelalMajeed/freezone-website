@@ -62,6 +62,8 @@ export function AdminCategoriesManager() {
   const [saving, setSaving] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [qualityBySlug, setQualityBySlug] = useState<Record<string, number>>({});
+  const [templates, setTemplates] = useState<Array<{ id: string; nameAr: string }>>([]);
+  const [applyingTemplateId, setApplyingTemplateId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -94,6 +96,10 @@ export function AdminCategoriesManager() {
 
   useEffect(() => {
     void load();
+    void fetch(freezoneApiUrl("/api/admin/category-templates"), { credentials: "include" })
+      .then((r) => r.json())
+      .then((j: { data?: Array<{ id: string; nameAr: string }> }) => setTemplates(j.data ?? []))
+      .catch(() => setTemplates([]));
   }, [load]);
 
   const parentName = useMemo(() => {
@@ -183,6 +189,31 @@ export function AdminCategoriesManager() {
       setMsg("فشل تحديث الحالة");
       return;
     }
+    void load();
+  }
+
+  async function applyTemplate(categoryId: number) {
+    const templateId = window.prompt(
+      `معرّف القالب:\n${templates.map((t) => `${t.id} — ${t.nameAr}`).join("\n")}`,
+      templates[0]?.id ?? "smartphone",
+    );
+    if (!templateId?.trim()) return;
+    setApplyingTemplateId(categoryId);
+    setMsg("");
+    const res = await fetch(freezoneApiUrl(`/api/admin/categories/${categoryId}/apply-template`), {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ templateId: templateId.trim() }),
+    });
+    setApplyingTemplateId(null);
+    if (!res.ok) {
+      const j = (await res.json().catch(() => null)) as { error?: string } | null;
+      setMsg(j?.error ?? "فشل تطبيق القالب");
+      return;
+    }
+    const j = (await res.json()) as { data?: { attributeCount?: number } };
+    setMsg(`تم تطبيق القالب — ${j.data?.attributeCount ?? 0} سمة`);
     void load();
   }
 
@@ -324,6 +355,16 @@ export function AdminCategoriesManager() {
                         <Link to={`/admin/categories/${r.id}/attributes`} onClick={() => setOpenMenuId(null)}>
                           محرر السمات
                         </Link>
+                        <button
+                          type="button"
+                          disabled={applyingTemplateId === r.id}
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            void applyTemplate(r.id);
+                          }}
+                        >
+                          تطبيق قالب سمات
+                        </button>
                         <button type="button" onClick={() => { setOpenMenuId(null); void toggleActive(r); }}>
                           {r.active !== false ? "تعطيل" : "تفعيل"}
                         </button>

@@ -167,9 +167,18 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   if (!Number.isFinite(id)) return Response.json({ error: "bad id" }, { status: 400 });
 
   try {
-    await prisma.product.delete({ where: { id } });
+    const existing = await prisma.product.findUnique({ where: { id } });
+    if (!existing) return Response.json({ error: "not found" }, { status: 404 });
+    await prisma.product.update({
+      where: { id },
+      data: { deletedAt: new Date(), published: false, catalogStatus: "ARCHIVED" },
+    });
     revalidateStorefrontData();
-    await logAdminAction("product.delete", "Product", { entityId: id, ...audit });
+    await logAdminAction("product.soft_delete", "Product", {
+      entityId: id,
+      payload: { nameEn: existing.nameEn },
+      ...audit,
+    });
     return Response.json({ ok: true });
   } catch (e) {
     return handleRouteDbError(e);

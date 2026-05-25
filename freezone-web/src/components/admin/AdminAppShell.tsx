@@ -32,8 +32,11 @@ import {
   RefreshCw,
   Users,
   UserRound,
+  ClipboardCheck,
+  Upload,
 } from "lucide-react";
 import { useDashboardAuth } from "@/lib/dashboard/auth-store";
+import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import type { LegacyRoleAlias } from "@/lib/dashboard/api";
 import { Avatar, Badge } from "@/components/dashboard/ui";
 import s from "@/components/dashboard/layout.module.css";
@@ -44,6 +47,7 @@ type NavItem = {
   icon: LucideIcon;
   soon?: boolean;
   minRole?: LegacyRoleAlias;
+  badgeKey?: "pendingReview" | "newComments" | "categoriesNoAttrs";
 };
 
 function makeAdminNavGroups(t: TFunction): { label: string; items: NavItem[]; minRole?: LegacyRoleAlias }[] {
@@ -56,8 +60,16 @@ function makeAdminNavGroups(t: TFunction): { label: string; items: NavItem[]; mi
       label: "الكتالوج",
       minRole: "editor",
       items: [
-        { href: "/admin/categories", label: "الأقسام", icon: FolderTree, minRole: "editor" },
+        { href: "/admin/categories", label: "الأقسام", icon: FolderTree, minRole: "editor", badgeKey: "categoriesNoAttrs" },
         { href: "/admin/products", label: "كل المنتجات", icon: Package, minRole: "editor" },
+        {
+          href: "/admin/review-queue",
+          label: "قائمة المراجعة",
+          icon: ClipboardCheck,
+          minRole: "admin",
+          badgeKey: "pendingReview",
+        },
+        { href: "/admin/import", label: "استيراد CSV", icon: Upload, minRole: "editor" },
         { href: "/admin/brands", label: "العلامات التجارية", icon: Tag, minRole: "editor" },
         { href: "/admin/media", label: "الوسائط", icon: Images, minRole: "editor" },
       ],
@@ -136,6 +148,7 @@ export function AdminAppShell() {
   const user = useDashboardAuth((s) => s.user);
   const logout = useDashboardAuth((s) => s.logout);
   const hasRole = useDashboardAuth((s) => s.hasRole);
+  const notifications = useAdminNotifications(user != null);
 
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -219,6 +232,7 @@ export function AdminAppShell() {
                   {visible.map((item) => {
                     const Icon = item.icon;
                     const hrefBase = item.href.split("?")[0] ?? item.href;
+                    const badgeCount = item.badgeKey ? notifications[item.badgeKey] : 0;
                     return (
                       <NavLink
                         key={`${group.label}-${item.href}`}
@@ -235,6 +249,9 @@ export function AdminAppShell() {
                           <Icon size={16} strokeWidth={2} />
                         </span>
                         <span className={s.navLabel}>{item.label}</span>
+                        {badgeCount > 0 ? (
+                          <Badge tone="warning">{badgeCount > 99 ? "99+" : badgeCount}</Badge>
+                        ) : null}
                         {item.soon ? <Badge tone="warning">قريبًا</Badge> : null}
                       </NavLink>
                     );

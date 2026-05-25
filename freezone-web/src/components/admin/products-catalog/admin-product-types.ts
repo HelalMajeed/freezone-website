@@ -22,6 +22,7 @@ export type AdminProductRow = {
   reviews: number;
   sales: number;
   published: boolean;
+  catalogStatus?: string;
   createdAt: string;
   updatedAt?: string;
   icon: string;
@@ -122,6 +123,7 @@ export function parseAdminProductsFromApi(raw: unknown): AdminProductRow[] {
       reviews: typeof o.reviews === "number" ? o.reviews : Number(o.reviews) || 0,
       sales: typeof o.sales === "number" ? o.sales : Number(o.sales) || 0,
       published: o.published !== false,
+      catalogStatus: typeof o.catalogStatus === "string" ? o.catalogStatus : undefined,
       createdAt,
       ...(updatedAt ? { updatedAt } : {}),
       icon: String(o.icon ?? "📦"),

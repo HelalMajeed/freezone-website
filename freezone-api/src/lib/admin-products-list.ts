@@ -1,5 +1,13 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma, ProductCatalogStatus } from "@prisma/client";
 import { ACTIVE_PRODUCT_WHERE } from "./admin-product-scope";
+
+const CATALOG_STATUSES: ProductCatalogStatus[] = [
+  "DRAFT",
+  "PENDING_REVIEW",
+  "CHANGES_REQUESTED",
+  "PUBLISHED",
+  "ARCHIVED",
+];
 
 export type AdminProductsListQuery = {
   page: number;
@@ -7,13 +15,20 @@ export type AdminProductsListQuery = {
   search: string;
   categoryId: number | null;
   brand: string;
+  brandId: number | null;
   published: boolean | null;
+  catalogStatus: ProductCatalogStatus | null;
   /** @deprecated use stockMode */
   inStock: boolean | null;
   stockMode: "in" | "out" | "unset" | null;
+  priceMin: number | null;
+  priceMax: number | null;
+  quantityMin: number | null;
+  quantityMax: number | null;
+  createdById: number | null;
   /** "active" (default, hides soft-deleted) | "deleted" (only) | "all" */
   deletedMode: "active" | "deleted" | "all";
-  sort: "id_desc" | "id_asc" | "price_asc" | "price_desc" | "name_asc";
+  sort: "id_desc" | "id_asc" | "price_asc" | "price_desc" | "name_asc" | "updated_desc";
 };
 
 export function parseAdminProductsListQuery(url: URL): AdminProductsListQuery {
@@ -23,6 +38,26 @@ export function parseAdminProductsListQuery(url: URL): AdminProductsListQuery {
   const catRaw = url.searchParams.get("categoryId") ?? url.searchParams.get("cat");
   const categoryId = catRaw && /^\d+$/.test(catRaw) ? parseInt(catRaw, 10) : null;
   const brand = (url.searchParams.get("brand") ?? "").trim();
+  const brandIdRaw = url.searchParams.get("brandId");
+  const brandId = brandIdRaw && /^\d+$/.test(brandIdRaw) ? parseInt(brandIdRaw, 10) : null;
+  const catalogRaw = url.searchParams.get("catalogStatus");
+  const catalogStatus =
+    catalogRaw && (CATALOG_STATUSES as string[]).includes(catalogRaw)
+      ? (catalogRaw as ProductCatalogStatus)
+      : null;
+  const priceMinRaw = url.searchParams.get("priceMin");
+  const priceMaxRaw = url.searchParams.get("priceMax");
+  const priceMin = priceMinRaw && /^\d+$/.test(priceMinRaw) ? parseInt(priceMinRaw, 10) : null;
+  const priceMax = priceMaxRaw && /^\d+$/.test(priceMaxRaw) ? parseInt(priceMaxRaw, 10) : null;
+  const quantityMinRaw = url.searchParams.get("quantityMin");
+  const quantityMaxRaw = url.searchParams.get("quantityMax");
+  const quantityMin =
+    quantityMinRaw && /^\d+$/.test(quantityMinRaw) ? parseInt(quantityMinRaw, 10) : null;
+  const quantityMax =
+    quantityMaxRaw && /^\d+$/.test(quantityMaxRaw) ? parseInt(quantityMaxRaw, 10) : null;
+  const createdByRaw = url.searchParams.get("createdById");
+  const createdById =
+    createdByRaw && /^\d+$/.test(createdByRaw) ? parseInt(createdByRaw, 10) : null;
   const publishedRaw = url.searchParams.get("published") ?? url.searchParams.get("status");
   let published: boolean | null = null;
   if (publishedRaw === "published" || publishedRaw === "true") published = true;
@@ -38,13 +73,32 @@ export function parseAdminProductsListQuery(url: URL): AdminProductsListQuery {
     sortRaw === "id_asc" ||
     sortRaw === "price_asc" ||
     sortRaw === "price_desc" ||
-    sortRaw === "name_asc"
+    sortRaw === "name_asc" ||
+    sortRaw === "updated_desc"
       ? sortRaw
       : "id_desc";
   const deletedRaw = url.searchParams.get("deleted");
   const deletedMode: AdminProductsListQuery["deletedMode"] =
     deletedRaw === "all" ? "all" : deletedRaw === "only" || deletedRaw === "deleted" ? "deleted" : "active";
-  return { page, pageSize, search, categoryId, brand, published, inStock, stockMode, deletedMode, sort };
+  return {
+    page,
+    pageSize,
+    search,
+    categoryId,
+    brand,
+    brandId,
+    published,
+    catalogStatus,
+    inStock,
+    stockMode,
+    priceMin,
+    priceMax,
+    quantityMin,
+    quantityMax,
+    createdById,
+    deletedMode,
+    sort,
+  };
 }
 
 export function adminProductsWhere(q: AdminProductsListQuery): Prisma.ProductWhereInput {
@@ -52,8 +106,21 @@ export function adminProductsWhere(q: AdminProductsListQuery): Prisma.ProductWhe
   if (q.deletedMode === "active") Object.assign(where, ACTIVE_PRODUCT_WHERE);
   else if (q.deletedMode === "deleted") where.deletedAt = { not: null };
   if (q.categoryId != null) where.categoryId = q.categoryId;
-  if (q.brand) where.brand = { contains: q.brand, mode: "insensitive" };
-  if (q.published !== null) where.published = q.published;
+  if (q.brandId != null) where.brandId = q.brandId;
+  else if (q.brand) where.brand = { contains: q.brand, mode: "insensitive" };
+  if (q.catalogStatus != null) where.catalogStatus = q.catalogStatus;
+  else if (q.published !== null) where.published = q.published;
+  if (q.createdById != null) where.createdById = q.createdById;
+  if (q.priceMin != null || q.priceMax != null) {
+    where.price = {};
+    if (q.priceMin != null) (where.price as { gte?: number }).gte = q.priceMin;
+    if (q.priceMax != null) (where.price as { lte?: number }).lte = q.priceMax;
+  }
+  if (q.quantityMin != null || q.quantityMax != null) {
+    where.quantity = {};
+    if (q.quantityMin != null) (where.quantity as { gte?: number }).gte = q.quantityMin;
+    if (q.quantityMax != null) (where.quantity as { lte?: number }).lte = q.quantityMax;
+  }
   if (q.stockMode === "in") {
     where.inStock = true;
     where.quantity = { gt: 0 };
@@ -90,6 +157,8 @@ export function adminProductsOrderBy(sort: AdminProductsListQuery["sort"]): Pris
       return { price: "desc" };
     case "name_asc":
       return { nameEn: "asc" };
+    case "updated_desc":
+      return { updatedAt: "desc" };
     default:
       return { id: "desc" };
   }

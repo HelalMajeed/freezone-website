@@ -39,7 +39,16 @@ import * as adminProductsId from "./app/api/admin/products/[id]/route";
 import * as adminProductsIdImages from "./app/api/admin/products/[id]/images/route";
 import * as adminProductsIdVariants from "./app/api/admin/products/[id]/variants/route";
 import * as adminProductsBulk from "./app/api/admin/products/bulk/route";
+import * as adminProductsExport from "./app/api/admin/products/export/route";
+import * as adminProductsIdDuplicate from "./app/api/admin/products/[id]/duplicate/route";
+import * as adminProductsIdComments from "./app/api/admin/products/[id]/comments/route";
 import * as adminProductsCheckUnique from "./app/api/admin/products/check-unique/route";
+import * as adminReviewQueue from "./app/api/admin/review-queue/route";
+import * as adminNotifications from "./app/api/admin/notifications/route";
+import * as adminOperatorStats from "./app/api/admin/operator-stats/route";
+import * as adminCategoryTemplates from "./app/api/admin/category-templates/route";
+import * as adminCategoriesApplyTemplate from "./app/api/admin/categories/[id]/apply-template/route";
+import * as adminImportProductsCsv from "./app/api/admin/import/products-csv/route";
 import * as adminUploadProductImage from "./app/api/admin/upload/product-image/route";
 import * as adminImportGlobaliraqBatches from "./app/api/admin/import/globaliraq/batches/route";
 import * as adminImportGlobaliraqBatchesId from "./app/api/admin/import/globaliraq/batches/[id]/route";
@@ -366,9 +375,36 @@ async function main() {
       await adminCategoriesAttributes.GET(webRequestFromExpress(req), ctxId(req.params.id)),
     );
   });
+  app.post("/api/admin/categories/:id/apply-template", async (req, res) => {
+    await sendWebResponse(
+      res,
+      await adminCategoriesApplyTemplate.POST(webRequestFromExpress(req), ctxId(req.params.id)),
+    );
+  });
 
   app.get("/api/admin/products/check-unique", async (req, res) => {
     await sendWebResponse(res, await adminProductsCheckUnique.GET(webRequestFromExpress(req)));
+  });
+  app.get("/api/admin/products/export", async (req, res) => {
+    await sendWebResponse(res, await adminProductsExport.GET(webRequestFromExpress(req)));
+  });
+  app.get("/api/admin/review-queue", async (req, res) => {
+    await sendWebResponse(res, await adminReviewQueue.GET(webRequestFromExpress(req)));
+  });
+  app.patch("/api/admin/review-queue", async (req, res) => {
+    await sendWebResponse(res, await adminReviewQueue.PATCH(webRequestFromExpress(req)));
+  });
+  app.get("/api/admin/notifications", async (req, res) => {
+    await sendWebResponse(res, await adminNotifications.GET(webRequestFromExpress(req)));
+  });
+  app.get("/api/admin/operator-stats", async (req, res) => {
+    await sendWebResponse(res, await adminOperatorStats.GET(webRequestFromExpress(req)));
+  });
+  app.get("/api/admin/category-templates", async (req, res) => {
+    await sendWebResponse(res, await adminCategoryTemplates.GET(webRequestFromExpress(req)));
+  });
+  app.post("/api/admin/import/products-csv", async (req, res) => {
+    await sendWebResponse(res, await adminImportProductsCsv.POST(webRequestFromExpress(req)));
   });
   app.get("/api/admin/products", async (req, res) => {
     await sendWebResponse(res, await adminProducts.GET(webRequestFromExpress(req)));
@@ -378,6 +414,24 @@ async function main() {
   });
   app.post("/api/admin/products/bulk", async (req, res) => {
     await sendWebResponse(res, await adminProductsBulk.POST(webRequestFromExpress(req)));
+  });
+  app.post("/api/admin/products/:id/duplicate", async (req, res) => {
+    await sendWebResponse(
+      res,
+      await adminProductsIdDuplicate.POST(webRequestFromExpress(req), ctxId(req.params.id)),
+    );
+  });
+  app.get("/api/admin/products/:id/comments", async (req, res) => {
+    await sendWebResponse(
+      res,
+      await adminProductsIdComments.GET(webRequestFromExpress(req), ctxId(req.params.id)),
+    );
+  });
+  app.post("/api/admin/products/:id/comments", async (req, res) => {
+    await sendWebResponse(
+      res,
+      await adminProductsIdComments.POST(webRequestFromExpress(req), ctxId(req.params.id)),
+    );
   });
   app.get("/api/admin/products/:id", async (req, res) => {
     await sendWebResponse(res, await adminProductsId.GET(webRequestFromExpress(req), ctxId(req.params.id)));

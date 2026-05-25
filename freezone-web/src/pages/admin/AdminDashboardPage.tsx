@@ -69,6 +69,24 @@ function Kpi({
   );
 }
 
+type OperatorStats = {
+  role: string;
+  isManager: boolean;
+  teamPendingReview: number;
+  myDrafts: number;
+  myPendingReview: number;
+  myChangesRequested: number;
+  productsCreatedToday: number;
+  categoriesWithoutAttrs: number;
+};
+
+async function fetchOperatorStats(): Promise<OperatorStats | null> {
+  const res = await fetch(freezoneApiUrl("/api/admin/operator-stats"), { credentials: "include" });
+  if (!res.ok) return null;
+  const j = (await res.json()) as { data?: OperatorStats };
+  return j.data ?? null;
+}
+
 export default function AdminDashboardPage() {
   const qc = useQueryClient();
   const q = useQuery({
@@ -76,6 +94,12 @@ export default function AdminDashboardPage() {
     enabled: isDatabaseConfigured(),
     queryFn: fetchAdminDashboard,
     staleTime: 60_000,
+  });
+  const opQ = useQuery({
+    queryKey: ["admin-operator-stats"],
+    enabled: isDatabaseConfigured(),
+    queryFn: fetchOperatorStats,
+    staleTime: 30_000,
   });
 
   const d = q.data;
@@ -211,6 +235,44 @@ export default function AdminDashboardPage() {
             <Kpi label="أقسام" value={stats.categoriesCount} href="/admin/categories" />
             <Kpi label="علامات" value={stats.brandsCount} href="/admin/brands" />
           </div>
+
+          {opQ.data ? (
+            <div className={dashUi.kpiGrid} style={{ marginTop: 16 }}>
+              <Kpi
+                label="مسوداتي"
+                value={opQ.data.myDrafts}
+                href="/admin/products?catalogStatus=DRAFT"
+              />
+              <Kpi
+                label="قيد مراجعتي"
+                value={opQ.data.myPendingReview}
+                href="/admin/products?catalogStatus=PENDING_REVIEW"
+              />
+              <Kpi
+                label="تعديلات مطلوبة"
+                value={opQ.data.myChangesRequested}
+                href="/admin/products?catalogStatus=CHANGES_REQUESTED"
+                tone={opQ.data.myChangesRequested > 0 ? "warning" : undefined}
+              />
+              <Kpi label="أنشأت اليوم" value={opQ.data.productsCreatedToday} href="/admin/products" />
+              {opQ.data.isManager ? (
+                <>
+                  <Kpi
+                    label="بانتظار الفريق"
+                    value={opQ.data.teamPendingReview}
+                    href="/admin/review-queue"
+                    tone={opQ.data.teamPendingReview > 0 ? "warning" : undefined}
+                  />
+                  <Kpi
+                    label="أقسام بلا سمات"
+                    value={opQ.data.categoriesWithoutAttrs}
+                    href="/admin/categories"
+                    tone={opQ.data.categoriesWithoutAttrs > 0 ? "warning" : undefined}
+                  />
+                </>
+              ) : null}
+            </div>
+          ) : null}
 
           {stats.totalProducts !== catalogSum && stats.deletedProducts === 0 ? (
             <p className={s.integrityNote}>

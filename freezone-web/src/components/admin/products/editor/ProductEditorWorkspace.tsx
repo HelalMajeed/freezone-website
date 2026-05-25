@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
@@ -23,6 +23,8 @@ import { VariantsSection } from "@/components/admin/products/editor/VariantsSect
 import { SEOSection } from "@/components/admin/products/editor/SEOSection";
 import { ShippingSection } from "@/components/admin/products/editor/ShippingSection";
 import { InternalNotesSection } from "@/components/admin/products/editor/InternalNotesSection";
+import { ProductCommentsSection } from "@/components/admin/products/editor/ProductCommentsSection";
+import { duplicateAdminProduct } from "@/lib/admin/admin-products-api";
 
 type TabId =
   | "basic"
@@ -50,6 +52,9 @@ const TABS: { id: TabId; label: string }[] = [
 ];
 
 export function ProductEditorWorkspace({ productId }: { productId: number }) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const reviewMode = searchParams.get("review") === "1";
   const hasRole = useDashboardAuth((s) => s.hasRole);
   const [tab, setTab] = useState<TabId>("basic");
   const [images, setImages] = useState<LoadedProduct["images"]>([]);
@@ -185,10 +190,22 @@ export function ProductEditorWorkspace({ productId }: { productId: number }) {
         e.preventDefault();
         void persist({ catalogStatus: "PUBLISHED" });
       }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        void (async () => {
+          try {
+            const newId = await duplicateAdminProduct(productId);
+            toast.success(`نسخة جديدة #${newId}`);
+            navigate(`/admin/products/edit/${newId}`);
+          } catch {
+            toast.error("تعذّر النسخ");
+          }
+        })();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [persist, hasRole]);
+  }, [persist, hasRole, productId, navigate]);
 
   if (loading) return <p>جارٍ التحميل…</p>;
 
@@ -198,7 +215,8 @@ export function ProductEditorWorkspace({ productId }: { productId: number }) {
   const missingFields = Object.entries(formState.errors).map(([k]) => k);
 
   return (
-    <div dir="rtl" style={{ maxWidth: 960, margin: "0 auto", padding: "0 16px 80px" }}>
+    <div dir="rtl" style={{ maxWidth: 960, margin: "0 auto", padding: "0 16px 80px", marginInlineStart: reviewMode ? 300 : 0 }}>
+      <ProductCommentsSection productId={productId} readOnly={reviewMode && !hasRole("admin")} />
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
         <div>
           <Link to="/admin/products">← المنتجات</Link>
@@ -209,10 +227,34 @@ export function ProductEditorWorkspace({ productId }: { productId: number }) {
           <button type="button" disabled={!formState.isValid} onClick={() => void persist()}>
             حفظ مسودة
           </button>
-          <button type="button" onClick={() => void persist({ submitForReview: true })}>
-            إرسال للمراجعة
+          <button
+            type="button"
+            onClick={async () => {
+              await persist();
+              navigate("/admin/products/new");
+            }}
+          >
+            حفظ ومنتج جديد
           </button>
-          {hasRole("admin") ? (
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const newId = await duplicateAdminProduct(productId);
+                navigate(`/admin/products/edit/${newId}`);
+              } catch {
+                toast.error("تعذّر النسخ كقالب");
+              }
+            }}
+          >
+            نسخ كقالب
+          </button>
+          {!reviewMode ? (
+            <button type="button" onClick={() => void persist({ submitForReview: true })}>
+              إرسال للمراجعة
+            </button>
+          ) : null}
+          {hasRole("admin") && !reviewMode ? (
             <button type="button" onClick={() => void persist({ catalogStatus: "PUBLISHED" })}>
               نشر
             </button>

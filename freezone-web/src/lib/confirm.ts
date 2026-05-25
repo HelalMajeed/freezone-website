@@ -17,6 +17,10 @@ export type ConfirmOptions = {
   cancelLabel?: string;
   /** Render the confirm button in destructive style (red). */
   danger?: boolean;
+  /** User must type this exact string to enable confirm (e.g. product name). */
+  confirmMatch?: string;
+  /** Label for the match input (default: اكتب للتأكيد). */
+  confirmMatchLabel?: string;
 };
 
 type State =
