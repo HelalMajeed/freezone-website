@@ -181,7 +181,7 @@ export async function POST(req: Request) {
         oldPrice: body.oldPrice ?? null,
         storage: body.storage ?? "",
         model3d: body.model3d?.trim() || null,
-        warranty: body.warranty?.trim() || null,
+        warranty: body.warranty?.trim() ?? "",
         specs: specCheck.specs as object,
         /** Default to published=true (existing behaviour) — importer passes published=false explicitly. */
         published: body.published !== undefined ? !!body.published : true,

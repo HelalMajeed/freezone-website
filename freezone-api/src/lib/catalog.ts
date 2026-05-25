@@ -98,7 +98,6 @@ export function mapDbToProduct(
     model3d: row.model3d,
     sku: row.sku?.trim() || undefined,
     model: row.model?.trim() || undefined,
-    warranty: row.warranty?.trim() || undefined,
     specs: specMaps.display,
     ...(Object.keys(specMaps.filterValues).length ? { filterValues: specMaps.filterValues } : {}),
   };

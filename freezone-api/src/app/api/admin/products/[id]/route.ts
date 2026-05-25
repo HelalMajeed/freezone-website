@@ -127,7 +127,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     reviews?: number;
     sales?: number;
     published?: boolean;
-    warranty?: string | null;
     secondaryCategoryIds?: number[] | null;
   } | null;
   if (!body) return Response.json({ error: "body" }, { status: 400 });
@@ -183,7 +182,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
         ...(typeof body.reviews === "number" ? { reviews: body.reviews } : {}),
         ...(typeof body.sales === "number" ? { sales: body.sales } : {}),
         ...(body.published !== undefined ? { published: body.published } : {}),
-        ...(body.warranty !== undefined ? { warranty: body.warranty?.trim() || null } : {}),
       },
     });
 

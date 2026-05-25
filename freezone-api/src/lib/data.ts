@@ -49,7 +49,6 @@ export interface Product {
   price: number;
   oldPrice: number | null;
   originalPrice?: number | null;
-  warranty?: string;
   storage: string;
   inStock: boolean;
   featured: boolean;

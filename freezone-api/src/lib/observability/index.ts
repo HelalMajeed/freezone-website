@@ -27,9 +27,6 @@ async function ensureSentry(): Promise<void> {
     const dsn = process.env.SENTRY_DSN_API;
     if (!dsn) return;
     try {
-      /** Sentry isn't in package.json yet — see ASSUMPTION issue for the install step.
-       *  Cast through `unknown` so tsc doesn't trip on the missing module. */
-      // @ts-expect-error optional package, installed in a later sprint
       const mod = (await import("@sentry/node")) as unknown as SentryLike;
       mod.init({
         dsn,
