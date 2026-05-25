@@ -18,7 +18,6 @@ import {
   Field,
   Input,
   Modal,
-  Select,
   Table,
 } from "@/components/dashboard/ui";
 
@@ -45,11 +44,21 @@ type UserFormState = {
   active: boolean;
 };
 
+const API_ERR_AR: Record<string, string> = {
+  UNAUTHENTICATED: "يجب تسجيل الدخول",
+  FORBIDDEN: "ليس لديك صلاحية",
+  INVALID_EMAIL: "بريد غير صالح",
+  MISSING_NAME: "الاسم مطلوب",
+  PASSWORD_TOO_SHORT: "كلمة المرور قصيرة (٨ أحرف على الأقل)",
+  EMAIL_TAKEN: "البريد مستخدم مسبقاً",
+  LAST_SUPERADMIN: "لا يمكن إزالة آخر مدير عام",
+};
+
 const EMPTY_FORM: UserFormState = {
   email: "",
   name: "",
   password: "",
-  role: "CATALOG_EDITOR",
+  role: "SUPER_ADMIN",
   active: true,
 };
 
@@ -77,7 +86,7 @@ export function DashboardUsersPage() {
         setUsers(d.users);
         setErr(null);
       })
-      .catch((e: Error) => setErr(e.message))
+      .catch((e: Error) => setErr(API_ERR_AR[e.message] ?? e.message ?? "تعذّر تحميل الفريق"))
       .finally(() => setLoading(false));
   };
 
@@ -119,14 +128,14 @@ export function DashboardUsersPage() {
           email: form.email,
           name: form.name,
           password: form.password,
-          role: form.role,
+          role: "SUPER_ADMIN",
         });
       }
       setModalOpen(false);
       load();
     } catch (e) {
-      if (e instanceof DashboardApiError) setFormErr(e.code);
-      else setFormErr("UNKNOWN");
+      if (e instanceof DashboardApiError) setFormErr(API_ERR_AR[e.code] ?? e.code);
+      else setFormErr("خطأ غير معروف");
     } finally {
       setSaving(false);
     }
@@ -172,18 +181,12 @@ export function DashboardUsersPage() {
     <>
       <div className="dashboard-page-header">
         <div>
-          <h1 className="dashboard-page-title">
-            {lang === "ar" ? "الفريق والصلاحيات" : "Team & roles"}
-          </h1>
+          <h1 className="dashboard-page-title">إدارة الفريق والأدوار</h1>
           <div className="dashboard-page-subtitle">
-            {lang === "ar"
-              ? "أنشئ حسابات وأدوار للأشخاص الذين يديرون الموقع."
-              : "Create accounts and assign roles for the people running the site."}
+            حسابات المشغّلين — كل عضو جديد يحصل صلاحية مدير كامل للكتالوج.
           </div>
         </div>
-        <Button onClick={openCreate}>
-          + {lang === "ar" ? "إضافة عضو" : "Add member"}
-        </Button>
+        <Button onClick={openCreate}>+ إضافة عضو</Button>
       </div>
 
       <Card tight>
@@ -195,10 +198,10 @@ export function DashboardUsersPage() {
           <Table
             rowKey={(u) => u.id}
             rows={users}
-            empty={lang === "ar" ? "لا أعضاء" : "No members"}
+            empty="لا أعضاء بعد"
             columns={[
               {
-                header: lang === "ar" ? "العضو" : "Member",
+                header: "العضو",
                 cell: (u) => (
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <Avatar name={u.name} url={u.avatarUrl} />
@@ -227,7 +230,7 @@ export function DashboardUsersPage() {
                 },
               },
               {
-                header: lang === "ar" ? "آخر دخول" : "Last login",
+                header: "آخر تسجيل دخول",
                 cell: (u) =>
                   u.lastLoginAt ? (
                     new Date(u.lastLoginAt).toLocaleString(lang === "ar" ? "ar-IQ" : "en-GB")
@@ -347,18 +350,15 @@ export function DashboardUsersPage() {
             />
           </Field>
 
-          <Field label={lang === "ar" ? "الصلاحية" : "Role"}>
-            <Select
-              value={form.role}
-              onChange={(e) =>
-                setForm({ ...form, role: (e.target as HTMLSelectElement).value as Role })
-              }
-              options={(["CATALOG_EDITOR", "CATALOG_MANAGER", "SUPER_ADMIN"] as Role[]).map((r) => ({
-                value: r,
-                label: ROLE_LABELS[r][lang],
-              }))}
-            />
-          </Field>
+          {!editing ? (
+            <p style={{ fontSize: 13, color: "var(--fz-text-soft)" }}>
+              العضو الجديد يصبح <strong>مديراً عاماً</strong> بصلاحية كاملة على الكتالوج.
+            </p>
+          ) : (
+            <Field label="الصلاحية">
+              <Badge tone={ROLE_TONE[form.role]}>{ROLE_LABELS[form.role].ar}</Badge>
+            </Field>
+          )}
 
           {editing && (
             <Field label={lang === "ar" ? "نشط" : "Active"}>
