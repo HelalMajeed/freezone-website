@@ -4,12 +4,12 @@
 ## Started: 2026-05-25
 ## Last Update: 2026-05-25 (session resume)
 ## Current Batch: 1/6
-## Current Step: 1.6 — Self-verify + commit Batch 1
+## Current Step: 1.7 — Batch 1 wrap-up (image/variant routes still legacy auth)
 
 ---
 
 ## Batches Status
-- [▶] Batch 1: Foundation & Security — ~90% (verify + commits pending)
+- [▶] Batch 1: Foundation & Security — ~95% (commits pushed; image/variant CUD auth pending)
 - [ ] Batch 2: Full Product Editor
 - [ ] Batch 3: Anti-Errors & Speed
 - [ ] Batch 4: Review Workflow
@@ -64,8 +64,10 @@ _(none — tsc api + web pass after role fixes)_
 - `npx prisma validate` — pass
 - `npx tsc --noEmit` (freezone-api) — pass
 - `npx tsc --noEmit` (freezone-web) — pass
-- `npm run build` — pending
+- `npm run build` (freezone-api) — pass
+- `npm run build` (freezone-web) — pending this step
 - `seed-operators.ts` run — pending (needs DB + migration applied locally)
+- Git: `b0dd018`, `dbbe976`, `40d4659`, `7eccbf5` pushed to `origin/feat/data-entry-system`
 
 ---
 
