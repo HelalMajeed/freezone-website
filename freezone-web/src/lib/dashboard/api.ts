@@ -58,7 +58,10 @@ export const dashboardApi = {
   delete: <T>(path: string) => request<T>("DELETE", path),
 };
 
-export type Role = "viewer" | "editor" | "admin" | "superadmin";
+export type Role = "CATALOG_EDITOR" | "CATALOG_MANAGER" | "SUPER_ADMIN";
+
+/** Legacy nav keys still accepted by hasRole() */
+export type LegacyRoleAlias = "viewer" | "editor" | "admin" | "superadmin";
 
 export type DashboardUser = {
   id: number;

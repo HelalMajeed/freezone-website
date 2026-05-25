@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useDashboardAuth } from "@/lib/dashboard/auth-store";
+import type { LegacyRoleAlias } from "@/lib/dashboard/api";
 import { Avatar, Badge } from "@/components/dashboard/ui";
 import s from "./layout.module.css";
 
 type NavGroupDef = {
   label: { en: string; ar: string };
   items: NavItemDef[];
-  minRole?: "viewer" | "editor" | "admin" | "superadmin";
+  minRole?: LegacyRoleAlias;
 };
 
 type NavItemDef = {
@@ -16,7 +17,7 @@ type NavItemDef = {
   label: { en: string; ar: string };
   icon: string;
   end?: boolean;
-  minRole?: "viewer" | "editor" | "admin" | "superadmin";
+  minRole?: LegacyRoleAlias;
 };
 
 /** Single source of truth for the sidebar navigation. */

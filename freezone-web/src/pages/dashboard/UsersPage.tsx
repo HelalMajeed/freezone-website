@@ -22,17 +22,15 @@ import {
 type Lang = "ar" | "en";
 
 const ROLE_LABELS: Record<Role, { en: string; ar: string }> = {
-  superadmin: { en: "Super admin", ar: "مدير عام" },
-  admin: { en: "Admin", ar: "مدير" },
-  editor: { en: "Editor", ar: "محرّر" },
-  viewer: { en: "Viewer", ar: "مشاهد" },
+  SUPER_ADMIN: { en: "Super admin", ar: "مدير عام" },
+  CATALOG_MANAGER: { en: "Catalog manager", ar: "مدير كتالوج" },
+  CATALOG_EDITOR: { en: "Catalog editor", ar: "محرّر كتالوج" },
 };
 
 const ROLE_TONE: Record<Role, "brand" | "info" | "neutral" | "warning"> = {
-  superadmin: "brand",
-  admin: "info",
-  editor: "neutral",
-  viewer: "warning",
+  SUPER_ADMIN: "brand",
+  CATALOG_MANAGER: "info",
+  CATALOG_EDITOR: "neutral",
 };
 
 type UserFormState = {
@@ -48,7 +46,7 @@ const EMPTY_FORM: UserFormState = {
   email: "",
   name: "",
   password: "",
-  role: "editor",
+  role: "CATALOG_EDITOR",
   active: true,
 };
 
@@ -343,7 +341,7 @@ export function DashboardUsersPage() {
               onChange={(e) =>
                 setForm({ ...form, role: (e.target as HTMLSelectElement).value as Role })
               }
-              options={(["viewer", "editor", "admin", "superadmin"] as Role[]).map((r) => ({
+              options={(["CATALOG_EDITOR", "CATALOG_MANAGER", "SUPER_ADMIN"] as Role[]).map((r) => ({
                 value: r,
                 label: ROLE_LABELS[r][lang],
               }))}

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { freezoneApiUrl, getInternalApiFetchSignal } from "@/lib/api-internal";
-import { dashboardApi, type DashboardUser, type Role } from "./api";
+import { dashboardApi, type DashboardUser, type LegacyRoleAlias, type Role } from "./api";
 
 export type AuthMode = "dashboard" | "legacy";
 
@@ -13,21 +13,31 @@ type AuthState = {
   refresh: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  hasRole: (min: Role) => boolean;
+  hasRole: (min: Role | LegacyRoleAlias) => boolean;
 };
 
 const ROLE_RANK: Record<Role, number> = {
-  viewer: 0,
-  editor: 1,
-  admin: 2,
-  superadmin: 3,
+  CATALOG_EDITOR: 0,
+  CATALOG_MANAGER: 1,
+  SUPER_ADMIN: 2,
 };
+
+const LEGACY_ROLE_ALIAS: Record<LegacyRoleAlias, Role> = {
+  viewer: "CATALOG_EDITOR",
+  editor: "CATALOG_EDITOR",
+  admin: "CATALOG_MANAGER",
+  superadmin: "SUPER_ADMIN",
+};
+
+function normalizeRole(min: Role | LegacyRoleAlias): Role {
+  return LEGACY_ROLE_ALIAS[min as LegacyRoleAlias] ?? (min as Role);
+}
 
 const LEGACY_USER: DashboardUser = {
   id: 0,
   email: "legacy@admin",
   name: "مسؤول — دخول كلمة المرور",
-  role: "superadmin",
+  role: "SUPER_ADMIN",
   avatarUrl: null,
 };
 
@@ -88,6 +98,7 @@ export const useDashboardAuth = create<AuthState>((set, get) => ({
     const u = get().user;
     if (!u) return false;
     if (get().mode === "legacy") return true;
-    return ROLE_RANK[u.role] >= ROLE_RANK[min];
+    const floor = normalizeRole(min);
+    return ROLE_RANK[u.role] >= ROLE_RANK[floor];
   },
 }));

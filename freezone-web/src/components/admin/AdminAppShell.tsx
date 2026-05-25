@@ -34,7 +34,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { useDashboardAuth } from "@/lib/dashboard/auth-store";
-import type { Role } from "@/lib/dashboard/api";
+import type { LegacyRoleAlias } from "@/lib/dashboard/api";
 import { Avatar, Badge } from "@/components/dashboard/ui";
 import s from "@/components/dashboard/layout.module.css";
 
@@ -43,10 +43,10 @@ type NavItem = {
   label: string;
   icon: LucideIcon;
   soon?: boolean;
-  minRole?: Role;
+  minRole?: LegacyRoleAlias;
 };
 
-function makeAdminNavGroups(t: TFunction): { label: string; items: NavItem[]; minRole?: Role }[] {
+function makeAdminNavGroups(t: TFunction): { label: string; items: NavItem[]; minRole?: LegacyRoleAlias }[] {
   return [
     {
       label: "لوحة التحكم",

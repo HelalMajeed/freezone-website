@@ -6,10 +6,9 @@ import { useDashboardAuth } from "@/lib/dashboard/auth-store";
 import { Avatar, Badge, Button, Card, Field, Input } from "@/components/dashboard/ui";
 
 const ROLE_LABELS_AR: Record<string, string> = {
-  superadmin: "مدير عام",
-  admin: "مدير",
-  editor: "محرّر",
-  viewer: "مشاهد",
+  SUPER_ADMIN: "مدير عام",
+  CATALOG_MANAGER: "مدير كتالوج",
+  CATALOG_EDITOR: "محرّر كتالوج",
 };
 
 export function DashboardProfilePage() {
