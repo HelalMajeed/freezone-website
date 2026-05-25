@@ -6,8 +6,8 @@ import dotenv from "dotenv";
 import express from "express";
 import "express-async-errors";
 import multer from "multer";
+import helmet from "helmet";
 import { rateLimitCheck, ipKeyFromExpressReq } from "./lib/rate-limit";
-
 import * as adminAudit from "./app/api/admin/audit/route";
 import * as adminAuditLog from "./app/api/admin/audit-log/route";
 import * as adminBrands from "./app/api/admin/brands/route";
@@ -194,6 +194,12 @@ async function main() {
   const app = express();
   app.set("trust proxy", 1);
   app.use(applySecurityHeaders);
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
   app.use(
     cors({
       origin: resolveCorsOrigins(),
@@ -539,6 +545,7 @@ async function main() {
       res.status(400).type("application/json").send(JSON.stringify({ ok: false, error: err.message }));
       return;
     }
+    console.error("[api] Unhandled error:", err);
     const { captureError } = await import("./lib/observability/index.js");
     captureError(err, {
       tags: { source: "express-unhandled" },

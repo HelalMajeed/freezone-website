@@ -113,6 +113,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     descAr?: string;
     price?: number;
     oldPrice?: number | null;
+    originalPrice?: number | null;
+    warranty?: string;
+    sourceUrl?: string | null;
     storage?: string;
     model3d?: string | null;
     specs?: Record<string, unknown> | null;
@@ -166,6 +169,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
         ...(body.descAr !== undefined ? { descAr: body.descAr } : {}),
         ...(typeof body.price === "number" ? { price: body.price } : {}),
         ...(body.oldPrice !== undefined ? { oldPrice: body.oldPrice } : {}),
+        ...(body.originalPrice !== undefined ? { originalPrice: body.originalPrice } : {}),
+        ...(body.warranty !== undefined ? { warranty: body.warranty.trim() } : {}),
+        ...(body.sourceUrl !== undefined ? { sourceUrl: body.sourceUrl?.trim() || null } : {}),
         ...(body.storage !== undefined ? { storage: body.storage } : {}),
         ...(body.model3d !== undefined ? { model3d: body.model3d?.trim() || null } : {}),
         specs: finalSpecs as object,

@@ -1,6 +1,6 @@
 # Freezone monorepo
 
-متجر إلكتروني (e‑commerce) يضم واجهة متجر، REST API، ولوحة إدارة مدمجة، مع مسار **Commerce Suite** اختياري لتجارب كتالوج/إدارة منفصلة.
+متجر إلكتروني (e‑commerce) — **Express API** + **Vite** (متجر/أدمن) + **Next.js storefront** (SEO). خطة التطوير: [`docs/FREEZONE_ACTION_PLAN.md`](docs/FREEZONE_ACTION_PLAN.md).
 
 [![GitHub repo size](https://img.shields.io/github/repo-size/HelalMajeed/freezone-website)](https://github.com/HelalMajeed/freezone-website)
 [![GitHub last commit](https://img.shields.io/github/last-commit/HelalMajeed/freezone-website)](https://github.com/HelalMajeed/freezone-website/commits/main)
@@ -10,10 +10,11 @@ Public repository: [github.com/HelalMajeed/freezone-website](https://github.com/
 
 | Area | Packages | Stack | Role |
 |------|-----------|--------|------|
-| **Primary (Freezone)** | `freezone-api`, `freezone-web` | Express + Prisma + PostgreSQL · Vite 7 + React 19 + React Router | Storefront, CMS/admin SPA, orders; API is system of record for production data |
-| **Optional (Commerce Suite)** | `commerce-suite/admin-api`, `commerce-suite/admin-web` | NestJS + Prisma · Next.js 15 App Router | Greenfield catalog (`CatalogCategory`, …), RBAC scaffold; separate DB/schema until cut‑over |
+| **API** | `freezone-api` | Express + Prisma + PostgreSQL | System of record — إنتاج Fly |
+| **Storefront (legacy)** | `freezone-web` | Vite + React 19 | متجر + `/admin` |
+| **Storefront (SEO)** | `freezone-storefront` | Next.js 15 App Router | هجرة تدريجية (المرحلة 2) |
 
-Deep dive: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · Web app notes: [`freezone-web/README.md`](freezone-web/README.md) · Commerce: [`commerce-suite/README.md`](commerce-suite/README.md)
+Deep dive: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · Progress: [`docs/ROADMAP_PROGRESS.md`](docs/ROADMAP_PROGRESS.md)
 
 ---
 
@@ -30,15 +31,12 @@ This repo does **not** use npm `workspaces`; install dependencies in each packag
 ## Repository layout
 
 ```
-freezone-api/          # Express API, Prisma schema, migrations, seed
-freezone-web/          # Vite SPA: storefront + /admin, proxies /api in dev
-commerce-suite/
-  admin-api/           # NestJS catalog API (port 3020)
-  admin-web/           # Next.js admin UI (port 3010)
-docs/ARCHITECTURE.md   # Freezone vs Commerce Suite decisions
-scripts/ci-commerce.cjs # Local CI helper for commerce builds
-docker-compose.yml     # postgres + api + web (production-style images)
-.github/workflows/ci.yml
+freezone-api/           # Express API, Prisma, migrations
+freezone-web/           # Vite SPA: storefront + /admin
+freezone-storefront/    # Next.js 15 (SSR) — Phase 2
+docs/                   # Action plan, ADRs, production DB, DR
+docker-compose.yml
+.github/workflows/
 ```
 
 **Freezone domain (Prisma)** includes among others: brands, categories (facets, hero images), products (specs JSON, 3D model, variants scaffold), orders, CMS/admin uploads, i18n-friendly fields (`nameEn` / `nameAr`, etc.). See `freezone-api/prisma/schema.prisma`.
@@ -55,11 +53,8 @@ npm install --prefix freezone-api
 npm install --prefix freezone-web
 ```
 
-For Commerce Suite locally:
-
 ```bash
-npm install --prefix commerce-suite/admin-api
-npm install --prefix commerce-suite/admin-web
+npm install --prefix freezone-storefront
 ```
 
 ---
@@ -100,14 +95,11 @@ npm run dev:api
 npm run dev:web
 ```
 
-**Commerce Suite** (separate Postgres DB recommended — own Prisma schema):
+**Next.js storefront** (port 3100):
 
 ```bash
-npm run dev:commerce:api
-npm run dev:commerce:web
+npm run dev:storefront
 ```
-
-Follow [`commerce-suite/README.md`](commerce-suite/README.md) for `.env` / `.env.local` and first migration.
 
 ---
 
@@ -117,16 +109,15 @@ Follow [`commerce-suite/README.md`](commerce-suite/README.md) for `.env` / `.env
 |--------|---------|
 | `dev` | `predev` then API + web concurrently |
 | `dev:api` / `dev:web` | Single package dev |
-| `dev:commerce:api` / `dev:commerce:web` | Commerce Suite |
+| `dev:storefront` | Next.js storefront |
 | `db:local` | `db:up` (web prefix) + `db:setup` (API: generate, migrate deploy, seed) |
 | `db:up` / `db:down` | Docker Postgres via `freezone-web` |
 | `db:migrate` / `db:seed` / `db:push` / `db:status` | Prisma via `freezone-api` |
 | `build` / `build:api` / `build:web` | Production builds |
 | `start:api` / `start:web` | Run built API / Vite preview |
 | `docker:build` / `docker:up` / `docker:down` / `docker:logs` | Root Compose stack |
-| `ci:freezone` | Lint + tests + builds (Freezone only) |
-| `ci:commerce` | `scripts/ci-commerce.cjs` — `npm ci` + build both commerce packages |
-| `ci` | `ci:freezone` then `ci:commerce` (same shape as full local quality gate) |
+| `ci:freezone` | Lint + tests + builds (web + api + storefront) |
+| `ci` | Same as `ci:freezone` |
 
 ---
 
@@ -187,10 +178,9 @@ npm run ci
 
 On every **push** and **pull_request**, parallel jobs run:
 
-1. **freezone-web** — `npm ci`, `lint`, `test` (Vitest), `build`
+1. **freezone-web** — `npm ci`, `lint`, `test`, `build`
 2. **freezone-api** — `npm ci`, `build`
-3. **commerce-admin-api** — `npm ci`, `prisma generate`, `build`
-4. **commerce-admin-web** — `npm ci`, `build` with `NEXT_PUBLIC_API_URL=http://127.0.0.1:3020/v1`
+3. **freezone-storefront** — `npm ci`, `build`
 
 Node version: **20**.
 
@@ -201,9 +191,8 @@ Node version: **20**.
 | Package | Runtime / UI | Data |
 |---------|----------------|------|
 | `freezone-api` | Express, `tsx` dev, esbuild bundle for `start` | Prisma 6 → PostgreSQL |
-| `freezone-web` | Vite 7, React 19, React Router 7, TanStack Query, i18next, Tailwind-related utilities | Prisma in SSR paths + internal fetches to API |
-| `commerce-suite/admin-api` | NestJS 11 | Prisma 6 (catalog models) |
-| `commerce-suite/admin-web` | Next.js 15, RHF, Zod, TanStack Query/Table, dnd-kit | Calls admin API via `NEXT_PUBLIC_API_URL` |
+| `freezone-web` | Vite 7, React 19, React Router 7 | Fetches API |
+| `freezone-storefront` | Next.js 15, React 19 | SSR catalog via API |
 
 ---
 

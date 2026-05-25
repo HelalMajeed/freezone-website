@@ -83,6 +83,8 @@ export function mapDbToProduct(
     desc: locale === "ar" ? row.descAr : row.descEn,
     price: row.price,
     oldPrice: row.oldPrice,
+    originalPrice: (row as { originalPrice?: number | null }).originalPrice ?? null,
+    warranty: (row as { warranty?: string }).warranty?.trim() || undefined,
     storage: row.storage,
     inStock: row.inStock,
     featured: row.featured,

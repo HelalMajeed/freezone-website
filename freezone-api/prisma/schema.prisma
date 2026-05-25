@@ -139,6 +139,15 @@ model Product {
   price               Int
   /// Set for discount display (compare-at price)
   oldPrice            Int?
+  /// Source catalog cost before markup (Global Iraq import / admin review)
+  originalPrice       Int?
+  /// Storefront + admin warranty line (e.g. ضمان سنتين وكالة)
+  warranty            String          @default("")
+  /// Idempotent import key (Global Iraq handle)
+  sourceHandle        String?         @unique
+  /// Original product URL on source store
+  sourceUrl           String?
+  importedAt          DateTime?
   /// Legacy helper + component type mapping
   storage             String                     @default("")
   /// Arbitrary key/value filter facets

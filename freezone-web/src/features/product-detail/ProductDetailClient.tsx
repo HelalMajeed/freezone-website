@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import type { Product, Category } from "@/lib/data";
 import type { ProductDetailSpecGroup } from "@/lib/product-detail";
+import type { ProductVariantDto } from "@/lib/product-detail";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { ImageGallery } from "@/components/ui/ImageGallery";
 import { useCart } from "@/lib/store";
@@ -46,12 +47,14 @@ export default function ProductDetailClient({
   relatedProducts,
   groupedSpecs = [],
   attributes = [],
+  variants = [],
 }: {
   product: Product;
   categories: Category[];
   relatedProducts: Product[];
   groupedSpecs?: ProductDetailSpecGroup[];
   attributes?: FacetAttributeDef[];
+  variants?: ProductVariantDto[];
 }) {
   const t = useTranslations("ProductDetail");
   const locale = useLocale();
@@ -61,13 +64,19 @@ export default function ProductDetailClient({
   const category = categories.find((c) => c.id === product.cat);
   const facetAttrs = attributes.length ? attributes : category?.facetAttributes;
 
+  const warrantyLine =
+    product.warranty?.trim() ||
+    product.specs?.warranty?.trim() ||
+    product.specs?._warranty?.trim() ||
+    "";
+
+  const skuDisplay = product.sku?.trim() && product.sku !== "—" ? product.sku.trim() : "";
+
   const modelDisplay = useMemo(() => {
     const fromProduct = product.model?.trim();
     if (fromProduct) return fromProduct;
     const fromSpec = product.specs?.model?.trim();
     if (fromSpec) return fromSpec;
-    const s = product.sku?.trim();
-    if (s && s !== "—") return s;
     return "";
   }, [product]);
 
@@ -142,6 +151,28 @@ export default function ProductDetailClient({
             ) : null}
           </div>
 
+          {(skuDisplay || modelDisplay) && (
+            <p className={styles.identityLine}>
+              {skuDisplay ? (
+                <span>
+                  SKU: <strong>{skuDisplay}</strong>
+                </span>
+              ) : null}
+              {skuDisplay && modelDisplay ? <span> · </span> : null}
+              {modelDisplay ? (
+                <span>
+                  {t("model")}: <strong>{modelDisplay}</strong>
+                </span>
+              ) : null}
+            </p>
+          )}
+
+          {warrantyLine ? (
+            <p className={styles.warrantyLine}>
+              {locale === "ar" ? "الضمان" : "Warranty"}: <strong>{warrantyLine}</strong>
+            </p>
+          ) : null}
+
           <div className={styles.badgeRow}>
             {product.inStock ? (
               <span className={`${styles.badge} ${styles.badgeStock}`}>{t("inStock")}</span>
@@ -165,6 +196,26 @@ export default function ProductDetailClient({
                 </div>
               ))}
             </div>
+          ) : null}
+
+          {variants.length > 0 ? (
+            <section className={styles.variantsBlock} aria-label={locale === "ar" ? "الخيارات" : "Options"}>
+              <h2 className={styles.variantsTitle}>{locale === "ar" ? "الخيارات المتاحة" : "Available options"}</h2>
+              <ul className={styles.variantsList}>
+                {variants.map((v) => (
+                  <li key={v.id} className={styles.variantItem}>
+                    <span className={styles.variantLabel}>{v.label}</span>
+                    {v.sku ? <span className={styles.variantSku}>SKU: {v.sku}</span> : null}
+                    {v.price != null ? (
+                      <span className={styles.variantPrice}>{formatMoney(v.price)} IQD</span>
+                    ) : null}
+                    {!v.active || v.quantity <= 0 ? (
+                      <span className={styles.variantOut}>{locale === "ar" ? "غير متوفر" : "Unavailable"}</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </section>
           ) : null}
 
           <div className={styles.actionStack}>

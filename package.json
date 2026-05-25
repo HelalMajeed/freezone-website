@@ -1,17 +1,16 @@
 {
   "name": "freezone",
   "private": true,
-  "description": "Monorepo: freezone-api (Express) and freezone-web (Vite + React SPA).",
+  "description": "Monorepo: freezone-api (Express), freezone-web (Vite admin+legacy storefront), freezone-storefront (Next.js).",
   "scripts": {
     "dev:api": "npm run dev --prefix freezone-api",
     "dev:web": "npm run dev:vite:delayed --prefix freezone-web",
+    "dev:storefront": "npm run dev --prefix freezone-storefront",
     "predev": "node freezone-web/scripts/init-env.cjs && node freezone-web/scripts/ensure-dev-database.cjs && node freezone-web/scripts/ensure-prisma-migrate.cjs",
     "dev": "concurrently -n api,web -c blue,green \"npm run dev:api\" \"npm run dev:web\"",
-    "dev:commerce:api": "npm run dev --prefix commerce-suite/admin-api",
-    "dev:commerce:web": "npm run dev --prefix commerce-suite/admin-web",
-    "dev:commerce:admin-vite": "npm run dev --prefix apps/admin-vite",
     "build:api": "npm run build --prefix freezone-api",
     "build:web": "npm run build --prefix freezone-web",
+    "build:storefront": "npm run build --prefix freezone-storefront",
     "build": "npm run build:api && npm run build:web",
     "start:api": "npm run start --prefix freezone-api",
     "start:web": "npm run preview --prefix freezone-web",
@@ -27,9 +26,8 @@
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f web api",
-    "ci:freezone": "npm run lint --prefix freezone-web && npm run test --prefix freezone-web && npm run build --prefix freezone-web && npm run build --prefix freezone-api",
-    "ci:commerce": "node scripts/ci-commerce.cjs",
-    "ci": "npm run ci:freezone && npm run ci:commerce"
+    "ci:freezone": "npm run lint --prefix freezone-web && npm run test --prefix freezone-web && npm run build --prefix freezone-web && npm run build --prefix freezone-api && npm run build --prefix freezone-storefront",
+    "ci": "npm run ci:freezone"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

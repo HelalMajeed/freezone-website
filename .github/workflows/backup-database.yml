@@ -1,0 +1,30 @@
+# Manual + weekly production DB backup (requires DATABASE_URL_PROD secret).
+name: Backup production database
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 0"
+
+jobs:
+  pg-dump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Create backup
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_PROD }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DATABASE_URL_PROD secret not set — skip backup"
+            exit 0
+          fi
+          mkdir -p backups
+          pg_dump "$DATABASE_URL" -Fc -f "backups/freezone-prod-$(date -u +%Y%m%dT%H%M%SZ).dump"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: freezone-db-backup
+          path: backups/*.dump
+          retention-days: 30

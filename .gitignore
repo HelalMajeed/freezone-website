@@ -22,6 +22,8 @@ freezone-web/.vite/
 **/.next/
 .DS_Store
 *.log
+# Local backups and import/delete reports (never commit)
+freezone-api/logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

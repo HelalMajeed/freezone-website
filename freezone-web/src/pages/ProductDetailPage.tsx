@@ -46,6 +46,7 @@ export default function ProductDetailPage() {
       relatedProducts={relatedProducts}
       groupedSpecs={detail.groupedSpecs}
       attributes={detail.attributes}
+      variants={detail.variants}
     />
   );
 }

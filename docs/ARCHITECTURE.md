@@ -1,25 +1,27 @@
-# Architecture — Freezone vs Commerce Suite
+# Architecture — Freezone
 
-This repository contains **two product stacks**:
+## المكدس الإنتاجي (system of record)
 
-## 1. `freezone-api` + `freezone-web` (primary storefront)
+| Package | Role |
+|---------|------|
+| **freezone-api** | Express + Prisma + PostgreSQL — REST، أدمن API، طلبات، CMS |
+| **freezone-web** | Vite SPA — متجر + `/admin` (مؤقت حتى اكتمال admin على Next) |
+| **freezone-storefront** | Next.js 15 — واجهة عامة SSR/SEO (المرحلة 2، Strangler Fig) |
 
-- **API**: Express, route modules under `freezone-api/src/app/api/**`, Prisma schema for the live storefront (categories, products, orders, CMS, admin upload, etc.).
-- **Web**: Vite + React SPA; public locale routes and embedded **admin** (`/admin/*`). Proxies `/api` and `/uploads` to the API in development.
-- **When to use**: Default path for the customer-facing site and the current admin/CMS/product workflow.
+## Commerce Suite
 
-## 2. `commerce-suite/` (parallel admin stack)
+**مُوقَف** — راجع [ADR-001](adr/001-retire-commerce-suite.md) و [archive/COMMERCE_SUITE_ARCHIVED.md](archive/COMMERCE_SUITE_ARCHIVED.md).
 
-- **admin-api**: NestJS + Prisma with **separate** catalog-oriented models (e.g. `CatalogCategory`) intended to evolve without blocking the legacy schema.
-- **admin-web**: Next.js App Router admin UI (ports `3010` / `3020` per `commerce-suite/README.md`).
-- **When to use**: Greenfield catalog/RBAC experiments or a future cut-over once mapping from catalog models to storefront models is defined.
+## الإنتاج
 
-## Operational notes
+- Fly app `freezone-website` + Postgres `freezone-website-pg`
+- تفاصيل: [PRODUCTION_DATABASE.md](PRODUCTION_DATABASE.md)
 
-- **Health**: `freezone-api` exposes `GET /health` (lightweight JSON). Docker Compose uses it for the `api` service healthcheck.
-- **HTTP logs**: Set `LOG_HTTP=1` on the API process for one-line JSON request logs (off by default in production).
-- **CI**: GitHub Actions runs lint, unit tests, and builds for `freezone-web`, `freezone-api`, and both commerce packages.
+## CI
 
-## Decision record (short)
+- `.github/workflows/ci.yml` — freezone-web, freezone-api, freezone-storefront
+- `.github/workflows/backup-database.yml` — backup أسبوعي (يتطلب `DATABASE_URL_PROD`)
 
-Until an explicit migration plan exists, treat **Freezone** as the system of record for production storefront data. Treat **Commerce Suite** as an optional, isolated track for rebuilding admin/catalog concerns without destabilizing the live API.
+## خطة التطوير
+
+[FREEZONE_ACTION_PLAN.md](FREEZONE_ACTION_PLAN.md) · [ROADMAP_PROGRESS.md](ROADMAP_PROGRESS.md)

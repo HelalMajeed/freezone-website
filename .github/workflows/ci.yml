@@ -39,37 +39,20 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-  commerce-admin-api:
-    name: commerce-admin-api
+  freezone-storefront:
+    name: freezone-storefront (scaffold)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: commerce-suite/admin-api
+        working-directory: freezone-storefront
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: commerce-suite/admin-api/package-lock.json
-      - run: npm ci
-      - run: npx prisma generate
-      - run: npm run build
-
-  commerce-admin-web:
-    name: commerce-admin-web
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: commerce-suite/admin-web
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
-          cache-dependency-path: commerce-suite/admin-web/package-lock.json
+          cache-dependency-path: freezone-storefront/package-lock.json
       - run: npm ci
       - run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: http://127.0.0.1:3020/v1
+          NEXT_PUBLIC_API_URL: http://127.0.0.1:4000

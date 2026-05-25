@@ -24,6 +24,10 @@ import {
 } from "@/components/admin/products/AdminProductEditorTabs";
 import { AdminProductPreviewPanel } from "@/components/admin/products/AdminProductPreviewPanel";
 import { AdminProductEditorHeader } from "@/components/admin/products/AdminProductEditorHeader";
+import {
+  AdminProductImportMetaSection,
+  type ProductVariantRow,
+} from "@/components/admin/products/AdminProductImportMetaSection";
 import { AdminStickySaveBar } from "@/components/admin/ui/AdminStickySaveBar";
 import {
   computeTabStatuses,
@@ -60,6 +64,11 @@ type ProductRow = {
   descAr: string;
   price: number;
   oldPrice: number | null;
+  originalPrice: number | null;
+  warranty: string;
+  sourceHandle: string | null;
+  sourceUrl: string | null;
+  importedAt: string | null;
   storage: string;
   model3d: string | null;
   inStock: boolean;
@@ -71,6 +80,7 @@ type ProductRow = {
   sales: number;
   published: boolean;
   images: ImgRow[];
+  variants?: ProductVariantRow[];
   category: { id: number; slug: string; nameEn: string };
   specs?: Record<string, unknown> | null;
   displaySpecs?: Record<string, unknown> | null;
@@ -221,7 +231,12 @@ export default function AdminEditProductPage() {
         ...rest,
         secondaryCategoryIds,
         model: (raw as { model?: string }).model ?? "",
+        originalPrice: (raw as { originalPrice?: number | null }).originalPrice ?? null,
         warranty: (raw as { warranty?: string | null }).warranty ?? "",
+        sourceHandle: (raw as { sourceHandle?: string | null }).sourceHandle ?? null,
+        sourceUrl: (raw as { sourceUrl?: string | null }).sourceUrl ?? null,
+        importedAt: (raw as { importedAt?: string | null }).importedAt ?? null,
+        variants: (raw as { variants?: ProductVariantRow[] }).variants ?? [],
       });
       const apiAttrs = (raw as { categoryAttributes?: import("@/lib/data").FacetAttributeDef[] })
         .categoryAttributes;
@@ -314,6 +329,9 @@ export default function AdminEditProductPage() {
         descAr: product.descAr,
         price: product.price,
         oldPrice: product.oldPrice,
+        originalPrice: product.originalPrice,
+        warranty: product.warranty,
+        sourceUrl: product.sourceUrl,
         storage: product.storage,
         model3d: product.model3d,
         inStock: product.inStock,
@@ -813,6 +831,31 @@ export default function AdminEditProductPage() {
         ) : null}
         </AdminProductFormSection>
         )}
+
+        {(editorMode === "simple" && simpleTab === "commerce") ||
+        (editorMode === "advanced" && editorTab === "pricing") ? (
+          <AdminProductImportMetaSection
+            warranty={product.warranty}
+            originalPrice={product.originalPrice}
+            sourceHandle={product.sourceHandle}
+            sourceUrl={product.sourceUrl}
+            importedAt={product.importedAt}
+            variants={product.variants ?? []}
+            onWarrantyChange={(warranty) => {
+              markDirty();
+              setProduct({ ...product, warranty });
+            }}
+            onOriginalPriceChange={(originalPrice) => {
+              markDirty();
+              setProduct({ ...product, originalPrice });
+            }}
+            onSourceUrlChange={(sourceUrl) => {
+              markDirty();
+              setProduct({ ...product, sourceUrl });
+            }}
+            fieldStyle={field}
+          />
+        ) : null}
 
         {editorMode === "simple" && simpleTab === "smartSpecs" ? (
           <AdminProductSmartSpecs

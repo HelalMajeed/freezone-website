@@ -126,6 +126,68 @@
   font-weight: 500;
 }
 
+.identityLine,
+.warrantyLine {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.warrantyLine strong {
+  color: var(--text-primary);
+}
+
+.variantsBlock {
+  margin: 16px 0 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+}
+
+.variantsTitle {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.variantsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.variantItem {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.variantLabel {
+  font-weight: 600;
+}
+
+.variantSku {
+  font-family: ui-monospace, monospace;
+  opacity: 0.85;
+}
+
+.variantPrice {
+  color: var(--red-600);
+  font-weight: 700;
+}
+
+.variantOut {
+  color: #b91c1c;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
 /* ── Badges ───────────────────────────────────── */
 .badgeRow {
   display: flex;
