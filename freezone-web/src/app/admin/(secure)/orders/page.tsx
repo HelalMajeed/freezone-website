@@ -70,7 +70,7 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 1200 }}>
+    <div style={{ padding: "16px 0", width: "100%" }}>
       <h1 style={{ marginBottom: 8 }}>الطلبات</h1>
       <p style={{ color: "var(--admin-muted)", marginBottom: 12, fontSize: 14 }}>
         الطلبات الناتجة عن صفحة الدفع عند وجود <code>DATABASE_URL</code>.

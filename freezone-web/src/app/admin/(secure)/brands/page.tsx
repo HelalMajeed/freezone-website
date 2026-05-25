@@ -92,7 +92,7 @@ export default function AdminBrandsPage() {
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 900 }}>
+    <div style={{ padding: "16px 0", width: "100%" }}>
       <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
         <h1 style={{ margin: 0, flex: 1 }}>العلامات التجارية</h1>
         <Link to="/admin/products" style={{ color: "var(--admin-muted)" }}>
