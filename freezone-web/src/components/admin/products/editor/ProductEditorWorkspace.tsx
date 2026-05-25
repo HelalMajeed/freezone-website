@@ -195,6 +195,8 @@ export function ProductEditorWorkspace({ productId }: { productId: number }) {
   const saveLabel =
     saveState === "saving" ? "جارٍ الحفظ…" : saveState === "saved" ? "تم الحفظ" : formState.isDirty ? "غير محفوظ" : "";
 
+  const missingFields = Object.entries(formState.errors).map(([k]) => k);
+
   return (
     <div dir="rtl" style={{ maxWidth: 960, margin: "0 auto", padding: "0 16px 80px" }}>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
@@ -204,7 +206,7 @@ export function ProductEditorWorkspace({ productId }: { productId: number }) {
           <span style={{ fontSize: 13, color: "#94a3b8" }}>{saveLabel}</span>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button type="button" onClick={() => void persist()}>
+          <button type="button" disabled={!formState.isValid} onClick={() => void persist()}>
             حفظ مسودة
           </button>
           <button type="button" onClick={() => void persist({ submitForReview: true })}>
@@ -217,6 +219,22 @@ export function ProductEditorWorkspace({ productId }: { productId: number }) {
           ) : null}
         </div>
       </header>
+
+      {missingFields.length > 0 ? (
+        <div
+          role="alert"
+          style={{
+            marginBottom: 12,
+            padding: 12,
+            borderRadius: 8,
+            background: "#422006",
+            color: "#fde68a",
+            fontSize: 13,
+          }}
+        >
+          <strong>ينقص للحفظ الكامل:</strong> {missingFields.join("، ")}
+        </div>
+      ) : null}
 
       <nav style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
         {TABS.map((t) => (
