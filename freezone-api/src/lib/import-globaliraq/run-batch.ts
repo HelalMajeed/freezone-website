@@ -60,6 +60,12 @@ interface HandleResult {
   variantCount?: number;
   error?: string;
   publishStatus?: "published" | "draft";
+  /** Spec keys the validator rejected and we stripped to let the product import. */
+  droppedSpecKeys?: string[];
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 /** Hard sanity cap so a typo (`limit=10000`) can never write more than this in one go. */
@@ -150,7 +156,7 @@ export async function runImportBatch(opts: RunBatchOptions): Promise<RunBatchRes
         const specKeys = Object.keys(mapped.productPayload.specs ?? {});
         await ensureCategoryAttributes(category.id, specKeys);
 
-        const productId = await createProductViaAdminRoute(mapped, category.id, batch.id);
+        const { id: productId, droppedSpecKeys } = await createProductViaAdminRoute(mapped, category.id, batch.id);
         const { imageCount, localByShopifyUrl } = await mirrorImages(productId, mapped);
         const variantCount = await upsertVariants(productId, mapped.variants, localByShopifyUrl);
 
@@ -168,9 +174,13 @@ export async function runImportBatch(opts: RunBatchOptions): Promise<RunBatchRes
           imageCount,
           variantCount,
           publishStatus,
+          ...(droppedSpecKeys.length ? { droppedSpecKeys } : {}),
         });
         succeeded += 1;
         consecutiveFailures = 0;
+        /** Gentle pacing so a 50-item batch doesn't trip Global Iraq / Shopify
+         *  rate limits on the burst of product + image fetches. */
+        await sleep(250);
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         results.push({ handle, status: "failed", error: message });
@@ -246,48 +256,116 @@ async function loadSitemap(baseUrl: string): Promise<string[]> {
  * `isAdminAuthenticatedFromRequest`, so we mint a fresh signed session token
  * — same code path as the login endpoint, no network involved.
  */
+/** Pull the offending keys out of a validator error like
+ *  "Invalid or unknown attribute values: a, b, c". Returns [] if it's a
+ *  different error we shouldn't auto-recover from. */
+function parseInvalidSpecKeys(error: string | undefined): string[] {
+  if (!error) return [];
+  const m = /Invalid or unknown attribute values:\s*(.+)$/i.exec(error);
+  if (!m) return [];
+  return m[1].split(",").map((s) => s.trim()).filter(Boolean);
+}
+
 async function createProductViaAdminRoute(
   mapped: MappedProduct,
   categoryId: number,
   batchId: string,
-): Promise<number> {
+): Promise<{ id: number; droppedSpecKeys: string[] }> {
   const p = mapped.productPayload;
-  const body = {
-    categoryId,
-    brand: p.brand || "—",
-    sku: (p.sku || "").trim() || "—",
-    model: typeof p.model === "string" ? p.model.trim() : "",
-    quantity: Number.isFinite(p.quantity) ? p.quantity : 1,
-    nameEn: p.nameEn,
-    nameAr: p.nameAr || p.nameEn,
-    descEn: p.descEn,
-    descAr: p.descAr,
-    price: p.price,
-    oldPrice: p.oldPrice ?? null,
-    warranty: p.warranty || null,
-    specs: p.specs && typeof p.specs === "object" ? p.specs : {},
-    published: false,
-    isNew: p.isNew !== false,
-    sourceUrl: p.sourceUrl ?? null,
-    sourceHandle: p.sourceHandle,
-    sourcePrice: typeof p.sourcePrice === "number" ? p.sourcePrice : null,
-    importedAt: new Date().toISOString(),
-    importBatchId: batchId,
-  };
+  let specs: Record<string, unknown> = p.specs && typeof p.specs === "object" ? { ...p.specs } : {};
+  const droppedSpecKeys: string[] = [];
+
+  /**
+   * The validator rejects spec keys that aren't in the (post-preset-resync)
+   * category schema — and for categories with a canonical preset, dynamically
+   * added keys can be dropped by that resync. Rather than fail the whole
+   * product, we strip the rejected keys and retry. Warranty lives on its own
+   * column, so the product still lands fully formed; dropped keys are recorded
+   * for admin review. Bounded retries prevent an infinite loop.
+   */
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const body = {
+      categoryId,
+      brand: p.brand || "—",
+      sku: (p.sku || "").trim() || "—",
+      model: typeof p.model === "string" ? p.model.trim() : "",
+      quantity: Number.isFinite(p.quantity) ? p.quantity : 1,
+      nameEn: p.nameEn,
+      nameAr: p.nameAr || p.nameEn,
+      descEn: p.descEn,
+      descAr: p.descAr,
+      price: p.price,
+      oldPrice: p.oldPrice ?? null,
+      warranty: p.warranty || null,
+      specs,
+      published: false,
+      isNew: p.isNew !== false,
+      sourceUrl: p.sourceUrl ?? null,
+      sourceHandle: p.sourceHandle,
+      sourcePrice: typeof p.sourcePrice === "number" ? p.sourcePrice : null,
+      importedAt: new Date().toISOString(),
+      importBatchId: batchId,
+    };
+    const cookie = `fz_admin_session=${encodeURIComponent(signAdminSession())}`;
+    const req = new Request("http://127.0.0.1/internal/api/admin/products", {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify(body),
+    });
+    const res = await adminProductsRoute.POST(req);
+    const data = (await res.json()) as { id?: number; error?: string };
+    if (res.ok && typeof data.id === "number") {
+      return { id: data.id, droppedSpecKeys };
+    }
+    const badKeys = parseInvalidSpecKeys(data.error);
+    const removable = badKeys.filter((k) => k in specs);
+    if (removable.length === 0) {
+      throw new Error(
+        `admin POST /api/admin/products failed: ${res.status} ${data.error ?? "no id in response"}`,
+      );
+    }
+    for (const k of removable) {
+      delete specs[k];
+      droppedSpecKeys.push(k);
+    }
+  }
+  /** Last resort: post with NO specs so the product still imports. */
+  specs = {};
   const cookie = `fz_admin_session=${encodeURIComponent(signAdminSession())}`;
-  const req = new Request("http://127.0.0.1/internal/api/admin/products", {
-    method: "POST",
-    headers: { "content-type": "application/json", cookie },
-    body: JSON.stringify(body),
-  });
-  const res = await adminProductsRoute.POST(req);
+  const res = await adminProductsRoute.POST(
+    new Request("http://127.0.0.1/internal/api/admin/products", {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({
+        categoryId,
+        brand: p.brand || "—",
+        sku: (p.sku || "").trim() || "—",
+        model: typeof p.model === "string" ? p.model.trim() : "",
+        quantity: Number.isFinite(p.quantity) ? p.quantity : 1,
+        nameEn: p.nameEn,
+        nameAr: p.nameAr || p.nameEn,
+        descEn: p.descEn,
+        descAr: p.descAr,
+        price: p.price,
+        oldPrice: p.oldPrice ?? null,
+        warranty: p.warranty || null,
+        specs: {},
+        published: false,
+        isNew: p.isNew !== false,
+        sourceUrl: p.sourceUrl ?? null,
+        sourceHandle: p.sourceHandle,
+        sourcePrice: typeof p.sourcePrice === "number" ? p.sourcePrice : null,
+        importedAt: new Date().toISOString(),
+        importBatchId: batchId,
+      }),
+    }),
+  );
   const data = (await res.json()) as { id?: number; error?: string };
   if (!res.ok || typeof data.id !== "number") {
-    throw new Error(
-      `admin POST /api/admin/products failed: ${res.status} ${data.error ?? "no id in response"}`,
-    );
+    throw new Error(`admin POST failed even with empty specs: ${res.status} ${data.error ?? ""}`);
   }
-  return data.id;
+  droppedSpecKeys.push("*all-specs*");
+  return { id: data.id, droppedSpecKeys };
 }
 
 async function mirrorImages(

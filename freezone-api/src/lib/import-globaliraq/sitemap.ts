@@ -82,11 +82,26 @@ export function productJsonUrl(productUrl: string): string {
     .replace(/\/?$/, "") + ".json";
 }
 
-/** Convenience: fetch the canonical /products/<handle>.json blob. */
+/** Convenience: fetch the canonical /products/<handle>.json blob, retrying with
+ *  backoff on transient upstream throttling (429 / 5xx). Global Iraq is a
+ *  Shopify store and will 429 a burst of requests; a few spaced retries clear
+ *  it without failing the product. */
 export async function fetchShopifyProduct(productUrl: string): Promise<Record<string, unknown>> {
   const url = productJsonUrl(productUrl);
-  const res = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
-  if (!res.ok) throw new Error(`GET ${url} → ${res.status} ${res.statusText}`);
-  const body = (await res.json()) as { product?: Record<string, unknown> };
-  return body.product ?? (body as Record<string, unknown>);
+  const backoffMs = [500, 1500, 4000];
+  let lastErr = "";
+  for (let attempt = 0; attempt <= backoffMs.length; attempt += 1) {
+    const res = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
+    if (res.ok) {
+      const body = (await res.json()) as { product?: Record<string, unknown> };
+      return body.product ?? (body as Record<string, unknown>);
+    }
+    lastErr = `${res.status} ${res.statusText}`;
+    const transient = res.status === 429 || res.status >= 500;
+    if (!transient || attempt === backoffMs.length) {
+      throw new Error(`GET ${url} → ${lastErr}`);
+    }
+    await new Promise((r) => setTimeout(r, backoffMs[attempt]));
+  }
+  throw new Error(`GET ${url} → ${lastErr}`);
 }
