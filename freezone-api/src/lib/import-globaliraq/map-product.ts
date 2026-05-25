@@ -151,13 +151,22 @@ export function shopifyToFreezone(shopify: ShopifyProduct, opts: MapOptions = {}
 
   const firstVariant: ShopifyVariant | null = shopify.variants?.[0] ?? null;
   const shopifyPrice = firstVariant ? parsePriceToInt(firstVariant.price) : null;
-  const oldPrice = shopifyPrice;
   const price = shopifyPrice != null ? Math.round(shopifyPrice * markup) : null;
+  /** Issue #2: never set a product-level compare-at on imports. The source
+   *  price (sourcePrice) is below the marked-up price, so using it as oldPrice
+   *  rendered a fake "discount" that actually looked like a price increase.
+   *  sourcePrice is kept in its own admin-only column for reference; admins set
+   *  a real oldPrice only when they run an actual promotion. */
+  const oldPrice = null;
 
   const sku = (firstVariant?.sku ?? "").trim();
   const modelName = (shopify.title ?? "").trim();
 
-  const descHtml = cleanBodyHtml(shopify.body_html ?? "");
+  /** Issue #3: the storefront description must be prose, not a dump of the spec
+   *  list. The spec bullets are captured separately by extractFlatSpecs and
+   *  shown in the PDP specs section, so strip <ul>/<ol> blocks before turning
+   *  the body into plain text. */
+  const descHtml = stripSpecLists(cleanBodyHtml(shopify.body_html ?? ""));
   const descPlain = htmlToPlainText(descHtml);
 
   const specs = extractFlatSpecs(shopify.body_html ?? "");
@@ -259,32 +268,70 @@ function parsePriceToInt(raw: string | number | undefined | null): number | null
 
 function extractFlatSpecs(html: string): Record<string, string> {
   const out: Record<string, string> = {};
-  const liRe = /<li[^>]*>([\s\S]*?)<\/li>/gi;
   const labelRe = /<(?:strong|b)[^>]*>([\s\S]*?)<\/(?:strong|b)>\s*[:：-]?\s*([\s\S]*)/i;
+
+  const addPair = (rawKey: string, rawVal: string) => {
+    const key = htmlToPlainText(rawKey).replace(/[:：]\s*$/, "").trim();
+    const val = htmlToPlainText(rawVal).trim();
+    if (key && val && key.length < 60 && val.length < 200) {
+      const k = normalizeKey(key);
+      /** First write wins — the <li> list is authoritative over later prose. */
+      if (!(k in out)) out[k] = val;
+    }
+  };
+
+  /** Primary: <li><strong>Key:</strong> Value</li> (Global Iraq's usual shape). */
+  const liRe = /<li[^>]*>([\s\S]*?)<\/li>/gi;
   let m: RegExpExecArray | null;
   while ((m = liRe.exec(html)) !== null) {
-    const inner = m[1];
-    const lm = labelRe.exec(inner);
-    if (!lm) continue;
-    const key = htmlToPlainText(lm[1]).trim();
-    const val = htmlToPlainText(lm[2]).trim();
-    if (key && val && key.length < 60 && val.length < 200) out[normalizeKey(key)] = val;
+    const lm = labelRe.exec(m[1]);
+    if (lm) addPair(lm[1], lm[2]);
   }
+
+  /** Secondary: <p><strong>Key:</strong> Value</p> — some products list specs
+   *  in paragraphs rather than bullets. Same conservative length guards keep
+   *  prose paragraphs out (a real sentence value exceeds 200 chars or has no
+   *  leading <strong> label). */
+  const pRe = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+  while ((m = pRe.exec(html)) !== null) {
+    const lm = labelRe.exec(m[1]);
+    if (lm) addPair(lm[1], lm[2]);
+  }
+
   return out;
 }
 
 function normalizeKey(label: string): string {
-  return label
+  let s = label
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
     .toLowerCase()
     .replace(/[^a-z0-9؀-ۿ]+/g, "_")
     .replace(/^_+|_+$/g, "")
-    .slice(0, 40) || "spec";
+    .slice(0, 40);
+  if (!s) return "spec";
+  /** The validator requires keys to start with a letter; match the
+   *  snakeCaseAttributeKey transform so the registered attribute and the
+   *  product's spec key are identical. */
+  if (!/^[a-z؀-ۿ]/.test(s)) s = `k_${s}`.slice(0, 40);
+  return s;
 }
 
 function cleanBodyHtml(html: string): string {
   return html
     .replace(/<script\b[\s\S]*?<\/script>/gi, "")
     .replace(/<style\b[\s\S]*?<\/style>/gi, "");
+}
+
+/** Remove <ul>/<ol> blocks (the spec bullet lists) + a leading
+ *  "<p><strong>…Specification…</strong></p>" heading, leaving only prose for
+ *  the product description. The specs themselves are captured by
+ *  extractFlatSpecs and rendered in the dedicated PDP specs section. */
+function stripSpecLists(html: string): string {
+  return html
+    .replace(/<ul\b[\s\S]*?<\/ul>/gi, "")
+    .replace(/<ol\b[\s\S]*?<\/ol>/gi, "")
+    .replace(/<p>\s*<strong>[^<]*specification[^<]*<\/strong>\s*<\/p>/gi, "")
+    .replace(/<p>\s*<strong>[^<]*المواصفات[^<]*<\/strong>\s*<\/p>/gi, "");
 }
 
 function htmlToPlainText(html: string): string {
