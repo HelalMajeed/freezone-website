@@ -61,7 +61,7 @@
     "eslint": "^9",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^16.5.0",
-    "playwright": "^1.49.1",
+    "playwright": "^1.60.0",
     "sharp": "^0.34.5",
     "typescript": "^5",
     "typescript-eslint": "^8.46.0",
