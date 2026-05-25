@@ -15,6 +15,22 @@ enum AdminRole {
   CATALOG_EDITOR
 }
 
+/// Data-entry workflow status (storefront visibility still uses `published` + `deletedAt`).
+enum ProductCatalogStatus {
+  DRAFT
+  PENDING_REVIEW
+  CHANGES_REQUESTED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ProductAvailability {
+  IN_STOCK
+  OUT_OF_STOCK
+  COMING_SOON
+  ON_DEMAND
+}
+
 model Brand {
   id        Int       @id @default(autoincrement())
   slug      String    @unique
@@ -139,11 +155,42 @@ model Product {
   model               String                     @default("")
   /// Stock count; treat 0 as out of stock when inStock is true
   quantity            Int                        @default(100)
+  slug                String?                    @unique
   nameEn              String
   nameAr              String
+  shortDescEn         String                     @default("")
+  shortDescAr         String                     @default("")
   descEn              String                     @default("")
   descAr              String                     @default("")
+  keyFeatures         Json?
+  whatsInBox          Json?
+  catalogStatus       ProductCatalogStatus       @default(DRAFT)
+  availability        ProductAvailability        @default(IN_STOCK)
   price               Int
+  priceUsd            Int?
+  costPrice           Int?
+  salePrice           Int?
+  saleStartAt         DateTime?
+  saleEndAt           DateTime?
+  lowStockThreshold   Int                        @default(5)
+  prepTimeDays        Int                        @default(0)
+  metaTitleEn         String?
+  metaTitleAr         String?
+  metaDescEn          String?
+  metaDescAr          String?
+  seoKeywords         Json?
+  weightKg            Float?
+  dimLengthCm         Float?
+  dimWidthCm          Float?
+  dimHeightCm         Float?
+  requiresSpecialHandling Boolean                @default(false)
+  excludedProvinces   Json?
+  internalNotes       String?
+  sourceSupplier      String?
+  purchaseInvoiceRef  String?
+  createdById         Int?
+  submittedAt         DateTime?
+  reviewNotes         String?
   /// Set for discount display (compare-at price)
   oldPrice            Int?
   /// Source catalog cost before markup (Global Iraq import / admin review)
@@ -178,6 +225,7 @@ model Product {
   variants            ProductVariant[]
   secondaryCategories ProductSecondaryCategory[]
   attributeValues     ProductAttributeValue[]
+  comments            ProductComment[]
 
   /// Original list price as scraped, BEFORE the FreeZone markup multiplier is applied to `price`.
   sourcePrice   Int?
@@ -341,6 +389,7 @@ model AuditLog {
   userId    Int?
   userEmail String?
   ip        String?
+  userAgent String?
   createdAt DateTime  @default(now())
 
   @@index([entity, createdAt])
@@ -351,8 +400,15 @@ model ProductImage {
   id                Int     @id @default(autoincrement())
   productId         Int
   product           Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// Primary display URL (typically 1600px WebP).
   url               String
+  urlW200           String?
+  urlW400           String?
+  urlW800           String?
+  altTextAr         String?
+  altTextEn         String?
   sortOrder         Int     @default(0)
+  isCover           Boolean @default(false)
   /// Remote URL used only for import reference — storefront uses `url` (local upload).
   originalSourceUrl String?
 
@@ -597,9 +653,24 @@ model AdminUser {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   sessions     AdminSession[]
+  comments     ProductComment[]
 
   @@index([active])
   @@index([role])
+}
+
+/// Internal review thread on a product (operator ↔ manager).
+model ProductComment {
+  id        String    @id @default(cuid())
+  productId Int
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String
+  createdAt DateTime  @default(now())
+
+  @@index([productId, createdAt])
+  @@index([userId])
 }
 
 /// Server-side session — revocable, lookup by tokenHash from cookie.
