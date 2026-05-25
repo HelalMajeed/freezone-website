@@ -24,6 +24,8 @@ freezone-web/.vite/
 *.log
 # Local backups and import/delete reports (never commit)
 freezone-api/logs/
+OPERATORS_CREDENTIALS.md
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
