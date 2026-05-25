@@ -25,7 +25,8 @@ flyctl proxy 15432:5432 -a freezone-website-pg
 
 | المقياس | العدد |
 |---------|--------|
-| منتجات منشورة | **88** |
+| منتجات على المتجر (`published` + `deletedAt` null) | **88** |
+| منتجات نشطة غير منشورة (مسودات) | راجع `productsDraftActive` في `db:counts` |
 | منتجات Global Iraq (`sourceHandle`) | **0** |
 | طلبات | 5 |
 | أقسام | 17 |
@@ -49,4 +50,7 @@ flyctl proxy 15432:5432 -a freezone-website-pg
 ```bash
 cd freezone-api
 npm run db:counts   # مع DATABASE_URL الإنتاج عبر proxy
+# يطبع: productsLiveStorefront (=88), productsDraftActive, productsDeleted, staleImportDrafts
 ```
+
+لوحة التحكم `/admin` تستخدم نفس التعريفات: **على المتجر** = `productsLiveStorefront`، **إجمالي نشط** = كل الصفوف غير المحذوفة.
