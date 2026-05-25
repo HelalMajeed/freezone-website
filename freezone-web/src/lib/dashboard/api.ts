@@ -77,6 +77,49 @@ export type DashboardUserDetail = DashboardUser & {
   _count?: { sessions: number };
 };
 
+export type OverviewResponse = {
+  kpis: {
+    products: number;
+    categories: number;
+    brands: number;
+    activeCoupons: number;
+    ordersToday: number;
+    revenueToday: number;
+    ordersWeek: number;
+    revenueWeek: number;
+  };
+  statusCounts: Record<string, number>;
+  lowStock: Array<{
+    id: number;
+    nameEn: string;
+    nameAr: string;
+    sku: string;
+    quantity: number;
+    price: number;
+    brand: string;
+    images: { url: string }[];
+  }>;
+  topProducts: Array<{
+    id: number;
+    nameEn: string;
+    nameAr: string;
+    sales: number;
+    price: number;
+    rating: number;
+    images: { url: string }[];
+  }>;
+  recentOrders: Array<{
+    id: number;
+    orderNumber: string;
+    status: string;
+    customerName: string;
+    total: number;
+    createdAt: string;
+    paymentMethod: string;
+  }>;
+  sparkline: Array<{ date: string; orders: number; revenue: number }>;
+};
+
 export type AuditEntry = {
   id: number;
   action: string;

@@ -1,0 +1,92 @@
+import { lazy, Suspense } from "react";
+import { Route } from "react-router-dom";
+import { DashboardGuard } from "@/components/dashboard/DashboardGuard";
+import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+
+const DashboardLoginPage = lazy(() => import("@/app/dashboard/LoginPage"));
+const DashboardOverviewPage = lazy(() => import("@/pages/dashboard/OverviewPage"));
+const DashboardUsersPage = lazy(() => import("@/pages/dashboard/UsersPage"));
+const DashboardProfilePage = lazy(() => import("@/pages/dashboard/ProfilePage"));
+const DashboardAuditPage = lazy(() => import("@/pages/dashboard/AuditPage"));
+
+const ProductsPage = lazy(() =>
+  import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.ProductsPage })),
+);
+const CategoriesPage = lazy(() =>
+  import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.CategoriesPage })),
+);
+const BrandsPage = lazy(() =>
+  import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.BrandsPage })),
+);
+const OrdersPage = lazy(() =>
+  import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.OrdersPage })),
+);
+const CouponsPage = lazy(() =>
+  import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.CouponsPage })),
+);
+const CmsPage = lazy(() =>
+  import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.CmsPage })),
+);
+const MediaPage = lazy(() =>
+  import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.MediaPage })),
+);
+const DesignPage = lazy(() =>
+  import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.DesignPage })),
+);
+const SettingsPage = lazy(() =>
+  import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.SettingsPage })),
+);
+
+function L({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div className="dashboard-loader" />}>{children}</Suspense>
+  );
+}
+
+/**
+ * Mount in `<Routes>` alongside the existing admin branch:
+ *
+ *   import { freezoneDashboardRouteBranch } from "@/routes/dashboard-routes";
+ *   ...
+ *   <Routes>
+ *     {freezoneAdminRouteBranch}
+ *     {freezoneDashboardRouteBranch}
+ *     ...
+ *   </Routes>
+ */
+export const freezoneDashboardRouteBranch = (
+  <Route path="/dashboard">
+    <Route
+      path="login"
+      element={
+        <L>
+          <DashboardLoginPage />
+        </L>
+      }
+    />
+    <Route element={<DashboardGuard />}>
+      <Route element={<DashboardLayout />}>
+        <Route
+          index
+          element={
+            <L>
+              <DashboardOverviewPage />
+            </L>
+          }
+        />
+        <Route path="audit" element={<L><DashboardAuditPage /></L>} />
+        <Route path="users" element={<L><DashboardUsersPage /></L>} />
+        <Route path="profile" element={<L><DashboardProfilePage /></L>} />
+        <Route path="products" element={<L><ProductsPage /></L>} />
+        <Route path="categories" element={<L><CategoriesPage /></L>} />
+        <Route path="brands" element={<L><BrandsPage /></L>} />
+        <Route path="orders" element={<L><OrdersPage /></L>} />
+        <Route path="coupons" element={<L><CouponsPage /></L>} />
+        <Route path="cms" element={<L><CmsPage /></L>} />
+        <Route path="media" element={<L><MediaPage /></L>} />
+        <Route path="design" element={<L><DesignPage /></L>} />
+        <Route path="settings" element={<L><SettingsPage /></L>} />
+      </Route>
+    </Route>
+  </Route>
+);

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { guardDashboard, jsonOk } from "@/lib/dashboard-guard";
+import { ACTIVE_PRODUCT_WHERE, mergeProductWhere, PUBLISHED_LIVE_WHERE } from "@/lib/admin-product-scope";
 
 /**
  * GET /api/dashboard/overview
@@ -38,7 +39,7 @@ export async function GET(req: Request): Promise<Response> {
     couponsActive,
     sparkOrders,
   ] = await Promise.all([
-    prisma.product.count(),
+    prisma.product.count({ where: ACTIVE_PRODUCT_WHERE }),
     prisma.category.count({ where: { active: true } }),
     prisma.brand.count({ where: { active: true } }),
     prisma.order.aggregate({
@@ -56,7 +57,10 @@ export async function GET(req: Request): Promise<Response> {
       _count: { _all: true },
     }),
     prisma.product.findMany({
-      where: { quantity: { lte: 5 }, published: true },
+      where: mergeProductWhere(PUBLISHED_LIVE_WHERE, {
+        inStock: true,
+        quantity: { gt: 0, lte: 5 },
+      }),
       orderBy: { quantity: "asc" },
       take: 8,
       select: {
@@ -71,6 +75,7 @@ export async function GET(req: Request): Promise<Response> {
       },
     }),
     prisma.product.findMany({
+      where: PUBLISHED_LIVE_WHERE,
       orderBy: [{ sales: "desc" }, { reviews: "desc" }],
       take: 5,
       select: {

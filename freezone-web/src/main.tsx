@@ -11,6 +11,7 @@ import "./theme/mobile-repair.css";
 import "./globals.css";
 import "@/app/admin/admin-shell.css";
 import "@/app/admin/admin-dashboard-shell.css";
+import "@/app/dashboard/dashboard-shell.css";
 import "@/i18n/i18n";
 
 const queryClient = new QueryClient({

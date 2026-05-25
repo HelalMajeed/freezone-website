@@ -1,0 +1,183 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Freezone Dashboard — design tokens & layout primitives
+ *
+ * Loaded only when the dashboard tree is active. All component CSS modules
+ * consume these variables — change here, everything follows.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+.dashboard-root {
+  /* Brand */
+  --fz-brand: #c90000;
+  --fz-brand-600: #b00000;
+  --fz-brand-700: #8f0000;
+  --fz-brand-50: #fef2f2;
+  --fz-brand-100: #fee2e2;
+
+  /* Neutrals (slate-ish, calibrated for both modes) */
+  --fz-bg: #f6f7fb;
+  --fz-bg-elev: #ffffff;
+  --fz-bg-soft: #f1f3f9;
+  --fz-border: #e4e7ef;
+  --fz-border-strong: #cdd2df;
+  --fz-text: #0f172a;
+  --fz-text-soft: #475569;
+  --fz-text-muted: #94a3b8;
+  --fz-text-inverse: #ffffff;
+
+  /* Status palette */
+  --fz-success: #16a34a;
+  --fz-success-bg: #dcfce7;
+  --fz-warning: #d97706;
+  --fz-warning-bg: #fef3c7;
+  --fz-danger: #dc2626;
+  --fz-danger-bg: #fee2e2;
+  --fz-info: #2563eb;
+  --fz-info-bg: #dbeafe;
+
+  /* Sizing */
+  --fz-radius-sm: 6px;
+  --fz-radius: 10px;
+  --fz-radius-lg: 14px;
+  --fz-radius-xl: 20px;
+  --fz-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --fz-shadow: 0 4px 14px -4px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+  --fz-shadow-lg: 0 18px 40px -16px rgba(15, 23, 42, 0.18), 0 6px 14px -6px rgba(15, 23, 42, 0.08);
+
+  --fz-sidebar-w: 256px;
+  --fz-sidebar-w-collapsed: 72px;
+  --fz-topbar-h: 60px;
+
+  /* Typography */
+  --fz-font: "Inter", "Tajawal", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --fz-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Transitions */
+  --fz-t: 160ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  background: var(--fz-bg);
+  color: var(--fz-text);
+  font-family: var(--fz-font);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.dashboard-root *,
+.dashboard-root *::before,
+.dashboard-root *::after {
+  box-sizing: border-box;
+}
+
+/* Layout shell */
+.dashboard-shell {
+  display: grid;
+  grid-template-columns: var(--fz-sidebar-w) 1fr;
+  min-height: 100vh;
+}
+
+.dashboard-shell[data-collapsed="true"] {
+  grid-template-columns: var(--fz-sidebar-w-collapsed) 1fr;
+}
+
+[dir="rtl"] .dashboard-shell {
+  /* CSS Grid handles RTL flow automatically since columns are physical;
+     no override needed — sidebar appears on right in RTL. */
+}
+
+.dashboard-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* avoid grid blowout from wide tables */
+}
+
+.dashboard-content {
+  padding: 28px clamp(20px, 3vw, 40px);
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .dashboard-shell {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-shell[data-collapsed="true"] {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Page-level title block reused across pages */
+.dashboard-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.dashboard-page-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--fz-text);
+  margin: 0;
+}
+
+.dashboard-page-subtitle {
+  color: var(--fz-text-soft);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+/* Utility */
+.dashboard-root a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.dashboard-root button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.dashboard-root input,
+.dashboard-root select,
+.dashboard-root textarea,
+.dashboard-root button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.dashboard-root :focus-visible {
+  outline: 2px solid var(--fz-brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Loader */
+.dashboard-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  color: var(--fz-text-muted);
+}
+
+.dashboard-loader::after {
+  content: "";
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--fz-border);
+  border-top-color: var(--fz-brand);
+  border-radius: 50%;
+  animation: fz-spin 0.8s linear infinite;
+}
+
+@keyframes fz-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

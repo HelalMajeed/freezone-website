@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { LocaleLayout } from "@/routes/LocaleLayout";
 import { freezoneAdminRouteBranch } from "@/routes/admin-panel-routes";
+import { freezoneDashboardRouteBranch } from "@/routes/dashboard-routes";
 import { ConfirmDialogHost } from "@/components/ui/ConfirmDialog";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import HomePage from "@/pages/HomePage";
@@ -95,6 +96,7 @@ export default function App() {
       </Route>
 
       {freezoneAdminRouteBranch}
+      {freezoneDashboardRouteBranch}
 
       {/* Non-locale unknown paths bounce to the default locale root. */}
       <Route path="*" element={<Navigate to="/en" replace />} />
