@@ -1,6 +1,7 @@
 /**
- * Red Z only, transparent background — admin + storefront + favicons.
- * Run: node scripts/process-brand-z-logo.mjs
+ * Maroon square + white Z → transparent bg + red Z shape only.
+ * Source must be the original asset (not an already-processed PNG).
+ * Run: npm run brand:logo
  */
 import fs from "fs";
 import path from "path";
@@ -11,67 +12,91 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicBrand = path.join(__dirname, "../public/brand");
 const BRAND_RED = { r: 201, g: 0, b: 30 }; // #C90000
 
-const sources = [
-  path.join(publicBrand, "freezone-z-logo.png"),
-  path.join(
-    __dirname,
-    "../../../.cursor/projects/c-Users-Helal-Desktop-freezone-repo-freezone-website/assets/c__Users_Helal_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Screenshot_2026-06-02_161806-f2bb2abe-9846-4386-9621-649e1d6b8c1d.png",
-  ),
-].filter((p) => fs.existsSync(p));
+const SOURCE_CANDIDATES = [
+  path.join(publicBrand, "freezone-z-logo-source.png"),
+  path.join(publicBrand, "freezone-z-logo-original.png"),
+];
 
-const input = sources[0];
+const input = SOURCE_CANDIDATES.find((p) => fs.existsSync(p));
 if (!input) {
-  console.error("No source logo found");
+  console.error(
+    "Missing source. Restore once: git checkout 43969c6 -- freezone-web/public/brand/freezone-z-logo.png",
+  );
+  console.error("Then: copy to public/brand/freezone-z-logo-source.png");
   process.exit(1);
 }
 
+/** Square maroon background behind the Z */
 function isMaroonBg(r, g, b) {
-  if (r < 90) return false;
-  if (g > 95 || b > 95) return false;
-  return r > g * 1.35 && r > b * 1.35;
+  if (r < 85) return false;
+  if (g > 100 || b > 100) return false;
+  return r > g * 1.25 && r > b * 1.25;
 }
 
-function isLightBg(r, g, b) {
+/** White / light areas = the Z letter (keep and paint red) */
+function isZShape(r, g, b) {
   const lum = (r + g + b) / 3;
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   const sat = max === 0 ? 0 : (max - min) / max;
-  return lum > 235 || (lum > 210 && sat < 0.12);
+  if (lum > 165 && sat < 0.35) return true;
+  if (r > 190 && g > 190 && b > 190) return true;
+  return false;
 }
 
-function isForeground(r, g, b, a) {
-  if (a < 16) return false;
-  if (isMaroonBg(r, g, b) || isLightBg(r, g, b)) return false;
-  return true;
+/** Already red stroke (if present in source) */
+function isRedStroke(r, g, b) {
+  return r > 120 && r > g * 1.8 && r > b * 1.8 && g < 90 && b < 90;
 }
 
-async function buildTransparentZ() {
+async function buildRedZOnly() {
   const { data, info } = await sharp(input).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const w = info.width;
   const h = info.height;
+  let kept = 0;
 
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
-    const a = data[i + 3];
-    if (isForeground(r, g, b, a) || (isLightBg(r, g, b) && !isMaroonBg(r, g, b))) {
+
+    if (isMaroonBg(r, g, b)) {
+      data[i + 3] = 0;
+      continue;
+    }
+
+    if (isZShape(r, g, b) || isRedStroke(r, g, b)) {
       data[i] = BRAND_RED.r;
       data[i + 1] = BRAND_RED.g;
       data[i + 2] = BRAND_RED.b;
       data[i + 3] = 255;
-    } else {
-      data[i + 3] = 0;
+      kept++;
+      continue;
     }
+
+    // Soft edge between maroon and white
+    const lum = (r + g + b) / 3;
+    if (lum > 140 && !isMaroonBg(r, g, b)) {
+      data[i] = BRAND_RED.r;
+      data[i + 1] = BRAND_RED.g;
+      data[i + 2] = BRAND_RED.b;
+      data[i + 3] = Math.min(255, Math.round(((lum - 100) / 155) * 255));
+      if (data[i + 3] > 32) kept++;
+      continue;
+    }
+
+    data[i + 3] = 0;
   }
+
+  console.log("Kept pixels (Z shape):", kept, "from", input);
 
   return sharp(data, { raw: { width: w, height: h, channels: 4 } })
     .png()
-    .trim({ threshold: 10 })
+    .trim({ threshold: 1 })
     .toBuffer();
 }
 
-const trimmed = await buildTransparentZ();
+const trimmed = await buildRedZOnly();
 
 const outputs = [
   path.join(publicBrand, "freezone-z-logo.png"),
@@ -93,6 +118,9 @@ for (const out of outputs) {
   console.log("Wrote", out);
 }
 
-const favicon32 = await sharp(trimmed).resize(32, 32, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer();
+const favicon32 = await sharp(trimmed)
+  .resize(32, 32, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+  .png()
+  .toBuffer();
 await sharp(favicon32).toFile(path.join(__dirname, "../public/favicon.ico"));
 console.log("Wrote favicon.ico");
