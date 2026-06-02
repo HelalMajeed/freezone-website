@@ -235,7 +235,7 @@ export default function AdminContentBuilderPage() {
   if (loading) return <div style={{ padding: 24 }}>جاري التحميل…</div>;
 
   return (
-    <div style={{ padding: 24, maxWidth: 1200 }}>
+    <div style={{ padding: "16px 0", width: "100%" }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", marginBottom: 16 }}>
         <h1 style={{ margin: 0, flex: 1 }}>بناء الصفحة الرئيسية</h1>
         <Link to="/admin/media" style={{ color: "var(--admin-muted)", fontSize: 14 }}>

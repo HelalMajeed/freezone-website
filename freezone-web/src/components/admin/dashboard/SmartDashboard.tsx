@@ -115,16 +115,11 @@ export function SmartDashboard() {
         <KpiCard
           label="قيد المراجعة"
           value={d.myPendingReview}
-          href="/admin/review-queue"
+          href="/admin/products?catalogStatus=PENDING_REVIEW"
           highlight={d.myPendingReview > 0}
         />
         <KpiCard label="مسوداتك" value={d.myDrafts} href="/admin/products?catalogStatus=DRAFT" />
-        <KpiCard
-          label="ملاحظات المدير"
-          value={d.managerNotesCount}
-          href="/admin/inbox"
-          highlight={d.managerNotesCount > 0}
-        />
+        <KpiCard label="سجل النشاط" value={d.managerNotesCount} href="/admin/audit" />
       </div>
 
       <div

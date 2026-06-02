@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { freezoneApiUrl, getInternalApiFetchSignal } from "@/lib/api-internal";
+import { FREEZONE_Z_LOGO } from "@/lib/brand-assets";
 import { useDashboardAuth } from "@/lib/dashboard/auth-store";
 import s from "../login-dashboard.module.css";
 
@@ -95,12 +96,18 @@ export default function AdminLoginPage() {
     }
   };
 
+  const brandMark = (
+    <span className={s.brandTopMark}>
+      <img src={FREEZONE_Z_LOGO} alt="" width={48} height={48} style={{ display: "block", borderRadius: 10 }} />
+    </span>
+  );
+
   if (directLogin === null || (directLogin && status !== "authenticated")) {
     return (
       <div className={s.wrap} dir="rtl">
         <aside className={s.brandPanel}>
           <div className={s.brandTop}>
-            <span className={s.brandTopMark}>F</span>
+            {brandMark}
             <div>
               <div className={s.brandTopName}>FreeZone</div>
               <div className={s.brandTopSub}>لوحة الإدارة</div>
@@ -124,7 +131,7 @@ export default function AdminLoginPage() {
     <div className={s.wrap} dir="rtl">
       <aside className={s.brandPanel}>
         <div className={s.brandTop}>
-          <span className={s.brandTopMark}>F</span>
+          {brandMark}
           <div>
             <div className={s.brandTopName}>FreeZone</div>
             <div className={s.brandTopSub}>لوحة الإدارة</div>

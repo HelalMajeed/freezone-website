@@ -1,13 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { hashPassword, isRole } from "@/lib/dashboard-auth";
-import { guardDashboard, jsonError, jsonOk } from "@/lib/dashboard-guard";
+import { requireSuperAdminRead } from "@/lib/admin-auth";
+import { jsonError, jsonOk } from "@/lib/dashboard-guard";
 
 /**
  * GET /api/dashboard/users
  * Superadmin: list all dashboard users.
  */
 export async function GET(req: Request): Promise<Response> {
-  const g = await guardDashboard(req, "SUPER_ADMIN");
+  const g = await requireSuperAdminRead(req);
   if (!g.ok) return g.response;
 
   const users = await prisma.adminUser.findMany({
@@ -35,7 +36,7 @@ export async function GET(req: Request): Promise<Response> {
  * Body: { email, name, password, role }
  */
 export async function POST(req: Request): Promise<Response> {
-  const g = await guardDashboard(req, "SUPER_ADMIN");
+  const g = await requireSuperAdminRead(req);
   if (!g.ok) return g.response;
 
   const body = (await req.json().catch(() => ({}))) as {
@@ -48,7 +49,7 @@ export async function POST(req: Request): Promise<Response> {
   const email = (body.email ?? "").trim().toLowerCase();
   const name = (body.name ?? "").trim();
   const password = body.password ?? "";
-  const role = body.role ?? "CATALOG_EDITOR";
+  const role = body.role ?? "SUPER_ADMIN";
 
   if (!email || !email.includes("@")) return jsonError(400, "INVALID_EMAIL");
   if (!name) return jsonError(400, "MISSING_NAME");
@@ -73,12 +74,14 @@ export async function POST(req: Request): Promise<Response> {
     },
   });
 
+  const actorId = g.actor.kind === "dashboard" ? g.actor.user.id : null;
   await prisma.auditLog.create({
     data: {
       action: "dashboard.user.create",
       entity: "AdminUser",
       entityId: String(created.id),
-      payload: { by: g.user.id, role: created.role },
+      userId: actorId,
+      payload: { by: actorId, role: created.role },
     },
   });
 

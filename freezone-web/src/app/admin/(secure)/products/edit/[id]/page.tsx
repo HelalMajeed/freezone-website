@@ -9,5 +9,9 @@ export default function AdminProductEditPage() {
   if (!Number.isFinite(productId)) {
     return <p>معرّف منتج غير صالح</p>;
   }
-  return <ProductEditorWorkspace productId={productId} />;
+  return (
+    <div style={{ width: "100%", maxWidth: "min(1600px, 100%)", margin: "0 auto", padding: "16px 0 0" }}>
+      <ProductEditorWorkspace productId={productId} />
+    </div>
+  );
 }

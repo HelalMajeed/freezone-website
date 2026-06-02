@@ -128,6 +128,7 @@ export type AuditEntry = {
   action: string;
   entity: string;
   entityId: string | null;
+  userEmail?: string | null;
   payload: unknown;
   createdAt: string;
 };

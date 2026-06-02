@@ -45,9 +45,7 @@ const AdminOffersPage = lazy(() => import("@/app/admin/(secure)/offers/page"));
 const AdminGlobaliraqImportPage = lazy(() => import("@/app/admin/(secure)/import/globaliraq/page"));
 const AdminDataQualityPage = lazy(() => import("@/pages/admin/AdminDataQualityPage"));
 const AdminClassificationPage = lazy(() => import("@/pages/admin/AdminClassificationPage"));
-const AdminReviewQueuePage = lazy(() => import("@/pages/admin/AdminReviewQueuePage"));
 const AdminProductsImportPage = lazy(() => import("@/pages/admin/AdminProductsImportPage"));
-const AdminInboxPage = lazy(() => import("@/pages/admin/AdminInboxPage"));
 const AdminMePage = lazy(() => import("@/pages/admin/AdminMePage"));
 const AdminCategoryStatsPage = lazy(() => import("@/pages/admin/AdminCategoryStatsPage"));
 
@@ -141,27 +139,13 @@ export const freezoneAdminRouteBranch = (
             </SuspensePage>
           }
         />
-        <Route
-          path="review-queue"
-          element={
-            <SuspensePage>
-              <AdminReviewQueuePage />
-            </SuspensePage>
-          }
-        />
+        <Route path="review-queue" element={<Navigate to="/admin/products" replace />} />
+        <Route path="inbox" element={<Navigate to="/admin" replace />} />
         <Route
           path="import"
           element={
             <SuspensePage>
               <AdminProductsImportPage />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="inbox"
-          element={
-            <SuspensePage>
-              <AdminInboxPage />
             </SuspensePage>
           }
         />

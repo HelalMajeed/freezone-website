@@ -1,12 +1,13 @@
 import { prisma } from "@/lib/prisma";
-import { guardDashboard, jsonOk } from "@/lib/dashboard-guard";
+import { requireAdminRead } from "@/lib/admin-auth";
+import { jsonOk } from "@/lib/dashboard-guard";
 
 /**
  * GET /api/dashboard/audit?limit=50&cursor=...
  * Reverse chronological audit log entries.
  */
 export async function GET(req: Request): Promise<Response> {
-  const g = await guardDashboard(req);
+  const g = await requireAdminRead(req);
   if (!g.ok) return g.response;
 
   const url = new URL(req.url);

@@ -1,13 +1,13 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { requireAdminRead } from "@/lib/admin-auth";
+import { guardAdminMutate } from "@/lib/admin-route-guard";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 
 export async function GET(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const read = await requireAdminRead(req);
+  if (!read.ok) return read.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -37,9 +37,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const mutate = await guardAdminMutate(req);
+  if (!mutate.ok) return mutate.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }

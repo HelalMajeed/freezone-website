@@ -62,7 +62,7 @@ export default function AdminNewProductPage() {
   const category = initialCategoryId != null ? categories.find((c) => c.id === initialCategoryId) : null;
 
   return (
-    <div style={{ padding: "16px 20px 40px", width: "100%", maxWidth: 900, boxSizing: "border-box" }}>
+    <div style={{ padding: "16px 24px 40px", width: "100%", maxWidth: "min(1600px, 100%)", boxSizing: "border-box" }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 16 }}>
         <Link to="/admin/categories" style={{ color: "var(--admin-accent)", fontWeight: 700, fontSize: 14 }}>
           ← الأقسام
@@ -96,8 +96,8 @@ export default function AdminNewProductPage() {
             إضافة منتج — {category?.nameAr || category?.nameEn}
           </h1>
           <p style={{ color: "var(--admin-muted)", marginBottom: 20, fontSize: 13, lineHeight: 1.55 }}>
-            الوضع البسيط: بيانات المنتج → السعر والصور → المواصفات الذكية → المراجعة. للتبويبات المنفصلة استخدم «الوضع
-            المتقدم».
+            بعد «حفظ المنتج» يُفتح محرّر كامل بـ<strong> 10 تبويبات</strong> (أساسي، وصف، صور، تسعير، مخزون، سمات، متغيرات،
+            SEO، شحن، ملاحظات). النموذج أدناه للإنشاء السريع فقط (4 خطوات).
           </p>
           <AdminProductCreateForm
             categories={categories}

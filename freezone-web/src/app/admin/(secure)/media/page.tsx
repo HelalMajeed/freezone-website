@@ -1,11 +1,11 @@
 "use client";
 
-import type { CSSProperties } from "react";
-import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { freezoneApiUrl } from "@/lib/api-internal";
 import { confirmDialog } from "@/lib/confirm";
+import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
+import styles from "./AdminMedia.module.css";
 
 type Row = {
   id: number;
@@ -16,24 +16,47 @@ type Row = {
   altEn: string;
   mimeType: string;
   fileSize: number | null;
+  createdAt?: string;
 };
 
-const KINDS = [
-  { v: "image", label: "صورة" },
-  { v: "video", label: "فيديو (رابط)" },
-  { v: "model3d", label: "نموذج 3D" },
-] as const;
+function formatBytes(n: number | null): string {
+  if (n == null) return "—";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function mimeBadge(mime: string, kind: string): string {
+  if (mime.includes("webp")) return "WebP";
+  if (mime.includes("png")) return "PNG";
+  if (mime.includes("jpeg") || mime.includes("jpg")) return "JPG";
+  if (kind === "video") return "فيديو";
+  if (kind === "model3d") return "3D";
+  return kind || "ملف";
+}
+
+function sizeBucket(bytes: number | null): "small" | "medium" | "large" | "unknown" {
+  if (bytes == null) return "unknown";
+  if (bytes < 100_000) return "small";
+  if (bytes < 1_000_000) return "medium";
+  return "large";
+}
 
 export default function AdminMediaPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<Row[]>([]);
   const [q, setQ] = useState("");
+  const [kindFilter, setKindFilter] = useState("");
+  const [sizeFilter, setSizeFilter] = useState("");
   const [msg, setMsg] = useState("");
-  const [editId, setEditId] = useState<number | null>(null);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [drawer, setDrawer] = useState<Row | null>(null);
   const [meta, setMeta] = useState({ title: "", altAr: "", altEn: "", kind: "image" });
 
   const load = useCallback(async () => {
-    const res = await fetch(freezoneApiUrl(`/api/admin/media?q=${encodeURIComponent(q)}`), { credentials: "include" });
+    const res = await fetch(freezoneApiUrl(`/api/admin/media?q=${encodeURIComponent(q)}`), {
+      credentials: "include",
+    });
     if (res.status === 401) {
       navigate("/admin/login", { replace: true });
       return;
@@ -45,9 +68,52 @@ export default function AdminMediaPage() {
     void load();
   }, [load]);
 
-  function startEdit(r: Row) {
-    setEditId(r.id);
-    setMeta({ title: r.title, altAr: r.altAr, altEn: r.altEn, kind: r.kind });
+  const filtered = useMemo(() => {
+    return rows.filter((m) => {
+      if (kindFilter && m.kind !== kindFilter) return false;
+      if (sizeFilter && sizeBucket(m.fileSize) !== sizeFilter) return false;
+      return true;
+    });
+  }, [rows, kindFilter, sizeFilter]);
+
+  async function upload(files: FileList | File[] | null) {
+    const list = files ? [...files] : [];
+    if (!list.length) return;
+    for (const file of list) {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("registerLibrary", "true");
+      fd.append("title", file.name);
+      const res = await fetch(freezoneApiUrl("/api/admin/upload"), {
+        method: "POST",
+        body: fd,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        setMsg("فشل رفع أحد الملفات");
+        return;
+      }
+    }
+    setMsg(`تم رفع ${list.length} ملف`);
+    load();
+  }
+
+  async function remove(ids: number[]) {
+    if (
+      !(await confirmDialog({
+        title: "حذف من المكتبة",
+        message: `حذف ${ids.length} سجل من المكتبة؟`,
+        confirmLabel: "حذف",
+        danger: true,
+      }))
+    )
+      return;
+    for (const id of ids) {
+      await fetch(freezoneApiUrl(`/api/admin/media/${id}`), { method: "DELETE", credentials: "include" });
+    }
+    setSelected(new Set());
+    setDrawer(null);
+    load();
   }
 
   async function saveMeta(id: number) {
@@ -55,160 +121,179 @@ export default function AdminMediaPage() {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: meta.title,
-        altAr: meta.altAr,
-        altEn: meta.altEn,
-        kind: meta.kind,
-      }),
+      body: JSON.stringify(meta),
     });
     if (!res.ok) {
       setMsg("فشل حفظ البيانات");
       return;
     }
     setMsg("تم حفظ البيانات الوصفية");
-    setEditId(null);
     load();
   }
 
-  async function upload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("registerLibrary", "true");
-    fd.append("title", file.name);
-    const res = await fetch(freezoneApiUrl("/api/admin/upload"), { method: "POST", body: fd, credentials: "include" });
-    if (!res.ok) {
-      setMsg("فشل الرفع");
-      return;
-    }
-    setMsg("تم الرفع وتسجيل الملف في المكتبة");
-    load();
+  function openDrawer(r: Row) {
+    setDrawer(r);
+    setMeta({ title: r.title, altAr: r.altAr, altEn: r.altEn, kind: r.kind });
   }
 
-  async function remove(id: number) {
-    if (!(await confirmDialog({ title: "حذف من المكتبة", message: "حذف السجل من المكتبة؟ (ملف القرص يبقى كما هو حسب إعداد الخادم)", confirmLabel: "حذف", danger: true }))) return;
-    await fetch(freezoneApiUrl(`/api/admin/media/${id}`), { method: "DELETE", credentials: "include" });
-    setEditId(null);
-    load();
+  function toggleSelect(id: number) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 1100 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 12 }}>
-        <h1 style={{ margin: 0, flex: 1 }}>مكتبة الوسائط</h1>
-        <Link to="/admin/content" style={{ color: "var(--admin-muted)", fontSize: 14 }}>
-          بناء الصفحة الرئيسية
-        </Link>
-      </div>
-      <p style={{ color: "var(--admin-muted)", marginBottom: 16, fontSize: 14 }}>
-        ارفع صوراً أو GLB/GLTF؛ يُسجَّل الملف تلقائياً عند استخدام مسار الرفع مع «المكتبة». لربط فيديو برابط ثابت، أضف
-        سجلاً يدوياً عبر لوحة API أو في المرات القادمة من واجهة «رابط خارجي». انسخ حقل الرابط لاستخدامه في مكوّنات الصفحة
-        أو المنتجات.
-      </p>
-      {msg && <div style={{ marginBottom: 12, color: "#86efac" }}>{msg}</div>}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 20 }}>
+    <div className={styles.wrap} dir="rtl">
+      <AdminPageHeader
+        title="مكتبة الوسائط"
+        description="رفع وإدارة الصور والملفات — 6–8 صور في الصف على شاشة عريضة"
+        actions={
+          <Link to="/admin/content" style={{ color: "var(--admin-muted)", fontSize: 14 }}>
+            بناء الصفحة الرئيسية
+          </Link>
+        }
+      />
+      {msg ? <div style={{ marginBottom: 12, color: "#86efac" }}>{msg}</div> : null}
+
+      <div className={styles.toolbar}>
         <input
+          className={styles.search}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="بحث بالعنوان أو المسار"
-          style={{ padding: 10, flex: 1, minWidth: 200, borderRadius: 8, border: "1px solid #334155", background: "var(--admin-surface)", color: "#fff" }}
         />
-        <button type="button" onClick={() => load()} style={{ padding: "10px 16px", background: "var(--admin-border)", color: "#fff", border: "none", borderRadius: 8 }}>
+        <button type="button" className={styles.btnGhost} onClick={() => void load()}>
           بحث
         </button>
-        <label style={{ padding: "10px 16px", background: "#0b1f3b", color: "#fff", borderRadius: 8, cursor: "pointer" }}>
-          رفع ملف
-          <input type="file" hidden accept="image/png,image/jpeg,.png,.jpg,.jpeg,.glb,.gltf" onChange={(e) => void upload(e)} />
+        <label className={styles.btnPrimary} style={{ cursor: "pointer" }}>
+          رفع جديد
+          <input
+            type="file"
+            hidden
+            multiple
+            accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp,.glb,.gltf"
+            onChange={(e) => void upload(e.target.files)}
+          />
         </label>
+        {selected.size > 0 ? (
+          <button type="button" className={styles.btnDanger} onClick={() => void remove([...selected])}>
+            حذف المحدد ({selected.size})
+          </button>
+        ) : null}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
-        {rows.map((m) => (
-          <div key={m.id} style={{ border: "1px solid #334155", borderRadius: 10, padding: 10, background: "var(--admin-surface-inset)" }}>
-            {m.kind === "image" || m.mimeType.startsWith("image") ? (
-              <img src={m.url} alt="" style={{ width: "100%", height: 120, objectFit: "cover", borderRadius: 6 }} />
-            ) : (
-              <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, textAlign: "center", padding: 8 }}>
-                {m.kind}
-                <br />
-                <span dir="ltr" style={{ wordBreak: "break-all", fontSize: 10 }}>
-                  {m.url.slice(-28)}
-                </span>
+
+      <div className={styles.layout}>
+        <aside className={styles.filters}>
+          <strong style={{ fontSize: 13 }}>فلاتر</strong>
+          <label className={styles.filterLabel}>
+            النوع
+            <select className={styles.filterSelect} value={kindFilter} onChange={(e) => setKindFilter(e.target.value)}>
+              <option value="">الكل</option>
+              <option value="image">صورة</option>
+              <option value="video">فيديو</option>
+              <option value="model3d">نموذج 3D</option>
+            </select>
+          </label>
+          <label className={styles.filterLabel}>
+            الحجم
+            <select className={styles.filterSelect} value={sizeFilter} onChange={(e) => setSizeFilter(e.target.value)}>
+              <option value="">الكل</option>
+              <option value="small">صغير (&lt;100KB)</option>
+              <option value="medium">متوسط</option>
+              <option value="large">كبير (&gt;1MB)</option>
+            </select>
+          </label>
+          <p style={{ fontSize: 12, color: "var(--admin-muted)", margin: 0 }}>
+            {filtered.length} من {rows.length} ملف
+          </p>
+        </aside>
+
+        <div className={styles.grid}>
+          {filtered.map((m) => (
+            <div
+              key={m.id}
+              className={`${styles.card} ${selected.has(m.id) ? styles.cardSelected : ""}`}
+              onClick={() => openDrawer(m)}
+              onKeyDown={(e) => e.key === "Enter" && openDrawer(m)}
+              role="button"
+              tabIndex={0}
+            >
+              <input
+                type="checkbox"
+                checked={selected.has(m.id)}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  toggleSelect(m.id);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                style={{ position: "absolute", top: 10, insetInlineStart: 10, zIndex: 2 }}
+              />
+              {m.kind === "image" || m.mimeType.startsWith("image") ? (
+                <img src={m.url} alt="" className={styles.thumb} loading="lazy" />
+              ) : (
+                <div className={styles.thumbPlaceholder}>{m.kind}</div>
+              )}
+              <div style={{ fontSize: 12, marginTop: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {m.title || "—"}
               </div>
-            )}
-            <div style={{ fontSize: 12, marginTop: 8 }}>{m.title || "—"}</div>
-            <div style={{ fontSize: 10, color: "#64748b", wordBreak: "break-all" }} dir="ltr">
-              {m.url}
-            </div>
-            {m.fileSize != null && (
-              <div style={{ fontSize: 10, color: "var(--admin-border-strong)" }}>{m.fileSize} بايت · {m.mimeType || m.kind}</div>
-            )}
-            <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-              <button type="button" onClick={() => startEdit(m)} style={btnGhost}>
-                تعديل بيانات
-              </button>
-              <button type="button" onClick={() => void remove(m.id)} style={btnDanger}>
-                حذف السجل
-              </button>
-            </div>
-            {editId === m.id && (
-              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #334155", display: "grid", gap: 8 }}>
-                <label style={lab}>عنوان / تسمية</label>
-                <input value={meta.title} onChange={(e) => setMeta({ ...meta, title: e.target.value })} style={inp} />
-                <label style={lab}>وصف بديل AR</label>
-                <input value={meta.altAr} onChange={(e) => setMeta({ ...meta, altAr: e.target.value })} style={inp} />
-                <label style={lab}>وصف بديل EN</label>
-                <input value={meta.altEn} onChange={(e) => setMeta({ ...meta, altEn: e.target.value })} style={inp} dir="ltr" />
-                <label style={lab}>النوع</label>
-                <select value={meta.kind} onChange={(e) => setMeta({ ...meta, kind: e.target.value })} style={inp}>
-                  {KINDS.map((k) => (
-                    <option key={k.v} value={k.v}>
-                      {k.label}
-                    </option>
-                  ))}
-                </select>
-                <button type="button" onClick={() => void saveMeta(m.id)} style={btnPrimary}>
-                  حفظ
-                </button>
+              <div className={styles.badges}>
+                <span className={styles.badge}>{mimeBadge(m.mimeType, m.kind)}</span>
+                <span className={styles.badge}>{formatBytes(m.fileSize)}</span>
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          ))}
+        </div>
       </div>
+
+      {drawer ? (
+        <>
+          <div className={styles.drawerBackdrop} onClick={() => setDrawer(null)} />
+          <aside className={styles.drawer}>
+            <button type="button" className={styles.btnGhost} onClick={() => setDrawer(null)} style={{ marginBottom: 12 }}>
+              إغلاق
+            </button>
+            {drawer.kind === "image" ? (
+              <img src={drawer.url} alt="" style={{ width: "100%", borderRadius: 8, marginBottom: 12 }} />
+            ) : null}
+            <p dir="ltr" style={{ fontSize: 11, wordBreak: "break-all", color: "#94a3b8" }}>
+              {drawer.url}
+            </p>
+            <label style={{ display: "block", marginTop: 12, fontSize: 12 }}>عنوان</label>
+            <input
+              value={meta.title}
+              onChange={(e) => setMeta({ ...meta, title: e.target.value })}
+              style={{ width: "100%", padding: 8, marginBottom: 8 }}
+            />
+            <label style={{ display: "block", fontSize: 12 }}>وصف بديل AR</label>
+            <input
+              value={meta.altAr}
+              onChange={(e) => setMeta({ ...meta, altAr: e.target.value })}
+              style={{ width: "100%", padding: 8, marginBottom: 8 }}
+            />
+            <label style={{ display: "block", fontSize: 12 }}>وصف بديل EN</label>
+            <input
+              value={meta.altEn}
+              onChange={(e) => setMeta({ ...meta, altEn: e.target.value })}
+              dir="ltr"
+              style={{ width: "100%", padding: 8, marginBottom: 12 }}
+            />
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button type="button" className={styles.btnPrimary} onClick={() => void saveMeta(drawer.id)}>
+                حفظ
+              </button>
+              <button type="button" className={styles.btnDanger} onClick={() => void remove([drawer.id])}>
+                حذف
+              </button>
+            </div>
+            <p style={{ fontSize: 12, color: "#64748b", marginTop: 16 }}>
+              للبحث عن استخدام الصورة في منتج، انسخ الرابط وابحث في محرر المنتج أو مكتبة الوسائط.
+            </p>
+          </aside>
+        </>
+      ) : null}
     </div>
   );
 }
-
-const lab: CSSProperties = { fontSize: 11, color: "var(--admin-muted)" };
-const inp: CSSProperties = {
-  padding: 8,
-  borderRadius: 6,
-  border: "1px solid #334155",
-  background: "var(--admin-surface)",
-  color: "var(--admin-text)",
-};
-const btnGhost: CSSProperties = {
-  padding: "6px 10px",
-  background: "transparent",
-  border: "1px solid #475569",
-  color: "var(--admin-text)",
-  borderRadius: 6,
-  cursor: "pointer",
-  fontSize: 12,
-};
-const btnDanger: CSSProperties = {
-  ...btnGhost,
-  borderColor: "#7f1d1d",
-  color: "#fecaca",
-};
-const btnPrimary: CSSProperties = {
-  padding: "8px 12px",
-  background: "#0b1f3b",
-  color: "#fff",
-  border: "none",
-  borderRadius: 6,
-  cursor: "pointer",
-  fontWeight: 600,
-};

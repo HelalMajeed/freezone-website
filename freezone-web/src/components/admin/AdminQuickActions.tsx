@@ -31,7 +31,7 @@ const ACTION_META: Record<QuickActionId, { label: string; href: string }> = {
   new_product: { label: "إضافة منتج", href: "/admin/products/new" },
   new_category: { label: "إضافة فئة", href: "/admin/categories" },
   import_csv: { label: "استيراد CSV", href: "/admin/import" },
-  review: { label: "مراجعة", href: "/admin/review-queue" },
+  review: { label: "منتجات قيد المراجعة", href: "/admin/products?catalogStatus=PENDING_REVIEW" },
   reports: { label: "تقارير", href: "/admin" },
 };
 

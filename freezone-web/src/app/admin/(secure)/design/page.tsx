@@ -69,7 +69,7 @@ export default function AdminDesignPage() {
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 720 }}>
+    <div style={{ padding: "16px 0", width: "100%" }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
         <h1 style={{ margin: 0, flex: 1 }}>المظهر والألوان</h1>
         <Link to="/admin" style={{ color: "var(--admin-muted)", fontSize: 14 }}>

@@ -42,6 +42,17 @@ export async function requireAdminRead(req: Request): Promise<AdminAuthResult> {
   return { ok: true, actor };
 }
 
+/** Team management — dashboard SUPER_ADMIN or legacy direct-login session. */
+export async function requireSuperAdminRead(req: Request): Promise<AdminAuthResult> {
+  const read = await requireAdminRead(req);
+  if (!read.ok) return read;
+  if (read.actor.kind === "legacy") return read;
+  if (read.actor.user.role !== "SUPER_ADMIN") {
+    return { ok: false, response: jsonAdminError(403, "صلاحية مدير عام مطلوبة", "FORBIDDEN") };
+  }
+  return read;
+}
+
 /**
  * Mutating admin routes — requires dashboard session with one of `roles`.
  * Legacy cookie alone is not sufficient for CUD (data-entry accountability).
