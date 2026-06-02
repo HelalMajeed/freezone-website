@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { freezoneApiUrl, getInternalApiFetchSignal } from "@/lib/api-internal";
 import { useDashboardAuth } from "@/lib/dashboard/auth-store";
+import { FREEZONE_Z_LOGO } from "@/lib/brand-assets";
 import { DashboardApiError } from "@/lib/dashboard/api";
 import { Button, Field, Input } from "@/components/dashboard/ui";
 import s from "../login-dashboard.module.css";
@@ -98,7 +99,9 @@ export default function AdminLoginPage() {
     <div className={s.wrap} dir="rtl">
       <aside className={s.brandPanel}>
         <div className={s.brandTop}>
-          <span className={s.brandTopMark}>F</span>
+          <span className={s.brandTopMark}>
+            <img src={FREEZONE_Z_LOGO} alt="" width={48} height={48} style={{ display: "block", borderRadius: 10 }} />
+          </span>
           <div>
             <div className={s.brandTopName}>FreeZone</div>
             <div className={s.brandTopSub}>لوحة الإدارة</div>

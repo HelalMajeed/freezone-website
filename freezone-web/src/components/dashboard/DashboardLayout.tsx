@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { FREEZONE_Z_LOGO } from "@/lib/brand-assets";
 import { useDashboardAuth } from "@/lib/dashboard/auth-store";
 import type { LegacyRoleAlias } from "@/lib/dashboard/api";
 import { Avatar, Badge } from "@/components/dashboard/ui";
@@ -110,7 +111,9 @@ export function DashboardLayout() {
         {/* ─── Sidebar ─────────────────────────────────────────────────────── */}
         <aside className={s.sidebar} data-mobile-open={mobileOpen ? "true" : "false"}>
           <div className={s.brand}>
-            <span className={s.brandMark}>F</span>
+            <span className={s.brandMark}>
+              <img src={FREEZONE_Z_LOGO} alt="" className={s.brandMarkImg} />
+            </span>
             <div className={s.brandText}>
               <span className={s.brandName}>Freezone</span>
               <span className={s.brandSub}>{lang === "ar" ? "لوحة التحكم" : "Dashboard"}</span>
@@ -184,7 +187,7 @@ export function DashboardLayout() {
 
               <div className={s.userMenu} ref={menuRef}>
                 <button className={s.userBtn} onClick={() => setMenuOpen((v) => !v)}>
-                  <Avatar name={user?.name ?? "?"} url={user?.avatarUrl} />
+                  <Avatar name={user?.name ?? "FreeZone"} url={user?.avatarUrl ?? FREEZONE_Z_LOGO} />
                   <span className={s.userBtnText}>{user?.name ?? "—"}</span>
                 </button>
 

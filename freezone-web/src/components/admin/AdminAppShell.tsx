@@ -39,6 +39,7 @@ import {
 import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
 import { AdminOnboardingTour } from "@/components/admin/AdminOnboardingTour";
 import { isDarkMode, setDarkMode } from "@/lib/admin/admin-user-prefs";
+import { FREEZONE_Z_LOGO } from "@/lib/brand-assets";
 import { useDashboardAuth } from "@/lib/dashboard/auth-store";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import type { LegacyRoleAlias } from "@/lib/dashboard/api";
@@ -227,7 +228,7 @@ export function AdminAppShell() {
         <aside className={s.sidebar} data-mobile-open={mobileOpen ? "true" : "false"}>
           <div className={s.brand}>
             <span className={s.brandMark}>
-              <Store size={18} aria-hidden />
+              <img src={FREEZONE_Z_LOGO} alt="" className={s.brandMarkImg} />
             </span>
             <div className={s.brandText}>
               <span className={s.brandName}>FreeZone</span>
@@ -383,7 +384,7 @@ export function AdminAppShell() {
 
               <div className={s.userMenu} ref={menuRef}>
                 <button type="button" className={s.userBtn} onClick={() => setMenuOpen((v) => !v)}>
-                  <Avatar name={user?.name ?? "?"} url={user?.avatarUrl} />
+                  <Avatar name={user?.name ?? "FreeZone"} url={user?.avatarUrl ?? FREEZONE_Z_LOGO} />
                   <span className={s.userBtnText}>{user?.name ?? "—"}</span>
                 </button>
                 {menuOpen && (
