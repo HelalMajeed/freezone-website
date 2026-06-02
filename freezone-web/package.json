@@ -31,6 +31,7 @@
     "pg:cluster:stop": "powershell -ExecutionPolicy Bypass -File ./scripts/pg-local-cluster-stop.ps1",
     "pg:cluster:stop:run": "powershell -ExecutionPolicy Bypass -File ./scripts/pg-local-cluster-stop-run.ps1",
     "db:status": "npm run db:status --prefix ../freezone-api",
+    "brand:logo": "node scripts/process-brand-z-logo.mjs",
     "lan:info": "node scripts/print-lan-dev-info.cjs",
     "lan:firewall": "powershell -ExecutionPolicy Bypass -File ./scripts/allow-lan-dev-firewall.ps1"
   },

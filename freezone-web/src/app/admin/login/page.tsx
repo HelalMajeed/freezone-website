@@ -98,7 +98,7 @@ export default function AdminLoginPage() {
 
   const brandMark = (
     <span className={s.brandTopMark}>
-      <img src={FREEZONE_Z_LOGO} alt="" width={48} height={48} style={{ display: "block", borderRadius: 10 }} />
+      <img src={FREEZONE_Z_LOGO} alt="" width={48} height={48} style={{ display: "block" }} />
     </span>
   );
 
