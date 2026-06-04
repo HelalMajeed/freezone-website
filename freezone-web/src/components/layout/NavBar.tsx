@@ -10,9 +10,9 @@ import {
   Search,
   Menu,
   UserRound,
-  Globe2,
   Heart,
 } from "lucide-react";
+import { BrandMarkIcon } from "./BrandMarkIcon";
 import { LucideByName } from "@/lib/lucide-icon-map";
 import styles from "./NavBar.module.css";
 import { useState, useRef, useEffect, useLayoutEffect, type FormEvent } from "react";
@@ -361,7 +361,7 @@ export function NavBar() {
               title={t("languageToggle")}
               aria-label={t("languageToggle")}
             >
-              <Globe2 size={22} strokeWidth={1.75} aria-hidden />
+              <BrandMarkIcon size={22} />
               <span className={styles.actionLabel}>{locale === "ar" ? "عربي" : "EN"}</span>
             </button>
 

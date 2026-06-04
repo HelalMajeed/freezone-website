@@ -5,7 +5,8 @@ import styles from "./MobileMenu.module.css";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "@/navigation";
 import { SiteLogo } from "./SiteLogo";
-import { X, ChevronRight, User, LogIn, Cpu, Globe2, ChevronDown } from "lucide-react";
+import { X, ChevronRight, User, LogIn, Cpu, ChevronDown } from "lucide-react";
+import { BrandMarkIcon } from "./BrandMarkIcon";
 import type { NavItemResolved } from "@/lib/nav-types";
 
 interface MobileMenuProps {
@@ -143,7 +144,7 @@ export function MobileMenu({
               <div className={styles.section}>
                 <button type="button" className={styles.menuItem} onClick={() => onToggleLocale?.()}>
                   <span style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <Globe2 size={16} /> {locale === "ar" ? "العربية / English" : "English / العربية"}
+                    <BrandMarkIcon size={16} /> {locale === "ar" ? "العربية / English" : "English / العربية"}
                   </span>
                   <ChevronRight size={16} />
                 </button>

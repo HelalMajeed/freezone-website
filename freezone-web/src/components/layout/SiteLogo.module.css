@@ -36,12 +36,13 @@
 .imgNavbar {
   height: 48px;
   width: auto;
-  max-width: min(200px, 36vw);
+  max-width: min(72px, 18vw);
   object-fit: contain;
   object-position: left center;
   display: block;
   flex-shrink: 0;
   align-self: center;
+  background: transparent;
 }
 
 .objectNavbar {
