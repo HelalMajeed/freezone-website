@@ -13,6 +13,7 @@ import { NavItemsEditor, loadExampleNav } from "@/components/admin/NavItemsEdito
 import { HomePageCopyEditor } from "@/components/admin/HomePageCopyEditor";
 import { useAdminCmsDraft } from "@/contexts/AdminCmsDraftContext";
 import type { CmsEditorTab } from "@/lib/cms-editor-tab";
+import { FREEZONE_Z_LOGO } from "@/lib/brand-assets";
 import { isSiteLogoPdfUrl } from "@/lib/siteConfig";
 import { DEFAULT_TOP_BAR_SOCIAL_COLOR } from "@/lib/site-public";
 import styles from "@/app/admin/(secure)/cms/cms.module.css";
@@ -190,7 +191,35 @@ export function AdminCmsEditor() {
                   setDraft({ ...draft, siteConfig: { ...draft.siteConfig, taglineAr: e.target.value } })
                 }
               />
-              <label>شعار المتجر (PNG أو JPEG أو PDF)</label>
+              <label>معاينة رأس الموقع (أيقونة Z + اسم المتجر)</label>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: "1px solid #334155",
+                  background: "#fff",
+                  maxWidth: 420,
+                }}
+              >
+                <img src={FREEZONE_Z_LOGO} alt="" style={{ height: 40, width: "auto" }} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 800, fontSize: 18, color: "#111827", lineHeight: 1.2 }}>
+                    {draft.siteConfig.storeNameAr?.trim() ||
+                      draft.siteConfig.storeNameEn?.trim() ||
+                      "Freezone"}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
+                    {draft.siteConfig.taglineAr?.trim() || draft.siteConfig.taglineEn?.trim() || "—"}
+                  </div>
+                </div>
+              </div>
+              <p style={{ fontSize: 12, color: "#64748b", margin: "4px 0 8px" }}>
+                أيقونة Z الحمراء ثابتة في الشريط العلوي. الملف أدناه اختياري (شعار كامل للتذييل أو SEO).
+              </p>
+              <label>شعار كامل اختياري (PNG أو JPEG أو PDF)</label>
               {draft.siteConfig.logoUrl ? (
                 isSiteLogoPdfUrl(draft.siteConfig.logoUrl) ? (
                   <object

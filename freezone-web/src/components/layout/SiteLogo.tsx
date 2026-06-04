@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Link } from "@/navigation";
 import { useLocale, useTranslations } from "@/i18n/hooks";
-import { FREEZONE_Z_LOGO } from "@/lib/brand-assets";
+import { resolveStorefrontBrandMarkUrl } from "@/lib/resolve-storefront-brand-mark";
 import { resolveSiteLogoUrl, SITE_BRAND_NAME, isSiteLogoPdfUrl } from "@/lib/siteConfig";
 import { usePublicSite } from "@/components/providers/StorefrontProvider";
 import styles from "./SiteLogo.module.css";
@@ -21,7 +21,15 @@ export function SiteLogo({
   const locale = useLocale();
   const tNav = useTranslations("Navigation");
   const envLogo = resolveSiteLogoUrl();
-  const configured = (site.logoUrl?.trim() || envLogo || FREEZONE_Z_LOGO).trim() || null;
+  /** Icon: always transparent red Z (matches header layout: mark + store name + tagline). */
+  const brandMark = resolveStorefrontBrandMarkUrl(site.logoUrl);
+  /** Optional CMS/PDF wordmark — footer/auth only when explicitly a wide asset or PDF. */
+  const cmsWordmark = (site.logoUrl?.trim() || envLogo || "").trim() || null;
+  const useCmsWordmark =
+    (variant === "footer" || variant === "auth") &&
+    Boolean(cmsWordmark) &&
+    (isSiteLogoPdfUrl(cmsWordmark!) || !cmsWordmark!.includes("freezone-z-logo"));
+  const configured = useCmsWordmark ? cmsWordmark : brandMark;
   const [broken, setBroken] = useState(false);
   const showImage = Boolean(configured) && !broken;
   const headerLogoPx =

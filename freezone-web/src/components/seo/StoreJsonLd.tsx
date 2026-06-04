@@ -1,3 +1,4 @@
+import { FREEZONE_Z_LOGO } from "@/lib/brand-assets";
 import type { PublicSite } from "@/lib/site-public";
 
 /** Organization + WebSite structured data for SEO */
@@ -12,7 +13,10 @@ export function StoreJsonLd({ site, locale, baseUrl }: { site: PublicSite; local
         name: site.storeName,
         description: site.tagline,
         url: baseUrl,
-        logo: site.logoUrl ? (site.logoUrl.startsWith("http") ? site.logoUrl : `${baseUrl}${site.logoUrl}`) : undefined,
+        logo: (() => {
+          const raw = site.logoUrl?.trim() || FREEZONE_Z_LOGO;
+          return raw.startsWith("http") ? raw : `${baseUrl}${raw.startsWith("/") ? raw : `/${raw}`}`;
+        })(),
         telephone: site.phone,
         ...(site.email?.trim() ? { email: site.email.trim() } : {}),
         address: {

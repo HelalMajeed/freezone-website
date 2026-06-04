@@ -6,8 +6,8 @@
  */
 export const SITE_BRAND_NAME = "Store";
 
-/** Default storefront logo when CMS has no `logoUrl` — file must exist under `public/`. */
-export const SITE_LOGO_PUBLIC_PATH = "/brand/site-logo.png";
+/** Default storefront icon when CMS has no `logoUrl` — red Z mark only. */
+export const SITE_LOGO_PUBLIC_PATH = "/brand/freezone-z-logo.png";
 
 export function resolveSiteLogoUrl(): string | null {
   const raw = import.meta.env.VITE_PUBLIC_SITE_LOGO_URL;

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useDashboardAuth } from "@/lib/dashboard/auth-store";
 import { DashboardApiError } from "@/lib/dashboard/api";
 import { Button, Field, Input } from "@/components/dashboard/ui";
+import { FREEZONE_Z_LOGO } from "@/lib/brand-assets";
 import s from "./login.module.css";
 
 const ERROR_MESSAGES: Record<string, { en: string; ar: string }> = {
@@ -61,7 +62,9 @@ export function DashboardLoginPage() {
     <div className={s.wrap} dir={lang === "ar" ? "rtl" : "ltr"}>
       <aside className={s.brandPanel}>
         <div className={s.brandTop}>
-          <span className={s.brandTopMark}>F</span>
+          <span className={s.brandTopMark}>
+            <img src={FREEZONE_Z_LOGO} alt="" width={48} height={48} style={{ display: "block" }} />
+          </span>
           <div>
             <div className={s.brandTopName}>Freezone</div>
             <div className={s.brandTopSub}>{lang === "ar" ? "لوحة التحكم" : "Control Center"}</div>
