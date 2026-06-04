@@ -1,4 +1,7 @@
 import type { Category } from "@/lib/data";
+import { CATEGORY_PROMO_IMAGE_LABEL_AR } from "@/lib/category-promo-image-spec";
+
+export { CATEGORY_PROMO_IMAGE_LABEL_AR };
 
 /** Max cards in promo mega grid (4×5 layout on desktop). */
 export const PROMO_MEGA_MAX_CARDS = 20;

@@ -4,6 +4,8 @@ import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { uploadAdminImage } from "@/lib/admin-upload-image";
+import { CATEGORY_PROMO_IMAGE_HINT_AR } from "@/lib/category-promo-image-spec";
+import { resizeCategoryPromoImageFile } from "@/lib/resize-category-promo-image";
 import { freezoneApiUrl } from "@/lib/api-internal";
 import { FacetKeysPicker, type FacetImportCategoryOption } from "@/components/admin/FacetKeysPicker";
 import { facetAttributesToOrderedSelection } from "@/components/admin/facet/facet-keys-utils";
@@ -128,7 +130,8 @@ export function AddCategoryModal({ open, rtl, onClose, onCreated, setMsg, import
                 <input dir="ltr" className={styles.input} value={newSlug} onChange={(e) => setNewSlug(e.target.value)} placeholder="slug" />
               </div>
               <div>
-                <div className={styles.label}>صورة خلفية</div>
+                <div className={styles.label}>صورة بطاقة الرئيسية (1200×800)</div>
+                <p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--admin-muted)" }}>{CATEGORY_PROMO_IMAGE_HINT_AR}</p>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                   <input
                     dir="ltr"
@@ -148,7 +151,8 @@ export function AddCategoryModal({ open, rtl, onClose, onCreated, setMsg, import
                       e.target.value = "";
                       if (!f) return;
                       try {
-                        setNewBgUrl(await uploadAdminImage(f));
+                        const resized = await resizeCategoryPromoImageFile(f);
+                        setNewBgUrl(await uploadAdminImage(resized));
                       } catch {
                         setMsg("فشل رفع صورة الخلفية");
                       }

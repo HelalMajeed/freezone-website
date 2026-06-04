@@ -3,6 +3,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { LUCIDE_ICON_PICKER_OPTIONS } from "@/lib/lucide-icon-map";
+import { CATEGORY_PROMO_IMAGE_HINT_AR } from "@/lib/category-promo-image-spec";
 import { parsePromoMegaSlots, promoMegaCardCount, PROMO_MEGA_MAX_CARDS, type PromoMegaSlotDraft } from "@/lib/home-promo-mega";
 import { freezoneApiUrl } from "@/lib/api-internal";
 import { HeroDestLinkEditor } from "@/components/admin/HeroDestLinkEditor";
@@ -802,6 +803,8 @@ export function PromoMegaSectionEditor({
         </Link>
         ) أو تحديد فئات وصور هنا. الصورة الافتراضية لكل بطاقة: صورة الخلفية المحفوظة للفئة، وإلا صورة احتياطية من القالب.
         على الشاشات الواسعة تُعرض <strong>4 بطاقات في كل صف</strong> (حتى 20 بطاقة؛ الصف الأخير قد يضم بطاقة واحدة حتى تكمل باقي الأقسام).
+        {" "}
+        مقاس الصورة الموحّد: <strong>1200×800</strong> (3:2). {CATEGORY_PROMO_IMAGE_HINT_AR}
       </p>
 
       <div>
@@ -873,7 +876,7 @@ export function PromoMegaSectionEditor({
                   </select>
                 </div>
                 <div style={{ gridColumn: "1 / -1" }}>
-                  <label style={labelStyle}>صورة البطاقة (اختياري — يغلب صورة الفئة)</label>
+                  <label style={labelStyle}>صورة البطاقة 1200×800 (اختياري — يغلب صورة الفئة)</label>
                   <input
                     style={{ ...inp, direction: "ltr" }}
                     dir="ltr"

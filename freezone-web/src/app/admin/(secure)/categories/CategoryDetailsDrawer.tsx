@@ -4,7 +4,10 @@ import { useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Trash2 } from "lucide-react";
 import { FacetKeysPicker, type FacetImportCategoryOption, type FacetKeysEditorHandle } from "@/components/admin/FacetKeysPicker";
+import { uploadAdminImage } from "@/lib/admin-upload-image";
 import { findArabicTypoHints } from "@/lib/arabic-typo-hints";
+import { CATEGORY_PROMO_IMAGE_HINT_AR } from "@/lib/category-promo-image-spec";
+import { resizeCategoryPromoImageFile } from "@/lib/resize-category-promo-image";
 import styles from "./admin-categories.module.css";
 import type { CategoryCardData } from "./CategoryCard";
 import type { FacetAttributeDef } from "@/lib/data";
@@ -133,21 +136,50 @@ export function CategoryDetailsDrawer({
                 </div>
               </div>
               <div>
-                <div className={styles.label}>صورة الخلفية (رابط)</div>
-                <input
-                  dir="ltr"
-                  type="url"
-                  className={styles.input}
-                  placeholder="https://…"
-                  value={cat.backgroundImageUrl ?? ""}
-                  onChange={(e) => onChangeCat({ backgroundImageUrl: e.target.value || null })}
-                />
+                <div className={styles.label}>صورة بطاقة الرئيسية (1200×800)</div>
+                <p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--admin-muted)" }}>{CATEGORY_PROMO_IMAGE_HINT_AR}</p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <input
+                    dir="ltr"
+                    type="url"
+                    className={styles.input}
+                    style={{ flex: "1 1 200px" }}
+                    placeholder="https://…"
+                    value={cat.backgroundImageUrl ?? ""}
+                    onChange={(e) => onChangeCat({ backgroundImageUrl: e.target.value || null })}
+                  />
+                  <label style={{ fontSize: 13, cursor: "pointer", color: "#0b1f3b", fontWeight: 600 }}>
+                    رفع ملف
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      hidden
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = "";
+                        if (!f) return;
+                        try {
+                          const resized = await resizeCategoryPromoImageFile(f);
+                          onChangeCat({ backgroundImageUrl: await uploadAdminImage(resized) });
+                        } catch {
+                          /* parent may show toast */
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
               </div>
               {(cat.backgroundImageUrl ?? "").trim() ? (
                 <img
                   src={(cat.backgroundImageUrl ?? "").trim()}
                   alt=""
-                  style={{ maxWidth: "100%", maxHeight: 120, borderRadius: 8, objectFit: "cover" }}
+                  style={{
+                    width: "100%",
+                    maxWidth: 360,
+                    aspectRatio: "3 / 2",
+                    objectFit: "cover",
+                    borderRadius: 8,
+                  }}
                 />
               ) : null}
 
