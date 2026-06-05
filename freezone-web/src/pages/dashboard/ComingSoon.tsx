@@ -45,15 +45,6 @@ export function ComingSoon({
 
 // ─── Pre-bound stubs for each not-yet-built route ────────────────────────────
 
-export const CategoriesPage = () => (
-  <ComingSoon
-    titleEn="Categories"
-    titleAr="الأقسام"
-    descEn="Category tree editor with drag-to-reorder, per-category attributes/facets, hero images, and bulk product moves."
-    descAr="محرر شجرة الأقسام مع السحب لإعادة الترتيب، سمات/فلاتر لكل قسم، صور رئيسية، ونقل دفعات من المنتجات."
-  />
-);
-
 export const OrdersPage = () => (
   <ComingSoon
     titleEn="Orders"

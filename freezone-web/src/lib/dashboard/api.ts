@@ -319,3 +319,37 @@ export type CategoryOption = {
   parentId: number | null;
   active: boolean;
 };
+
+/** Full category row returned by `GET /api/admin/categories`. */
+export type CategoryFull = {
+  id: number;
+  parentId: number | null;
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  active: boolean;
+  icon: string;
+  color: string;
+  backgroundImageUrl: string | null;
+  sortOrder: number;
+  /** Attribute schema set on the category — opaque here; editor lives in a later checkpoint. */
+  categoryAttributes: unknown[];
+  primaryProductCount: number;
+  secondaryLinkCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CategoryCreatePayload = {
+  nameEn: string;
+  nameAr?: string;
+  slug?: string;
+  parentId?: number | null;
+  active?: boolean;
+  icon?: string;
+  color?: string;
+  backgroundImageUrl?: string | null;
+  sortOrder?: number;
+};
+
+export type CategoryUpdatePayload = Partial<CategoryCreatePayload>;
