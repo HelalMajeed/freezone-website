@@ -10,9 +10,10 @@ export function ConfirmDialogHost() {
     if (!state.open) setMatchInput("");
   }, [state.open]);
 
+  const confirmMatch = state.open ? state.opts.confirmMatch?.trim() : undefined;
   useEffect(() => {
+    if (!confirmMatch && !state.open) return;
     if (!state.open) return;
-    const confirmMatch = state.opts.confirmMatch?.trim();
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") resolveConfirm(false);
       else if (e.key === "Enter") {
@@ -22,7 +23,7 @@ export function ConfirmDialogHost() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [state.open, state.opts.confirmMatch, matchInput]);
+  }, [state.open, confirmMatch, matchInput]);
 
   if (!state.open) return null;
   const { opts } = state;

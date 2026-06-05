@@ -590,3 +590,61 @@ export type HomeSpotlightPayload = {
   sortOrder?: number;
   active?: boolean;
 };
+
+export type HeroSlide = {
+  id: number;
+  sortOrder: number;
+  layoutMode: string;
+  badgeEn: string;
+  badgeAr: string;
+  titleLine1En: string;
+  titleLine1Ar: string;
+  titleLine2En: string;
+  titleLine2Ar: string;
+  descEn: string;
+  descAr: string;
+  imageUrl: string;
+  primaryLabelEn: string;
+  primaryLabelAr: string;
+  primaryHref: string;
+  secondaryLabelEn: string;
+  secondaryLabelAr: string;
+  secondaryHref: string;
+  active: boolean;
+};
+
+export type HeroSlidePayload = Partial<Omit<HeroSlide, "id" | "layoutMode">> & {
+  imageUrl: string;
+};
+
+export type ShowroomMediaItem = {
+  id: number;
+  kind: "image" | "video";
+  url: string;
+  titleEn: string | null;
+  titleAr: string | null;
+  sortOrder: number;
+};
+
+export type ShowroomMediaPayload = {
+  kind?: "image" | "video";
+  url: string;
+  titleEn?: string | null;
+  titleAr?: string | null;
+  sortOrder?: number;
+};
+
+export type TickerItem = {
+  id: number;
+  textEn: string;
+  textAr: string;
+  iconSuffix: string | null;
+  sortOrder: number;
+};
+
+export type TickerItemPayload = {
+  textEn: string;
+  textAr?: string;
+  iconSuffix?: string | null;
+  sortOrder?: number;
+};

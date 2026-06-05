@@ -1,28 +1,49 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Badge, Card } from "@/components/dashboard/ui";
+import { Card } from "@/components/dashboard/ui";
+import { HeroSlidesTab } from "./cms/HeroSlidesTab";
+import { TickerTab } from "./cms/TickerTab";
 import { PromoBannersTab } from "./cms/PromoBannersTab";
-import { SocialLinksTab } from "./cms/SocialLinksTab";
-import { TrustBarTab } from "./cms/TrustBarTab";
 import { HomeSpotlightsTab } from "./cms/HomeSpotlightsTab";
+import { TrustBarTab } from "./cms/TrustBarTab";
+import { ShowroomMediaTab } from "./cms/ShowroomMediaTab";
+import { SocialLinksTab } from "./cms/SocialLinksTab";
 
 type Lang = "ar" | "en";
 
-type TabKey = "promoBanners" | "homeSpotlights" | "trustBar" | "socialLinks";
+type TabKey =
+  | "heroSlides"
+  | "ticker"
+  | "promoBanners"
+  | "homeSpotlights"
+  | "trustBar"
+  | "showroomMedia"
+  | "socialLinks";
 
 const TAB_LABELS: Record<TabKey, { en: string; ar: string }> = {
+  heroSlides: { en: "Hero slides", ar: "شرائح Hero" },
+  ticker: { en: "Ticker", ar: "الشريط المتحرك" },
   promoBanners: { en: "Promo banners", ar: "بانرات ترويجية" },
   homeSpotlights: { en: "Home spotlights", ar: "شريط الفئات" },
   trustBar: { en: "Trust bar", ar: "شريط الثقة" },
+  showroomMedia: { en: "Showroom", ar: "Showroom" },
   socialLinks: { en: "Social links", ar: "روابط اجتماعية" },
 };
 
-const TAB_ORDER: TabKey[] = ["promoBanners", "homeSpotlights", "trustBar", "socialLinks"];
+const TAB_ORDER: TabKey[] = [
+  "heroSlides",
+  "ticker",
+  "promoBanners",
+  "homeSpotlights",
+  "trustBar",
+  "showroomMedia",
+  "socialLinks",
+];
 
 export function DashboardCmsPage() {
   const { i18n } = useTranslation();
   const lang = ((i18n.resolvedLanguage ?? "en").startsWith("ar") ? "ar" : "en") as Lang;
-  const [tab, setTab] = useState<TabKey>("promoBanners");
+  const [tab, setTab] = useState<TabKey>("heroSlides");
 
   return (
     <>
@@ -33,8 +54,8 @@ export function DashboardCmsPage() {
           </h1>
           <div className="dashboard-page-subtitle">
             {lang === "ar"
-              ? "إدارة عناصر الصفحة الرئيسية: البانرات، شريط الفئات، شريط الثقة، والشبكات الاجتماعية."
-              : "Manage homepage building blocks: promo banners, category strip, trust bar, social links."}
+              ? "إدارة كل العناصر التي تظهر على الصفحة الرئيسية للزوار."
+              : "Manage every block that appears on the homepage for visitors."}
           </div>
         </div>
       </div>
@@ -75,21 +96,13 @@ export function DashboardCmsPage() {
         </div>
 
         <div style={{ padding: 16 }}>
+          {tab === "heroSlides" && <HeroSlidesTab lang={lang} />}
+          {tab === "ticker" && <TickerTab lang={lang} />}
           {tab === "promoBanners" && <PromoBannersTab lang={lang} />}
           {tab === "homeSpotlights" && <HomeSpotlightsTab lang={lang} />}
           {tab === "trustBar" && <TrustBarTab lang={lang} />}
+          {tab === "showroomMedia" && <ShowroomMediaTab lang={lang} />}
           {tab === "socialLinks" && <SocialLinksTab lang={lang} />}
-        </div>
-      </Card>
-
-      <Card>
-        <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-          <Badge tone="info">{lang === "ar" ? "ملاحظة" : "Note"}</Badge>
-          <div style={{ fontSize: 13, color: "var(--fz-text-soft)", lineHeight: 1.6 }}>
-            {lang === "ar"
-              ? "تحرير شرائح الهيرو (Hero slides) ومعرض الـ Showroom سيتم في تحديث لاحق — تتطلّبان محرّرات مخصّصة (لا تظهر بعد). البقية متاحة هنا اليوم."
-              : "Hero slides and the Showroom media gallery will land in a follow-up — each needs a dedicated editor (not surfaced yet). Everything else is editable here today."}
-          </div>
         </div>
       </Card>
     </>

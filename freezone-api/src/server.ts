@@ -32,6 +32,12 @@ import * as adminTrustBar from "./app/api/admin/trust-bar/route";
 import * as adminTrustBarId from "./app/api/admin/trust-bar/[id]/route";
 import * as adminHomeSpotlights from "./app/api/admin/home-spotlights/route";
 import * as adminHomeSpotlightsId from "./app/api/admin/home-spotlights/[id]/route";
+import * as adminHeroSlides from "./app/api/admin/hero-slides/route";
+import * as adminHeroSlidesId from "./app/api/admin/hero-slides/[id]/route";
+import * as adminShowroomMedia from "./app/api/admin/showroom-media/route";
+import * as adminShowroomMediaId from "./app/api/admin/showroom-media/[id]/route";
+import * as adminTicker from "./app/api/admin/ticker/route";
+import * as adminTickerId from "./app/api/admin/ticker/[id]/route";
 import * as adminCatalogConfig from "./app/api/admin/catalog-config/route";
 import * as adminDashboard from "./app/api/admin/dashboard/route";
 import * as adminDashboardSmart from "./app/api/admin/dashboard/smart/route";
@@ -573,6 +579,45 @@ async function main() {
   });
   app.delete("/api/admin/home-spotlights/:id", async (req, res) => {
     await sendWebResponse(res, await adminHomeSpotlightsId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+
+  app.get("/api/admin/hero-slides", async (req, res) => {
+    await sendWebResponse(res, await adminHeroSlides.GET(webRequestFromExpress(req)));
+  });
+  app.post("/api/admin/hero-slides", async (req, res) => {
+    await sendWebResponse(res, await adminHeroSlides.POST(webRequestFromExpress(req)));
+  });
+  app.patch("/api/admin/hero-slides/:id", async (req, res) => {
+    await sendWebResponse(res, await adminHeroSlidesId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+  app.delete("/api/admin/hero-slides/:id", async (req, res) => {
+    await sendWebResponse(res, await adminHeroSlidesId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+
+  app.get("/api/admin/showroom-media", async (req, res) => {
+    await sendWebResponse(res, await adminShowroomMedia.GET(webRequestFromExpress(req)));
+  });
+  app.post("/api/admin/showroom-media", async (req, res) => {
+    await sendWebResponse(res, await adminShowroomMedia.POST(webRequestFromExpress(req)));
+  });
+  app.patch("/api/admin/showroom-media/:id", async (req, res) => {
+    await sendWebResponse(res, await adminShowroomMediaId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+  app.delete("/api/admin/showroom-media/:id", async (req, res) => {
+    await sendWebResponse(res, await adminShowroomMediaId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+
+  app.get("/api/admin/ticker", async (req, res) => {
+    await sendWebResponse(res, await adminTicker.GET(webRequestFromExpress(req)));
+  });
+  app.post("/api/admin/ticker", async (req, res) => {
+    await sendWebResponse(res, await adminTicker.POST(webRequestFromExpress(req)));
+  });
+  app.patch("/api/admin/ticker/:id", async (req, res) => {
+    await sendWebResponse(res, await adminTickerId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+  app.delete("/api/admin/ticker/:id", async (req, res) => {
+    await sendWebResponse(res, await adminTickerId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
   });
 
   app.get("/api/admin/media", async (req, res) => {
