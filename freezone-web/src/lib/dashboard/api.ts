@@ -58,6 +58,40 @@ export const dashboardApi = {
   delete: <T>(path: string) => request<T>("DELETE", path),
 };
 
+/**
+ * Multipart upload to `/api/admin/upload`. The backend writes the file under
+ * `/public/uploads/` and returns its public URL. Pass `register: true` to also
+ * record the file in the `MediaAsset` library.
+ */
+export async function uploadDashboardFile(
+  file: File,
+  opts?: { register?: boolean; title?: string; altAr?: string; altEn?: string },
+): Promise<{ url: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  if (opts?.register) form.append("registerLibrary", "true");
+  if (opts?.title) form.append("title", opts.title);
+  if (opts?.altAr) form.append("altAr", opts.altAr);
+  if (opts?.altEn) form.append("altEn", opts.altEn);
+  const res = await fetch(freezoneApiUrl("/api/admin/upload"), {
+    method: "POST",
+    body: form,
+    credentials: "include",
+  });
+  const text = await res.text();
+  let json: unknown;
+  try {
+    json = text ? JSON.parse(text) : {};
+  } catch {
+    json = {};
+  }
+  if (!res.ok) {
+    const j = json as { error?: string };
+    throw new DashboardApiError(res.status, j.error ?? `HTTP_${res.status}`, j.error, j as Record<string, unknown>);
+  }
+  return json as { url: string };
+}
+
 export type Role = "CATALOG_EDITOR" | "CATALOG_MANAGER" | "SUPER_ADMIN";
 
 /** Legacy nav keys still accepted by hasRole() */
@@ -132,3 +166,25 @@ export type AuditEntry = {
   payload: unknown;
   createdAt: string;
 };
+
+export type Brand = {
+  id: number;
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  logoUrl: string | null;
+  sortOrder: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type BrandCreatePayload = {
+  nameEn: string;
+  nameAr?: string;
+  slug?: string;
+  logoUrl?: string | null;
+  sortOrder?: number;
+};
+
+export type BrandUpdatePayload = Partial<BrandCreatePayload> & { active?: boolean };

@@ -63,15 +63,6 @@ export const CategoriesPage = () => (
   />
 );
 
-export const BrandsPage = () => (
-  <ComingSoon
-    titleEn="Brands"
-    titleAr="العلامات التجارية"
-    descEn="Add brands, upload logos, control sort order and active state."
-    descAr="إضافة العلامات، رفع الشعارات، التحكم بالترتيب والحالة."
-  />
-);
-
 export const OrdersPage = () => (
   <ComingSoon
     titleEn="Orders"

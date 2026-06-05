@@ -8,15 +8,13 @@ const DashboardOverviewPage = lazy(() => import("@/pages/dashboard/OverviewPage"
 const DashboardUsersPage = lazy(() => import("@/pages/dashboard/UsersPage"));
 const DashboardProfilePage = lazy(() => import("@/pages/dashboard/ProfilePage"));
 const DashboardAuditPage = lazy(() => import("@/pages/dashboard/AuditPage"));
+const DashboardBrandsPage = lazy(() => import("@/pages/dashboard/BrandsPage"));
 
 const ProductsPage = lazy(() =>
   import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.ProductsPage })),
 );
 const CategoriesPage = lazy(() =>
   import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.CategoriesPage })),
-);
-const BrandsPage = lazy(() =>
-  import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.BrandsPage })),
 );
 const OrdersPage = lazy(() =>
   import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.OrdersPage })),
@@ -78,7 +76,7 @@ export const freezoneDashboardRouteBranch = (
         <Route path="profile" element={<L><DashboardProfilePage /></L>} />
         <Route path="products" element={<L><ProductsPage /></L>} />
         <Route path="categories" element={<L><CategoriesPage /></L>} />
-        <Route path="brands" element={<L><BrandsPage /></L>} />
+        <Route path="brands" element={<L><DashboardBrandsPage /></L>} />
         <Route path="orders" element={<L><OrdersPage /></L>} />
         <Route path="coupons" element={<L><CouponsPage /></L>} />
         <Route path="cms" element={<L><CmsPage /></L>} />
