@@ -78,6 +78,7 @@ import * as adminImportGlobaliraqRunBatch from "./app/api/admin/import/globalira
 import * as adminTheme from "./app/api/admin/theme/route";
 import * as adminUpload from "./app/api/admin/upload/route";
 import * as dashboardLogin from "./app/api/dashboard/auth/login/route";
+import * as dashboardDevLogin from "./app/api/dashboard/auth/dev-login/route";
 import * as dashboardDirectLogin from "./app/api/dashboard/auth/direct-login/route";
 import * as dashboardLogout from "./app/api/dashboard/auth/logout/route";
 import * as dashboardMe from "./app/api/dashboard/auth/me/route";
@@ -684,6 +685,11 @@ async function main() {
   });
   app.post("/api/dashboard/auth/direct-login", async (req, res) => {
     await sendWebResponse(res, await dashboardDirectLogin.POST(webRequestFromExpress(req)));
+  });
+  // Dev-only frictionless login — gated by NODE_ENV !== "production" AND
+  // DASHBOARD_DEV_BYPASS=true. Returns 404 in production. See route file.
+  app.post("/api/dashboard/auth/dev-login", async (req, res) => {
+    await sendWebResponse(res, await dashboardDevLogin.POST(webRequestFromExpress(req)));
   });
   app.post("/api/dashboard/auth/logout", async (req, res) => {
     await sendWebResponse(res, await dashboardLogout.POST(webRequestFromExpress(req)));

@@ -2,10 +2,14 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useDashboardAuth } from "@/lib/dashboard/auth-store";
-import { DashboardApiError } from "@/lib/dashboard/api";
+import { DashboardApiError, dashboardApi } from "@/lib/dashboard/api";
 import { Button, Field, Input } from "@/components/dashboard/ui";
 import { FREEZONE_Z_LOGO } from "@/lib/brand-assets";
 import s from "./login.module.css";
+
+// Statically replaced by Vite at build time: `true` in `vite dev`, `false`
+// in `vite build`. The block below is dead-code-eliminated in production.
+const DEV_MODE = import.meta.env.DEV;
 
 const ERROR_MESSAGES: Record<string, { en: string; ar: string }> = {
   MISSING_CREDENTIALS: { en: "Enter your email and password.", ar: "الرجاء إدخال البريد وكلمة المرور." },
@@ -13,6 +17,10 @@ const ERROR_MESSAGES: Record<string, { en: string; ar: string }> = {
   ACCOUNT_DISABLED: { en: "This account is disabled.", ar: "هذا الحساب معطّل." },
   ACCOUNT_LOCKED: { en: "Too many failed attempts. Try again in 15 minutes.", ar: "محاولات كثيرة. حاول بعد ١٥ دقيقة." },
   NETWORK: { en: "Can't reach the server. Check your connection.", ar: "تعذّر الاتصال بالخادم." },
+  DEV_BYPASS_DISABLED: {
+    en: "Dev-login is not enabled on this API. Set DASHBOARD_DEV_BYPASS=true on freezone-api.",
+    ar: "تخطي التطوير غير مفعّل على الـ API. اضبط DASHBOARD_DEV_BYPASS=true في freezone-api.",
+  },
 };
 
 export function DashboardLoginPage() {
@@ -29,6 +37,7 @@ export function DashboardLoginPage() {
   const [password, setPassword] = useState("");
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [devBypassing, setDevBypassing] = useState(false);
 
   const lang = (i18n.resolvedLanguage ?? "en").startsWith("ar") ? "ar" : "en";
 
@@ -57,6 +66,29 @@ export function DashboardLoginPage() {
   };
 
   const errMsg = errorCode ? (ERROR_MESSAGES[errorCode] ?? { en: errorCode, ar: errorCode })[lang] : null;
+
+  const onDevBypass = async () => {
+    setErrorCode(null);
+    setDevBypassing(true);
+    try {
+      await dashboardApi.post("/api/dashboard/auth/dev-login");
+      await refresh();
+      navigate(next, { replace: true });
+    } catch (err) {
+      // 404 → backend doesn't have DASHBOARD_DEV_BYPASS=true. Surface clearly.
+      if (err instanceof DashboardApiError) {
+        setErrorCode(
+          err.status === 404
+            ? "DEV_BYPASS_DISABLED"
+            : err.code,
+        );
+      } else {
+        setErrorCode("NETWORK");
+      }
+    } finally {
+      setDevBypassing(false);
+    }
+  };
 
   return (
     <div className={s.wrap} dir={lang === "ar" ? "rtl" : "ltr"}>
@@ -134,6 +166,39 @@ export function DashboardLoginPage() {
               ? "نسيت كلمة المرور؟ اطلب من المسؤول إعادة التعيين."
               : "Forgot password? Ask your admin to reset it."}
           </div>
+
+          {DEV_MODE && (
+            <div
+              style={{
+                marginTop: 18,
+                padding: 12,
+                border: "1px dashed #f59e0b",
+                borderRadius: 8,
+                background: "#fffbeb",
+                color: "#92400e",
+                fontSize: 13,
+                lineHeight: 1.5,
+              }}
+            >
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                {lang === "ar" ? "وضع التطوير المحلي فقط" : "Local development only"}
+              </div>
+              <div style={{ marginBottom: 10 }}>
+                {lang === "ar"
+                  ? "زر التخطي يعمل فقط حين يكون الـ API محلياً مع DASHBOARD_DEV_BYPASS=true. لا يظهر في الإنتاج."
+                  : "Skip works only when the local API has DASHBOARD_DEV_BYPASS=true. Removed entirely from production builds."}
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={onDevBypass}
+                loading={devBypassing}
+              >
+                {lang === "ar" ? "تخطي تسجيل الدخول (تطوير)" : "Skip login (dev)"}
+              </Button>
+            </div>
+          )}
         </form>
       </section>
     </div>
