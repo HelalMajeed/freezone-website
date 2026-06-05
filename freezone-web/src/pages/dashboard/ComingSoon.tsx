@@ -54,15 +54,6 @@ export const CmsPage = () => (
   />
 );
 
-export const MediaPage = () => (
-  <ComingSoon
-    titleEn="Media library"
-    titleAr="مكتبة الوسائط"
-    descEn="Upload images, video, and 3D model assets. Search by alt text, replace files, and see usage across products."
-    descAr="رفع الصور والفيديو وملفات النماذج ثلاثية الأبعاد. بحث بنص بديل، استبدال ملفات، ومعرفة استخدامها في المنتجات."
-  />
-);
-
 export const DesignPage = () => (
   <ComingSoon
     titleEn="Design & theme"

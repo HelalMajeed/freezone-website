@@ -430,3 +430,29 @@ export type CouponPayload = {
 };
 
 export type CouponUpdatePayload = Partial<CouponPayload>;
+
+// ─── Media library ─────────────────────────────────────────────────────────
+
+export type MediaKind = "image" | "video" | "model3d";
+
+export type MediaAsset = {
+  id: number;
+  url: string;
+  kind: MediaKind;
+  mimeType: string;
+  title: string;
+  altAr: string;
+  altEn: string;
+  fileSize: number | null;
+  width: number | null;
+  height: number | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MediaUpdatePayload = {
+  title?: string;
+  altAr?: string;
+  altEn?: string;
+  kind?: MediaKind;
+};
