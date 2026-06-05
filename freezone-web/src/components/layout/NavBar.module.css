@@ -699,6 +699,10 @@
     gap: 6px;
   }
 
+  .brandSlot {
+    max-width: 58%;
+  }
+
   .logo {
     font-size: 1.35rem;
     gap: 8px;
@@ -722,6 +726,20 @@
 
   .actions {
     gap: 4px;
+  }
+}
+
+@media (max-width: 360px) {
+  .brandSlot {
+    max-width: 52%;
+  }
+
+  .middleInner {
+    gap: 4px;
+  }
+
+  .actionIcon {
+    padding: 4px 6px;
   }
 }
 

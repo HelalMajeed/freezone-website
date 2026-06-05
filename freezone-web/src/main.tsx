@@ -8,6 +8,7 @@ import "./theme/tokens.css";
 import "./theme/adaptive-density.css";
 import "./theme/mobile-layout.css";
 import "./theme/mobile-repair.css";
+import "./theme/responsive-system.css";
 import "./globals.css";
 import "@/app/admin/admin-shell.css";
 import "@/app/admin/admin-dashboard-shell.css";

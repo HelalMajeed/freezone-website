@@ -107,6 +107,33 @@
   }
 }
 
+@media (max-width: 480px) {
+  .navbarTextColumn {
+    max-width: min(220px, 42vw);
+  }
+
+  .wordmarkNavbar {
+    font-size: clamp(0.95rem, 4vw, 1.2rem);
+  }
+
+  .navbarTagline {
+    font-size: clamp(0.58rem, 2.8vw, 0.65rem);
+    line-height: 1.35;
+  }
+
+  .imgNavbar {
+    max-width: min(56px, 14vw);
+    height: clamp(36px, 10vw, 44px);
+  }
+}
+
+@media (max-width: 360px) {
+  .navbarTextColumn {
+    max-width: min(180px, 48vw);
+    gap: 2px;
+  }
+}
+
 .mobileDrawerTagline {
   font-size: 0.72rem;
   font-weight: 500;

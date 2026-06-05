@@ -68,3 +68,20 @@
     scroll-margin-top: 8px;
   }
 }
+
+/* Scroll wide tables without changing markup */
+@media (max-width: 768px) {
+  .admin-shell .dashboard-content :has(> table),
+  .dashboard-root .dashboard-content :has(> table) {
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Dashboard content padding */
+@media (max-width: 480px) {
+  .dashboard-root .dashboard-content {
+    padding: 16px 12px;
+  }
+}

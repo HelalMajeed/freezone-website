@@ -171,7 +171,7 @@ export function VariantsSection({ productId }: { productId: number }) {
             </button>
           </div>
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", minWidth: 720, fontSize: 13, borderCollapse: "collapse" }}>
+            <table style={{ width: "100%", minWidth: "min(100%, 720px)", fontSize: 13, borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ textAlign: "start", borderBottom: "1px solid #334155" }}>
                   <th>التسمية (عربي)</th>

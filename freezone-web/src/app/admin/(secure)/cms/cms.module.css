@@ -665,8 +665,26 @@
   color: var(--trust-bar-icon, var(--fz-primary));
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .trustPreviewGrid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .trustPreviewGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .actions {
+    flex-wrap: wrap;
   }
 }

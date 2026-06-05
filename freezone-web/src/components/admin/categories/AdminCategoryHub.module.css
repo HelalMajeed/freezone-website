@@ -1,6 +1,8 @@
 .wrap {
   padding: 0 0 32px;
-  max-width: 1200px;
+  width: 100%;
+  max-width: min(100%, 1200px);
+  min-width: 0;
 }
 
 .breadcrumb {

@@ -1111,7 +1111,7 @@
   filter: brightness(1.05);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .pageRoot,
   .editorStack,
   .editorScroll,
@@ -1130,6 +1130,23 @@
   }
 
   .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .previewPanel,
+  .previewHead {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .context {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .expandRow {
     flex-direction: column;
     align-items: stretch;
   }

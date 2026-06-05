@@ -514,12 +514,13 @@
     "workflowNote": "Pick parts in order; incompatible options are hidden automatically."
   },
   "Footer": {
-    "tagline": "Iraq's #1 Tech Store",
-    "brandDesc": "Your premium destination for building the ultimate PC and upgrading your tech arsenal. Top-tier components, enterprise networking, and expert support.",
+    "tagline": "Iraq's trusted tech partner · CCTV · Computers · Gaming · Smart solutions",
+    "brandDesc": "Iraq's leading electronics store — CCTV & security, computers, gaming PCs, smart home, networking & B2B solutions. 2-year warranty.",
     "colQuickLinks": "Quick Links",
     "allProducts": "All Products",
     "pcBuilder": "PC Builder",
     "aboutUs": "About Us",
+    "trackOrder": "Track Order",
     "contactUs": "Contact Us",
     "colInfo": "Information",
     "shipping": "Shipping Policy",
@@ -528,11 +529,12 @@
     "terms": "Terms of Service",
     "faq": "FAQ",
     "colContact": "Contact Us",
-    "address": "Baghdad, Iraq — Tech Center Area",
-    "newsTitle": "Get Exclusive Deals",
-    "newsDesc": "Get alerts for RTX restocks and flash sales — via WhatsApp/SMS.",
+    "address": "Tikrit, Al Ma'aradh Street",
+    "newsletterLabel": "Get RTX restock & flash-sale alerts",
+    "newsletterSubmit": "Subscribe",
     "phonePlaceholder": "Your phone number",
     "copyright": "All rights reserved.",
+    "madeIn": "Made in Iraq · Prices in IQD",
     "subscribed": "Subscribed successfully!"
   },
   "FAQ": {

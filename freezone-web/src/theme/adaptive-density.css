@@ -97,6 +97,22 @@
   }
 }
 
+/* Small phones */
+@media (max-width: 480px) {
+  :root {
+    --fz-gutter: clamp(10px, 3.5vw, 14px);
+    --fz-font-base: clamp(14px, 3.8vw, 16px);
+    --fz-grid-min: clamp(120px, 46vw, 160px);
+  }
+}
+
+@media (max-width: 360px) {
+  :root {
+    --fz-gutter: 10px;
+    --fz-grid-min: min(46vw, 150px);
+  }
+}
+
 /* Mobile — dense but touch-safe */
 @media (max-width: 640px) {
   :root {
