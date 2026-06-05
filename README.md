@@ -1,6 +1,8 @@
 # Freezone monorepo
 
-متجر إلكتروني (e‑commerce) — **Express API** + **Vite** (متجر/أدمن) + **Next.js storefront** (SEO). خطة التطوير: [`docs/FREEZONE_ACTION_PLAN.md`](docs/FREEZONE_ACTION_PLAN.md).
+متجر إلكتروني (e‑commerce) — **Express API** + **Vite** (متجر + لوحة `/dashboard`) + **Next.js storefront** (SEO). خطة التطوير: [`docs/FREEZONE_ACTION_PLAN.md`](docs/FREEZONE_ACTION_PLAN.md).
+
+> **Note:** the official admin panel is now `/dashboard` (login at `/dashboard/login`). The old `/admin` UI has been removed; any request to `/admin` or `/admin/*` redirects to `/dashboard/login`.
 
 [![GitHub repo size](https://img.shields.io/github/repo-size/HelalMajeed/freezone-website)](https://github.com/HelalMajeed/freezone-website)
 [![GitHub last commit](https://img.shields.io/github/last-commit/HelalMajeed/freezone-website)](https://github.com/HelalMajeed/freezone-website/commits/main)
@@ -11,7 +13,7 @@ Public repository: [github.com/HelalMajeed/freezone-website](https://github.com/
 | Area | Packages | Stack | Role |
 |------|-----------|--------|------|
 | **API** | `freezone-api` | Express + Prisma + PostgreSQL | System of record — إنتاج Fly |
-| **Storefront (legacy)** | `freezone-web` | Vite + React 19 | متجر + `/admin` |
+| **Storefront** | `freezone-web` | Vite + React 19 | متجر + لوحة `/dashboard` |
 | **Storefront (SEO)** | `freezone-storefront` | Next.js 15 App Router | هجرة تدريجية (المرحلة 2) |
 
 Deep dive: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · Progress: [`docs/ROADMAP_PROGRESS.md`](docs/ROADMAP_PROGRESS.md)
@@ -32,7 +34,7 @@ This repo does **not** use npm `workspaces`; install dependencies in each packag
 
 ```
 freezone-api/           # Express API, Prisma, migrations
-freezone-web/           # Vite SPA: storefront + /admin
+freezone-web/           # Vite SPA: storefront + /dashboard panel
 freezone-storefront/    # Next.js 15 (SSR) — Phase 2
 docs/                   # Action plan, ADRs, production DB, DR
 docker-compose.yml

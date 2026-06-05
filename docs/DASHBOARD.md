@@ -1,6 +1,6 @@
-# Freezone Dashboard — New Admin Panel
+# Freezone Dashboard
 
-A modern, role-based admin dashboard built from scratch for the Freezone storefront. Mounted at **`/dashboard`** alongside the legacy `/admin` so rollout has zero downtime.
+The official management panel for the Freezone storefront, mounted at **`/dashboard`**. The legacy `/admin` UI has been **removed** — `/admin` and `/admin/*` now redirect to `/dashboard/login`.
 
 ## What you get
 
@@ -12,7 +12,7 @@ A modern, role-based admin dashboard built from scratch for the Freezone storefr
 - 👥 **Team management** — create/edit/delete users, lock/unlock accounts, password rotation invalidates sessions
 - 📝 **Activity audit log** — every dashboard write is logged
 - 🎨 **Brand-aligned design** — Freezone crimson (#C90000), polished CSS Modules, no Tailwind dependency
-- 🔄 **Backward compatible** — sets the legacy `fz_admin_session` cookie too, so existing `/api/admin/*` routes work unchanged for the new dashboard's users
+- 🔄 **API reuse** — calls the existing `/api/admin/*` endpoints (the dashboard login sets both `fz_dashboard_session` and the legacy `fz_admin_session` cookie so those routes work unchanged). API alignment to `/api/dashboard/*` is a follow-up cleanup.
 
 ---
 
@@ -109,7 +109,15 @@ After login, you land on the overview page. The user menu (top-right) has langua
 | `pages/dashboard/UsersPage.tsx` | Team management CRUD |
 | `pages/dashboard/ProfilePage.tsx` | Own profile + change password |
 | `pages/dashboard/AuditPage.tsx` | Activity log viewer |
-| `pages/dashboard/ComingSoon.tsx` | Placeholders for Phase 2 modules (links to legacy `/admin`) |
+| `pages/dashboard/ComingSoon.tsx` | Placeholder used only by `/dashboard/cms` (full CMS editor pending) |
+| `pages/dashboard/BrandsPage.tsx` | Brands CRUD + logo upload |
+| `pages/dashboard/ProductsPage.tsx` + `products/` | Products list, filters, pagination, create/edit, image gallery, duplicate, soft-delete |
+| `pages/dashboard/CategoriesPage.tsx` + `categories/` | Category tree, hierarchy display, CRUD with image, active toggle |
+| `pages/dashboard/OrdersPage.tsx` | Orders list, status filters, detail drawer, status updates |
+| `pages/dashboard/CouponsPage.tsx` | Coupons CRUD (percent / fixed) with validity, usage limits, min-subtotal |
+| `pages/dashboard/MediaPage.tsx` | Media library grid: upload, search, edit metadata, delete |
+| `pages/dashboard/SettingsPage.tsx` | Brand, contact, shipping, payment, promo, SEO, maintenance toggle |
+| `pages/dashboard/DesignPage.tsx` | Theme tokens editor (colors, fonts, radii, button style) with live preview |
 | `routes/dashboard-routes.tsx` | Route branch — exported as `freezoneDashboardRouteBranch` |
 | `App.tsx` | Mounts the branch (1-line patch) |
 | `main.tsx` | Imports the dashboard CSS (1-line patch) |
@@ -141,39 +149,32 @@ Role floor is enforced server-side in `guardDashboard(req, "minRole")` — the U
 
 ---
 
-## Deleting the legacy `/admin` (later)
+## Legacy `/admin` removal — done
 
-The new dashboard runs **side-by-side** with the old `/admin` so you can verify everything works first. When you're ready to remove the legacy panel:
+The old `/admin` UI has been deleted. `/admin` and `/admin/*` redirect to `/dashboard/login`. The standalone `apps/admin-vite/` deployment is also removed.
 
-1. Delete `freezone-web/src/app/admin/` and `freezone-web/src/components/admin/` and `freezone-web/src/pages/admin/`
-2. Delete `freezone-web/src/routes/admin-panel-routes.tsx`
-3. Remove the `freezoneAdminRouteBranch` import + usage from `App.tsx`
-4. Remove the `@/app/admin/admin-shell.css` import from `main.tsx`
-5. Leave the API `/api/admin/*` routes — the new dashboard reuses them
-6. Leave `freezone-api/src/lib/admin-session.ts` — the legacy cookie bridge still uses `signAdminSession`
-
-The `apps/admin-vite/` and `commerce-suite/admin-web/` folders are independent — delete or keep per your call.
+**Kept intentionally:**
+- The `/api/admin/*` backend routes (the new dashboard still calls them; alignment to `/api/dashboard/*` is queued).
+- `freezone-api/src/lib/admin-session.ts` and friends (the legacy cookie bridge — dashboard login sets that cookie too so the admin routes accept it without refactor).
+- CI workflows (`.github/workflows/import-globaliraq.yml`, `daily-summary.yml`) that POST `/api/admin/login` for unattended runs.
 
 ---
 
-## Phase 2 — what's next
+## Module status
 
-The `Coming soon` pages show the modules still to be built. Each ComingSoon stub links to the legacy `/admin/*` page that still handles that job today. Phase 2 modules (in suggested order):
-
-1. **Products** — full CRUD with variants, images, attribute values, secondary categories, specs editor, bulk actions
-2. **Categories** — tree editor with drag-reorder, per-category attribute schema (filterable / searchable / comparable), hero images
-3. **Brands** — simple list with logo upload
-4. **Orders** — list + detail view + status updates (uses existing `/api/admin/orders`)
-5. **Coupons** — CRUD against the `Coupon` model
-6. **CMS** — drag-drop homepage builder (hero slides, ticker, trust bar, featured products, FAQ, promo grid)
-7. **Media library** — uploads + alt text + usage tracking
-8. **Design & theme** — `SiteConfig.themeTokens` editor with live preview
-9. **Site settings** — the big `SiteConfig` form (store info, shipping, payment, navbar, SEO)
-
-Each module will be **a single focused PR** that adds:
-- A new page under `freezone-web/src/pages/dashboard/`
-- A route entry in `routes/dashboard-routes.tsx` (replacing the `ComingSoon` stub)
-- Optionally new helper API routes under `/api/dashboard/*` if the existing `/api/admin/*` is missing a piece
+| Module | State | Notes |
+|---|---|---|
+| Overview | ✅ Implemented | KPIs, sparkline, recent orders, top sellers, low stock |
+| Login / Profile / Users / Audit | ✅ Implemented | Original dashboard work |
+| Brands | ✅ Implemented | CRUD + logo upload |
+| Products | ✅ Implemented | List, filters, pagination, create/edit, image gallery, duplicate, soft-delete |
+| Categories | ✅ Implemented | Tree editor, image, active toggle |
+| Orders | ✅ Implemented | List, filters, detail drawer, status updates |
+| Coupons | ✅ Implemented | CRUD; backend `PATCH`/`DELETE` added |
+| Media library | ✅ Implemented | Grid, upload, search, edit metadata, delete |
+| Settings | ✅ Implemented | New `/api/admin/site-config` endpoint covers brand, contact, shipping, payment, promo, SEO, maintenance |
+| Design & theme | ✅ Implemented | `SiteConfig.themeTokens` editor with live preview |
+| CMS / Pages | ⚠ Coming soon | Hero slides, ticker, trust bar, home spotlights, promo banners, social links — the legacy `/api/admin/cms` PUT replaces all of these atomically; ships as a follow-up |
 
 ---
 
