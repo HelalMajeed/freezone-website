@@ -394,3 +394,39 @@ export type Order = {
   updatedAt: string;
   items: OrderLineItem[];
 };
+
+// ─── Coupons ───────────────────────────────────────────────────────────────
+
+export type CouponDiscountType = "percent" | "fixed_iqd";
+
+export type Coupon = {
+  id: number;
+  code: string;
+  labelAr: string;
+  labelEn: string;
+  discountType: CouponDiscountType;
+  discountValue: number;
+  minSubtotal: number;
+  active: boolean;
+  startsAt: string | null;
+  endsAt: string | null;
+  usageLimit: number | null;
+  usedCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CouponPayload = {
+  code: string;
+  labelAr?: string;
+  labelEn?: string;
+  discountType?: CouponDiscountType;
+  discountValue?: number;
+  minSubtotal?: number;
+  active?: boolean;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  usageLimit?: number | null;
+};
+
+export type CouponUpdatePayload = Partial<CouponPayload>;

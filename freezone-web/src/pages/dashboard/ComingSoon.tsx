@@ -45,15 +45,6 @@ export function ComingSoon({
 
 // ─── Pre-bound stubs for each not-yet-built route ────────────────────────────
 
-export const CouponsPage = () => (
-  <ComingSoon
-    titleEn="Coupons"
-    titleAr="الكوبونات"
-    descEn="Create coupons with percent or fixed discount, validity window, usage limits, and minimum subtotal."
-    descAr="إنشاء كوبونات بنسبة مئوية أو خصم ثابت، نافذة صلاحية، حد للاستعمال، وحد أدنى للسلّة."
-  />
-);
-
 export const CmsPage = () => (
   <ComingSoon
     titleEn="Pages & CMS"
