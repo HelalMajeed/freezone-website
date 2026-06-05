@@ -36,6 +36,7 @@ const NAV: NavGroupDef[] = [
       { to: "/dashboard/products", label: { en: "Products", ar: "المنتجات" }, icon: "▢" },
       { to: "/dashboard/categories", label: { en: "Categories", ar: "الأقسام" }, icon: "▣" },
       { to: "/dashboard/brands", label: { en: "Brands", ar: "العلامات" }, icon: "★" },
+      { to: "/dashboard/data-quality", label: { en: "Data quality", ar: "جودة البيانات" }, icon: "◆" },
     ],
   },
   {

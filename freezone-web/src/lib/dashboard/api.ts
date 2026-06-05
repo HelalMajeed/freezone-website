@@ -648,3 +648,45 @@ export type TickerItemPayload = {
   iconSuffix?: string | null;
   sortOrder?: number;
 };
+
+// ─── Data quality ──────────────────────────────────────────────────────────
+
+export type DataQualityTab =
+  | "invalid_filters"
+  | "missing_specs"
+  | "missing_image"
+  | "missing_brand"
+  | "legacy_specs_only"
+  | "no_attributes";
+
+export type DataQualitySummary = {
+  productsMissingSpecs: number;
+  productsMissingImages: number;
+  productsInvalidFilters: number;
+  productsLegacySpecsOnly: number;
+  productsMissingBrand: number;
+  categoriesWithoutAttributes: number;
+};
+
+export type DataQualityIssue = {
+  productId: number;
+  nameEn: string;
+  nameAr: string;
+  categorySlug: string;
+  categoryName: string;
+  published: boolean;
+  issue: string;
+  detail?: string;
+  attributeKey?: string;
+  suggestedFix?: string;
+};
+
+export type DataQualityResponse = {
+  dbConnected: boolean;
+  tab: DataQualityTab | string;
+  page: number;
+  limit: number;
+  total: number;
+  items: DataQualityIssue[];
+  summary: Partial<DataQualitySummary>;
+};

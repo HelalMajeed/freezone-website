@@ -17,6 +17,7 @@ const DashboardMediaPage = lazy(() => import("@/pages/dashboard/MediaPage"));
 const DashboardSettingsPage = lazy(() => import("@/pages/dashboard/SettingsPage"));
 const DashboardDesignPage = lazy(() => import("@/pages/dashboard/DesignPage"));
 const DashboardCmsPage = lazy(() => import("@/pages/dashboard/CmsPage"));
+const DashboardDataQualityPage = lazy(() => import("@/pages/dashboard/DataQualityPage"));
 
 
 function L({ children }: { children: React.ReactNode }) {
@@ -67,6 +68,7 @@ export const freezoneDashboardRouteBranch = (
         <Route path="media" element={<L><DashboardMediaPage /></L>} />
         <Route path="design" element={<L><DashboardDesignPage /></L>} />
         <Route path="settings" element={<L><DashboardSettingsPage /></L>} />
+        <Route path="data-quality" element={<L><DashboardDataQualityPage /></L>} />
       </Route>
     </Route>
   </Route>
