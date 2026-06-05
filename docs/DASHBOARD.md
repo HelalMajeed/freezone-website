@@ -174,7 +174,7 @@ The old `/admin` UI has been deleted. `/admin` and `/admin/*` redirect to `/dash
 | Media library | ✅ Implemented | Grid, upload, search, edit metadata, delete |
 | Settings | ✅ Implemented | New `/api/admin/site-config` endpoint covers brand, contact, shipping, payment, promo, SEO, maintenance |
 | Design & theme | ✅ Implemented | `SiteConfig.themeTokens` editor with live preview |
-| CMS / Pages | ⚠ Coming soon | Hero slides, ticker, trust bar, home spotlights, promo banners, social links — the legacy `/api/admin/cms` PUT replaces all of these atomically; ships as a follow-up |
+| CMS / Pages | ✅ Implemented (partial) | Tabs for promo banners, social links, trust bar, home spotlights. New per-entity endpoints under `/api/admin/{promo-banners,social-links,trust-bar,home-spotlights}`. **Pending:** hero slides editor + showroom media gallery (each needs a dedicated complex sub-editor). |
 
 ---
 
