@@ -456,3 +456,35 @@ export type MediaUpdatePayload = {
   altEn?: string;
   kind?: MediaKind;
 };
+
+// ─── Site config (Settings) ────────────────────────────────────────────────
+
+export type SiteConfigPublic = {
+  storeNameEn: string;
+  storeNameAr: string;
+  taglineEn: string;
+  taglineAr: string;
+  logoUrl: string | null;
+  headerLogoHeightPx: number;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  addressEn: string;
+  addressAr: string;
+  zainCashWallet: string;
+  qiCardMerchantId: string;
+  freeDeliveryThreshold: number;
+  standardShippingFee: number;
+  promoBarTextEn: string;
+  promoBarTextAr: string;
+  promoBarEnabled: boolean;
+  maintenanceMode: boolean;
+  metaTitleEn: string | null;
+  metaTitleAr: string | null;
+  metaDescriptionEn: string | null;
+  metaDescriptionAr: string | null;
+  seoKeywords: string | null;
+  updatedAt: string;
+};
+
+export type SiteConfigUpdatePayload = Partial<Omit<SiteConfigPublic, "updatedAt">>;

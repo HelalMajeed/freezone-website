@@ -23,6 +23,7 @@ import * as adminCmsPageSections from "./app/api/admin/cms-page/sections/route";
 import * as adminCmsPageSectionsId from "./app/api/admin/cms-page/sections/[id]/route";
 import * as adminCoupons from "./app/api/admin/coupons/route";
 import * as adminCouponsId from "./app/api/admin/coupons/[id]/route";
+import * as adminSiteConfig from "./app/api/admin/site-config/route";
 import * as adminCatalogConfig from "./app/api/admin/catalog-config/route";
 import * as adminDashboard from "./app/api/admin/dashboard/route";
 import * as adminDashboardSmart from "./app/api/admin/dashboard/smart/route";
@@ -505,6 +506,13 @@ async function main() {
   });
   app.delete("/api/admin/coupons/:id", async (req, res) => {
     await sendWebResponse(res, await adminCouponsId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+
+  app.get("/api/admin/site-config", async (req, res) => {
+    await sendWebResponse(res, await adminSiteConfig.GET(webRequestFromExpress(req)));
+  });
+  app.patch("/api/admin/site-config", async (req, res) => {
+    await sendWebResponse(res, await adminSiteConfig.PATCH(webRequestFromExpress(req)));
   });
 
   app.get("/api/admin/media", async (req, res) => {

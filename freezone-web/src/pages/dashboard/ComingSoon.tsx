@@ -63,11 +63,3 @@ export const DesignPage = () => (
   />
 );
 
-export const SettingsPage = () => (
-  <ComingSoon
-    titleEn="Site settings"
-    titleAr="إعدادات الموقع"
-    descEn="Store name, taglines, contact details, shipping thresholds, payment wallets, navigation menu, SEO meta — single source of truth."
-    descAr="اسم المتجر، الشعار، بيانات التواصل، حدود الشحن، محافظ الدفع، قائمة التنقل، بيانات SEO — مصدر موحّد."
-  />
-);

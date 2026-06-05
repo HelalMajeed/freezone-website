@@ -14,15 +14,13 @@ const DashboardCategoriesPage = lazy(() => import("@/pages/dashboard/CategoriesP
 const DashboardOrdersPage = lazy(() => import("@/pages/dashboard/OrdersPage"));
 const DashboardCouponsPage = lazy(() => import("@/pages/dashboard/CouponsPage"));
 const DashboardMediaPage = lazy(() => import("@/pages/dashboard/MediaPage"));
+const DashboardSettingsPage = lazy(() => import("@/pages/dashboard/SettingsPage"));
 
 const CmsPage = lazy(() =>
   import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.CmsPage })),
 );
 const DesignPage = lazy(() =>
   import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.DesignPage })),
-);
-const SettingsPage = lazy(() =>
-  import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.SettingsPage })),
 );
 
 function L({ children }: { children: React.ReactNode }) {
@@ -72,7 +70,7 @@ export const freezoneDashboardRouteBranch = (
         <Route path="cms" element={<L><CmsPage /></L>} />
         <Route path="media" element={<L><DashboardMediaPage /></L>} />
         <Route path="design" element={<L><DesignPage /></L>} />
-        <Route path="settings" element={<L><SettingsPage /></L>} />
+        <Route path="settings" element={<L><DashboardSettingsPage /></L>} />
       </Route>
     </Route>
   </Route>
