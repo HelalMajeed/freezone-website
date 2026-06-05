@@ -353,3 +353,44 @@ export type CategoryCreatePayload = {
 };
 
 export type CategoryUpdatePayload = Partial<CategoryCreatePayload>;
+
+// ─── Orders ────────────────────────────────────────────────────────────────
+
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
+
+export type OrderLineItem = {
+  id: number;
+  productId: number | null;
+  nameSnapshot: string;
+  priceSnapshot: number;
+  qty: number;
+  imageSnapshot: string | null;
+};
+
+export type Order = {
+  id: number;
+  orderNumber: string;
+  status: OrderStatus;
+  fulfillment: string;
+  paymentMethod: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string | null;
+  addressLine: string;
+  city: string;
+  subtotal: number;
+  shipping: number;
+  total: number;
+  couponCode: string | null;
+  discountTotal: number;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  items: OrderLineItem[];
+};

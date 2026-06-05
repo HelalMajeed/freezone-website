@@ -45,15 +45,6 @@ export function ComingSoon({
 
 // ─── Pre-bound stubs for each not-yet-built route ────────────────────────────
 
-export const OrdersPage = () => (
-  <ComingSoon
-    titleEn="Orders"
-    titleAr="الطلبات"
-    descEn="Order list with filters by status / date / customer, full detail view, and lifecycle status updates."
-    descAr="قائمة الطلبات مع فلاتر حسب الحالة والتاريخ والزبون، تفاصيل كاملة، وتحديث حالة الطلب."
-  />
-);
-
 export const CouponsPage = () => (
   <ComingSoon
     titleEn="Coupons"
