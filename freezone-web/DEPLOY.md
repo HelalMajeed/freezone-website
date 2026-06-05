@@ -42,7 +42,7 @@ Dashboard media uploads (logos, product images, hero slides) write to `public/up
 
 1. Set `ADMIN_SESSION_SECRET` and (optionally) `ADMIN_PASSWORD` in `.env`. The dashboard signs in via `AdminUser` rows in Postgres; the password env is only used by `POST /api/admin/login` for unattended automation (e.g. nightly imports).
 2. From `freezone-api/`, seed the first super-admin: `npx tsx prisma/seed-dashboard-superadmin.ts` (override credentials with `DASHBOARD_SEED_EMAIL` / `DASHBOARD_SEED_PASSWORD` env vars).
-3. Open `/dashboard/login`. Available sections: Overview, Products, Categories, Brands, Orders, Coupons, Media library, Site settings, Design (theme tokens), Users / roles, Profile, Audit log.
+3. Open `/dashboard/login`. Available sections: Overview, Products, Categories, Brands, Data quality, Orders, Coupons, Homepage CMS (hero slides, ticker, promo banners, trust bar, showroom, social links), Media library, Site settings, Design (theme tokens), Users / roles, Profile, Audit log.
 4. The legacy `/admin` UI has been removed; any visit to `/admin` or `/admin/*` redirects to `/dashboard/login`.
 5. Uploads are stored under `public/uploads/` (ensure the folder is writable on your host).
 

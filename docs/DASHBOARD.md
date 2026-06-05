@@ -174,7 +174,8 @@ The old `/admin` UI has been deleted. `/admin` and `/admin/*` redirect to `/dash
 | Media library | ✅ Implemented | Grid, upload, search, edit metadata, delete |
 | Settings | ✅ Implemented | New `/api/admin/site-config` endpoint covers brand, contact, shipping, payment, promo, SEO, maintenance |
 | Design & theme | ✅ Implemented | `SiteConfig.themeTokens` editor with live preview |
-| CMS / Pages | ✅ Implemented (partial) | Tabs for promo banners, social links, trust bar, home spotlights. New per-entity endpoints under `/api/admin/{promo-banners,social-links,trust-bar,home-spotlights}`. **Pending:** hero slides editor + showroom media gallery (each needs a dedicated complex sub-editor). |
+| CMS / Pages | ✅ Implemented | 7 tabs: hero slides, ticker, promo banners, home spotlights, trust bar, showroom media, social links. Per-entity endpoints under `/api/admin/{hero-slides,ticker,promo-banners,home-spotlights,trust-bar,showroom-media,social-links}`. Hero slides use the structured-mode editor (badge / two-line title / description / two CTAs / image). Free-form hero layers and the homepage CMS draft/publish snapshot remain handled by the legacy `/api/admin/cms` PUT. |
+| Data quality | ✅ Implemented | Summary cards + paginated issue browser across 6 tabs (missing image / brand / specs, invalid filters, legacy specs only, categories without attributes). Reads `/api/admin/data-quality`. |
 
 ---
 
