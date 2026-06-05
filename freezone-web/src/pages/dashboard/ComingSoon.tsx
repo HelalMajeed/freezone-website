@@ -54,12 +54,3 @@ export const CmsPage = () => (
   />
 );
 
-export const DesignPage = () => (
-  <ComingSoon
-    titleEn="Design & theme"
-    titleAr="التصميم"
-    descEn="Theme tokens: colors, fonts, radius, header & promo bar styling, hero overlay, trust bar — with live preview."
-    descAr="رموز التصميم: الألوان، الخطوط، الزوايا، تنسيق الهيدر وشريط العروض، طبقة Hero، شريط الثقة — مع معاينة مباشرة."
-  />
-);
-

@@ -488,3 +488,27 @@ export type SiteConfigPublic = {
 };
 
 export type SiteConfigUpdatePayload = Partial<Omit<SiteConfigPublic, "updatedAt">>;
+
+// ─── Theme tokens (Design) ─────────────────────────────────────────────────
+
+export type ButtonStyleToken = "solid" | "outline" | "ghost";
+
+export type ThemeTokens = {
+  primary: string;
+  primaryForeground: string;
+  secondary: string;
+  secondaryForeground: string;
+  background: string;
+  surface: string;
+  backgroundImage: string;
+  cardRadius: string;
+  buttonRadius: string;
+  sectionSpacing: string;
+  shadowCard: string;
+  fontHeading: string;
+  fontBody: string;
+  headingScale: string;
+  buttonStyle: ButtonStyleToken;
+};
+
+export type ThemeResponse = { tokens: ThemeTokens };
