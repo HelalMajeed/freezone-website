@@ -12,17 +12,17 @@ export function ConfirmDialogHost() {
 
   useEffect(() => {
     if (!state.open) return;
+    const confirmMatch = state.opts.confirmMatch?.trim();
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") resolveConfirm(false);
       else if (e.key === "Enter") {
-        const need = state.open && state.opts.confirmMatch?.trim();
-        const ok = !need || matchInput.trim() === state.opts.confirmMatch?.trim();
+        const ok = !confirmMatch || matchInput.trim() === confirmMatch;
         if (ok) resolveConfirm(true);
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [state.open, matchInput]);
+  }, [state.open, state.opts.confirmMatch, matchInput]);
 
   if (!state.open) return null;
   const { opts } = state;
