@@ -512,3 +512,81 @@ export type ThemeTokens = {
 };
 
 export type ThemeResponse = { tokens: ThemeTokens };
+
+// ─── CMS entities ──────────────────────────────────────────────────────────
+
+export type PromoBanner = {
+  id: number;
+  titleEn: string;
+  titleAr: string;
+  subEn: string;
+  subAr: string;
+  imageUrl: string;
+  href: string;
+  catSlug: string | null;
+  sortOrder: number;
+  active: boolean;
+};
+
+export type PromoBannerPayload = {
+  titleEn: string;
+  titleAr?: string;
+  subEn?: string;
+  subAr?: string;
+  imageUrl: string;
+  href?: string;
+  catSlug?: string | null;
+  sortOrder?: number;
+  active?: boolean;
+};
+
+export type SocialLink = {
+  id: number;
+  platform: string;
+  url: string;
+  sortOrder: number;
+  showInTopBar: boolean;
+};
+
+export type SocialLinkPayload = {
+  platform: string;
+  url: string;
+  sortOrder?: number;
+  showInTopBar?: boolean;
+};
+
+export type TrustBarItem = {
+  id: number;
+  textEn: string;
+  textAr: string;
+  iconKey: string;
+  sortOrder: number;
+};
+
+export type TrustBarItemPayload = {
+  textEn: string;
+  textAr?: string;
+  iconKey?: string;
+  sortOrder?: number;
+};
+
+export type HomeSpotlight = {
+  id: number;
+  labelEn: string;
+  labelAr: string;
+  href: string;
+  imageUrl: string | null;
+  iconKey: string | null;
+  sortOrder: number;
+  active: boolean;
+};
+
+export type HomeSpotlightPayload = {
+  labelEn: string;
+  labelAr?: string;
+  href?: string;
+  imageUrl?: string | null;
+  iconKey?: string | null;
+  sortOrder?: number;
+  active?: boolean;
+};

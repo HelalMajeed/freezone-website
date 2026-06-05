@@ -24,6 +24,14 @@ import * as adminCmsPageSectionsId from "./app/api/admin/cms-page/sections/[id]/
 import * as adminCoupons from "./app/api/admin/coupons/route";
 import * as adminCouponsId from "./app/api/admin/coupons/[id]/route";
 import * as adminSiteConfig from "./app/api/admin/site-config/route";
+import * as adminPromoBanners from "./app/api/admin/promo-banners/route";
+import * as adminPromoBannersId from "./app/api/admin/promo-banners/[id]/route";
+import * as adminSocialLinks from "./app/api/admin/social-links/route";
+import * as adminSocialLinksId from "./app/api/admin/social-links/[id]/route";
+import * as adminTrustBar from "./app/api/admin/trust-bar/route";
+import * as adminTrustBarId from "./app/api/admin/trust-bar/[id]/route";
+import * as adminHomeSpotlights from "./app/api/admin/home-spotlights/route";
+import * as adminHomeSpotlightsId from "./app/api/admin/home-spotlights/[id]/route";
 import * as adminCatalogConfig from "./app/api/admin/catalog-config/route";
 import * as adminDashboard from "./app/api/admin/dashboard/route";
 import * as adminDashboardSmart from "./app/api/admin/dashboard/smart/route";
@@ -513,6 +521,58 @@ async function main() {
   });
   app.patch("/api/admin/site-config", async (req, res) => {
     await sendWebResponse(res, await adminSiteConfig.PATCH(webRequestFromExpress(req)));
+  });
+
+  app.get("/api/admin/promo-banners", async (req, res) => {
+    await sendWebResponse(res, await adminPromoBanners.GET(webRequestFromExpress(req)));
+  });
+  app.post("/api/admin/promo-banners", async (req, res) => {
+    await sendWebResponse(res, await adminPromoBanners.POST(webRequestFromExpress(req)));
+  });
+  app.patch("/api/admin/promo-banners/:id", async (req, res) => {
+    await sendWebResponse(res, await adminPromoBannersId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+  app.delete("/api/admin/promo-banners/:id", async (req, res) => {
+    await sendWebResponse(res, await adminPromoBannersId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+
+  app.get("/api/admin/social-links", async (req, res) => {
+    await sendWebResponse(res, await adminSocialLinks.GET(webRequestFromExpress(req)));
+  });
+  app.post("/api/admin/social-links", async (req, res) => {
+    await sendWebResponse(res, await adminSocialLinks.POST(webRequestFromExpress(req)));
+  });
+  app.patch("/api/admin/social-links/:id", async (req, res) => {
+    await sendWebResponse(res, await adminSocialLinksId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+  app.delete("/api/admin/social-links/:id", async (req, res) => {
+    await sendWebResponse(res, await adminSocialLinksId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+
+  app.get("/api/admin/trust-bar", async (req, res) => {
+    await sendWebResponse(res, await adminTrustBar.GET(webRequestFromExpress(req)));
+  });
+  app.post("/api/admin/trust-bar", async (req, res) => {
+    await sendWebResponse(res, await adminTrustBar.POST(webRequestFromExpress(req)));
+  });
+  app.patch("/api/admin/trust-bar/:id", async (req, res) => {
+    await sendWebResponse(res, await adminTrustBarId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+  app.delete("/api/admin/trust-bar/:id", async (req, res) => {
+    await sendWebResponse(res, await adminTrustBarId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+
+  app.get("/api/admin/home-spotlights", async (req, res) => {
+    await sendWebResponse(res, await adminHomeSpotlights.GET(webRequestFromExpress(req)));
+  });
+  app.post("/api/admin/home-spotlights", async (req, res) => {
+    await sendWebResponse(res, await adminHomeSpotlights.POST(webRequestFromExpress(req)));
+  });
+  app.patch("/api/admin/home-spotlights/:id", async (req, res) => {
+    await sendWebResponse(res, await adminHomeSpotlightsId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
+  });
+  app.delete("/api/admin/home-spotlights/:id", async (req, res) => {
+    await sendWebResponse(res, await adminHomeSpotlightsId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
   });
 
   app.get("/api/admin/media", async (req, res) => {
