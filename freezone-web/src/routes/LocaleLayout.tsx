@@ -98,9 +98,9 @@ export function LocaleLayout() {
         >
           <h1 style={{ fontSize: "1.75rem", marginBottom: 12 }}>الموقع تحت الصيانة</h1>
           <p style={{ maxWidth: 420, lineHeight: 1.6, color: "#94a3b8" }}>
-            نعمل على حلّات سريعة لتحسين تجربتكم. يمكن للمسؤولين الاستمرار في لوحة الإدارة على{" "}
-            <Link to="/admin" style={{ color: "#f87171" }}>
-              /admin
+            نعمل على تحسين تجربتكم. يمكن للمسؤولين الاستمرار في لوحة التحكم على{" "}
+            <Link to="/dashboard" style={{ color: "#f87171" }}>
+              /dashboard
             </Link>
             .
           </p>

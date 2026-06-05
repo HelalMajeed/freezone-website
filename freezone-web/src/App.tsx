@@ -1,7 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { LocaleLayout } from "@/routes/LocaleLayout";
-import { freezoneAdminRouteBranch } from "@/routes/admin-panel-routes";
 import { freezoneDashboardRouteBranch } from "@/routes/dashboard-routes";
 import { ConfirmDialogHost } from "@/components/ui/ConfirmDialog";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
@@ -95,8 +94,11 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 
-      {freezoneAdminRouteBranch}
       {freezoneDashboardRouteBranch}
+
+      {/* Legacy /admin paths now point at the official /dashboard panel. */}
+      <Route path="/admin" element={<Navigate to="/dashboard/login" replace />} />
+      <Route path="/admin/*" element={<Navigate to="/dashboard/login" replace />} />
 
       {/* Non-locale unknown paths bounce to the default locale root. */}
       <Route path="*" element={<Navigate to="/en" replace />} />

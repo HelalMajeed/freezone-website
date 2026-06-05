@@ -26,9 +26,6 @@ export default async function HomePage() {
           </li>
         ))}
       </ul>
-      <p>
-        <small>الأدمن يبقى على freezone-web (/admin) حتى اكتمال الهجرة.</small>
-      </p>
     </main>
   );
 }

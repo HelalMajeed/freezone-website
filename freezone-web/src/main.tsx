@@ -10,8 +10,6 @@ import "./theme/mobile-layout.css";
 import "./theme/mobile-repair.css";
 import "./theme/responsive-system.css";
 import "./globals.css";
-import "@/app/admin/admin-shell.css";
-import "@/app/admin/admin-dashboard-shell.css";
 import "@/app/dashboard/dashboard-shell.css";
 import "@/i18n/i18n";
 import { FREEZONE_FAVICON } from "@/lib/brand-assets";

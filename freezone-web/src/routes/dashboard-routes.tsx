@@ -44,12 +44,11 @@ function L({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Mount in `<Routes>` alongside the existing admin branch:
+ * Mount in `<Routes>`:
  *
  *   import { freezoneDashboardRouteBranch } from "@/routes/dashboard-routes";
  *   ...
  *   <Routes>
- *     {freezoneAdminRouteBranch}
  *     {freezoneDashboardRouteBranch}
  *     ...
  *   </Routes>

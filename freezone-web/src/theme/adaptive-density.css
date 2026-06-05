@@ -48,14 +48,6 @@
   --fz-filter-sidebar-w: clamp(240px, 22vw, 280px);
   --fz-filter-pad: var(--fz-panel-padding);
 
-  /* Admin (storefront inherits only when not in admin-shell) */
-  --fz-admin-page-pad: clamp(16px, 2.5vw, 32px);
-  --fz-admin-sidebar-w: clamp(220px, 18vw, 256px);
-  --fz-admin-sidebar-w-collapsed: 72px;
-  --fz-admin-topbar-h: clamp(52px, 6vw, 60px);
-  --fz-admin-table-pad: clamp(8px, 1vw, 12px);
-  --fz-admin-font-base: clamp(13px, 0.9vw, 14px);
-
   /* Bridge legacy spacing scale */
   --space-1: clamp(3px, 0.4vw, 4px);
   --space-2: clamp(6px, 0.8vw, 8px);
@@ -198,31 +190,3 @@ html[data-density="dense"] {
   max-width: 100%;
 }
 
-/* Admin density bridge */
-.admin-root,
-.admin-shell.dashboard-root {
-  --fz-sidebar-w: var(--fz-admin-sidebar-w);
-  --fz-sidebar-w-collapsed: var(--fz-admin-sidebar-w-collapsed);
-  --fz-topbar-h: var(--fz-admin-topbar-h);
-  font-size: var(--fz-admin-font-base);
-}
-
-.admin-shell.dashboard-root {
-  --fz-sidebar-w: var(--fz-admin-sidebar-w);
-  --fz-sidebar-w-collapsed: var(--fz-admin-sidebar-w-collapsed);
-  --fz-topbar-h: var(--fz-admin-topbar-h);
-}
-
-@media (max-width: 1024px) {
-  .admin-shell.dashboard-root {
-    --fz-admin-sidebar-w: min(280px, 88vw);
-    --fz-admin-page-pad: 16px;
-  }
-}
-
-@media (max-width: 640px) {
-  .admin-shell.dashboard-root {
-    --fz-admin-page-pad: 12px;
-    --fz-admin-topbar-h: 52px;
-  }
-}

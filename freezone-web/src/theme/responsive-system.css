@@ -11,7 +11,6 @@
   --fz-bp-lg: 1024px;
   --fz-bp-xl: 1280px;
   --fz-bp-2xl: 1440px;
-  --fz-bp-admin: 900px;
 }
 
 #root {
@@ -25,7 +24,7 @@ object[type="application/pdf"] {
   max-width: 100%;
 }
 
-/* ─── Scrollable tables (admin + dashboard + storefront) ─── */
+/* ─── Scrollable tables (dashboard + storefront) ─── */
 .fz-table-scroll {
   width: 100%;
   max-width: 100%;
@@ -41,20 +40,16 @@ object[type="application/pdf"] {
   border-collapse: collapse;
 }
 
-.admin-shell .dashboard-content table,
 .dashboard-root .dashboard-content table {
   min-width: 0;
 }
 
-.admin-shell .dashboard-content :has(> table),
 .dashboard-root .dashboard-content :has(> table),
-.admin-shell .dashboard-content :has(> .fz-table-scroll),
 .dashboard-root .dashboard-content :has(> .fz-table-scroll) {
   max-width: 100%;
 }
 
 @media (max-width: 768px) {
-  .admin-shell .dashboard-content :has(> table),
   .dashboard-root .dashboard-content :has(> table) {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -64,9 +59,6 @@ object[type="application/pdf"] {
 
 /* ─── Forms & touch targets ─── */
 @media (max-width: 768px) {
-  .admin-shell input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
-  .admin-shell select,
-  .admin-shell textarea,
   .dashboard-root input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
   .dashboard-root select,
   .dashboard-root textarea,
@@ -78,8 +70,6 @@ object[type="application/pdf"] {
     font-size: max(16px, var(--fz-font-base, 1rem));
   }
 
-  .admin-shell button,
-  .admin-shell .btn,
   .dashboard-root button,
   .fz-theme-root .btn-primary,
   .fz-theme-root .btn-red,
@@ -90,9 +80,6 @@ object[type="application/pdf"] {
 
 /* ─── Modals / dialogs ─── */
 @media (max-width: 768px) {
-  .admin-shell [role="dialog"],
-  .admin-shell [class*="modal"],
-  .admin-shell [class*="Modal"],
   .dashboard-root [role="dialog"],
   .fz-theme-root [role="dialog"],
   .fz-theme-root [class*="modalPanel"],
@@ -124,37 +111,17 @@ object[type="application/pdf"] {
   }
 }
 
-/* ─── Admin filter rows: wrap instead of overflow ─── */
+/* ─── Dashboard filter rows: wrap instead of overflow ─── */
 @media (max-width: 768px) {
-  .admin-shell .dashboard-content [style*="display: flex"][style*="gap"],
-  .admin-shell .dashboard-content [style*="display:flex"] {
+  .dashboard-root .dashboard-content [style*="display: flex"][style*="gap"],
+  .dashboard-root .dashboard-content [style*="display:flex"] {
     flex-wrap: wrap;
   }
 
-  .admin-shell .dashboard-content input[style*="min-width"],
-  .admin-shell .dashboard-content select[style*="min-width"] {
+  .dashboard-root .dashboard-content input[style*="min-width"],
+  .dashboard-root .dashboard-content select[style*="min-width"] {
     min-width: 0 !important;
     flex: 1 1 100% !important;
     max-width: 100% !important;
-  }
-}
-
-/* ─── Product editor workspace ─── */
-@media (max-width: 1024px) {
-  .admin-shell [class*="editorWorkspace"],
-  .admin-shell [class*="EditorWorkspace"] {
-    max-width: 100% !important;
-    width: 100% !important;
-    padding-inline: clamp(8px, 2vw, 16px) !important;
-  }
-}
-
-@media (max-width: 640px) {
-  .admin-shell [class*="editorTabs"],
-  .admin-shell [class*="tabsRow"] {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    flex-wrap: nowrap !important;
-    max-width: 100%;
   }
 }
