@@ -3,8 +3,8 @@
  * Breakpoints: 480 / 640 / 768 / 1024
  */
 
-.admin-shell.dashboard-root .dashboard-content img,
-.admin-shell.dashboard-root .dashboard-content video,
+.dashboard-root .dashboard-content img,
+.dashboard-root .dashboard-content video,
 .fz-theme-root img,
 .fz-theme-root video {
   max-width: 100%;
@@ -16,23 +16,23 @@
 .fz-theme-root li,
 .fz-theme-root td,
 .fz-theme-root th,
-.admin-shell.dashboard-root td,
-.admin-shell.dashboard-root th {
+.dashboard-root td,
+.dashboard-root th {
   overflow-wrap: anywhere;
 }
 
-/* Inline grids in admin/product editor pages */
+/* Inline grids in dashboard pages */
 @media (max-width: 640px) {
-  .admin-shell .dashboard-content [style*="grid-template-columns: 1fr 1fr"],
-  .admin-shell .dashboard-content [style*="grid-template-columns:1fr 1fr"] {
+  .dashboard-root .dashboard-content [style*="grid-template-columns: 1fr 1fr"],
+  .dashboard-root .dashboard-content [style*="grid-template-columns:1fr 1fr"] {
     display: flex !important;
     flex-direction: column !important;
     gap: 10px !important;
   }
 
-  .admin-shell .dashboard-content [style*="flex: 1 1 260px"],
-  .admin-shell .dashboard-content [style*="minWidth: 200"],
-  .admin-shell .dashboard-content [style*="min-width: 200"] {
+  .dashboard-root .dashboard-content [style*="flex: 1 1 260px"],
+  .dashboard-root .dashboard-content [style*="minWidth: 200"],
+  .dashboard-root .dashboard-content [style*="min-width: 200"] {
     flex: 1 1 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
@@ -42,21 +42,21 @@
 
 /* Dashboard page header actions */
 @media (max-width: 640px) {
-  .admin-shell .dashboard-page-header {
+  .dashboard-root .dashboard-page-header {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
     margin-bottom: 16px;
   }
 
-  .admin-shell .dashboard-page-header > div:last-child {
+  .dashboard-root .dashboard-page-header > div:last-child {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
   }
 
-  .admin-shell .dashboard-page-header .btn,
-  .admin-shell .dashboard-page-header a[class*="btn"] {
+  .dashboard-root .dashboard-page-header .btn,
+  .dashboard-root .dashboard-page-header a[class*="btn"] {
     flex: 1 1 auto;
     min-height: 40px;
   }
@@ -71,7 +71,6 @@
 
 /* Scroll wide tables without changing markup */
 @media (max-width: 768px) {
-  .admin-shell .dashboard-content :has(> table),
   .dashboard-root .dashboard-content :has(> table) {
     overflow-x: auto;
     max-width: 100%;
