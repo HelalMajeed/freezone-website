@@ -9,10 +9,8 @@ const DashboardUsersPage = lazy(() => import("@/pages/dashboard/UsersPage"));
 const DashboardProfilePage = lazy(() => import("@/pages/dashboard/ProfilePage"));
 const DashboardAuditPage = lazy(() => import("@/pages/dashboard/AuditPage"));
 const DashboardBrandsPage = lazy(() => import("@/pages/dashboard/BrandsPage"));
+const DashboardProductsPage = lazy(() => import("@/pages/dashboard/ProductsPage"));
 
-const ProductsPage = lazy(() =>
-  import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.ProductsPage })),
-);
 const CategoriesPage = lazy(() =>
   import("@/pages/dashboard/ComingSoon").then((m) => ({ default: m.CategoriesPage })),
 );
@@ -74,7 +72,7 @@ export const freezoneDashboardRouteBranch = (
         <Route path="audit" element={<L><DashboardAuditPage /></L>} />
         <Route path="users" element={<L><DashboardUsersPage /></L>} />
         <Route path="profile" element={<L><DashboardProfilePage /></L>} />
-        <Route path="products" element={<L><ProductsPage /></L>} />
+        <Route path="products" element={<L><DashboardProductsPage /></L>} />
         <Route path="categories" element={<L><CategoriesPage /></L>} />
         <Route path="brands" element={<L><DashboardBrandsPage /></L>} />
         <Route path="orders" element={<L><OrdersPage /></L>} />

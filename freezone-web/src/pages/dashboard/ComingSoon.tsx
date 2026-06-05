@@ -45,15 +45,6 @@ export function ComingSoon({
 
 // ─── Pre-bound stubs for each not-yet-built route ────────────────────────────
 
-export const ProductsPage = () => (
-  <ComingSoon
-    titleEn="Products"
-    titleAr="المنتجات"
-    descEn="Full product CRUD: variants, images, attribute values, secondary categories, specs editor, bulk actions, and stock control."
-    descAr="إدارة كاملة للمنتجات: المتغيرات، الصور، قيم السمات، الأقسام الثانوية، محرر المواصفات، وإدارة المخزون."
-  />
-);
-
 export const CategoriesPage = () => (
   <ComingSoon
     titleEn="Categories"
