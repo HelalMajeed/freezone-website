@@ -71,6 +71,44 @@ export const DASHBOARD_ERROR_MESSAGES: Record<string, BilingualMessage> = {
     ar: "عدد الصفوف في ملف CSV كبير جدًا (الحد 500).",
   },
 
+  // ── Team management (/api/dashboard/users) ───────────────────────────────
+  EMAIL_TAKEN: {
+    en: "This email is already in use.",
+    ar: "هذا البريد الإلكتروني مستخدم مسبقًا.",
+  },
+  INVALID_EMAIL: {
+    en: "Enter a valid email address.",
+    ar: "أدخل بريدًا إلكترونيًا صالحًا.",
+  },
+  MISSING_NAME: {
+    en: "The name is required.",
+    ar: "الاسم مطلوب.",
+  },
+  INVALID_ROLE: {
+    en: "That role is not valid.",
+    ar: "الصلاحية غير صالحة.",
+  },
+  PASSWORD_TOO_SHORT: {
+    en: "The password must be at least 8 characters.",
+    ar: "كلمة المرور يجب أن تكون ٨ أحرف على الأقل.",
+  },
+  LAST_SUPERADMIN: {
+    en: "You can't remove or demote the last active super admin.",
+    ar: "لا يمكن حذف أو تخفيض آخر مدير عام نشط.",
+  },
+  CANT_DELETE_SELF: {
+    en: "You can't delete your own account.",
+    ar: "لا يمكن حذف حسابك الحالي.",
+  },
+  USER_NOT_FOUND: {
+    en: "This team member was not found.",
+    ar: "هذا العضو غير موجود.",
+  },
+  NOTHING_TO_UPDATE: {
+    en: "There is nothing to update.",
+    ar: "لا يوجد ما يُحدَّث.",
+  },
+
   // ── Category templates ───────────────────────────────────────────────────
   UNKNOWN_TEMPLATE: {
     en: "Unknown category template.",

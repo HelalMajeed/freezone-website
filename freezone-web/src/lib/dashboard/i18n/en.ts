@@ -727,6 +727,31 @@ export const dashboardEn = {
   "notifPage.typeContactMessage": "Contact message",
   "notifPage.typeSystem": "System",
   "notifPage.markedRead": "{count} notification(s) marked as read",
+
+  // ── Brands ────────────────────────────────────────────────────────────────
+  "brands.deleteTitle": "Delete this brand?",
+  "brands.deleteMessage": "“{name}” will be deleted and products will be unlinked from it.",
+  "brands.deletedToast": "Brand deleted.",
+
+  // ── Team & roles ──────────────────────────────────────────────────────────
+  "users.deleteSelf": "You can't delete your own account.",
+  "users.deleteTitle": "Delete this member?",
+  "users.deleteMessage": "{name} will be permanently deleted. This can't be undone.",
+  "users.deletedToast": "Member deleted.",
+  "users.unlockedToast": "Account unlocked.",
+
+  // ── Coupons ───────────────────────────────────────────────────────────────
+  "coupons.deleteTitle": "Delete this coupon?",
+  "coupons.deleteMessage": "“{code}” will be permanently deleted. This can't be undone.",
+  "coupons.deletedToast": "Coupon deleted.",
+
+  // ── CMS homepage tabs ─────────────────────────────────────────────────────
+  "cms.deleteSlideTitle": "Delete this slide?",
+  "cms.deleteBannerTitle": "Delete this banner?",
+  "cms.deleteItemTitle": "Delete this item?",
+  "cms.deleteSocialTitle": "Delete the {platform} link?",
+  "cms.deleteMessage": "It will be removed from the storefront immediately.",
+  "cms.deletedToast": "Deleted.",
 } as const;
 
 export type DashboardMessageKey = keyof typeof dashboardEn;

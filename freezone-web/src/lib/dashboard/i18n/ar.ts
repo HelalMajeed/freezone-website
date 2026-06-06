@@ -718,4 +718,29 @@ export const dashboardAr: Record<DashboardMessageKey, string> = {
   "notifPage.typeContactMessage": "رسالة تواصل",
   "notifPage.typeSystem": "النظام",
   "notifPage.markedRead": "عُلّم {count} إشعار كمقروء",
+
+  // ── Brands ────────────────────────────────────────────────────────────────
+  "brands.deleteTitle": "حذف هذه العلامة؟",
+  "brands.deleteMessage": "سيُحذف «{name}» وسيُزال ربط المنتجات به.",
+  "brands.deletedToast": "تم حذف العلامة.",
+
+  // ── Team & roles ──────────────────────────────────────────────────────────
+  "users.deleteSelf": "لا يمكن حذف حسابك الحالي.",
+  "users.deleteTitle": "حذف هذا العضو؟",
+  "users.deleteMessage": "سيُحذف {name} نهائيًا. لا يمكن التراجع.",
+  "users.deletedToast": "تم حذف العضو.",
+  "users.unlockedToast": "تم فكّ قفل الحساب.",
+
+  // ── Coupons ───────────────────────────────────────────────────────────────
+  "coupons.deleteTitle": "حذف هذا الكوبون؟",
+  "coupons.deleteMessage": "سيُحذف الكوبون «{code}» نهائيًا. لا يمكن التراجع.",
+  "coupons.deletedToast": "تم حذف الكوبون.",
+
+  // ── CMS homepage tabs ─────────────────────────────────────────────────────
+  "cms.deleteSlideTitle": "حذف الشريحة؟",
+  "cms.deleteBannerTitle": "حذف البانر؟",
+  "cms.deleteItemTitle": "حذف العنصر؟",
+  "cms.deleteSocialTitle": "حذف رابط {platform}؟",
+  "cms.deleteMessage": "سيُزال من واجهة المتجر فورًا.",
+  "cms.deletedToast": "تم الحذف.",
 };
