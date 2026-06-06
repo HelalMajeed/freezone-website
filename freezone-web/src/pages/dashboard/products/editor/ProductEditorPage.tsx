@@ -252,7 +252,7 @@ export function DashboardProductEditorPage() {
         await productEditorApi.update(id!, patch);
       }
 
-      if (imagesChanged || isCreate) {
+      if (imagesChanged || (isCreate && imagesPayload.length > 0)) {
         try {
           await productEditorApi.replaceImages(id!, imagesPayload);
         } catch (imgErr) {

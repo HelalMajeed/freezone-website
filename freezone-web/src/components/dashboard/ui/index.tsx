@@ -7,7 +7,9 @@
  * mirror; directional chevrons mirror via CSS under `[dir="rtl"]`).
  */
 import {
+  cloneElement,
   createContext,
+  isValidElement,
   useCallback,
   useContext,
   useEffect,
@@ -101,14 +103,38 @@ export function Field({
   error?: string | null;
   /** Shows a required marker next to the label. */
   required?: boolean;
-  /** Connects the label to its control for a11y. */
+  /** Connects the label to its control for a11y. Optional: when omitted, the
+   *  field generates an id and wires it to a single child control. */
   htmlFor?: string;
   children: ReactNode;
 }) {
+  const generatedId = useId();
+  const descId = useId();
+  const describedBy = error || hint ? descId : undefined;
+
+  /** Programmatically tie the label, description/error and invalid state to the
+   *  control so it does not depend on the caller threading ids/props by hand. */
+  let control = children;
+  let controlId = htmlFor;
+  if (isValidElement(children)) {
+    const child = children as React.ReactElement<Record<string, unknown>>;
+    const existingId = typeof child.props.id === "string" ? child.props.id : undefined;
+    controlId = htmlFor ?? existingId ?? generatedId;
+    const mergedDescribedBy =
+      [child.props["aria-describedby"], describedBy].filter(Boolean).join(" ") || undefined;
+    control = cloneElement(child, {
+      id: existingId ?? controlId,
+      "aria-describedby": mergedDescribedBy,
+      "aria-invalid": child.props["aria-invalid"] ?? (error ? true : undefined),
+    });
+  } else {
+    controlId = htmlFor ?? generatedId;
+  }
+
   return (
     <div className={cx(s.field, error && s.fieldInvalid)}>
       {label && (
-        <label className={s.label} htmlFor={htmlFor}>
+        <label className={s.label} htmlFor={controlId}>
           {label}
           {required && (
             <span className={s.requiredMark} aria-hidden>
@@ -117,13 +143,15 @@ export function Field({
           )}
         </label>
       )}
-      {children}
+      {control}
       {error ? (
-        <div className={s.errorText} role="alert">
+        <div id={descId} className={s.errorText} role="alert">
           {error}
         </div>
       ) : hint ? (
-        <div className={s.helpText}>{hint}</div>
+        <div id={descId} className={s.helpText}>
+          {hint}
+        </div>
       ) : null}
     </div>
   );

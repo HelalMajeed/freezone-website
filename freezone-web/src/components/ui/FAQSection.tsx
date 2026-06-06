@@ -11,6 +11,18 @@ import { MotionReveal } from "@/components/motion/MotionReveal";
 
 type FAQItem = { q: string; a: string };
 
+/** Escape HTML, then allow only newline → <br/>. CMS-controlled title text
+ *  must never be injected as raw markup (stored XSS). */
+function titleToSafeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/\n/g, "<br/>");
+}
+
 export function FAQSection({
   mode = "i18n",
   items: customItems,
@@ -105,11 +117,7 @@ export function FAQSection({
                 <h2
                   className={styles.title}
                   dangerouslySetInnerHTML={{
-                    __html: titleOv
-                      ? titleOv.includes("<")
-                        ? titleOv
-                        : titleOv.replace(/\n/g, "<br/>")
-                      : String(t("title")),
+                    __html: titleOv ? titleToSafeHtml(titleOv) : String(t("title")),
                   }}
                 />
                 <p className={styles.description}>{descOv || t("description")}</p>

@@ -192,21 +192,27 @@ export function DashboardNotificationsPage() {
                 const body =
                   lang === "ar" ? item.bodyAr || item.bodyEn : item.bodyEn || item.bodyAr;
                 return (
-                  <button
+                  <div
                     key={item.id}
-                    type="button"
-                    role="listitem"
+                    role="button"
+                    tabIndex={0}
                     className={[s.item, item.readAt === null && s.itemUnread]
                       .filter(Boolean)
                       .join(" ")}
                     onClick={() => void onItemClick(item)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        void onItemClick(item);
+                      }
+                    }}
                   >
                     <span className={s.itemIcon}>{typeIcon(item.type)}</span>
-                    <span className={s.itemBody}>
+                    <div className={s.itemBody}>
                       <span className={s.itemTitle}>{title}</span>
                       {body && <div className={s.itemText}>{body}</div>}
                       <div className={s.itemTime}>{formatDateTime(item.createdAt, lang)}</div>
-                    </span>
+                    </div>
                     <span className={s.itemEnd}>
                       {item.readAt === null && (
                         <Button
@@ -221,7 +227,7 @@ export function DashboardNotificationsPage() {
                         </Button>
                       )}
                     </span>
-                  </button>
+                  </div>
                 );
               })}
             </div>
