@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   dashboardApi,
-  DashboardApiError,
   uploadDashboardFile,
   type HomeSpotlight,
   type HomeSpotlightPayload,
@@ -14,7 +13,10 @@ import {
   Input,
   Modal,
   Table,
+  useConfirm,
+  useToast,
 } from "@/components/dashboard/ui";
+import { useDashboardLocale } from "@/lib/dashboard/i18n";
 
 type Lang = "ar" | "en";
 
@@ -46,6 +48,9 @@ function resolveImage(url: string | null | undefined): string | undefined {
 }
 
 export function HomeSpotlightsTab({ lang }: { lang: Lang }) {
+  const { t, formatError } = useDashboardLocale();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [rows, setRows] = useState<HomeSpotlight[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -65,9 +70,10 @@ export function HomeSpotlightsTab({ lang }: { lang: Lang }) {
         setRows(d);
         setErr(null);
       })
-      .catch((e) => setErr(e instanceof DashboardApiError ? e.code : (e as Error).message))
+      .catch((e: unknown) => setErr(formatError(e)))
       .finally(() => setLoading(false));
   };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   useEffect(load, []);
 
   const openCreate = () => {
@@ -104,7 +110,7 @@ export function HomeSpotlightsTab({ lang }: { lang: Lang }) {
       });
       setForm((f) => ({ ...f, imageUrl: url }));
     } catch (e) {
-      setErr(e instanceof DashboardApiError ? e.code : "UPLOAD_FAILED");
+      setErr(formatError(e));
     } finally {
       setUploading(false);
     }
@@ -135,19 +141,26 @@ export function HomeSpotlightsTab({ lang }: { lang: Lang }) {
       setModalOpen(false);
       load();
     } catch (e) {
-      setErr(e instanceof DashboardApiError ? e.code : "SAVE_FAILED");
+      setErr(formatError(e));
     } finally {
       setSaving(false);
     }
   };
 
   const onDelete = async (r: HomeSpotlight) => {
-    if (!window.confirm(lang === "ar" ? "حذف العنصر؟" : "Delete this item?")) return;
+    const sure = await confirm({
+      title: t("cms.deleteItemTitle"),
+      message: t("cms.deleteMessage"),
+      confirmLabel: t("confirm.delete"),
+      tone: "danger",
+    });
+    if (!sure) return;
     try {
       await dashboardApi.delete(`/api/admin/home-spotlights/${r.id}`);
+      toast.success(t("cms.deletedToast"));
       load();
     } catch (e) {
-      setErr(e instanceof DashboardApiError ? e.code : (e as Error).message);
+      toast.error(formatError(e));
     }
   };
 

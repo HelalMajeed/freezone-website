@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   dashboardApi,
-  DashboardApiError,
   type TickerItem,
   type TickerItemPayload,
 } from "@/lib/dashboard/api";
@@ -11,7 +10,10 @@ import {
   Input,
   Modal,
   Table,
+  useConfirm,
+  useToast,
 } from "@/components/dashboard/ui";
+import { useDashboardLocale } from "@/lib/dashboard/i18n";
 
 type Lang = "ar" | "en";
 
@@ -26,6 +28,9 @@ type FormState = {
 const EMPTY: FormState = { textEn: "", textAr: "", iconSuffix: "", sortOrder: "0" };
 
 export function TickerTab({ lang }: { lang: Lang }) {
+  const { t, formatError } = useDashboardLocale();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [rows, setRows] = useState<TickerItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -43,9 +48,10 @@ export function TickerTab({ lang }: { lang: Lang }) {
         setRows(d);
         setErr(null);
       })
-      .catch((e) => setErr(e instanceof DashboardApiError ? e.code : (e as Error).message))
+      .catch((e: unknown) => setErr(formatError(e)))
       .finally(() => setLoading(false));
   };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   useEffect(load, []);
 
   const openCreate = () => {
@@ -87,19 +93,26 @@ export function TickerTab({ lang }: { lang: Lang }) {
       setModalOpen(false);
       load();
     } catch (e) {
-      setErr(e instanceof DashboardApiError ? e.code : "SAVE_FAILED");
+      setErr(formatError(e));
     } finally {
       setSaving(false);
     }
   };
 
   const onDelete = async (r: TickerItem) => {
-    if (!window.confirm(lang === "ar" ? "حذف العنصر؟" : "Delete this item?")) return;
+    const sure = await confirm({
+      title: t("cms.deleteItemTitle"),
+      message: t("cms.deleteMessage"),
+      confirmLabel: t("confirm.delete"),
+      tone: "danger",
+    });
+    if (!sure) return;
     try {
       await dashboardApi.delete(`/api/admin/ticker/${r.id}`);
+      toast.success(t("cms.deletedToast"));
       load();
     } catch (e) {
-      setErr(e instanceof DashboardApiError ? e.code : (e as Error).message);
+      toast.error(formatError(e));
     }
   };
 
