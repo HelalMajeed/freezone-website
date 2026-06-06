@@ -1,5 +1,6 @@
 import type { Product } from "@/lib/data";
 import { publicSiteBaseUrl } from "./Seo";
+import { safeJsonLd } from "./jsonLd";
 
 /** schema.org Product structured data for the product detail page. */
 export function ProductJsonLd({ product, locale }: { product: Product; locale: "en" | "ar" }) {
@@ -37,5 +38,5 @@ export function ProductJsonLd({ product, locale }: { product: Product; locale: "
       : {}),
   };
 
-  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />;
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(data) }} />;
 }

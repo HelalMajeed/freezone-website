@@ -1,5 +1,6 @@
 import { FREEZONE_Z_LOGO } from "@/lib/brand-assets";
 import type { PublicSite } from "@/lib/site-public";
+import { safeJsonLd } from "./jsonLd";
 
 /** Organization + WebSite structured data for SEO */
 export function StoreJsonLd({ site, locale, baseUrl }: { site: PublicSite; locale: string; baseUrl: string }) {
@@ -44,6 +45,6 @@ export function StoreJsonLd({ site, locale, baseUrl }: { site: PublicSite; local
   };
 
   return (
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(data) }} />
   );
 }
