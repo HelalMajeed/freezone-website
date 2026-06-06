@@ -197,17 +197,24 @@ export async function POST(req: Request) {
       }
 
       /** Append-only inventory ledger: one row per line, negative delta.
-       *  qtyBefore/qtyAfter are best-effort (from the snapshot read above). */
+       *  Re-read the post-decrement quantities so qtyAfter reflects the true
+       *  committed value (qtyBefore = qtyAfter + qty), keeping ledger balances
+       *  exact rather than relying on the pre-transaction snapshot. */
+      const afterRows = await tx.product.findMany({
+        where: { id: { in: priced.map((l) => l.productId) } },
+        select: { id: true, quantity: true },
+      });
+      const afterById = new Map(afterRows.map((r) => [r.id, r.quantity]));
       await tx.stockMovement.createMany({
         data: priced.map((line) => {
-          const before = productById.get(line.productId)?.quantity ?? null;
+          const after = afterById.get(line.productId) ?? null;
           return {
             productId: line.productId,
             delta: -line.qty,
             reason: "order_placed",
             orderId: order.id,
-            qtyBefore: before,
-            qtyAfter: before == null ? null : before - line.qty,
+            qtyBefore: after == null ? null : after + line.qty,
+            qtyAfter: after,
           };
         }),
       });

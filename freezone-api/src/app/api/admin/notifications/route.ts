@@ -134,9 +134,8 @@ export async function GET(req: Request): Promise<Response> {
 }
 
 async function countCategoriesWithoutAttributes(): Promise<number> {
-  const cats = await prisma.category.findMany({
-    where: { active: true },
-    select: { id: true, _count: { select: { categoryAttributes: true } } },
+  /** Single indexed aggregate — no need to load every category into memory. */
+  return prisma.category.count({
+    where: { active: true, categoryAttributes: { none: {} } },
   });
-  return cats.filter((c) => c._count.categoryAttributes === 0).length;
 }

@@ -10,7 +10,33 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     return Response.json({ error: "bad id" }, { status: 400 });
   }
   const locale = new URL(req.url).searchParams.get("locale") === "ar" ? "ar" : "en";
-  const product = await getProductById(id, locale);
+  /** The two product reads are independent — run them concurrently. */
+  const [product, row] = await Promise.all([
+    getProductById(id, locale),
+    isDatabaseConfigured()
+      ? prisma.product.findFirst({
+          where: { id, published: true, deletedAt: null },
+          select: {
+            categoryId: true,
+            specs: true,
+            attributeValues: true,
+            variants: {
+              where: { active: true },
+              orderBy: { sortOrder: "asc" },
+              select: {
+                id: true,
+                sku: true,
+                labelEn: true,
+                labelAr: true,
+                priceOverride: true,
+                quantity: true,
+                active: true,
+              },
+            },
+          },
+        })
+      : Promise.resolve(null),
+  ]);
   if (!product) return Response.json(null, { status: 404 });
 
   if (!isDatabaseConfigured()) {
@@ -25,33 +51,16 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     });
   }
 
-  const row = await prisma.product.findFirst({
-    where: { id, published: true, deletedAt: null },
-    select: {
-      categoryId: true,
-      specs: true,
-      attributeValues: true,
-      variants: {
-        where: { active: true },
-        orderBy: { sortOrder: "asc" },
-        select: {
-          id: true,
-          sku: true,
-          labelEn: true,
-          labelAr: true,
-          priceOverride: true,
-          quantity: true,
-          active: true,
-        },
-      },
-    },
-  });
   if (!row) return Response.json(null, { status: 404 });
 
-  const schema = await loadCategoryAttributeSchema(
-    (args) => prisma.categoryAttribute.findMany(args),
-    row.categoryId,
-  );
+  /** Schema + related both only need row.categoryId — run them concurrently. */
+  const [schema, related] = await Promise.all([
+    loadCategoryAttributeSchema(
+      (args) => prisma.categoryAttribute.findMany(args),
+      row.categoryId,
+    ),
+    loadRelatedProducts(id, row.categoryId, locale),
+  ]);
 
   const variants: ProductVariantDto[] = (row.variants ?? []).map((v) => ({
     id: v.id,
@@ -71,7 +80,6 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     row.specs,
     product.cat,
   );
-  const related = await loadRelatedProducts(id, row.categoryId, locale);
   return Response.json({ ...payload, related });
 }
 

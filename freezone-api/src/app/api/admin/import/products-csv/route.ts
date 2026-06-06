@@ -67,40 +67,46 @@ export async function POST(req: Request): Promise<Response> {
       }
 
       try {
-        const product = await prisma.product.create({
-          data: {
-            categoryId: mapped.categoryId,
-            sku: mapped.sku,
-            nameAr: mapped.nameAr,
-            nameEn: mapped.nameEn,
-            brand: mapped.brand,
-            price: mapped.price,
-            quantity: mapped.quantity,
-            inStock: mapped.quantity > 0,
-            descAr: mapped.descAr ?? "",
-            descEn: mapped.descEn ?? "",
-            catalogStatus: "DRAFT",
-            published: false,
-            importBatchId: batch.id,
-            createdById,
-          },
-        });
-        /** Inventory ledger: opening stock from the CSV import (contract (k)). */
-        if (product.quantity > 0) {
-          const actor = actorForAudit(mutate.actor);
-          await prisma.stockMovement.create({
+        /** Create the product and its opening-stock ledger row atomically so a
+         *  ledger failure rolls back the product (no orphan rows on a failed
+         *  per-row result). */
+        const product = await prisma.$transaction(async (tx) => {
+          const created = await tx.product.create({
             data: {
-              productId: product.id,
-              delta: product.quantity,
-              reason: "import",
-              qtyBefore: 0,
-              qtyAfter: product.quantity,
-              userId: actor.userId,
-              userEmail: actor.userEmail,
-              note: `importBatch:${batch.id}`,
+              categoryId: mapped.categoryId,
+              sku: mapped.sku,
+              nameAr: mapped.nameAr,
+              nameEn: mapped.nameEn,
+              brand: mapped.brand,
+              price: mapped.price,
+              quantity: mapped.quantity,
+              inStock: mapped.quantity > 0,
+              descAr: mapped.descAr ?? "",
+              descEn: mapped.descEn ?? "",
+              catalogStatus: "DRAFT",
+              published: false,
+              importBatchId: batch.id,
+              createdById,
             },
           });
-        }
+          /** Inventory ledger: opening stock from the CSV import (contract (k)). */
+          if (created.quantity > 0) {
+            const actor = actorForAudit(mutate.actor);
+            await tx.stockMovement.create({
+              data: {
+                productId: created.id,
+                delta: created.quantity,
+                reason: "import",
+                qtyBefore: 0,
+                qtyAfter: created.quantity,
+                userId: actor.userId,
+                userEmail: actor.userEmail,
+                note: `importBatch:${batch.id}`,
+              },
+            });
+          }
+          return created;
+        });
         succeeded++;
         results.push({ row: i + 2, ok: true, productId: product.id });
       } catch (e) {

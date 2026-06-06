@@ -121,9 +121,13 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
   const productId = parseInt((await ctx.params).id, 10);
   if (!Number.isFinite(productId)) return Response.json({ error: "bad id" }, { status: 400 });
 
-  const body = (await req.json().catch(() => null)) as { urls?: unknown } | null;
-  const images = parseAppendImages(body);
-  if (!images) return Response.json({ error: "urls array required" }, { status: 400 });
+  const body = (await req.json().catch(() => null)) as { urls?: unknown; images?: unknown } | null;
+  /** PUT replaces the whole gallery, so a present-but-empty array means "clear
+   *  all images". Only reject when neither `images` nor `urls` is present. */
+  if (!body || (body.images === undefined && body.urls === undefined)) {
+    return Response.json({ error: "urls or images array required" }, { status: 400 });
+  }
+  const images = parseAppendImages(body) ?? [];
   for (const img of images) {
     if (isExternalHttpUrl(img.url)) {
       return Response.json({ error: "استخدم استيراد الصورة للروابط الخارجية." }, { status: 400 });

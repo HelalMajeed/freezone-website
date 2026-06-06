@@ -30,7 +30,7 @@ export async function GET(req: Request) {
   const { page, pageSize } = parsePagination(searchParams);
 
   try {
-    const [rows, total, sums, nonCancelled] = await Promise.all([
+    const [rows, total, nonCancelled] = await Promise.all([
       prisma.order.findMany({
         where,
         orderBy,
@@ -39,13 +39,11 @@ export async function GET(req: Request) {
         include: { items: { select: { qty: true } } },
       }),
       prisma.order.count({ where }),
-      prisma.order.aggregate({
-        where,
-        _sum: { discountTotal: true, shipping: true },
-      }),
+      /** All money metrics use the same non-cancelled population so
+       *  revenue/aov and discount/shipping never mix cancelled with active. */
       prisma.order.aggregate({
         where: { AND: [where, { status: { not: "cancelled" } }] },
-        _sum: { total: true },
+        _sum: { total: true, discountTotal: true, shipping: true },
         _count: { _all: true },
       }),
     ]);
@@ -79,8 +77,8 @@ export async function GET(req: Request) {
       totals: {
         count: total,
         revenue,
-        discount: sums._sum.discountTotal ?? 0,
-        shipping: sums._sum.shipping ?? 0,
+        discount: nonCancelled._sum.discountTotal ?? 0,
+        shipping: nonCancelled._sum.shipping ?? 0,
         aov: nonCancelledCount > 0 ? Math.floor(revenue / nonCancelledCount) : 0,
       },
     });

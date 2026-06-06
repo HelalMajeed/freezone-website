@@ -1,4 +1,4 @@
-import type { ProductCatalogStatus } from "@prisma/client";
+import { Prisma, type ProductCatalogStatus } from "@prisma/client";
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { auditContext, guardAdminMutate } from "@/lib/admin-route-guard";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
@@ -239,31 +239,19 @@ export async function POST(req: Request) {
       }
       case "price_percent": {
         const pct = typeof body?.percent === "number" ? body.percent : 0;
-        /** Single transaction — a mid-batch failure must not leave half the prices changed. */
-        affected = await prisma.$transaction(async (tx) => {
-          const rows = await tx.product.findMany({ where: { id: { in: ids } }, select: { id: true, price: true } });
-          let count = 0;
-          for (const row of rows) {
-            const next = Math.max(0, Math.round(row.price * (1 + pct / 100)));
-            await tx.product.update({ where: { id: row.id }, data: { price: next } });
-            count++;
-          }
-          return count;
-        });
+        /** Single set-based UPDATE — atomic, one round trip, short lock hold. */
+        affected = await prisma.$executeRaw`
+          UPDATE "Product"
+          SET price = GREATEST(0, ROUND(price * ${1 + pct / 100}))
+          WHERE id IN (${Prisma.join(ids)})`;
         break;
       }
       case "price_fixed_delta": {
         const delta = typeof body?.delta === "number" ? body.delta : 0;
-        affected = await prisma.$transaction(async (tx) => {
-          const rows = await tx.product.findMany({ where: { id: { in: ids } }, select: { id: true, price: true } });
-          let count = 0;
-          for (const row of rows) {
-            const next = Math.max(0, row.price + delta);
-            await tx.product.update({ where: { id: row.id }, data: { price: next } });
-            count++;
-          }
-          return count;
-        });
+        affected = await prisma.$executeRaw`
+          UPDATE "Product"
+          SET price = GREATEST(0, price + ${delta})
+          WHERE id IN (${Prisma.join(ids)})`;
         break;
       }
       case "price_set": {
