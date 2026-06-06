@@ -1,7 +1,8 @@
 import type { AdminRole } from "@prisma/client";
 import { getCurrentDashboardUser, type CurrentUser } from "./dashboard-auth";
 import { isAdminDirectLoginEnabled } from "./admin-direct-login";
-import { isAdminAuthenticatedFromRequest } from "./admin-session";
+import { isAdminAuthenticatedFromRequest, isLegacyAdminCookieEnabled } from "./admin-session";
+import { internalActorFromRequest } from "./internal-actor";
 import { clientIpFromRequest, clientUserAgentFromRequest } from "./dashboard-guard";
 
 export type { AdminRole };
@@ -18,16 +19,25 @@ export function adminRoleAtLeast(role: AdminRole, minRole: AdminRole): boolean {
 
 export type AdminActor =
   | { kind: "dashboard"; user: CurrentUser }
-  | { kind: "legacy"; role: "SUPER_ADMIN"; email: "legacy@admin" };
+  | { kind: "legacy"; role: "SUPER_ADMIN"; email: "legacy@admin" }
+  /** In-process loop-back caller (importer) — see src/lib/internal-actor.ts. */
+  | { kind: "system"; role: "SUPER_ADMIN"; email: string };
 
 export type AdminAuthResult =
   | { ok: true; actor: AdminActor }
   | { ok: false; response: Response };
 
+/** Legacy `fz_admin_session` cookie — only honored behind LEGACY_ADMIN_COOKIE=true. */
+function legacyCookieAccepted(req: Request): boolean {
+  return isLegacyAdminCookieEnabled() && isAdminAuthenticatedFromRequest(req);
+}
+
 export async function getAdminActorFromRequest(req: Request): Promise<AdminActor | null> {
+  const internal = internalActorFromRequest(req);
+  if (internal) return { kind: "system", role: "SUPER_ADMIN", email: internal };
   const user = await getCurrentDashboardUser(req);
   if (user) return { kind: "dashboard", user };
-  if (isAdminAuthenticatedFromRequest(req)) {
+  if (legacyCookieAccepted(req)) {
     return { kind: "legacy", role: "SUPER_ADMIN", email: "legacy@admin" };
   }
   return null;
@@ -46,7 +56,7 @@ export async function requireAdminRead(req: Request): Promise<AdminAuthResult> {
 export async function requireSuperAdminRead(req: Request): Promise<AdminAuthResult> {
   const read = await requireAdminRead(req);
   if (!read.ok) return read;
-  if (read.actor.kind === "legacy") return read;
+  if (read.actor.kind === "legacy" || read.actor.kind === "system") return read;
   if (read.actor.user.role !== "SUPER_ADMIN") {
     return { ok: false, response: jsonAdminError(403, "صلاحية مدير عام مطلوبة", "FORBIDDEN") };
   }
@@ -61,9 +71,13 @@ export async function requireAdminRole(
   req: Request,
   roles: AdminRole[],
 ): Promise<AdminAuthResult> {
+  const internal = internalActorFromRequest(req);
+  if (internal) {
+    return { ok: true, actor: { kind: "system", role: "SUPER_ADMIN", email: internal } };
+  }
   const user = await getCurrentDashboardUser(req);
   if (!user) {
-    if (isAdminAuthenticatedFromRequest(req)) {
+    if (legacyCookieAccepted(req)) {
       if (isAdminDirectLoginEnabled()) {
         return { ok: true, actor: { kind: "legacy", role: "SUPER_ADMIN", email: "legacy@admin" } };
       }

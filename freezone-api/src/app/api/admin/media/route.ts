@@ -1,12 +1,11 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { requireAdminRead } from "@/lib/admin-auth";
-import { guardAdminMutate } from "@/lib/admin-route-guard";
+import { auditContext, guardAdminMutate, guardAdminRead } from "@/lib/admin-route-guard";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 
 export async function GET(req: Request) {
-  const read = await requireAdminRead(req);
+  const read = await guardAdminRead(req);
   if (!read.ok) return read.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
@@ -70,7 +69,10 @@ export async function POST(req: Request) {
       },
     });
     revalidateStorefrontData();
-    await logAdminAction("media.create", "MediaAsset", { entityId: row.id });
+    await logAdminAction("media.create", "MediaAsset", {
+      entityId: row.id,
+      ...auditContext(mutate.actor, req),
+    });
     return Response.json(row);
   } catch (e) {
     return handleRouteDbError(e);

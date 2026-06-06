@@ -1,5 +1,5 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { auditContext, guardAdminMutate } from "@/lib/admin-route-guard";
 import { importExternalImage } from "@/lib/import-external-image";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { logAdminAction } from "@/lib/admin-audit";
@@ -18,9 +18,8 @@ const USER_ERRORS: Record<string, string> = {
 };
 
 export async function POST(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const g = await guardAdminMutate(req);
+  if (!g.ok) return g.response;
 
   const body = (await req.json().catch(() => null)) as {
     url?: string;
@@ -64,6 +63,7 @@ export async function POST(req: Request) {
     await logAdminAction("media.importImage", "Product", {
       entityId: productId,
       payload: { url: imported.url, source: imported.originalSourceUrl },
+      ...auditContext(g.actor, req),
     });
 
     return Response.json({

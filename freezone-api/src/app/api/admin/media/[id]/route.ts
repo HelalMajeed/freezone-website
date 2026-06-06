@@ -1,13 +1,12 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { auditContext, guardAdminMutate } from "@/lib/admin-route-guard";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 
 export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const g = await guardAdminMutate(req);
+  if (!g.ok) return g.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -17,7 +16,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   }
   try {
     await prisma.mediaAsset.delete({ where: { id } });
-    await logAdminAction("media.delete", "MediaAsset", { entityId: id });
+    await logAdminAction("media.delete", "MediaAsset", { entityId: id, ...auditContext(g.actor, req) });
   } catch (e) {
     try {
       return handleRouteDbError(e);
@@ -30,9 +29,8 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const g = await guardAdminMutate(req);
+  if (!g.ok) return g.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -58,7 +56,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       },
     });
     revalidateStorefrontData();
-    await logAdminAction("media.update", "MediaAsset", { entityId: id });
+    await logAdminAction("media.update", "MediaAsset", { entityId: id, ...auditContext(g.actor, req) });
     return Response.json({ ok: true });
   } catch (e) {
     return handleRouteDbError(e);

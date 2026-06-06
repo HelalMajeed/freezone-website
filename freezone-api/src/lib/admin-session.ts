@@ -2,6 +2,16 @@ import { createHmac, timingSafeEqual, randomBytes } from "crypto";
 
 const COOKIE_NAME = "fz_admin_session";
 
+/**
+ * Transition flag: the legacy HMAC `fz_admin_session` cookie is only accepted
+ * by the admin route guards when LEGACY_ADMIN_COOKIE=true. Default OFF — the
+ * dashboard session (`fz_dashboard_session`, DB-backed, revocable, with real
+ * actor attribution) is the supported auth. See .env.example.
+ */
+export function isLegacyAdminCookieEnabled(): boolean {
+  return process.env.LEGACY_ADMIN_COOKIE === "true";
+}
+
 function getSecret(): string {
   const secret = process.env.ADMIN_SESSION_SECRET?.trim();
   if (secret) return secret;

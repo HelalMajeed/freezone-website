@@ -1,6 +1,6 @@
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { auditContext, guardAdminMutate } from "@/lib/admin-route-guard";
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { logAdminAction } from "@/lib/admin-audit";
@@ -75,9 +75,9 @@ function detectExt(buf: Buffer): string | null {
 }
 
 export async function POST(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const g = await guardAdminMutate(req);
+  if (!g.ok) return g.response;
+  const audit = auditContext(g.actor, req);
   const form = await req.formData();
   const file = form.get("file");
   if (!file || !(file instanceof Blob)) {
@@ -125,6 +125,9 @@ export async function POST(req: Request) {
     }
   }
 
-  await logAdminAction("upload.file", "Upload", { payload: { url, registerLibrary: register } });
+  await logAdminAction("upload.file", "Upload", {
+    payload: { url, registerLibrary: register },
+    ...audit,
+  });
   return Response.json({ url });
 }

@@ -13,7 +13,7 @@
 import { prisma } from "@/lib/prisma";
 import { importExternalImage } from "@/lib/import-external-image";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
-import { signAdminSession } from "@/lib/admin-session";
+import { internalActorHeaders } from "@/lib/internal-actor";
 import * as adminProductsRoute from "@/app/api/admin/products/route";
 import { fetchProductUrls, fetchShopifyProduct, handleFromUrl } from "./sitemap";
 import {
@@ -252,9 +252,9 @@ async function loadSitemap(baseUrl: string): Promise<string[]> {
 /**
  * Loop-back call into the public admin route so spec validation, EAV
  * persistence, audit logging, and storefront revalidation all run exactly
- * as if a human admin had clicked save. The admin route requires
- * `isAdminAuthenticatedFromRequest`, so we mint a fresh signed session token
- * — same code path as the login endpoint, no network involved.
+ * as if a human admin had clicked save. The admin route guard accepts the
+ * per-process internal-actor header (`internalActorHeaders`) — in-process
+ * only, no network and no legacy cookie involved.
  */
 /** Pull the offending keys out of a validator error like
  *  "Invalid or unknown attribute values: a, b, c". Returns [] if it's a
@@ -306,10 +306,9 @@ async function createProductViaAdminRoute(
       importedAt: new Date().toISOString(),
       importBatchId: batchId,
     };
-    const cookie = `fz_admin_session=${encodeURIComponent(signAdminSession())}`;
     const req = new Request("http://127.0.0.1/internal/api/admin/products", {
       method: "POST",
-      headers: { "content-type": "application/json", cookie },
+      headers: { "content-type": "application/json", ...internalActorHeaders("importer@globaliraq") },
       body: JSON.stringify(body),
     });
     const res = await adminProductsRoute.POST(req);
@@ -331,11 +330,10 @@ async function createProductViaAdminRoute(
   }
   /** Last resort: post with NO specs so the product still imports. */
   specs = {};
-  const cookie = `fz_admin_session=${encodeURIComponent(signAdminSession())}`;
   const res = await adminProductsRoute.POST(
     new Request("http://127.0.0.1/internal/api/admin/products", {
       method: "POST",
-      headers: { "content-type": "application/json", cookie },
+      headers: { "content-type": "application/json", ...internalActorHeaders("importer@globaliraq") },
       body: JSON.stringify({
         categoryId,
         brand: p.brand || "—",
