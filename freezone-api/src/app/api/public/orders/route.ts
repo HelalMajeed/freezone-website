@@ -1,5 +1,6 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { validateCouponRecord } from "@/lib/coupon-service";
+import { notifyOrderCreated } from "@/lib/notifications";
 
 type OrderItemIn = {
   productId: number;
@@ -211,10 +212,19 @@ export async function POST(req: Request) {
         }),
       });
 
-      return { id: order.id, orderNumber };
+      return { id: order.id, orderNumber, customerName: order.customerName, total: expectedTotal };
     });
 
-    return Response.json(result);
+    /** New-order hook (contract (e)): broadcast a persistent dashboard
+     *  notification. Best-effort — must never fail the placed order. */
+    await notifyOrderCreated({
+      id: result.id,
+      orderNumber: result.orderNumber,
+      customerName: result.customerName,
+      total: result.total,
+    });
+
+    return Response.json({ id: result.id, orderNumber: result.orderNumber });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
     if (msg.startsWith("COUPON:")) {
