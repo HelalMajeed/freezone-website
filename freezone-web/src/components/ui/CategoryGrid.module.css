@@ -37,14 +37,14 @@
   font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--red-600);
+  color: var(--color-accent);
   margin-bottom: 12px;
 }
 
 .eyebrowLine {
   width: 24px;
   height: 2px;
-  background: var(--red-600);
+  background: var(--color-accent);
   border-radius: var(--radius-full);
 }
 
@@ -176,7 +176,7 @@
 .cardLink {
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--red-400);
+  color: var(--color-brand-400);
   display: flex;
   align-items: center;
   gap: 5px;

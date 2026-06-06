@@ -15,7 +15,7 @@
   font-family: var(--fz-font-display);
   font-size: clamp(1.75rem, 3.5vw, 2.5rem);
   font-weight: 800;
-  color: var(--gray-900);
+  color: var(--color-neutral-900);
   line-height: 1.15;
   margin: 0 0 12px;
   letter-spacing: 0.02em;
@@ -26,7 +26,7 @@
 }
 
 .subtitle {
-  color: var(--gray-600);
+  color: var(--color-neutral-600);
   font-size: 1rem;
   line-height: 1.6;
 }

@@ -21,7 +21,7 @@
 .fallbackMarkNavbar {
   width: 40px;
   height: 40px;
-  background: var(--red-600);
+  background: var(--color-accent);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -157,7 +157,7 @@
   font-family: var(--fz-font-display);
   font-size: 1.8rem;
   font-weight: 900;
-  color: var(--red-600);
+  color: var(--color-accent);
   letter-spacing: -1px;
   text-transform: none;
 }
@@ -166,7 +166,7 @@
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: var(--red-600);
+  background: var(--color-accent);
   color: white;
   display: flex;
   align-items: center;
@@ -203,7 +203,7 @@
   font-weight: 900;
   letter-spacing: -0.03em;
   text-transform: none;
-  color: var(--red-600);
+  color: var(--color-accent);
   line-height: 1.1;
 }
 
@@ -232,7 +232,7 @@
 .fallbackMarkFooter {
   width: 40px;
   height: 40px;
-  background: var(--red-600);
+  background: var(--color-accent);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -286,7 +286,7 @@
   font-family: var(--fz-font-display);
   font-size: 2.4rem;
   font-weight: 900;
-  color: var(--red-600);
+  color: var(--color-accent);
   letter-spacing: -1px;
   text-transform: uppercase;
   display: inline-flex;
@@ -297,7 +297,7 @@
 .fallbackMarkAuth {
   width: 42px;
   height: 42px;
-  background: var(--red-600);
+  background: var(--color-accent);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -330,7 +330,7 @@
   font-weight: 900;
   letter-spacing: -0.03em;
   text-transform: none;
-  color: var(--red-600);
+  color: var(--color-accent);
   max-width: min(240px, 85vw);
   line-height: 1.15;
 }

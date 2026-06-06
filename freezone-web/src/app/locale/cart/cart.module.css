@@ -3,7 +3,7 @@
 
 /* ── Page Hero ────────────────────────────────── */
 .pageHero {
-  background: var(--gray-950);
+  background: var(--color-surface-dark);
   color: white;
   padding: 40px 0;
   border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -140,7 +140,7 @@
 .itemPrice {
   font-family: var(--fz-font-display);
   font-weight: 800;
-  color: var(--red-600);
+  color: var(--color-accent);
   font-size: 1.25rem;
   margin-top: 8px;
 }
@@ -169,7 +169,7 @@
   font-size: 1.1rem;
   line-height: 1;
 }
-.qtyBtn:hover { background: var(--gray-200); color: var(--red-600); }
+.qtyBtn:hover { background: var(--color-neutral-200); color: var(--color-accent); }
 
 .qtyNum {
   font-weight: 800;

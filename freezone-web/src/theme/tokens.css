@@ -1,20 +1,21 @@
 /**
  * FreeZone — semantic design tokens (storefront).
- * Identity: white surfaces, black structure/typography, red accents (~5%).
- * Legacy `--fz-*` / `--red-*` bridges live in globals.css.
+ * Identity: white surfaces, black structure/typography, crimson accents (~5%).
+ * Canonical color source — see docs/STOREFRONT_DESIGN.md. Semantic bridges
+ * (`--bg-*`, `--text-*`, `--border-light`) live in globals.css.
  */
 :root {
-  /* ─── Brand ramp (master prompt — #DC2626 primary red) ─── */
-  --color-brand-50: #fef2f2;
-  --color-brand-100: #fee2e2;
-  --color-brand-200: #fecaca;
-  --color-brand-300: #fca5a5;
-  --color-brand-400: #f87171;
-  --color-brand-500: #ef4444;
-  --color-brand-600: #dc2626;
-  --color-brand-700: #b91c1c;
-  --color-brand-800: #991b1b;
-  --color-brand-900: #7f1d1d;
+  /* ─── Brand ramp (crimson — #C90000 brand accent) ─── */
+  --color-brand-50: #fdf3f3;
+  --color-brand-100: #fbe2e2;
+  --color-brand-200: #f6bcbc;
+  --color-brand-300: #ee8f8f;
+  --color-brand-400: #e25656;
+  --color-brand-500: #d62828;
+  --color-brand-600: #c90000;
+  --color-brand-700: #a30000;
+  --color-brand-800: #7f0000;
+  --color-brand-900: #5c0000;
 
   /* ─── Brand (official) ─── */
   --color-primary: #0a0a0a;
@@ -46,7 +47,7 @@
   --color-text-secondary: var(--color-neutral-600);
   --color-text-tertiary: var(--color-neutral-400);
   --color-text-on-brand: var(--color-neutral-0);
-  --shadow-brand: 0 4px 16px rgba(220, 38, 38, 0.2);
+  --shadow-brand: 0 4px 16px rgba(201, 0, 0, 0.2);
 
   /* ─── Surfaces (legacy aliases) ─── */
   --color-surface: var(--color-neutral-100);
@@ -89,9 +90,16 @@
   --shadow-xl: 0 24px 56px rgba(10, 10, 10, 0.12);
   --radius-full: 9999px;
 
+  /* ─── Vertical rhythm (strict 8px grid — docs/STOREFRONT_DESIGN.md §3) ─── */
+  --rhythm-section: clamp(40px, 6vw, 72px);
+  --rhythm-block: clamp(20px, 3vw, 36px);
+  --rhythm-item: var(--space-4);
+
   /* ─── Motion ─── */
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /**
@@ -145,4 +153,32 @@
   font-size: 0.75rem;
   line-height: 1.45;
   color: var(--color-text-muted);
+}
+
+/* ─── Section rhythm pattern (every major home section) ─── */
+.fz-section {
+  padding-block: calc(var(--rhythm-section) / 2);
+}
+.fz-section-head {
+  margin-block-end: var(--rhythm-block);
+}
+
+/* ─── Arabic tuning (docs/STOREFRONT_DESIGN.md §2.3) ───
+   IBM Plex Sans Arabic: no 800/900 cuts, no tracking, taller line boxes. */
+html[dir="rtl"] .fz-type-h1,
+html[dir="rtl"] .fz-type-h2 {
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.45;
+}
+html[dir="rtl"] .fz-type-h3,
+html[dir="rtl"] .fz-type-h4 {
+  line-height: 1.5;
+}
+html[dir="rtl"] .fz-type-body {
+  line-height: 1.75;
+}
+html[dir="rtl"] .fz-type-small,
+html[dir="rtl"] .fz-type-caption {
+  line-height: 1.65;
 }

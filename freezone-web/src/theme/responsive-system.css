@@ -125,3 +125,60 @@ object[type="application/pdf"] {
     max-width: 100% !important;
   }
 }
+
+/* ─── Dashboard mobile repairs (moved from theme/mobile-repair.css) ───
+   DEPRECATED [style*=…] hacks patch inline-styled dashboard layouts; remove
+   each rule when the corresponding dashboard page adopts CSS modules. */
+.dashboard-root .dashboard-content img,
+.dashboard-root .dashboard-content video {
+  max-width: 100%;
+  height: auto;
+}
+
+.dashboard-root td,
+.dashboard-root th {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .dashboard-root .dashboard-content [style*="grid-template-columns: 1fr 1fr"],
+  .dashboard-root .dashboard-content [style*="grid-template-columns:1fr 1fr"] {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .dashboard-root .dashboard-content [style*="flex: 1 1 260px"],
+  .dashboard-root .dashboard-content [style*="minWidth: 200"],
+  .dashboard-root .dashboard-content [style*="min-width: 200"] {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .dashboard-root .dashboard-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .dashboard-root .dashboard-page-header > div:last-child {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .dashboard-root .dashboard-page-header .btn,
+  .dashboard-root .dashboard-page-header a[class*="btn"] {
+    flex: 1 1 auto;
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-root .dashboard-content {
+    padding: 16px 12px;
+  }
+}

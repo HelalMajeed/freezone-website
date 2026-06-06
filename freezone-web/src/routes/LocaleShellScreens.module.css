@@ -1,0 +1,138 @@
+/* Storefront shell screens (error / maintenance / loading) — token-styled,
+   bilingual. See docs/STOREFRONT_DESIGN.md. */
+
+/* ── Error screen ──────────────────────────────── */
+.errorScreen {
+  padding-block: var(--rhythm-section, 64px);
+  text-align: center;
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+.errorTitle {
+  margin-block-end: var(--space-2, 8px);
+}
+
+.errorTitleAr {
+  margin-block-end: var(--space-4, 16px);
+  color: var(--color-text-secondary);
+}
+
+.errorHelp {
+  margin-block-end: var(--space-5, 20px);
+  color: var(--color-text-secondary);
+}
+
+.errorHelp code {
+  font-size: 0.85em;
+  background: var(--color-bg-muted);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+}
+
+.errorDetail {
+  text-align: start;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: var(--space-4, 16px);
+  background: var(--color-bg-muted);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+}
+
+/* ── Maintenance screen ────────────────────────── */
+.maintenance {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3, 12px);
+  padding: var(--space-8, 32px);
+  text-align: center;
+  background: var(--color-surface-dark);
+  color: var(--color-neutral-100);
+}
+
+.maintenanceTitle {
+  color: var(--color-neutral-0);
+}
+
+.maintenanceBody {
+  max-width: 420px;
+  line-height: 1.75;
+  color: var(--color-neutral-400);
+}
+
+.maintenanceLink {
+  color: var(--color-brand-300);
+  font-weight: 600;
+}
+.maintenanceLink:hover {
+  color: var(--color-brand-200);
+}
+
+/* ── Loading shell skeleton ────────────────────── */
+.skeletonRoot {
+  min-height: 100dvh;
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+}
+
+.skeletonTopBar {
+  height: 28px;
+  background: var(--color-bg-muted);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.skeletonBody {
+  max-width: var(--fz-page-max, 1320px);
+  margin-inline: auto;
+  padding: var(--space-4, 16px) var(--fz-gutter, clamp(12px, 4vw, 24px));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+
+.skeletonBar {
+  height: 56px;
+  border-radius: var(--radius-md);
+}
+
+.skeletonHero {
+  height: 240px;
+  border-radius: var(--radius-lg);
+}
+
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-3, 12px);
+}
+
+.skeletonCard {
+  height: 120px;
+  border-radius: var(--radius-md);
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-neutral-200) 0%,
+    var(--color-neutral-100) 50%,
+    var(--color-neutral-200) 100%
+  );
+  background-size: 200% 100%;
+  animation: shellShimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes shellShimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer { animation: none; }
+}

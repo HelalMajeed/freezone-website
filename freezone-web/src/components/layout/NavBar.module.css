@@ -253,7 +253,7 @@
   border-color: transparent !important;
 }
 .searchInput::placeholder {
-  color: var(--gray-400);
+  color: var(--color-neutral-400);
 }
 
 .visuallyHidden {
@@ -365,7 +365,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--gray-700);
+  color: var(--color-neutral-700);
   background: none;
   border: none;
   cursor: pointer;
@@ -390,7 +390,7 @@
   position: absolute;
   top: 4px;
   right: 14px;
-  background: var(--red-600);
+  background: var(--color-accent);
   color: white;
   font-size: 0.65rem;
   font-weight: 900;
@@ -451,7 +451,7 @@
 
 .link {
   font-weight: 700;
-  color: var(--gray-800);
+  color: var(--color-neutral-800);
   font-size: 0.88rem;
   padding: 0 16px;
   height: 52px;
@@ -464,20 +464,20 @@
   text-decoration: none;
 }
 .link:hover {
-  color: var(--red-600);
+  color: var(--color-accent);
   background: #f8fafc;
 }
 
 .linkActive {
-  color: var(--red-600) !important;
-  border-bottom-color: var(--red-600) !important;
+  color: var(--color-accent) !important;
+  border-bottom-color: var(--color-accent) !important;
 }
 
 .chevron {
   transition: transform 0.2s;
-  color: var(--gray-400);
+  color: var(--color-neutral-400);
 }
-.chevronOpen { transform: rotate(180deg); color: var(--red-600); }
+.chevronOpen { transform: rotate(180deg); color: var(--color-accent); }
 
 /* PC Builder Badge */
 .pcBuilderLink {
@@ -529,7 +529,7 @@
 
 .megaCol {
   padding: 0 24px;
-  border-right: 1px solid var(--gray-100);
+  border-right: 1px solid var(--color-neutral-100);
 }
 .megaCol:last-child { border-right: none; }
 .megaCol:first-child { padding-left: 0; }
@@ -544,7 +544,7 @@
 .megaColTitle {
   font-size: 0.8rem;
   font-weight: 800;
-  color: var(--gray-900);
+  color: var(--color-neutral-900);
   margin-bottom: 16px;
   padding-bottom: 10px;
   border-bottom: 2px solid var(--border-light);
@@ -567,7 +567,7 @@
 }
 
 .megaItem {
-  color: var(--gray-600);
+  color: var(--color-neutral-600);
   font-weight: 600;
   font-size: 0.88rem;
   padding: 8px 12px;
@@ -579,7 +579,7 @@
   text-decoration: none;
 }
 .megaItem:hover {
-  color: var(--red-600);
+  color: var(--color-accent);
   background: #f8fafc;
   transform: translateX(6px);
 }
@@ -610,7 +610,7 @@
   align-items: center;
   gap: 8px;
   font-size: 0.85rem;
-  color: var(--gray-500);
+  color: var(--color-neutral-500);
   font-weight: 600;
 }
 
@@ -620,7 +620,7 @@
   gap: 6px;
   font-size: 0.85rem;
   font-weight: 800;
-  color: var(--red-600);
+  color: var(--color-accent);
   text-decoration: none;
 }
 .megaFooterLink:hover { opacity: 0.8; }

@@ -67,7 +67,7 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: var(--red-600);
+  background: var(--color-accent);
   color: white;
   padding: 12px 28px;
   border-radius: var(--radius-full);
@@ -79,5 +79,5 @@
 
 .bannerWrapper:hover .ctaBtn {
   background: white;
-  color: var(--red-600);
+  color: var(--color-accent);
 }

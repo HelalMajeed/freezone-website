@@ -328,7 +328,7 @@ export default function CheckoutPage() {
                   name="fulfillment"
                   checked={fulfillment === "delivery"}
                   onChange={() => setFulfillment("delivery")}
-                  style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #0b1f3b)" }}
+                  style={{ width: "20px", height: "20px", accentColor: "var(--color-accent, #0b1f3b)" }}
                 />
                 <Truck size={22} className={styles.paymentOptionIcon} aria-hidden />
                 <div>
@@ -342,7 +342,7 @@ export default function CheckoutPage() {
                   name="fulfillment"
                   checked={fulfillment === "pickup"}
                   onChange={() => setFulfillment("pickup")}
-                  style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #0b1f3b)" }}
+                  style={{ width: "20px", height: "20px", accentColor: "var(--color-accent, #0b1f3b)" }}
                 />
                 <Building2 size={22} className={styles.paymentOptionIcon} aria-hidden />
                 <div>
@@ -419,7 +419,7 @@ export default function CheckoutPage() {
                             name="pay"
                             checked={active}
                             onChange={() => setPaymentMethod(m)}
-                            style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #0b1f3b)" }}
+                            style={{ width: "20px", height: "20px", accentColor: "var(--color-accent, #0b1f3b)" }}
                           />
                           <Icon size={22} className={styles.paymentOptionIcon} aria-hidden />
                           <div>
@@ -447,7 +447,7 @@ export default function CheckoutPage() {
                             name="pay"
                             checked={active}
                             onChange={() => setPaymentMethod(m)}
-                            style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #0b1f3b)" }}
+                            style={{ width: "20px", height: "20px", accentColor: "var(--color-accent, #0b1f3b)" }}
                           />
                           <Icon size={22} className={styles.paymentOptionIcon} aria-hidden />
                           <div>
@@ -473,7 +473,7 @@ export default function CheckoutPage() {
                         name="pay"
                         checked={active}
                         onChange={() => setPaymentMethod(m)}
-                        style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #0b1f3b)" }}
+                        style={{ width: "20px", height: "20px", accentColor: "var(--color-accent, #0b1f3b)" }}
                       />
                       <Icon size={22} className={styles.paymentOptionIcon} aria-hidden />
                       <div>
@@ -520,7 +520,7 @@ export default function CheckoutPage() {
               <ClipboardList style={{ display: "inline-block", marginRight: "10px" }} /> {t("finalReview")}
             </h2>
 
-            <div style={{ marginBottom: "24px", padding: "16px", background: "var(--gray-50)", borderRadius: "12px" }}>
+            <div style={{ marginBottom: "24px", padding: "16px", background: "var(--color-neutral-50)", borderRadius: "12px" }}>
               <h4 style={{ fontWeight: 800, marginBottom: "8px" }}>{t("shippingTo")}</h4>
               <p style={{ color: "var(--text-secondary)" }}>
                 {form.name} • {form.phone}

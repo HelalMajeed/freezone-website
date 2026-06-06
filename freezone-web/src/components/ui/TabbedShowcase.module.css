@@ -39,13 +39,13 @@
   font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--red-600);
+  color: var(--color-accent);
   margin-bottom: 10px;
 }
 .eyebrowLine {
   width: 24px;
   height: 2px;
-  background: var(--red-600);
+  background: var(--color-accent);
   border-radius: var(--radius-full);
 }
 
@@ -129,7 +129,7 @@
 
 .activeTabGrouped {
   color: #fff !important;
-  background: var(--gray-900) !important;
+  background: var(--color-neutral-900) !important;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -180,14 +180,14 @@
 
 .tab:hover {
   color: var(--text-primary);
-  border-color: var(--gray-300);
+  border-color: var(--color-neutral-300);
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
 }
 
 .activeTab {
   color: #fff !important;
-  background: var(--gray-900) !important;
-  border-color: var(--gray-900) !important;
+  background: var(--color-neutral-900) !important;
+  border-color: var(--color-neutral-900) !important;
   box-shadow: 0 4px 18px rgba(15, 23, 42, 0.22);
 }
 
@@ -220,8 +220,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: var(--gray-200);
-  color: var(--gray-700);
+  background: var(--color-neutral-200);
+  color: var(--color-neutral-700);
   padding: 8px 16px;
   border-radius: var(--radius-full);
   font-weight: 700;
@@ -231,7 +231,7 @@
 }
 
 .toolbarViewAll:hover {
-  background: var(--red-600);
+  background: var(--color-accent);
   color: white;
 }
 
@@ -244,9 +244,9 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1px solid var(--gray-300);
+  border: 1px solid var(--color-neutral-300);
   background: white;
-  color: var(--gray-600);
+  color: var(--color-neutral-600);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -255,9 +255,9 @@
 }
 
 .navBtn:hover {
-  background: var(--gray-900);
+  background: var(--color-neutral-900);
   color: white;
-  border-color: var(--gray-900);
+  border-color: var(--color-neutral-900);
 }
 
 /* ── Horizontal product track ─────────────────── */

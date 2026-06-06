@@ -1,6 +1,6 @@
 .wrapper {
   background: #ffffff;
-  color: var(--gray-600, #4b5563);
+  color: var(--color-neutral-600, #4b5563);
   position: relative;
   border-top: 3px solid #e11414;
   overflow-x: clip;

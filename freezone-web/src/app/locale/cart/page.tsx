@@ -81,7 +81,7 @@ export default function CartPage() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
-            <ShoppingBag size={64} color="var(--gray-300)" />
+            <ShoppingBag size={64} color="var(--color-neutral-300)" />
             <h2>{t("emptyTitle")}</h2>
             <p>{t("emptySub")}</p>
             <Link href="/products" className="btn-primary" style={{ display: "inline-block", marginTop: "8px", padding: "12px 28px" }}>
@@ -123,7 +123,7 @@ export default function CartPage() {
                   <motion.button
                     type="button"
                     onClick={() => removeItem(item.id)}
-                    style={{ background: "none", border: "none", color: "var(--red-600)", cursor: "pointer", padding: "8px", borderRadius: "8px", transition: "background 0.2s" }}
+                    style={{ background: "none", border: "none", color: "var(--color-accent)", cursor: "pointer", padding: "8px", borderRadius: "8px", transition: "background 0.2s" }}
                     title="Remove item"
                     whileTap={{ scale: 0.92 }}
                   >

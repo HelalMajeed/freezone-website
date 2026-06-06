@@ -1,5 +1,5 @@
 import { Suspense, lazy, useLayoutEffect } from "react";
-import { Link, Outlet, useParams } from "react-router-dom";
+import { Outlet, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 import { NavBar } from "@/components/layout/NavBar";
@@ -12,6 +12,7 @@ import { StoreJsonLd } from "@/components/seo/StoreJsonLd";
 import { StorefrontPrefetch } from "@/components/storefront/StorefrontPrefetch";
 import { setLocale } from "@/i18n/i18n";
 import { LocaleRouteFallback } from "@/routes/LocaleRouteFallback";
+import { StorefrontErrorScreen, MaintenanceScreen } from "@/routes/LocaleShellScreens";
 import { StorefrontBottomDock } from "@/components/layout/StorefrontBottomDock";
 import { StorefrontWhatsAppFab } from "@/components/layout/StorefrontWhatsAppFab";
 
@@ -51,28 +52,7 @@ export function LocaleLayout() {
     return (
       <>
         <SetDocumentLocale locale={locale} dir={dir} />
-        <div className="container" style={{ padding: "80px 20px", textAlign: "center", maxWidth: 720, margin: "0 auto" }}>
-          <h1 style={{ fontSize: "1.25rem", marginBottom: 16 }}>Unable to load the store</h1>
-          <p style={{ marginBottom: 12, color: "#64748b" }}>تعذر تحميل المتجر.</p>
-          <p style={{ marginBottom: 20, lineHeight: 1.5, color: "#334155" }}>
-            The storefront could not load catalog data from the API. Check Netlify{" "}
-            <code style={{ fontSize: "0.85em" }}>VITE_API_URL</code> (origin only, no <code>/api</code> suffix), then
-            clear cache and redeploy.
-          </p>
-          <pre
-            style={{
-              textAlign: "left",
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-              padding: 16,
-              background: "#f1f5f9",
-              borderRadius: 8,
-              fontSize: "0.8rem",
-            }}
-          >
-            {msg}
-          </pre>
-        </div>
+        <StorefrontErrorScreen message={msg} />
       </>
     );
   }
@@ -83,28 +63,7 @@ export function LocaleLayout() {
     return (
       <>
         <SetDocumentLocale locale={locale} dir={dir} />
-        <div
-          style={{
-            minHeight: "100dvh",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 32,
-            textAlign: "center",
-            background: "#0f172a",
-            color: "#e2e8f0",
-          }}
-        >
-          <h1 style={{ fontSize: "1.75rem", marginBottom: 12 }}>الموقع تحت الصيانة</h1>
-          <p style={{ maxWidth: 420, lineHeight: 1.6, color: "#94a3b8" }}>
-            نعمل على تحسين تجربتكم. يمكن للمسؤولين الاستمرار في لوحة التحكم على{" "}
-            <Link to="/dashboard" style={{ color: "#f87171" }}>
-              /dashboard
-            </Link>
-            .
-          </p>
-        </div>
+        <MaintenanceScreen locale={locale} />
       </>
     );
   }
@@ -113,7 +72,7 @@ export function LocaleLayout() {
     <>
       <SetDocumentLocale locale={locale} dir={dir} />
       <StoreJsonLd site={site} locale={locale} baseUrl={baseUrl} />
-      <div style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
+      <div className="app-shell">
         <StorefrontPrefetch />
         <StorefrontProvider
           value={{

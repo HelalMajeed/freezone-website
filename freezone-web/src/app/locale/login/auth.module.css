@@ -30,7 +30,7 @@
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 3px;
-  background: linear-gradient(to right, var(--red-600), var(--red-400));
+  background: linear-gradient(to right, var(--color-accent), var(--color-brand-400));
 }
 
 /* ── Card Top ─────────────────────────────────── */
@@ -43,7 +43,7 @@
   font-family: var(--fz-font-display);
   font-size: 2.4rem;
   font-weight: 900;
-  color: var(--red-600);
+  color: var(--color-accent);
   margin-bottom: 6px;
   display: inline-block;
   letter-spacing: -1px;
@@ -98,7 +98,7 @@
 .inputIcon {
   position: absolute;
   left: 14px;
-  color: var(--gray-400);
+  color: var(--color-neutral-400);
   width: 18px;
   height: 18px;
   pointer-events: none;
@@ -118,7 +118,7 @@
 .input:focus {
   outline: none;
   background: white;
-  border-color: var(--red-600) !important;
+  border-color: var(--color-accent) !important;
   box-shadow: 0 0 0 3px rgba(11, 31, 59,0.1) !important;
 }
 
@@ -141,7 +141,7 @@
 }
 
 .forgot {
-  color: var(--red-600);
+  color: var(--color-accent);
   font-weight: 700;
   text-decoration: none;
   font-size: 0.85rem;
@@ -166,7 +166,7 @@
   font-size: 0.9rem;
 }
 .footer a {
-  color: var(--red-600);
+  color: var(--color-accent);
   font-weight: 800;
   margin-left: 6px;
   transition: color 0.2s;
@@ -179,7 +179,7 @@
   align-items: center;
   text-align: center;
   margin: 20px 0;
-  color: var(--gray-400);
+  color: var(--color-neutral-400);
   font-size: 0.8rem;
   font-weight: 600;
 }
@@ -204,4 +204,4 @@
   transition: all 0.2s;
   font-family: inherit;
 }
-.socialBtn:hover { background: var(--bg-secondary); border-color: var(--gray-300); }
+.socialBtn:hover { background: var(--bg-secondary); border-color: var(--color-neutral-300); }

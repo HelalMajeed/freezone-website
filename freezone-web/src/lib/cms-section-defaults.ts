@@ -17,7 +17,7 @@ export const FEATURED_PRODUCT_RAIL_PRESETS: { id: string; labelAr: string; label
       viewAllAr: "",
       viewAllEn: "",
       ctaVariant: "gray",
-      bgColor: "var(--gray-50)",
+      bgColor: "var(--color-neutral-50)",
     },
   },
   {
@@ -34,7 +34,7 @@ export const FEATURED_PRODUCT_RAIL_PRESETS: { id: string; labelAr: string; label
       viewAllAr: "",
       viewAllEn: "",
       ctaVariant: "gray",
-      bgColor: "var(--gray-50)",
+      bgColor: "var(--color-neutral-50)",
     },
   },
   {
@@ -51,7 +51,7 @@ export const FEATURED_PRODUCT_RAIL_PRESETS: { id: string; labelAr: string; label
       viewAllAr: "",
       viewAllEn: "",
       ctaVariant: "gray",
-      bgColor: "var(--gray-50)",
+      bgColor: "var(--color-neutral-50)",
     },
   },
   {
@@ -68,7 +68,7 @@ export const FEATURED_PRODUCT_RAIL_PRESETS: { id: string; labelAr: string; label
       viewAllAr: "",
       viewAllEn: "",
       ctaVariant: "gray",
-      bgColor: "var(--gray-50)",
+      bgColor: "var(--color-neutral-50)",
     },
   },
   {
@@ -85,7 +85,7 @@ export const FEATURED_PRODUCT_RAIL_PRESETS: { id: string; labelAr: string; label
       viewAllAr: "",
       viewAllEn: "",
       ctaVariant: "gray",
-      bgColor: "var(--gray-50)",
+      bgColor: "var(--color-neutral-50)",
     },
   },
   {
@@ -102,7 +102,7 @@ export const FEATURED_PRODUCT_RAIL_PRESETS: { id: string; labelAr: string; label
       viewAllAr: "",
       viewAllEn: "",
       ctaVariant: "gray",
-      bgColor: "var(--gray-50)",
+      bgColor: "var(--color-neutral-50)",
     },
   },
 ];
@@ -126,7 +126,7 @@ export function defaultDraftPayload(type: string): Record<string, unknown> {
         viewAllAr: "",
         viewAllEn: "",
         ctaVariant: "gray",
-        bgColor: "var(--gray-50)",
+        bgColor: "var(--color-neutral-50)",
       };
     case "brands_strip":
       return { titleAr: "علامات تجارية", titleEn: "Brands" };
