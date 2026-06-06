@@ -5,7 +5,16 @@ import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 import { isExternalHttpUrl } from "@/lib/ssrf-url";
 
-type ImageAppendInput = { url: string; originalSourceUrl?: string | null };
+type ImageAppendInput = {
+  url: string;
+  originalSourceUrl?: string | null;
+  altTextEn?: string | null;
+  altTextAr?: string | null;
+};
+
+function optionalText(value: unknown, max = 300): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim().slice(0, max) : null;
+}
 
 function parseAppendImages(body: { urls?: unknown; images?: unknown } | null): ImageAppendInput[] | null {
   if (Array.isArray(body?.images)) {
@@ -16,7 +25,12 @@ function parseAppendImages(body: { urls?: unknown; images?: unknown } | null): I
         continue;
       }
       if (item && typeof item === "object" && typeof (item as { url?: string }).url === "string") {
-        const row = item as { url: string; originalSourceUrl?: string };
+        const row = item as {
+          url: string;
+          originalSourceUrl?: string;
+          altTextEn?: string;
+          altTextAr?: string;
+        };
         if (row.url.length > 0) {
           out.push({
             url: row.url,
@@ -24,6 +38,8 @@ function parseAppendImages(body: { urls?: unknown; images?: unknown } | null): I
               typeof row.originalSourceUrl === "string" && row.originalSourceUrl.length > 0
                 ? row.originalSourceUrl
                 : null,
+            altTextEn: optionalText(row.altTextEn),
+            altTextAr: optionalText(row.altTextAr),
           });
         }
       }
@@ -78,6 +94,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         url: img.url,
         sortOrder: start++,
         originalSourceUrl: img.originalSourceUrl ?? null,
+        altTextEn: img.altTextEn ?? null,
+        altTextAr: img.altTextAr ?? null,
       })),
     });
     revalidateStorefrontData();
@@ -123,6 +141,8 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
           url: img.url,
           sortOrder,
           originalSourceUrl: img.originalSourceUrl ?? null,
+          altTextEn: img.altTextEn ?? null,
+          altTextAr: img.altTextAr ?? null,
         })),
       }),
     ]);

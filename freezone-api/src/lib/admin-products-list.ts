@@ -29,7 +29,17 @@ export type AdminProductsListQuery = {
   /** "active" (default, hides soft-deleted) | "deleted" (only) | "all" */
   deletedMode: "active" | "deleted" | "all";
   smartFilter: "no_images" | "no_desc" | "zero_price" | "low_stock" | "ready_publish" | null;
-  sort: "id_desc" | "id_asc" | "price_asc" | "price_desc" | "name_asc" | "updated_desc";
+  sort:
+    | "id_desc"
+    | "id_asc"
+    | "price_asc"
+    | "price_desc"
+    | "name_asc"
+    | "name_desc"
+    | "quantity_asc"
+    | "quantity_desc"
+    | "updated_asc"
+    | "updated_desc";
 };
 
 export function parseAdminProductsListQuery(url: URL): AdminProductsListQuery {
@@ -75,6 +85,10 @@ export function parseAdminProductsListQuery(url: URL): AdminProductsListQuery {
     sortRaw === "price_asc" ||
     sortRaw === "price_desc" ||
     sortRaw === "name_asc" ||
+    sortRaw === "name_desc" ||
+    sortRaw === "quantity_asc" ||
+    sortRaw === "quantity_desc" ||
+    sortRaw === "updated_asc" ||
     sortRaw === "updated_desc"
       ? sortRaw
       : "id_desc";
@@ -182,6 +196,14 @@ export function adminProductsOrderBy(sort: AdminProductsListQuery["sort"]): Pris
       return { price: "desc" };
     case "name_asc":
       return { nameEn: "asc" };
+    case "name_desc":
+      return { nameEn: "desc" };
+    case "quantity_asc":
+      return { quantity: "asc" };
+    case "quantity_desc":
+      return { quantity: "desc" };
+    case "updated_asc":
+      return { updatedAt: "asc" };
     case "updated_desc":
       return { updatedAt: "desc" };
     default:
