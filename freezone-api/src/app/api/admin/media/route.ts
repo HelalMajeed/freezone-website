@@ -3,7 +3,17 @@ import { auditContext, guardAdminMutate, guardAdminRead } from "@/lib/admin-rout
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
+import { jsonOk } from "@/lib/dashboard-guard";
+import { parsePagination } from "@/lib/admin-orders-query";
 
+/**
+ * GET /api/admin/media — media library list.
+ *
+ * Additive pagination: when the `page` query param is present the response is
+ * the standard paginated envelope `{ ok, data: { items, page, pageSize, total,
+ * totalPages } }` (with optional `kind` filter). Without `page` the legacy bare
+ * array (≤200 rows) is returned unchanged for old consumers.
+ */
 export async function GET(req: Request) {
   const read = await guardAdminRead(req);
   if (!read.ok) return read.response;
@@ -12,18 +22,42 @@ export async function GET(req: Request) {
   }
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get("q") ?? "").trim().toLowerCase();
-  const where = q
-    ? {
-        OR: [
-          { title: { contains: q, mode: "insensitive" as const } },
-          { url: { contains: q, mode: "insensitive" as const } },
-          { altAr: { contains: q, mode: "insensitive" as const } },
-          { altEn: { contains: q, mode: "insensitive" as const } },
-        ],
-      }
-    : {};
+  const kind = (searchParams.get("kind") ?? "").trim();
+  const where = {
+    ...(q
+      ? {
+          OR: [
+            { title: { contains: q, mode: "insensitive" as const } },
+            { url: { contains: q, mode: "insensitive" as const } },
+            { altAr: { contains: q, mode: "insensitive" as const } },
+            { altEn: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+    ...(kind === "image" || kind === "video" || kind === "model3d" ? { kind } : {}),
+  };
 
   try {
+    if (searchParams.has("page")) {
+      const { page, pageSize } = parsePagination(searchParams, { defaultPageSize: 25, maxPageSize: 100 });
+      const [items, total] = await Promise.all([
+        prisma.mediaAsset.findMany({
+          where,
+          orderBy: { id: "desc" },
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+        prisma.mediaAsset.count({ where }),
+      ]);
+      return jsonOk({
+        items,
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      });
+    }
+
     const rows = await prisma.mediaAsset.findMany({
       where,
       orderBy: { id: "desc" },
