@@ -355,6 +355,16 @@
   color: var(--fz-text-muted);
 }
 
+.sectionHint {
+  font-size: 12px;
+  color: var(--fz-text-muted);
+  margin-bottom: 10px;
+}
+
+.invoiceMetaSpaced {
+  margin-top: 8px;
+}
+
 .historyEnd {
   display: inline-flex;
   align-items: center;

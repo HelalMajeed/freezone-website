@@ -76,14 +76,13 @@ export function DashboardOrdersPage() {
   // Debounce the search box into the applied filters (resets to page 1).
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setFilters((prev) => {
-        if (prev.search === searchInput.trim()) return prev;
-        setPage(1);
-        return { ...prev, search: searchInput.trim() };
-      });
+      const next = searchInput.trim();
+      if (next === filters.search) return;
+      setPage(1);
+      setFilters((prev) => ({ ...prev, search: next }));
     }, 350);
     return () => window.clearTimeout(timer);
-  }, [searchInput]);
+  }, [searchInput, filters.search]);
 
   const setFilter = useCallback(<K extends keyof Filters>(key: K, value: Filters[K]) => {
     setPage(1);

@@ -395,9 +395,7 @@ export function DashboardOrderDetailPage() {
           </Card>
 
           <Card title={t("orderDetail.internalNotes")}>
-            <div className={s.historyMeta} style={{ marginBottom: 10 }}>
-              {t("orderDetail.internalNotesHint")}
-            </div>
+            <div className={s.sectionHint}>{t("orderDetail.internalNotesHint")}</div>
             <div className={s.noteList}>
               {order.internalNotes.length === 0 ? (
                 <div className={s.historyMeta}>{t("orderDetail.notesEmpty")}</div>
@@ -435,9 +433,7 @@ export function DashboardOrderDetailPage() {
           </Card>
 
           <Card title={t("orderDetail.customerHistory")}>
-            <div className={s.historyMeta} style={{ marginBottom: 8 }}>
-              {t("orderDetail.customerHistoryHint")}
-            </div>
+            <div className={s.sectionHint}>{t("orderDetail.customerHistoryHint")}</div>
             {history === null ? (
               <div className={s.historyMeta}>{t("common.loading")}</div>
             ) : history.length === 0 ? (
@@ -615,11 +611,11 @@ export function DashboardOrderDetailPage() {
             <div>
               <div className={s.invoiceMetaLabel}>{t("orderDetail.invoiceOrder")}</div>
               <div dir="ltr">{order.orderNumber}</div>
-              <div className={s.invoiceMetaLabel} style={{ marginTop: 8 }}>
+              <div className={`${s.invoiceMetaLabel} ${s.invoiceMetaSpaced}`}>
                 {t("orderDetail.invoiceDate")}
               </div>
               <div>{formatDateTime(order.createdAt, lang)}</div>
-              <div className={s.invoiceMetaLabel} style={{ marginTop: 8 }}>
+              <div className={`${s.invoiceMetaLabel} ${s.invoiceMetaSpaced}`}>
                 {t("orderDetail.payment")}
               </div>
               <div>{payKey ? t(payKey) : order.paymentMethod}</div>
