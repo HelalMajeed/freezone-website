@@ -25,7 +25,11 @@ export async function GET(req: Request): Promise<Response> {
     }),
     prisma.product.count({ where: { ...ACTIVE_PRODUCT_WHERE, price: 0 } }),
     prisma.product.count({
-      where: { ...ACTIVE_PRODUCT_WHERE, inStock: true, quantity: { gt: 0, lt: 5 } },
+      where: {
+        ...ACTIVE_PRODUCT_WHERE,
+        inStock: true,
+        quantity: { gt: 0, lte: prisma.product.fields.lowStockThreshold },
+      },
     }),
   ]);
 

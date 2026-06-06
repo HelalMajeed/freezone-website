@@ -30,7 +30,11 @@ export async function GET(req: Request) {
         prisma.brand.count(),
         prisma.mediaAsset.count(),
         prisma.product.count({
-          where: { ...PUBLISHED_LIVE_WHERE, inStock: true, quantity: { gt: 0, lt: 5 } },
+          where: {
+            ...PUBLISHED_LIVE_WHERE,
+            inStock: true,
+            quantity: { gt: 0, lte: prisma.product.fields.lowStockThreshold },
+          },
         }),
         prisma.order.count({ where: { status: "pending" } }),
       ]);

@@ -57,9 +57,10 @@ export async function GET(req: Request): Promise<Response> {
       _count: { _all: true },
     }),
     prisma.product.findMany({
+      /** Low stock = below the product's own configurable threshold (not a hardcoded 5). */
       where: mergeProductWhere(PUBLISHED_LIVE_WHERE, {
         inStock: true,
-        quantity: { gt: 0, lte: 5 },
+        quantity: { gt: 0, lte: prisma.product.fields.lowStockThreshold },
       }),
       orderBy: { quantity: "asc" },
       take: 8,
@@ -69,6 +70,7 @@ export async function GET(req: Request): Promise<Response> {
         nameAr: true,
         sku: true,
         quantity: true,
+        lowStockThreshold: true,
         price: true,
         brand: true,
         images: { take: 1, orderBy: { sortOrder: "asc" }, select: { url: true } },

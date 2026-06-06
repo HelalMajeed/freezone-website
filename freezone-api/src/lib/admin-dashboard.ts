@@ -59,7 +59,7 @@ export async function buildAdminDashboardPayload(prisma: PrismaClient) {
     prisma.product.count({
       where: mergeProductWhere(PUBLISHED_LIVE_WHERE, {
         inStock: true,
-        quantity: { gt: 0, lt: 5 },
+        quantity: { gt: 0, lte: prisma.product.fields.lowStockThreshold },
       }),
     }),
     prisma.order.count({ where: { status: "pending" } }),
