@@ -4,11 +4,13 @@ import { useTranslation } from "react-i18next";
 import {
   dashboardApi,
   DashboardApiError,
+  type CategoryOption,
   type DataQualityIssue,
   type DataQualityResponse,
   type DataQualityTab,
 } from "@/lib/dashboard/api";
 import { Badge, Button, Card, Table } from "@/components/dashboard/ui";
+import { useDashboardLocale } from "@/lib/dashboard/i18n";
 
 type Lang = "ar" | "en";
 
@@ -86,6 +88,15 @@ const SUMMARY_KEYS: Array<{
 export function DashboardDataQualityPage() {
   const { i18n } = useTranslation();
   const lang = ((i18n.resolvedLanguage ?? "en").startsWith("ar") ? "ar" : "en") as Lang;
+  const { t } = useDashboardLocale();
+
+  // Slug → id map so "categories without attributes" rows can deep-link into
+  // the per-category attribute builder (ws3-catalog).
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  useEffect(() => {
+    dashboardApi.get<CategoryOption[]>("/api/admin/categories").then(setCategories).catch(() => {});
+  }, []);
+  const categoryIdBySlug = new Map(categories.map((c) => [c.slug, c.id]));
 
   const [tab, setTab] = useState<DataQualityTab>("missing_image");
   const [page, setPage] = useState(1);
@@ -229,19 +240,34 @@ export function DashboardDataQualityPage() {
               columns={[
                 {
                   header: lang === "ar" ? "المنتج" : "Product",
-                  cell: (r) => (
-                    <div>
-                      <Link
-                        to={`/dashboard/products`}
-                        style={{ fontWeight: 600, color: "var(--fz-brand)" }}
-                      >
-                        {lang === "ar" ? r.nameAr || r.nameEn : r.nameEn}
-                      </Link>
-                      <div style={{ fontSize: 12, color: "var(--fz-text-muted)" }}>
-                        #{r.productId} · {r.categoryName}
+                  cell: (r) => {
+                    // no_attributes rows are categories (productId 0) — deep
+                    // link into the attribute builder; product rows open the
+                    // full-page product editor.
+                    const categoryId = categoryIdBySlug.get(r.categorySlug);
+                    const target =
+                      r.issue === "no_attributes"
+                        ? categoryId != null
+                          ? `/dashboard/categories/${categoryId}/attributes`
+                          : "/dashboard/categories"
+                        : r.productId > 0
+                          ? `/dashboard/products/${r.productId}`
+                          : "/dashboard/products";
+                    return (
+                      <div>
+                        <Link
+                          to={target}
+                          title={r.issue === "no_attributes" ? t("dq.openAttrBuilder") : t("dq.openProduct")}
+                          style={{ fontWeight: 600, color: "var(--fz-brand)" }}
+                        >
+                          {lang === "ar" ? r.nameAr || r.nameEn : r.nameEn}
+                        </Link>
+                        <div style={{ fontSize: 12, color: "var(--fz-text-muted)" }}>
+                          {r.issue === "no_attributes" ? r.categorySlug : `#${r.productId} · ${r.categoryName}`}
+                        </div>
                       </div>
-                    </div>
-                  ),
+                    );
+                  },
                 },
                 {
                   header: lang === "ar" ? "المشكلة" : "Issue",

@@ -19,6 +19,20 @@ const DashboardDesignPage = lazy(() => import("@/pages/dashboard/DesignPage"));
 const DashboardCmsPage = lazy(() => import("@/pages/dashboard/CmsPage"));
 const DashboardDataQualityPage = lazy(() => import("@/pages/dashboard/DataQualityPage"));
 
+/* ws3-catalog routes — lazy imports */
+const DashboardProductEditorPage = lazy(
+  () => import("@/pages/dashboard/products/editor/ProductEditorPage"),
+);
+const DashboardProductsImportPage = lazy(
+  () => import("@/pages/dashboard/products/ImportWizardPage"),
+);
+const DashboardReviewQueuePage = lazy(
+  () => import("@/pages/dashboard/products/ReviewQueuePage"),
+);
+const DashboardCategoryAttributesPage = lazy(
+  () => import("@/pages/dashboard/categories/CategoryAttributesPage"),
+);
+
 
 function L({ children }: { children: React.ReactNode }) {
   return (
@@ -69,6 +83,13 @@ export const freezoneDashboardRouteBranch = (
         <Route path="design" element={<L><DashboardDesignPage /></L>} />
         <Route path="settings" element={<L><DashboardSettingsPage /></L>} />
         <Route path="data-quality" element={<L><DashboardDataQualityPage /></L>} />
+        {/* ws3-catalog routes */}
+        <Route path="products/new" element={<L><DashboardProductEditorPage /></L>} />
+        <Route path="products/import" element={<L><DashboardProductsImportPage /></L>} />
+        <Route path="products/review" element={<L><DashboardReviewQueuePage /></L>} />
+        <Route path="products/:id" element={<L><DashboardProductEditorPage /></L>} />
+        <Route path="categories/:id/attributes" element={<L><DashboardCategoryAttributesPage /></L>} />
+        {/* end ws3-catalog routes */}
       </Route>
     </Route>
   </Route>
