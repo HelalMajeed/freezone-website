@@ -35,7 +35,7 @@ function FilterValueInput({
 
   if ((type === "SELECT" || type === "MULTI_SELECT" || type === "COLOR") && attr.options?.length) {
     const options = [
-      { value: "", label: t("common.none") },
+      { value: "", label: t("common.noneOption") },
       ...attr.options.map((o) => ({ value: o, label: o })),
     ];
     // MULTI_SELECT values are stored as a single token per product attribute
@@ -44,7 +44,7 @@ function FilterValueInput({
   }
   if (type === "BOOLEAN") {
     const options = [
-      { value: "", label: t("common.none") },
+      { value: "", label: t("common.noneOption") },
       { value: "true", label: t("common.yes") },
       { value: "false", label: t("common.no") },
     ];

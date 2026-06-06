@@ -77,6 +77,48 @@ export const DASHBOARD_ERROR_MESSAGES: Record<string, BilingualMessage> = {
     ar: "قالب قسم غير معروف.",
   },
 
+  // ── Media import-from-URL (ws3-operations) ──────────────────────────────
+  INVALID_URL: {
+    en: "That URL is not valid.",
+    ar: "رابط غير صالح.",
+  },
+  INVALID_PROTOCOL: {
+    en: "Only http(s) URLs are allowed.",
+    ar: "يُسمح فقط بروابط http أو https.",
+  },
+  BLOCKED_HOST: {
+    en: "That URL is not allowed.",
+    ar: "الرابط غير مسموح.",
+  },
+  BLOCKED_IP: {
+    en: "That URL is not allowed.",
+    ar: "الرابط غير مسموح.",
+  },
+  BLOCKED_DNS: {
+    en: "The URL points to a blocked local network.",
+    ar: "الرابط يشير إلى شبكة محلية غير مسموحة.",
+  },
+  DNS_FAILED: {
+    en: "Couldn't resolve the URL's host.",
+    ar: "تعذّر التحقق من عنوان الرابط.",
+  },
+  TOO_LARGE: {
+    en: "The image is larger than the 15 MB limit.",
+    ar: "الصورة أكبر من الحد المسموح (15MB).",
+  },
+  TOO_SMALL: {
+    en: "The file is too small or corrupted.",
+    ar: "الملف صغير جداً أو تالف.",
+  },
+  NOT_IMAGE: {
+    en: "The URL doesn't point to a valid image.",
+    ar: "الرابط لا يشير إلى صورة صالحة.",
+  },
+  FETCH_FAILED: {
+    en: "Couldn't download the image — make sure the URL links directly to an image.",
+    ar: "تعذّر تنزيل الصورة. تأكد أن الرابط مباشر لصورة.",
+  },
+
   // ── Client-side failure modes ────────────────────────────────────────────
   BAD_JSON: {
     en: "The server returned an unexpected response.",

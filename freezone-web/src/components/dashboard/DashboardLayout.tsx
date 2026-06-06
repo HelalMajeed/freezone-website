@@ -93,6 +93,8 @@ const CRUMB_LABELS: Record<string, { en: string; ar: string }> = Object.fromEntr
   NAV.flatMap((g) => g.items.map((it) => [it.to, it.label])),
 );
 CRUMB_LABELS["/dashboard/profile"] = { en: "Profile & password", ar: "حسابي وكلمة السر" };
+/* ws3-operations crumb labels */
+CRUMB_LABELS["/dashboard/notifications"] = { en: "Notifications", ar: "الإشعارات" };
 
 const SIDEBAR_PREF_KEY = "fz-dashboard-sidebar-collapsed";
 

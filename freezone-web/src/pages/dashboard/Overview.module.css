@@ -1,131 +1,358 @@
-.sparkRow {
+/* Overview / analytics dashboard-home (design system §4.3) */
+
+/* ── Range selector ── */
+.rangeBar {
   display: flex;
-  align-items: end;
-  gap: 4px;
-  height: 90px;
-  padding: 8px 0;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.sparkBar {
-  flex: 1;
-  background: linear-gradient(180deg, var(--fz-brand) 0%, var(--fz-brand-600) 100%);
-  border-radius: 3px 3px 0 0;
-  min-height: 2px;
-  position: relative;
-  transition: opacity var(--fz-t);
+.presets {
+  display: inline-flex;
+  border: 1px solid var(--fz-border);
+  border-radius: var(--fz-radius);
+  overflow: hidden;
+  background: var(--fz-bg-elev);
 }
 
-.sparkBar:hover {
-  opacity: 0.85;
+.presetBtn {
+  border: none;
+  background: transparent;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fz-text-soft);
+  cursor: pointer;
+  transition:
+    background var(--fz-t),
+    color var(--fz-t);
 }
 
-.sparkBar::after {
-  content: attr(data-tip);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-6px);
-  background: var(--fz-text);
-  color: var(--fz-text-inverse);
+.presetBtn + .presetBtn {
+  border-inline-start: 1px solid var(--fz-border);
+}
+
+.presetBtn:hover {
+  background: var(--fz-bg-soft);
+}
+
+.presetActive {
+  background: var(--fz-brand-50);
+  color: var(--fz-brand);
+}
+
+.customRange {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dateInput {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--fz-radius-sm);
+  border: 1px solid var(--fz-border);
+  background: var(--fz-bg-elev);
+  color: var(--fz-text);
+  font-size: 12.5px;
+}
+
+.dateInput:focus {
+  border-color: var(--fz-brand);
+  box-shadow: 0 0 0 3px var(--fz-brand-100);
+  outline: none;
+}
+
+.rangeNote {
+  font-size: 12px;
+  color: var(--fz-text-muted);
+}
+
+/* ── KPI deltas ── */
+.kpiDeltaRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--fz-text-muted);
+}
+
+.deltaBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 8px;
+  border-radius: 999px;
   font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--fz-t);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.sparkBar:hover::after {
-  opacity: 1;
+.deltaUp {
+  background: var(--fz-success-bg);
+  color: var(--fz-success);
 }
 
-.sparkAxis {
+.deltaDown {
+  background: var(--fz-danger-bg);
+  color: var(--fz-danger);
+}
+
+.deltaFlat {
+  background: var(--fz-bg-soft);
+  color: var(--fz-text-soft);
+}
+
+/* ── Area chart ── */
+.chartWrap {
+  width: 100%;
+}
+
+.chartSvg {
+  display: block;
+  width: 100%;
+  height: 180px;
+}
+
+.chartAxis {
   display: flex;
   justify-content: space-between;
   font-size: 11px;
   color: var(--fz-text-muted);
   padding-top: 6px;
   border-top: 1px dashed var(--fz-border);
+  font-variant-numeric: tabular-nums;
 }
 
-.statusGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 10px;
-}
-
-.statusItem {
-  padding: 12px;
-  border-radius: var(--fz-radius);
-  border: 1px solid var(--fz-border);
-  background: var(--fz-bg-soft);
-}
-
-.statusLabel {
-  font-size: 11.5px;
-  color: var(--fz-text-soft);
-  text-transform: capitalize;
-  margin-bottom: 4px;
-  font-weight: 600;
-}
-
-.statusValue {
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.productRow {
+/* ── Share bars (category / brand) ── */
+.barList {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--fz-border);
 }
 
-.productRow:last-child {
-  border-bottom: none;
+.barRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.productThumb {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--fz-radius);
+.barHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.barName {
+  font-weight: 600;
+  white-space: nowrap;
   overflow: hidden;
-  background: var(--fz-bg-soft);
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--fz-text-muted);
-}
-
-.productThumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.productInfo {
-  flex: 1;
+  text-overflow: ellipsis;
   min-width: 0;
 }
 
-.productName {
+.barValue {
+  color: var(--fz-text-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.barTrack {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--fz-bg-soft);
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--fz-chart-1);
+  min-width: 2px;
+}
+
+.barFillAlt {
+  background: var(--fz-chart-2);
+}
+
+/* ── Simple lists (city / top products / low stock) ── */
+.listRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--fz-border);
+  font-size: 13px;
+}
+
+.listRow:last-child {
+  border-bottom: none;
+}
+
+.listMain {
+  min-width: 0;
+  flex: 1;
+}
+
+.listName {
   font-weight: 600;
-  font-size: 13.5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.productMeta {
-  font-size: 12px;
+.listMeta {
+  font-size: 11.5px;
   color: var(--fz-text-muted);
 }
 
-.productRight {
-  font-size: 13px;
-  font-weight: 700;
+.listEnd {
   text-align: end;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.thumb {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--fz-radius-sm);
+  border: 1px solid var(--fz-border);
+  background: var(--fz-bg-soft);
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--fz-text-muted);
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.lowQty {
+  color: var(--fz-danger);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Quick actions ── */
+.quickActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.quickAction {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--fz-border);
+  border-radius: var(--fz-radius);
+  background: var(--fz-bg-elev);
+  color: var(--fz-text);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    border-color var(--fz-t),
+    background var(--fz-t),
+    color var(--fz-t);
+}
+
+.quickAction:hover {
+  border-color: var(--fz-brand);
+  color: var(--fz-brand);
+  background: var(--fz-brand-50);
+}
+
+.quickActionIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* ── Coupon table ── */
+.couponTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.couponTable th {
+  text-align: start;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fz-text-soft);
+  padding: 8px 10px;
+  background: var(--fz-bg-soft);
+  border-bottom: 1px solid var(--fz-border);
+}
+
+.couponTable td {
+  padding: 10px;
+  border-bottom: 1px solid var(--fz-border);
+}
+
+.couponTable tr:last-child td {
+  border-bottom: none;
+}
+
+.couponCode {
+  font-family: var(--fz-font-mono, ui-monospace, monospace);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.numCell {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Layout helpers ── */
+.mainCol,
+.railCol {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.splitCards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .splitCards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sectionHint {
+  font-size: 11.5px;
+  color: var(--fz-text-muted);
+  margin-bottom: 6px;
+}
+
+.emptyNote {
+  padding: 16px 0;
+  color: var(--fz-text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.errorBox {
+  padding: 20px;
+  color: var(--fz-danger);
 }

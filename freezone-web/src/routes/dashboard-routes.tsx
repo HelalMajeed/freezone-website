@@ -33,6 +33,10 @@ const DashboardCategoryAttributesPage = lazy(
   () => import("@/pages/dashboard/categories/CategoryAttributesPage"),
 );
 
+/* ws3-operations lazy pages */
+const DashboardOrderDetailPage = lazy(() => import("@/pages/dashboard/orders/OrderDetailPage"));
+const DashboardNotificationsPage = lazy(() => import("@/pages/dashboard/NotificationsPage"));
+
 
 function L({ children }: { children: React.ReactNode }) {
   return (
@@ -90,6 +94,10 @@ export const freezoneDashboardRouteBranch = (
         <Route path="products/:id" element={<L><DashboardProductEditorPage /></L>} />
         <Route path="categories/:id/attributes" element={<L><DashboardCategoryAttributesPage /></L>} />
         {/* end ws3-catalog routes */}
+        {/* ws3-operations routes */}
+        <Route path="orders/:id" element={<L><DashboardOrderDetailPage /></L>} />
+        <Route path="notifications" element={<L><DashboardNotificationsPage /></L>} />
+        {/* /ws3-operations routes */}
       </Route>
     </Route>
   </Route>
