@@ -6,10 +6,14 @@ import { MotionReveal } from "@/components/motion/MotionReveal";
 import { MotionStagger, MotionStaggerItem } from "@/components/motion/MotionStagger";
 import { motion } from "framer-motion";
 import { springSnappy } from "@/lib/motion";
+import { Seo } from "@/components/seo/Seo";
+import { useTranslations } from "@/i18n/hooks";
 
 export default function AboutPage() {
+  const tSeo = useTranslations("Seo");
   return (
     <div className={styles.wrapper}>
+      <Seo title={tSeo("aboutTitle")} description={tSeo("aboutDesc")} />
       <MotionReveal direction="scale" amount={16}>
         <div className={styles.hero}>
           <div className={`container ${styles.heroInner}`}>

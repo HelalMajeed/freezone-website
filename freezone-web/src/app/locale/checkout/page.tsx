@@ -12,6 +12,7 @@ import { useTranslations } from "@/i18n/hooks";
 import { freezoneApiUrl } from "@/lib/api-internal";
 import toast from "react-hot-toast";
 import clsx from "clsx";
+import { Seo } from "@/components/seo/Seo";
 
 type Fulfillment = "delivery" | "pickup";
 
@@ -293,6 +294,7 @@ export default function CheckoutPage() {
 
   return (
     <div className={`container ${styles.layout}`}>
+      <Seo title={t("title")} noindex />
       <h1 className={styles.header}>{t("title")}</h1>
       <p className={styles.codNotice}>{t("checkoutIntro")}</p>
 

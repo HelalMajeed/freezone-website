@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+
+# Served by the Freezone API (contract: GET /api/public/sitemap.xml),
+# proxied at the site origin via netlify.toml.
+Sitemap: https://freezone-iq.com/sitemap.xml

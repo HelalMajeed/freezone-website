@@ -9,6 +9,7 @@ import { Trash2, ShoppingBag, ShoppingCart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "@/i18n/hooks";
 import { freezoneApiUrl } from "@/lib/api-internal";
+import { Seo } from "@/components/seo/Seo";
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en").format(n);
@@ -55,6 +56,7 @@ export default function CartPage() {
 
   return (
     <>
+      <Seo title={t("title")} noindex />
       {/* Page Hero */}
       <div className={styles.pageHero}>
         <div className="container">

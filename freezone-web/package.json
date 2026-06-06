@@ -10,6 +10,7 @@
     "dev:vite:delayed": "node scripts/wait-for-api.cjs && vite",
     "dev:full": "npm run dev",
     "build": "tsc -b && vite build",
+    "postbuild": "node scripts/prerender.mjs",
     "preview": "vite preview",
     "start": "vite preview",
     "lint": "eslint src",

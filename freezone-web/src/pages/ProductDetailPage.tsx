@@ -5,12 +5,16 @@ import { useStorefront } from "@/components/providers/StorefrontProvider";
 import ProductDetailClient from "@/features/product-detail/ProductDetailClient";
 import { productsShareAnyCategory } from "@/lib/productCategoryMembership";
 import { getProductDetail } from "@/lib/product-detail";
+import { Seo } from "@/components/seo/Seo";
+import { ProductJsonLd } from "@/components/seo/ProductJsonLd";
+import { useTranslations } from "@/i18n/hooks";
 
 export default function ProductDetailPage() {
   const { id, locale: loc } = useParams<{ id: string; locale: string }>();
   const lc: LocaleCode = loc === "ar" ? "ar" : "en";
   const num = parseInt(id ?? "", 10);
   const { catalog } = useStorefront();
+  const tSeo = useTranslations("Seo");
 
   const { data: detail, isLoading, isFetched } = useQuery({
     queryKey: ["product-detail", num, lc],
@@ -39,14 +43,28 @@ export default function ProductDetailPage() {
     .filter((p) => p.id !== detail.product.id && productsShareAnyCategory(p, detail.product))
     .slice(0, 4);
 
+  const product = detail.product;
+  const seoDescription = product.desc?.trim()
+    ? product.desc.trim().slice(0, 250)
+    : tSeo("productDesc", { name: product.name });
+
   return (
-    <ProductDetailClient
-      product={detail.product}
-      categories={catalog.categories}
-      relatedProducts={relatedProducts}
-      groupedSpecs={detail.groupedSpecs}
-      attributes={detail.attributes}
-      variants={detail.variants}
-    />
+    <>
+      <Seo
+        title={product.name}
+        description={seoDescription}
+        image={product.images?.[0] ?? null}
+        ogType="product"
+      />
+      <ProductJsonLd product={product} locale={lc} />
+      <ProductDetailClient
+        product={product}
+        categories={catalog.categories}
+        relatedProducts={relatedProducts}
+        groupedSpecs={detail.groupedSpecs}
+        attributes={detail.attributes}
+        variants={detail.variants}
+      />
+    </>
   );
 }
