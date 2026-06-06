@@ -1,14 +1,15 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { auditContext, guardAdminMutate } from "@/lib/admin-route-guard";
+import { logAdminAction } from "@/lib/admin-audit";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { loadCategoryAttributeSchema } from "@/lib/classification/persist";
 import { categoryAttributeRowsToFacetDefs, syncCategoryAttributesFromFacetKeys } from "@/lib/classification/sync";
 import { parseOptionsJson } from "@/lib/classification/values";
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const g = await guardAdminMutate(req);
+  if (!g.ok) return g.response;
+  const audit = auditContext(g.actor, req);
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -55,6 +56,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     const updated = await syncCategoryAttributesFromFacetKeys(prisma, categoryId, next);
     const row = updated.find((r) => r.key === attributeKey);
     const options = parseOptionsJson(row?.options) ?? [...current, option];
+    await logAdminAction("category.attributeOption.add", "Category", {
+      entityId: categoryId,
+      payload: { attributeKey, option },
+      ...audit,
+    });
     return Response.json({ ok: true, attributeKey, options });
   } catch (e) {
     return handleRouteDbError(e);

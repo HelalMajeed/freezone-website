@@ -1,11 +1,10 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { guardAdminRead } from "@/lib/admin-route-guard";
 
 export async function GET(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const g = await guardAdminRead(req);
+  if (!g.ok) return g.response;
   const reportPath = path.join(process.cwd(), "logs", "globaliraq-import-report.json");
   try {
     const raw = await readFile(reportPath, "utf8");

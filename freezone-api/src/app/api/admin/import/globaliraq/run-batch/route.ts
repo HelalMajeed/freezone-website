@@ -1,4 +1,6 @@
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { auditContext, guardAdminMutate } from "@/lib/admin-route-guard";
+import { actorForAudit } from "@/lib/admin-auth";
+import { logAdminAction } from "@/lib/admin-audit";
 import { isDatabaseConfigured } from "@/lib/prisma";
 import { runImportBatch } from "@/lib/import-globaliraq/run-batch";
 
@@ -13,15 +15,14 @@ import { runImportBatch } from "@/lib/import-globaliraq/run-batch";
  * (GitHub Actions, the admin dashboard) poll until `status !== "running"`.
  */
 export async function POST(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const g = await guardAdminMutate(req);
+  if (!g.ok) return g.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
 
   const body = (await req.json().catch(() => null)) as
-    | { limit?: number; autoPublish?: boolean; owner?: string }
+    | { limit?: number; autoPublish?: boolean }
     | null;
 
   const limit = Number.isFinite(body?.limit) ? Number(body!.limit) : 0;
@@ -29,14 +30,15 @@ export async function POST(req: Request) {
     return Response.json({ error: "limit must be 1..100" }, { status: 400 });
   }
 
+  const audit = auditContext(g.actor, req);
+  /** Attribute the batch to the resolved actor, never a client-supplied string. */
+  const owner = actorForAudit(g.actor).userEmail ?? "run-batch-endpoint";
+  const autoPublish = body?.autoPublish === true;
+
   /** Spin off the work without awaiting so the HTTP response returns immediately. */
   let kickoff: { batchId: string } | { error: string };
   try {
-    kickoff = await startAsync({
-      limit,
-      autoPublish: body?.autoPublish === true,
-      owner: typeof body?.owner === "string" ? body.owner : "run-batch-endpoint",
-    });
+    kickoff = await startAsync({ limit, autoPublish, owner });
   } catch (e) {
     if (e instanceof Error && (e as { code?: string }).code === "BATCH_IN_FLIGHT") {
       return Response.json(
@@ -50,6 +52,11 @@ export async function POST(req: Request) {
     );
   }
   if ("error" in kickoff) return Response.json(kickoff, { status: 500 });
+  await logAdminAction("import.runBatch", "ImportBatch", {
+    entityId: kickoff.batchId,
+    payload: { source: "globaliraq", limit, autoPublish },
+    ...audit,
+  });
   return Response.json({ ok: true, ...kickoff });
 }
 

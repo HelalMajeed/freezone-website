@@ -1,11 +1,10 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { guardAdminRead } from "@/lib/admin-route-guard";
 import { handleRouteDbError } from "@/lib/db-route-error";
 
 export async function GET(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const g = await guardAdminRead(req);
+  if (!g.ok) return g.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
