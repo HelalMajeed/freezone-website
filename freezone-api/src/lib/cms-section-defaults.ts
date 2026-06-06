@@ -23,17 +23,31 @@ export function defaultDraftPayload(type: string): Record<string, unknown> {
       return { titleAr: "علامات تجارية", titleEn: "Brands" };
     case "banner_slider":
       return {
+        autoplayMs: 6000,
+        aspect: "wide",
         items: [
           {
+            id: "b1",
             titleAr: "بانر 1",
             titleEn: "Banner 1",
+            subAr: "",
+            subEn: "",
+            badgeAr: "",
+            badgeEn: "",
             imageUrl: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200",
+            imageUrlMobile: "",
             href: "/products",
+            active: true,
           },
         ],
       };
     case "categories_showcase":
-      return { source: "gaming_grid" };
+      return {
+        source: "gaming_grid",
+        titleAr: "تسوق حسب القسم",
+        titleEn: "Shop by category",
+        items: [],
+      };
     case "promo_mega":
       return { count: 5, slots: [] };
     case "tabbed_products":
@@ -46,16 +60,28 @@ export function defaultDraftPayload(type: string): Record<string, unknown> {
         limit: 24,
         tabStyle: "grouped",
         tabs: [
-          { id: "t-new", labelAr: "الوافدون الجدد", labelEn: "New Arrivals", mode: "new" },
-          { id: "t-feat", labelAr: "المميزون", labelEn: "Featured", mode: "featured" },
-          { id: "t-game", labelAr: "أجهزة الكمبيوتر المحمولة للألعاب", labelEn: "Gaming Laptops", mode: "gaming" },
-          { id: "t-pc", labelAr: "مكونات الحاسوب الشخصي", labelEn: "PC Components", mode: "components" },
+          { id: "t-new", labelAr: "الوافدون الجدد", labelEn: "New Arrivals", mode: "new", categorySlug: "", brandSlug: "", productIds: [] },
+          { id: "t-feat", labelAr: "المميزون", labelEn: "Featured", mode: "featured", categorySlug: "", brandSlug: "", productIds: [] },
+          { id: "t-game", labelAr: "أجهزة الكمبيوتر المحمولة للألعاب", labelEn: "Gaming Laptops", mode: "gaming", categorySlug: "", brandSlug: "", productIds: [] },
+          { id: "t-pc", labelAr: "مكونات الحاسوب الشخصي", labelEn: "PC Components", mode: "components", categorySlug: "", brandSlug: "", productIds: [] },
         ],
       };
     case "promo_grid":
       return {
+        layout: "2x2",
         items: [
-          { titleAr: "عروض", titleEn: "Deals", imageUrl: "https://images.unsplash.com/photo-1598327105666-5b89351cb31b?q=80&w=800", href: "/products" },
+          {
+            id: "p1",
+            titleAr: "عروض",
+            titleEn: "Deals",
+            subAr: "",
+            subEn: "",
+            ctaAr: "تسوق الآن",
+            ctaEn: "Shop now",
+            imageUrl: "https://images.unsplash.com/photo-1598327105666-5b89351cb31b?q=80&w=800",
+            href: "/products",
+            catSlug: "",
+          },
         ],
       };
     case "testimonials":
@@ -63,7 +89,7 @@ export function defaultDraftPayload(type: string): Record<string, unknown> {
         items: [{ textAr: "خدمة ممتازة", textEn: "Great service", nameAr: "عميل", nameEn: "Customer" }],
       };
     case "faq":
-      return { source: "i18n" };
+      return { source: "i18n", titleAr: "أسئلة شائعة", titleEn: "FAQ", items: [] };
     case "cta":
       return {
         titleAr: "تسوق الآن",

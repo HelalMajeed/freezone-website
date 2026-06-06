@@ -3,6 +3,7 @@ import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
+import { validateSectionPayload } from "@/lib/cms-section-payloads";
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   if (!isAdminAuthenticatedFromRequest(req)) {
@@ -23,11 +24,33 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (!body) return Response.json({ error: "body" }, { status: 400 });
 
   try {
+    /** Frozen payload types (contract (j)) are validated/normalized on write. */
+    let draftPayload = body.draftPayload;
+    if (draftPayload !== undefined) {
+      let effectiveType = body.type;
+      if (!effectiveType) {
+        const existing = await prisma.cmsPageSection.findUnique({
+          where: { id },
+          select: { type: true },
+        });
+        if (!existing) return Response.json({ error: "not found" }, { status: 404 });
+        effectiveType = existing.type;
+      }
+      const validated = validateSectionPayload(effectiveType, draftPayload);
+      if (!validated.ok) {
+        return Response.json(
+          { ok: false, error: "VALIDATION", details: validated.errors },
+          { status: 400 },
+        );
+      }
+      draftPayload = validated.payload;
+    }
+
     await prisma.cmsPageSection.update({
       where: { id },
       data: {
-        ...(body.draftPayload !== undefined
-          ? { draftPayload: body.draftPayload as Prisma.InputJsonValue }
+        ...(draftPayload !== undefined
+          ? { draftPayload: draftPayload as Prisma.InputJsonValue }
           : {}),
         ...(body.visible !== undefined ? { visible: body.visible } : {}),
         ...(body.type !== undefined ? { type: body.type } : {}),
