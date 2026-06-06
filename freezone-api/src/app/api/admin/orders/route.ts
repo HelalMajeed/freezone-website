@@ -6,6 +6,7 @@ import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 import {
   buildOrdersWhere,
+  isAllowedOrderTransition,
   isOrderStatus,
   parseOrdersSort,
   parsePagination,
@@ -117,6 +118,16 @@ export async function PATCH(req: Request) {
   try {
     const existing = await prisma.order.findUnique({ where: { id }, select: { status: true } });
     if (!existing) return jsonError(404, "NOT_FOUND");
+
+    /** Same forward-only guard as PATCH /api/admin/orders/:id — never reopen a
+     *  terminal (cancelled/delivered) order, since reopening would leave the
+     *  cancel endpoint's restored stock double-counted. */
+    if (
+      isOrderStatus(existing.status) &&
+      !isAllowedOrderTransition(existing.status, status)
+    ) {
+      return jsonError(409, "INVALID_TRANSITION");
+    }
 
     await prisma.$transaction([
       prisma.order.update({ where: { id }, data: { status } }),

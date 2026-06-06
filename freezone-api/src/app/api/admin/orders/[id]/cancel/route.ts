@@ -54,31 +54,53 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
       const stockRestored: Array<{ productId: number; qty: number }> = [];
       if (restoreStock) {
+        /** Pre-resolve which referenced products still exist so a missing
+         *  product is skipped without throwing P2025 inside the transaction
+         *  (which would abort it). */
+        const lineProductIds = order.items
+          .filter((l) => l.productId != null && l.qty > 0)
+          .map((l) => l.productId as number);
+        const existingProducts =
+          lineProductIds.length > 0
+            ? await tx.product.findMany({
+                where: { id: { in: lineProductIds } },
+                select: { id: true },
+              })
+            : [];
+        const existingIds = new Set(existingProducts.map((p) => p.id));
+
         for (const line of order.items) {
           if (line.productId == null || line.qty <= 0) continue;
-          const product = await tx.product.findUnique({
+          if (!existingIds.has(line.productId)) continue;
+          /** Atomic relative update — never read-then-write, so a concurrent
+           *  checkout decrement or stock adjustment is not clobbered (lost
+           *  update). qtyBefore/qtyAfter are derived from the returned row so
+           *  the ledger always balances against the true quantity. */
+          const updated = await tx.product.update({
             where: { id: line.productId },
-            select: { id: true, quantity: true },
+            data: { quantity: { increment: line.qty } },
+            select: { quantity: true },
           });
-          if (!product) continue;
-          const qtyAfter = product.quantity + line.qty;
-          await tx.product.update({
-            where: { id: product.id },
-            data: { quantity: qtyAfter, ...(qtyAfter > 0 ? { inStock: true } : {}) },
-          });
+          const qtyAfter = updated.quantity;
+          if (qtyAfter > 0) {
+            await tx.product.update({
+              where: { id: line.productId },
+              data: { inStock: true },
+            });
+          }
           await tx.stockMovement.create({
             data: {
-              productId: product.id,
+              productId: line.productId,
               delta: line.qty,
               reason: "order_cancelled_restore",
               orderId: id,
-              qtyBefore: product.quantity,
+              qtyBefore: qtyAfter - line.qty,
               qtyAfter,
               userId: actor.userId,
               userEmail: actor.userEmail,
             },
           });
-          stockRestored.push({ productId: product.id, qty: line.qty });
+          stockRestored.push({ productId: line.productId, qty: line.qty });
         }
       }
 

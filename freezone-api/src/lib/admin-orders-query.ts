@@ -17,6 +17,29 @@ export function isOrderStatus(value: unknown): value is OrderStatus {
 }
 
 /**
+ * Forward-only order status state machine. `cancelled` is intentionally not a
+ * target here — cancellation must go through POST /api/admin/orders/:id/cancel
+ * so stock restore is explicit. Terminal states (`delivered`, `cancelled`) have
+ * no outgoing transitions, so a cancelled/delivered order can never be reopened
+ * via PATCH (which would double-count restored stock). A no-op (from === to) is
+ * allowed so an idempotent re-set of the same status does not 409.
+ */
+const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  pending: ["confirmed", "processing", "shipped", "delivered"],
+  confirmed: ["processing", "shipped", "delivered"],
+  processing: ["shipped", "delivered"],
+  shipped: ["delivered"],
+  delivered: [],
+  cancelled: [],
+};
+
+/** True when `to` is a legal next status from `from` (or a no-op same-status). */
+export function isAllowedOrderTransition(from: OrderStatus, to: OrderStatus): boolean {
+  if (from === to) return true;
+  return ORDER_TRANSITIONS[from].includes(to);
+}
+
+/**
  * Parse a `from`/`to` date-range param per the API conventions:
  * accepts `YYYY-MM-DD` or full ISO; `from` normalizes to 00:00:00.000 UTC,
  * `to` normalizes to 23:59:59.999 UTC of that day. Invalid input → null.

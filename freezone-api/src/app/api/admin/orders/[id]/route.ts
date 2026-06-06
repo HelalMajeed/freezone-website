@@ -4,7 +4,7 @@ import { actorForAudit } from "@/lib/admin-auth";
 import { jsonError, jsonOk } from "@/lib/dashboard-guard";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
-import { isOrderStatus } from "@/lib/admin-orders-query";
+import { isAllowedOrderTransition, isOrderStatus, type OrderStatus } from "@/lib/admin-orders-query";
 
 type EventRow = {
   id: number;
@@ -131,7 +131,18 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   try {
     const result = await prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({ where: { id } });
-      if (!order) return null;
+      if (!order) return { kind: "not_found" as const };
+
+      /** State-machine guard: reject reopening terminal states and illegal
+       *  backward/forward moves so PATCH can never resurrect a cancelled order
+       *  (whose stock was already restored) or regress a delivered one. */
+      if (
+        wantsStatus &&
+        isOrderStatus(order.status) &&
+        !isAllowedOrderTransition(order.status, body.status as OrderStatus)
+      ) {
+        return { kind: "invalid_transition" as const };
+      }
 
       const data: { status?: string; shipping?: number; total?: number } = {};
 
@@ -166,10 +177,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       const updated = Object.keys(data).length
         ? await tx.order.update({ where: { id }, data })
         : order;
-      return { before: order, after: updated };
+      return { kind: "ok" as const, before: order, after: updated };
     });
 
-    if (!result) return jsonError(404, "NOT_FOUND");
+    if (result.kind === "not_found") return jsonError(404, "NOT_FOUND");
+    if (result.kind === "invalid_transition") return jsonError(409, "INVALID_TRANSITION");
 
     await logAdminAction("order.update", "Order", {
       entityId: id,
