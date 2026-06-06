@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FREEZONE_Z_LOGO } from "@/lib/brand-assets";
 import { useDashboardAuth } from "@/lib/dashboard/auth-store";
@@ -64,16 +64,42 @@ const NAV: NavGroupDef[] = [
   },
 ];
 
+/** Path → label index for breadcrumbs (NAV plus routes not in the sidebar). */
+const CRUMB_LABELS: Record<string, { en: string; ar: string }> = Object.fromEntries(
+  NAV.flatMap((g) => g.items.map((it) => [it.to, it.label])),
+);
+CRUMB_LABELS["/dashboard/profile"] = { en: "Profile & password", ar: "حسابي وكلمة السر" };
+
+const SIDEBAR_PREF_KEY = "fz-dashboard-sidebar-collapsed";
+
+function readSidebarPref(): boolean {
+  try {
+    return window.localStorage.getItem(SIDEBAR_PREF_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+const MOBILE_QUERY = "(max-width: 900px)";
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function DashboardLayout() {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useDashboardAuth((s) => s.user);
   const logout = useDashboardAuth((s) => s.logout);
   const hasRole = useDashboardAuth((s) => s.hasRole);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(readSidebarPref);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_QUERY).matches);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const sidebarRef = useRef<HTMLElement | null>(null);
+  const hamburgerRef = useRef<HTMLButtonElement | null>(null);
 
   const lang = (i18n.resolvedLanguage ?? "en").startsWith("ar") ? "ar" : "en";
   const dir = lang === "ar" ? "rtl" : "ltr";
@@ -88,6 +114,64 @@ export function DashboardLayout() {
     };
   }, [dir]);
 
+  // Track the mobile breakpoint so the drawer / collapse modes never overlap.
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_QUERY);
+    const onChange = (e: MediaQueryListEvent) => {
+      setIsMobile(e.matches);
+      if (!e.matches) setMobileOpen(false);
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  // Close the mobile drawer on navigation.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  // Mobile drawer: focus trap + Escape + scroll lock + focus restore.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const sidebar = sidebarRef.current;
+    const hamburger = hamburgerRef.current;
+    if (!sidebar) return;
+
+    const focusables = () => Array.from(sidebar.querySelectorAll<HTMLElement>(FOCUSABLE));
+    focusables()[0]?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMobileOpen(false);
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const els = focusables();
+      if (els.length === 0) return;
+      const first = els[0];
+      const last = els[els.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey) {
+        if (active === first || !sidebar.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !sidebar.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = prevOverflow;
+      hamburger?.focus();
+    };
+  }, [mobileOpen]);
+
   useEffect(() => {
     if (!menuOpen) return;
     const onClick = (e: MouseEvent) => {
@@ -96,6 +180,18 @@ export function DashboardLayout() {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, [menuOpen]);
+
+  const onToggleCollapsed = useCallback(() => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem(SIDEBAR_PREF_KEY, next ? "1" : "0");
+      } catch {
+        /* private mode — preference simply not persisted */
+      }
+      return next;
+    });
+  }, []);
 
   const onLogout = async () => {
     await logout();
@@ -106,11 +202,41 @@ export function DashboardLayout() {
     void i18n.changeLanguage(lang === "ar" ? "en" : "ar");
   };
 
+  // Breadcrumb trail derived from the current path + NAV labels.
+  const crumbs = useMemo(() => {
+    const items: { to: string; label: string }[] = [
+      { to: "/dashboard", label: lang === "ar" ? "اللوحة" : "Dashboard" },
+    ];
+    const pathname = location.pathname.replace(/\/+$/, "") || "/dashboard";
+    if (pathname !== "/dashboard") {
+      let acc = "";
+      for (const seg of pathname.split("/").filter(Boolean)) {
+        acc += `/${seg}`;
+        if (acc === "/dashboard") continue;
+        const known = CRUMB_LABELS[acc];
+        items.push({
+          to: acc,
+          label: known ? known[lang] : decodeURIComponent(seg).replace(/-/g, " "),
+        });
+      }
+    }
+    return items;
+  }, [location.pathname, lang]);
+
+  const navAriaLabel = lang === "ar" ? "التنقل الرئيسي" : "Main navigation";
+
   return (
     <div className="dashboard-root">
-      <div className="dashboard-shell">
+      <div className="dashboard-shell" data-collapsed={!isMobile && collapsed ? "true" : "false"}>
         {/* ─── Sidebar ─────────────────────────────────────────────────────── */}
-        <aside className={s.sidebar} data-mobile-open={mobileOpen ? "true" : "false"}>
+        <aside
+          ref={sidebarRef}
+          id="dashboard-sidebar"
+          className={s.sidebar}
+          data-mobile-open={mobileOpen ? "true" : "false"}
+          data-collapsed={!isMobile && collapsed ? "true" : "false"}
+          aria-hidden={isMobile && !mobileOpen ? true : undefined}
+        >
           <div className={s.brand}>
             <span className={s.brandMark}>
               <img src={FREEZONE_Z_LOGO} alt="" className={s.brandMarkImg} />
@@ -119,9 +245,17 @@ export function DashboardLayout() {
               <span className={s.brandName}>Freezone</span>
               <span className={s.brandSub}>{lang === "ar" ? "لوحة التحكم" : "Dashboard"}</span>
             </div>
+            <button
+              type="button"
+              className={s.drawerClose}
+              onClick={() => setMobileOpen(false)}
+              aria-label={lang === "ar" ? "إغلاق القائمة" : "Close menu"}
+            >
+              ✕
+            </button>
           </div>
 
-          <nav>
+          <nav aria-label={navAriaLabel}>
             {NAV.map((group, gi) => {
               if (group.minRole && !hasRole(group.minRole)) return null;
               const visibleItems = group.items.filter((it) => !it.minRole || hasRole(it.minRole));
@@ -137,6 +271,7 @@ export function DashboardLayout() {
                       className={({ isActive }) =>
                         [s.navItem, isActive && s.navItemActive].filter(Boolean).join(" ")
                       }
+                      title={!isMobile && collapsed ? item.label[lang] : undefined}
                       onClick={() => setMobileOpen(false)}
                     >
                       <span className={s.navIcon} aria-hidden>
@@ -151,26 +286,78 @@ export function DashboardLayout() {
           </nav>
 
           <div className={s.navFooter}>
-            <div className={s.navItem} style={{ cursor: "default", color: "var(--fz-text-muted)", fontSize: 11 }}>
-              v1.0 · {lang === "ar" ? "بُنيت لأجلك" : "built for you"}
-            </div>
+            <button
+              type="button"
+              className={s.collapseBtn}
+              onClick={onToggleCollapsed}
+              aria-expanded={!collapsed}
+              title={
+                collapsed
+                  ? lang === "ar"
+                    ? "توسيع القائمة"
+                    : "Expand sidebar"
+                  : lang === "ar"
+                    ? "طي القائمة"
+                    : "Collapse sidebar"
+              }
+            >
+              <span className={s.collapseChevron} aria-hidden data-collapsed={collapsed ? "true" : "false"}>
+                ❮
+              </span>
+              <span className={s.navLabel}>
+                {collapsed ? (lang === "ar" ? "توسيع" : "Expand") : lang === "ar" ? "طي القائمة" : "Collapse"}
+              </span>
+            </button>
+            <div className={s.versionNote}>v1.0 · {lang === "ar" ? "بُنيت لأجلك" : "built for you"}</div>
           </div>
         </aside>
 
-        {mobileOpen && <div className={s.mobileBackdrop} onClick={() => setMobileOpen(false)} />}
+        {mobileOpen && (
+          <div className={s.mobileBackdrop} onClick={() => setMobileOpen(false)} aria-hidden="true" />
+        )}
 
         {/* ─── Main ────────────────────────────────────────────────────────── */}
         <div className="dashboard-main">
           <header className={s.topbar}>
             <div className={s.topbarLeft}>
               <button
-                className={s.langToggle}
+                ref={hamburgerRef}
+                type="button"
+                className={s.menuBtn}
                 onClick={() => setMobileOpen((v) => !v)}
-                style={{ display: "none" }}
-                aria-label="Menu"
+                aria-label={lang === "ar" ? "فتح القائمة" : "Open menu"}
+                aria-expanded={mobileOpen}
+                aria-controls="dashboard-sidebar"
               >
                 ☰
               </button>
+
+              <nav className={s.breadcrumbs} aria-label={lang === "ar" ? "مسار التنقل" : "Breadcrumb"}>
+                <ol className={s.crumbList}>
+                  {crumbs.map((crumb, i) => {
+                    const isLast = i === crumbs.length - 1;
+                    return (
+                      <li key={crumb.to} className={s.crumb}>
+                        {i > 0 && (
+                          <span className={s.crumbSep} aria-hidden>
+                            ›
+                          </span>
+                        )}
+                        {isLast ? (
+                          <span className={s.crumbCurrent} aria-current="page">
+                            {crumb.label}
+                          </span>
+                        ) : (
+                          <NavLink to={crumb.to} end className={s.crumbLink}>
+                            {crumb.label}
+                          </NavLink>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </nav>
+
               <div className={s.searchWrap}>
                 <span className={s.searchIcon}>⌕</span>
                 <input
