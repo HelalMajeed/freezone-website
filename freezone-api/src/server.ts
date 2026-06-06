@@ -1,5 +1,5 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -8,98 +8,7 @@ import "express-async-errors";
 import multer from "multer";
 import helmet from "helmet";
 import { rateLimitCheck, ipKeyFromExpressReq } from "./lib/rate-limit";
-import * as adminAudit from "./app/api/admin/audit/route";
-import * as adminAuditLog from "./app/api/admin/audit-log/route";
-import * as adminBrands from "./app/api/admin/brands/route";
-import * as adminBrandsId from "./app/api/admin/brands/[id]/route";
-import * as adminCategories from "./app/api/admin/categories/route";
-import * as adminCategoriesId from "./app/api/admin/categories/[id]/route";
-import * as adminCategoriesAttributes from "./app/api/admin/categories/[id]/attributes/route";
-import * as adminCms from "./app/api/admin/cms/route";
-import * as adminCmsPage from "./app/api/admin/cms-page/route";
-import * as adminCmsPagePublish from "./app/api/admin/cms-page/publish/route";
-import * as adminCmsPageReorder from "./app/api/admin/cms-page/reorder/route";
-import * as adminCmsPageSections from "./app/api/admin/cms-page/sections/route";
-import * as adminCmsPageSectionsId from "./app/api/admin/cms-page/sections/[id]/route";
-import * as adminCoupons from "./app/api/admin/coupons/route";
-import * as adminCouponsId from "./app/api/admin/coupons/[id]/route";
-import * as adminSiteConfig from "./app/api/admin/site-config/route";
-import * as adminPromoBanners from "./app/api/admin/promo-banners/route";
-import * as adminPromoBannersId from "./app/api/admin/promo-banners/[id]/route";
-import * as adminSocialLinks from "./app/api/admin/social-links/route";
-import * as adminSocialLinksId from "./app/api/admin/social-links/[id]/route";
-import * as adminTrustBar from "./app/api/admin/trust-bar/route";
-import * as adminTrustBarId from "./app/api/admin/trust-bar/[id]/route";
-import * as adminHomeSpotlights from "./app/api/admin/home-spotlights/route";
-import * as adminHomeSpotlightsId from "./app/api/admin/home-spotlights/[id]/route";
-import * as adminHeroSlides from "./app/api/admin/hero-slides/route";
-import * as adminHeroSlidesId from "./app/api/admin/hero-slides/[id]/route";
-import * as adminShowroomMedia from "./app/api/admin/showroom-media/route";
-import * as adminShowroomMediaId from "./app/api/admin/showroom-media/[id]/route";
-import * as adminTicker from "./app/api/admin/ticker/route";
-import * as adminTickerId from "./app/api/admin/ticker/[id]/route";
-import * as adminCatalogConfig from "./app/api/admin/catalog-config/route";
-import * as adminDashboard from "./app/api/admin/dashboard/route";
-import * as adminDashboardSmart from "./app/api/admin/dashboard/smart/route";
-import * as adminDashboardStats from "./app/api/admin/dashboard-stats/route";
-import * as adminSearch from "./app/api/admin/search/route";
-import * as adminActivityFeed from "./app/api/admin/activity-feed/route";
-import * as adminInbox from "./app/api/admin/inbox/route";
-import * as adminDataQuality from "./app/api/admin/data-quality/route";
-import * as adminClassificationPreview from "./app/api/admin/classification-preview/route";
-import * as adminLogin from "./app/api/admin/login/route";
-import * as adminLogout from "./app/api/admin/logout/route";
-import * as adminMedia from "./app/api/admin/media/route";
-import * as adminMediaId from "./app/api/admin/media/[id]/route";
-import * as adminMediaImportImage from "./app/api/admin/media/import-image/route";
-import * as adminOrders from "./app/api/admin/orders/route";
-import * as adminProductImagesId from "./app/api/admin/product-images/[id]/route";
-import * as adminProducts from "./app/api/admin/products/route";
-import * as adminProductsId from "./app/api/admin/products/[id]/route";
-import * as adminProductsIdImages from "./app/api/admin/products/[id]/images/route";
-import * as adminProductsIdVariants from "./app/api/admin/products/[id]/variants/route";
-import * as adminProductsBulk from "./app/api/admin/products/bulk/route";
-import * as adminProductsExport from "./app/api/admin/products/export/route";
-import * as adminProductsIdDuplicate from "./app/api/admin/products/[id]/duplicate/route";
-import * as adminProductsIdComments from "./app/api/admin/products/[id]/comments/route";
-import * as adminProductsCheckUnique from "./app/api/admin/products/check-unique/route";
-import * as adminReviewQueue from "./app/api/admin/review-queue/route";
-import * as adminNotifications from "./app/api/admin/notifications/route";
-import * as adminOperatorStats from "./app/api/admin/operator-stats/route";
-import * as adminCategoryTemplates from "./app/api/admin/category-templates/route";
-import * as adminCategoriesApplyTemplate from "./app/api/admin/categories/[id]/apply-template/route";
-import * as adminImportProductsCsv from "./app/api/admin/import/products-csv/route";
-import * as adminCategoriesStats from "./app/api/admin/categories/[id]/stats/route";
-import * as adminProductsSmartFilters from "./app/api/admin/products/smart-filters/route";
-import * as adminUploadProductImage from "./app/api/admin/upload/product-image/route";
-import * as adminImportGlobaliraqBatches from "./app/api/admin/import/globaliraq/batches/route";
-import * as adminImportGlobaliraqBatchesId from "./app/api/admin/import/globaliraq/batches/[id]/route";
-import * as adminImportGlobaliraqRunBatch from "./app/api/admin/import/globaliraq/run-batch/route";
-import * as adminTheme from "./app/api/admin/theme/route";
-import * as adminUpload from "./app/api/admin/upload/route";
-import * as dashboardLogin from "./app/api/dashboard/auth/login/route";
-import * as dashboardDevLogin from "./app/api/dashboard/auth/dev-login/route";
-import * as dashboardDirectLogin from "./app/api/dashboard/auth/direct-login/route";
-import * as dashboardLogout from "./app/api/dashboard/auth/logout/route";
-import * as dashboardMe from "./app/api/dashboard/auth/me/route";
-import * as dashboardChangePw from "./app/api/dashboard/auth/change-password/route";
-import * as dashboardUsers from "./app/api/dashboard/users/route";
-import * as dashboardUsersId from "./app/api/dashboard/users/[id]/route";
-import * as dashboardOverview from "./app/api/dashboard/overview/route";
-import * as dashboardAudit from "./app/api/dashboard/audit/route";
-import * as pcBuild from "./app/api/pc-build/route";
-import * as publicCouponValidate from "./app/api/public/coupon/validate/route";
-import * as publicOrders from "./app/api/public/orders/route";
-import * as publicSite from "./app/api/public/site/route";
-import * as ssrBrands from "./app/api/ssr/catalog/brands/route";
-import * as ssrCategories from "./app/api/ssr/catalog/categories/route";
-import * as ssrProducts from "./app/api/ssr/catalog/products/route";
-import * as ssrCatalogFacets from "./app/api/ssr/catalog/facets/route";
-import * as ssrHomeCms from "./app/api/ssr/home-cms/route";
-import * as ssrHomeSections from "./app/api/ssr/home-sections/route";
-import * as ssrProductId from "./app/api/ssr/product/[id]/route";
-import * as ssrTheme from "./app/api/ssr/theme/route";
-import * as ssrStorefrontBootstrap from "./app/api/ssr/storefront-bootstrap/route";
+import { discoverRoutes, HTTP_METHODS, type DiscoveredRoute, type HttpMethod } from "./lib/route-registry";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 process.chdir(path.join(__dirname, ".."));
@@ -110,6 +19,15 @@ import { assertAdminSecretsConfigured } from "./lib/admin-secrets";
 assertAdminSecretsConfigured();
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
+
+/** Routes that accept `multipart/form-data` — mounted behind `multer` so the
+ *  raw stream is parsed before we rebuild a Web `FormData` for the handler. */
+const MULTIPART_ROUTES = new Set(["/api/admin/upload", "/api/admin/upload/product-image"]);
+
+type RouteHandler = (
+  req: Request,
+  ctx: { params: Promise<Record<string, string>> },
+) => Response | Promise<Response>;
 
 function webRequestFromExpress(req: express.Request): Request {
   const proto = req.get("x-forwarded-proto") || req.protocol;
@@ -148,8 +66,9 @@ async function sendWebResponse(expressRes: express.Response, web: Response) {
   expressRes.send(buf);
 }
 
-function ctxId(id: string): { params: Promise<{ id: string }> } {
-  return { params: Promise.resolve({ id }) };
+/** Route ctx in the Next.js shape every handler expects: `{ params: Promise<{...}> }`. */
+function routeCtx(req: express.Request): { params: Promise<Record<string, string>> } {
+  return { params: Promise.resolve({ ...req.params }) };
 }
 
 /**
@@ -229,6 +148,80 @@ function rateLimitMiddleware(req: express.Request, res: express.Response, next: 
   next();
 }
 
+/** Standard adapter: Express -> Web Request -> handler -> Web Response -> Express. */
+function expressHandler(fn: RouteHandler): express.RequestHandler {
+  return async (req, res) => {
+    await sendWebResponse(res, await fn(webRequestFromExpress(req), routeCtx(req)));
+  };
+}
+
+/** Multipart adapter: `multer` has already parsed the stream; rebuild a Web
+ *  `FormData` (file + text fields) and forward Cookie — admin auth reads
+ *  `fz_admin_session` from Cookie. */
+function multipartExpressHandler(fn: RouteHandler): express.RequestHandler {
+  return async (req, res, next) => {
+    try {
+      const proto = req.get("x-forwarded-proto") || req.protocol;
+      const host = req.get("x-forwarded-host") || req.get("host") || "localhost";
+      const url = `${proto}://${host}${req.originalUrl}`;
+      const form = new FormData();
+      if (req.file) {
+        const file = new File([new Uint8Array(req.file.buffer)], req.file.originalname, {
+          type: req.file.mimetype || "application/octet-stream",
+        });
+        form.set("file", file);
+      }
+      const b = req.body as Record<string, unknown> | undefined;
+      if (b && typeof b === "object") {
+        for (const [k, v] of Object.entries(b)) {
+          if (v != null) form.set(k, String(v));
+        }
+      }
+      const headers = new Headers();
+      const cookie = req.headers.cookie;
+      if (cookie) headers.set("cookie", cookie);
+      const webReq = new Request(url, { method: "POST", headers, body: form });
+      await sendWebResponse(res, await fn(webReq, routeCtx(req)));
+    } catch (e) {
+      next(e);
+    }
+  };
+}
+
+type ExpressMethod = "get" | "post" | "put" | "patch" | "delete" | "head" | "options";
+
+/**
+ * Filesystem-convention auto-mounting: scan `app/api/**\/route.{ts,js}` next to
+ * this file (src/ in dev via tsx, dist/ in production — the build emits each
+ * route module as a code-split entry point), derive the Express path from the
+ * folder path (`[id]` -> `:id`), and mount every exported HTTP method handler.
+ * Routes are sorted so static segments mount before `:param` segments.
+ */
+async function mountApiRoutes(app: express.Express): Promise<{ files: number; routes: number; mounted: string[] }> {
+  const apiDir = path.join(__dirname, "app", "api");
+  const discovered: DiscoveredRoute[] = discoverRoutes(apiDir, "/api");
+  if (discovered.length === 0) {
+    throw new Error(`[api] No route modules found under ${apiDir} — check the build output`);
+  }
+  const mounted: string[] = [];
+  for (const route of discovered) {
+    const mod = (await import(pathToFileURL(route.file).href)) as Record<string, unknown>;
+    for (const method of HTTP_METHODS) {
+      const handler = mod[method];
+      if (typeof handler !== "function") continue;
+      const fn = handler as RouteHandler;
+      const expressMethod = method.toLowerCase() as ExpressMethod;
+      if (MULTIPART_ROUTES.has(route.expressPath) && method === ("POST" satisfies HttpMethod)) {
+        app.post(route.expressPath, upload.single("file"), multipartExpressHandler(fn));
+      } else {
+        app[expressMethod](route.expressPath, expressHandler(fn));
+      }
+      mounted.push(`${method} ${route.expressPath}`);
+    }
+  }
+  return { files: discovered.length, routes: mounted.length, mounted };
+}
+
 async function main() {
   const app = express();
   app.set("trust proxy", 1);
@@ -288,498 +281,8 @@ async function main() {
     res.type("application/json").send({ ok: true, service: "freezone-api", at: new Date().toISOString() });
   });
 
-  app.get("/api/public/site", async (req, res) => {
-    await sendWebResponse(res, await publicSite.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/public/orders", async (req, res) => {
-    await sendWebResponse(res, await publicOrders.POST(webRequestFromExpress(req)));
-  });
-  app.post("/api/public/coupon/validate", async (req, res) => {
-    await sendWebResponse(res, await publicCouponValidate.POST(webRequestFromExpress(req)));
-  });
-
-  app.get("/api/ssr/catalog/products", async (req, res) => {
-    await sendWebResponse(res, await ssrProducts.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/ssr/catalog/facets", async (req, res) => {
-    await sendWebResponse(res, await ssrCatalogFacets.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/ssr/catalog/categories", async (req, res) => {
-    await sendWebResponse(res, await ssrCategories.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/ssr/catalog/brands", async (req, res) => {
-    await sendWebResponse(res, await ssrBrands.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/ssr/home-cms", async (req, res) => {
-    await sendWebResponse(res, await ssrHomeCms.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/ssr/home-sections", async (req, res) => {
-    await sendWebResponse(res, await ssrHomeSections.GET());
-  });
-  app.get("/api/ssr/theme", async (req, res) => {
-    await sendWebResponse(res, await ssrTheme.GET());
-  });
-  app.get("/api/ssr/storefront-bootstrap", async (req, res) => {
-    await sendWebResponse(res, await ssrStorefrontBootstrap.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/ssr/product/:id", async (req, res) => {
-    await sendWebResponse(res, await ssrProductId.GET(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-
-  app.post("/api/pc-build", async (req, res) => {
-    await sendWebResponse(res, await pcBuild.POST(webRequestFromExpress(req)));
-  });
-
-  app.get("/api/admin/login", async (req, res) => {
-    await sendWebResponse(res, await adminLogin.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/login", async (req, res) => {
-    await sendWebResponse(res, await adminLogin.POST(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/logout", async (req, res) => {
-    await sendWebResponse(res, await adminLogout.POST(webRequestFromExpress(req)));
-  });
-
-  app.get("/api/admin/catalog-config", async (req, res) => {
-    await sendWebResponse(res, await adminCatalogConfig.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/dashboard-stats", async (req, res) => {
-    await sendWebResponse(res, await adminDashboardStats.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/dashboard", async (req, res) => {
-    await sendWebResponse(res, await adminDashboard.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/dashboard/smart", async (req, res) => {
-    await sendWebResponse(res, await adminDashboardSmart.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/search", async (req, res) => {
-    await sendWebResponse(res, await adminSearch.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/activity-feed", async (req, res) => {
-    await sendWebResponse(res, await adminActivityFeed.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/inbox", async (req, res) => {
-    await sendWebResponse(res, await adminInbox.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/products/smart-filters", async (req, res) => {
-    await sendWebResponse(res, await adminProductsSmartFilters.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/data-quality", async (req, res) => {
-    await sendWebResponse(res, await adminDataQuality.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/classification-preview", async (req, res) => {
-    await sendWebResponse(res, await adminClassificationPreview.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/audit-log", async (req, res) => {
-    await sendWebResponse(res, await adminAuditLog.GET(webRequestFromExpress(req)));
-  });
-
-  app.get("/api/admin/cms", async (req, res) => {
-    await sendWebResponse(res, await adminCms.GET(webRequestFromExpress(req)));
-  });
-  app.put("/api/admin/cms", async (req, res) => {
-    await sendWebResponse(res, await adminCms.PUT(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/theme", async (req, res) => {
-    await sendWebResponse(res, await adminTheme.GET(webRequestFromExpress(req)));
-  });
-  app.patch("/api/admin/theme", async (req, res) => {
-    await sendWebResponse(res, await adminTheme.PATCH(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/brands", async (req, res) => {
-    await sendWebResponse(res, await adminBrands.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/brands", async (req, res) => {
-    await sendWebResponse(res, await adminBrands.POST(webRequestFromExpress(req)));
-  });
-  app.patch("/api/admin/brands/:id", async (req, res) => {
-    await sendWebResponse(res, await adminBrandsId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.delete("/api/admin/brands/:id", async (req, res) => {
-    await sendWebResponse(res, await adminBrandsId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-
-  app.get("/api/admin/categories", async (req, res) => {
-    await sendWebResponse(res, await adminCategories.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/categories", async (req, res) => {
-    await sendWebResponse(res, await adminCategories.POST(webRequestFromExpress(req)));
-  });
-  app.patch("/api/admin/categories/:id", async (req, res) => {
-    await sendWebResponse(res, await adminCategoriesId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.get("/api/admin/categories/:id/attributes", async (req, res) => {
-    await sendWebResponse(
-      res,
-      await adminCategoriesAttributes.GET(webRequestFromExpress(req), ctxId(req.params.id)),
-    );
-  });
-  app.post("/api/admin/categories/:id/apply-template", async (req, res) => {
-    await sendWebResponse(
-      res,
-      await adminCategoriesApplyTemplate.POST(webRequestFromExpress(req), ctxId(req.params.id)),
-    );
-  });
-  app.get("/api/admin/categories/:id/stats", async (req, res) => {
-    await sendWebResponse(
-      res,
-      await adminCategoriesStats.GET(webRequestFromExpress(req), ctxId(req.params.id)),
-    );
-  });
-
-  app.get("/api/admin/products/check-unique", async (req, res) => {
-    await sendWebResponse(res, await adminProductsCheckUnique.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/products/export", async (req, res) => {
-    await sendWebResponse(res, await adminProductsExport.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/review-queue", async (req, res) => {
-    await sendWebResponse(res, await adminReviewQueue.GET(webRequestFromExpress(req)));
-  });
-  app.patch("/api/admin/review-queue", async (req, res) => {
-    await sendWebResponse(res, await adminReviewQueue.PATCH(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/notifications", async (req, res) => {
-    await sendWebResponse(res, await adminNotifications.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/operator-stats", async (req, res) => {
-    await sendWebResponse(res, await adminOperatorStats.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/category-templates", async (req, res) => {
-    await sendWebResponse(res, await adminCategoryTemplates.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/import/products-csv", async (req, res) => {
-    await sendWebResponse(res, await adminImportProductsCsv.POST(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/products", async (req, res) => {
-    await sendWebResponse(res, await adminProducts.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/products", async (req, res) => {
-    await sendWebResponse(res, await adminProducts.POST(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/products/bulk", async (req, res) => {
-    await sendWebResponse(res, await adminProductsBulk.POST(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/products/:id/duplicate", async (req, res) => {
-    await sendWebResponse(
-      res,
-      await adminProductsIdDuplicate.POST(webRequestFromExpress(req), ctxId(req.params.id)),
-    );
-  });
-  app.get("/api/admin/products/:id/comments", async (req, res) => {
-    await sendWebResponse(
-      res,
-      await adminProductsIdComments.GET(webRequestFromExpress(req), ctxId(req.params.id)),
-    );
-  });
-  app.post("/api/admin/products/:id/comments", async (req, res) => {
-    await sendWebResponse(
-      res,
-      await adminProductsIdComments.POST(webRequestFromExpress(req), ctxId(req.params.id)),
-    );
-  });
-  app.get("/api/admin/products/:id", async (req, res) => {
-    await sendWebResponse(res, await adminProductsId.GET(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.patch("/api/admin/products/:id", async (req, res) => {
-    await sendWebResponse(res, await adminProductsId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.delete("/api/admin/products/:id", async (req, res) => {
-    await sendWebResponse(res, await adminProductsId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.post("/api/admin/products/:id/images", async (req, res) => {
-    await sendWebResponse(res, await adminProductsIdImages.POST(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.get("/api/admin/products/:id/variants", async (req, res) => {
-    await sendWebResponse(res, await adminProductsIdVariants.GET(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.post("/api/admin/products/:id/variants", async (req, res) => {
-    await sendWebResponse(res, await adminProductsIdVariants.POST(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.put("/api/admin/products/:id/images", async (req, res) => {
-    await sendWebResponse(res, await adminProductsIdImages.PUT(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.patch("/api/admin/products/:id/images", async (req, res) => {
-    await sendWebResponse(res, await adminProductsIdImages.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-
-  app.get("/api/admin/orders", async (req, res) => {
-    await sendWebResponse(res, await adminOrders.GET(webRequestFromExpress(req)));
-  });
-  app.patch("/api/admin/orders", async (req, res) => {
-    await sendWebResponse(res, await adminOrders.PATCH(webRequestFromExpress(req)));
-  });
-
-  app.get("/api/admin/coupons", async (req, res) => {
-    await sendWebResponse(res, await adminCoupons.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/coupons", async (req, res) => {
-    await sendWebResponse(res, await adminCoupons.POST(webRequestFromExpress(req)));
-  });
-  app.patch("/api/admin/coupons/:id", async (req, res) => {
-    await sendWebResponse(res, await adminCouponsId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.delete("/api/admin/coupons/:id", async (req, res) => {
-    await sendWebResponse(res, await adminCouponsId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-
-  app.get("/api/admin/site-config", async (req, res) => {
-    await sendWebResponse(res, await adminSiteConfig.GET(webRequestFromExpress(req)));
-  });
-  app.patch("/api/admin/site-config", async (req, res) => {
-    await sendWebResponse(res, await adminSiteConfig.PATCH(webRequestFromExpress(req)));
-  });
-
-  app.get("/api/admin/promo-banners", async (req, res) => {
-    await sendWebResponse(res, await adminPromoBanners.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/promo-banners", async (req, res) => {
-    await sendWebResponse(res, await adminPromoBanners.POST(webRequestFromExpress(req)));
-  });
-  app.patch("/api/admin/promo-banners/:id", async (req, res) => {
-    await sendWebResponse(res, await adminPromoBannersId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.delete("/api/admin/promo-banners/:id", async (req, res) => {
-    await sendWebResponse(res, await adminPromoBannersId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-
-  app.get("/api/admin/social-links", async (req, res) => {
-    await sendWebResponse(res, await adminSocialLinks.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/social-links", async (req, res) => {
-    await sendWebResponse(res, await adminSocialLinks.POST(webRequestFromExpress(req)));
-  });
-  app.patch("/api/admin/social-links/:id", async (req, res) => {
-    await sendWebResponse(res, await adminSocialLinksId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.delete("/api/admin/social-links/:id", async (req, res) => {
-    await sendWebResponse(res, await adminSocialLinksId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-
-  app.get("/api/admin/trust-bar", async (req, res) => {
-    await sendWebResponse(res, await adminTrustBar.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/trust-bar", async (req, res) => {
-    await sendWebResponse(res, await adminTrustBar.POST(webRequestFromExpress(req)));
-  });
-  app.patch("/api/admin/trust-bar/:id", async (req, res) => {
-    await sendWebResponse(res, await adminTrustBarId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.delete("/api/admin/trust-bar/:id", async (req, res) => {
-    await sendWebResponse(res, await adminTrustBarId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-
-  app.get("/api/admin/home-spotlights", async (req, res) => {
-    await sendWebResponse(res, await adminHomeSpotlights.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/home-spotlights", async (req, res) => {
-    await sendWebResponse(res, await adminHomeSpotlights.POST(webRequestFromExpress(req)));
-  });
-  app.patch("/api/admin/home-spotlights/:id", async (req, res) => {
-    await sendWebResponse(res, await adminHomeSpotlightsId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.delete("/api/admin/home-spotlights/:id", async (req, res) => {
-    await sendWebResponse(res, await adminHomeSpotlightsId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-
-  app.get("/api/admin/hero-slides", async (req, res) => {
-    await sendWebResponse(res, await adminHeroSlides.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/hero-slides", async (req, res) => {
-    await sendWebResponse(res, await adminHeroSlides.POST(webRequestFromExpress(req)));
-  });
-  app.patch("/api/admin/hero-slides/:id", async (req, res) => {
-    await sendWebResponse(res, await adminHeroSlidesId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.delete("/api/admin/hero-slides/:id", async (req, res) => {
-    await sendWebResponse(res, await adminHeroSlidesId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-
-  app.get("/api/admin/showroom-media", async (req, res) => {
-    await sendWebResponse(res, await adminShowroomMedia.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/showroom-media", async (req, res) => {
-    await sendWebResponse(res, await adminShowroomMedia.POST(webRequestFromExpress(req)));
-  });
-  app.patch("/api/admin/showroom-media/:id", async (req, res) => {
-    await sendWebResponse(res, await adminShowroomMediaId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.delete("/api/admin/showroom-media/:id", async (req, res) => {
-    await sendWebResponse(res, await adminShowroomMediaId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-
-  app.get("/api/admin/ticker", async (req, res) => {
-    await sendWebResponse(res, await adminTicker.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/ticker", async (req, res) => {
-    await sendWebResponse(res, await adminTicker.POST(webRequestFromExpress(req)));
-  });
-  app.patch("/api/admin/ticker/:id", async (req, res) => {
-    await sendWebResponse(res, await adminTickerId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.delete("/api/admin/ticker/:id", async (req, res) => {
-    await sendWebResponse(res, await adminTickerId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-
-  app.get("/api/admin/media", async (req, res) => {
-    await sendWebResponse(res, await adminMedia.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/media", async (req, res) => {
-    await sendWebResponse(res, await adminMedia.POST(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/media/import-image", async (req, res) => {
-    await sendWebResponse(res, await adminMediaImportImage.POST(webRequestFromExpress(req)));
-  });
-  app.delete("/api/admin/media/:id", async (req, res) => {
-    await sendWebResponse(res, await adminMediaId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.patch("/api/admin/media/:id", async (req, res) => {
-    await sendWebResponse(res, await adminMediaId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-
-  app.patch("/api/admin/product-images/:id", async (req, res) => {
-    await sendWebResponse(res, await adminProductImagesId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.delete("/api/admin/product-images/:id", async (req, res) => {
-    await sendWebResponse(res, await adminProductImagesId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-
-  app.get("/api/admin/cms-page", async (req, res) => {
-    await sendWebResponse(res, await adminCmsPage.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/cms-page/sections", async (req, res) => {
-    await sendWebResponse(res, await adminCmsPageSections.POST(webRequestFromExpress(req)));
-  });
-  app.put("/api/admin/cms-page/reorder", async (req, res) => {
-    await sendWebResponse(res, await adminCmsPageReorder.PUT(webRequestFromExpress(req)));
-  });
-  app.post("/api/admin/cms-page/publish", async (req, res) => {
-    await sendWebResponse(res, await adminCmsPagePublish.POST(webRequestFromExpress(req)));
-  });
-  app.patch("/api/admin/cms-page/sections/:id", async (req, res) => {
-    await sendWebResponse(res, await adminCmsPageSectionsId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.delete("/api/admin/cms-page/sections/:id", async (req, res) => {
-    await sendWebResponse(res, await adminCmsPageSectionsId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-
-  app.get("/api/admin/audit", async (req, res) => {
-    await sendWebResponse(res, await adminAudit.GET(webRequestFromExpress(req)));
-  });
-
-  app.get("/api/admin/import/globaliraq/batches", async (req, res) => {
-    await sendWebResponse(res, await adminImportGlobaliraqBatches.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/admin/import/globaliraq/batches/:id", async (req, res) => {
-    await sendWebResponse(
-      res,
-      await adminImportGlobaliraqBatchesId.GET(webRequestFromExpress(req), ctxId(req.params.id)),
-    );
-  });
-  app.post("/api/admin/import/globaliraq/run-batch", async (req, res) => {
-    await sendWebResponse(res, await adminImportGlobaliraqRunBatch.POST(webRequestFromExpress(req)));
-  });
-
-  app.post("/api/dashboard/auth/login", async (req, res) => {
-    await sendWebResponse(res, await dashboardLogin.POST(webRequestFromExpress(req)));
-  });
-  app.post("/api/dashboard/auth/direct-login", async (req, res) => {
-    await sendWebResponse(res, await dashboardDirectLogin.POST(webRequestFromExpress(req)));
-  });
-  // Dev-only frictionless login — gated by NODE_ENV !== "production" AND
-  // DASHBOARD_DEV_BYPASS=true. Returns 404 in production. See route file.
-  app.post("/api/dashboard/auth/dev-login", async (req, res) => {
-    await sendWebResponse(res, await dashboardDevLogin.POST(webRequestFromExpress(req)));
-  });
-  app.post("/api/dashboard/auth/logout", async (req, res) => {
-    await sendWebResponse(res, await dashboardLogout.POST(webRequestFromExpress(req)));
-  });
-  app.get("/api/dashboard/auth/me", async (req, res) => {
-    await sendWebResponse(res, await dashboardMe.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/dashboard/auth/change-password", async (req, res) => {
-    await sendWebResponse(res, await dashboardChangePw.POST(webRequestFromExpress(req)));
-  });
-  app.get("/api/dashboard/users", async (req, res) => {
-    await sendWebResponse(res, await dashboardUsers.GET(webRequestFromExpress(req)));
-  });
-  app.post("/api/dashboard/users", async (req, res) => {
-    await sendWebResponse(res, await dashboardUsers.POST(webRequestFromExpress(req)));
-  });
-  app.get("/api/dashboard/users/:id", async (req, res) => {
-    await sendWebResponse(res, await dashboardUsersId.GET(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.patch("/api/dashboard/users/:id", async (req, res) => {
-    await sendWebResponse(res, await dashboardUsersId.PATCH(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.delete("/api/dashboard/users/:id", async (req, res) => {
-    await sendWebResponse(res, await dashboardUsersId.DELETE(webRequestFromExpress(req), ctxId(req.params.id)));
-  });
-  app.get("/api/dashboard/overview", async (req, res) => {
-    await sendWebResponse(res, await dashboardOverview.GET(webRequestFromExpress(req)));
-  });
-  app.get("/api/dashboard/audit", async (req, res) => {
-    await sendWebResponse(res, await dashboardAudit.GET(webRequestFromExpress(req)));
-  });
-
-  app.post(
-    "/api/admin/upload",
-    upload.single("file"),
-    async (req, res, next) => {
-      try {
-        const proto = req.get("x-forwarded-proto") || req.protocol;
-        const host = req.get("x-forwarded-host") || req.get("host") || "localhost";
-        const url = `${proto}://${host}${req.originalUrl}`;
-        const form = new FormData();
-        if (req.file) {
-          const file = new File([new Uint8Array(req.file.buffer)], req.file.originalname, {
-            type: req.file.mimetype || "application/octet-stream",
-          });
-          form.set("file", file);
-        }
-        const b = req.body as Record<string, unknown> | undefined;
-        if (b && typeof b === "object") {
-          for (const [k, v] of Object.entries(b)) {
-            if (v != null) form.set(k, String(v));
-          }
-        }
-        /** Must forward Cookie (and other headers) — admin auth reads `fz_admin_session` from Cookie. */
-        const headers = new Headers();
-        const cookie = req.headers.cookie;
-        if (cookie) headers.set("cookie", cookie);
-        const webReq = new Request(url, { method: "POST", headers, body: form });
-        await sendWebResponse(res, await adminUpload.POST(webReq));
-      } catch (e) {
-        next(e);
-      }
-    },
-  );
-
-  app.post(
-    "/api/admin/upload/product-image",
-    upload.single("file"),
-    async (req, res, next) => {
-      try {
-        const proto = req.get("x-forwarded-proto") || req.protocol;
-        const host = req.get("x-forwarded-host") || req.get("host") || "localhost";
-        const url = `${proto}://${host}${req.originalUrl}`;
-        const form = new FormData();
-        if (req.file) {
-          const file = new File([new Uint8Array(req.file.buffer)], req.file.originalname, {
-            type: req.file.mimetype || "application/octet-stream",
-          });
-          form.set("file", file);
-        }
-        const headers = new Headers();
-        const cookie = req.headers.cookie;
-        if (cookie) headers.set("cookie", cookie);
-        const webReq = new Request(url, { method: "POST", headers, body: form });
-        await sendWebResponse(res, await adminUploadProductImage.POST(webReq));
-      } catch (e) {
-        next(e);
-      }
-    },
-  );
+  const { files, routes } = await mountApiRoutes(app);
+  console.log(`[api] auto-mounted ${routes} routes from ${files} route modules`);
 
   app.use((_req, res) => {
     res.status(404).type("application/json").send(JSON.stringify({ ok: false, error: "NOT_FOUND" }));
