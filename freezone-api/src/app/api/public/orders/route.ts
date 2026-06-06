@@ -195,6 +195,22 @@ export async function POST(req: Request) {
         });
       }
 
+      /** Append-only inventory ledger: one row per line, negative delta.
+       *  qtyBefore/qtyAfter are best-effort (from the snapshot read above). */
+      await tx.stockMovement.createMany({
+        data: priced.map((line) => {
+          const before = productById.get(line.productId)?.quantity ?? null;
+          return {
+            productId: line.productId,
+            delta: -line.qty,
+            reason: "order_placed",
+            orderId: order.id,
+            qtyBefore: before,
+            qtyAfter: before == null ? null : before - line.qty,
+          };
+        }),
+      });
+
       return { id: order.id, orderNumber };
     });
 

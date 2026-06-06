@@ -18,6 +18,7 @@ import {
 import { productQueryMissingSecondarySupport } from "@/lib/prisma-product-secondary-fallback";
 import { parseAdminProductPatch } from "@/lib/admin-product-patch";
 import { buildProductUpdateData } from "@/lib/admin-product-update";
+import { actorForAudit } from "@/lib/admin-auth";
 import type { AdminRole } from "@prisma/client";
 
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -141,6 +142,22 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       where: { id },
       data: { ...built.data, specs: finalSpecs as object },
     });
+
+    /** Inventory ledger: record manual quantity edits (StockMovement, contract (k)). */
+    if (typeof body.quantity === "number" && body.quantity !== existing.quantity) {
+      const actor = actorForAudit(mutateGuard.actor);
+      await prisma.stockMovement.create({
+        data: {
+          productId: id,
+          delta: body.quantity - existing.quantity,
+          reason: "manual_adjust",
+          qtyBefore: existing.quantity,
+          qtyAfter: body.quantity,
+          userId: actor.userId,
+          userEmail: actor.userEmail,
+        },
+      });
+    }
 
     if (body.secondaryCategoryIds !== undefined) {
       await replaceProductSecondaryCategories(id, nextCategoryId, body.secondaryCategoryIds ?? []);

@@ -1,5 +1,6 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { auditContext, guardAdminMutate } from "@/lib/admin-route-guard";
+import { actorForAudit } from "@/lib/admin-auth";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
@@ -84,6 +85,22 @@ export async function POST(req: Request): Promise<Response> {
             createdById,
           },
         });
+        /** Inventory ledger: opening stock from the CSV import (contract (k)). */
+        if (product.quantity > 0) {
+          const actor = actorForAudit(mutate.actor);
+          await prisma.stockMovement.create({
+            data: {
+              productId: product.id,
+              delta: product.quantity,
+              reason: "import",
+              qtyBefore: 0,
+              qtyAfter: product.quantity,
+              userId: actor.userId,
+              userEmail: actor.userEmail,
+              note: `importBatch:${batch.id}`,
+            },
+          });
+        }
         succeeded++;
         results.push({ row: i + 2, ok: true, productId: product.id });
       } catch (e) {

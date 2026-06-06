@@ -1,5 +1,6 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { auditContext, guardAdminMutate, guardAdminRead } from "@/lib/admin-route-guard";
+import { actorForAudit } from "@/lib/admin-auth";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
@@ -195,6 +196,24 @@ export async function POST(req: Request) {
         ...(body.importBatchId ? { importBatchId: body.importBatchId } : {}),
       },
     });
+
+    /** Inventory ledger: opening stock entry. Importer-created rows record
+     *  reason "import" (provenance via importBatchId), manual creates "manual_adjust". */
+    if (product.quantity > 0) {
+      const actor = actorForAudit(mutateGuard.actor);
+      await prisma.stockMovement.create({
+        data: {
+          productId: product.id,
+          delta: product.quantity,
+          reason: body.importBatchId ? "import" : "manual_adjust",
+          qtyBefore: 0,
+          qtyAfter: product.quantity,
+          userId: actor.userId,
+          userEmail: actor.userEmail,
+          note: body.importBatchId ? `importBatch:${body.importBatchId}` : "initial stock on create",
+        },
+      });
+    }
 
     const persisted = await persistProductSpecsForProduct(product.id, body.categoryId, body.specs);
     if (persisted.ok && Object.keys(persisted.specs).length) {
