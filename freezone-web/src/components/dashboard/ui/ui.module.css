@@ -88,6 +88,17 @@
   padding: 0;
 }
 
+/* Loading spinner inside buttons */
+.spin {
+  animation: fz-spin 0.8s linear infinite;
+}
+
+@keyframes fz-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ─── Input / Field ────────────────────────────────────────────────────── */
 .field {
   display: flex;
@@ -136,6 +147,27 @@
 .input::placeholder,
 .textarea::placeholder {
   color: var(--fz-text-muted);
+}
+
+.requiredMark {
+  color: var(--fz-danger);
+  margin-inline-start: 3px;
+}
+
+/* Per-field invalid state — set by Field(error) or Input/Textarea/Select(invalid) */
+.fieldInvalid .input,
+.fieldInvalid .select,
+.fieldInvalid .textarea,
+.inputInvalid {
+  border-color: var(--fz-danger);
+}
+
+.fieldInvalid .input:focus,
+.fieldInvalid .select:focus,
+.fieldInvalid .textarea:focus,
+.inputInvalid:focus {
+  border-color: var(--fz-danger);
+  box-shadow: 0 0 0 3px var(--fz-danger-bg);
 }
 
 .errorText {
@@ -259,11 +291,192 @@
   background: var(--fz-bg-soft);
 }
 
+/* Sticky-header mode: the wrapper becomes the scroll container */
+.tableWrapSticky {
+  overflow: auto;
+  border-block-end: 1px solid var(--fz-border);
+}
+
+.theadSticky th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* Logical alignment helpers (numeric columns align to the end — design §5) */
+.cellEnd {
+  text-align: end;
+}
+
+.cellCenter {
+  text-align: center;
+}
+
+.cellMono {
+  font-family: var(--fz-font-mono, ui-monospace, monospace);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Sortable header button */
+.sortBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  transition: color var(--fz-t);
+}
+
+.sortBtn:hover {
+  color: var(--fz-text);
+}
+
+.sortBtnActive {
+  color: var(--fz-brand);
+}
+
+.sortIdleIcon {
+  opacity: 0.45;
+}
+
+/* Selection checkboxes */
+.checkCol {
+  width: 40px;
+  text-align: center;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--fz-brand);
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.rowSelected,
+.table tbody tr.rowSelected:hover {
+  background: var(--fz-brand-50);
+}
+
+/* Footer row: selection summary + pagination */
+.tableFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 18px;
+}
+
+.selectionInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--fz-text-soft);
+}
+
+.linkBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fz-brand);
+  cursor: pointer;
+}
+
+.linkBtn:hover {
+  color: var(--fz-brand-600);
+  text-decoration: underline;
+}
+
 .empty {
   padding: 60px 20px;
   text-align: center;
   color: var(--fz-text-muted);
   font-size: 14px;
+}
+
+/* ─── Pagination ───────────────────────────────────────────────────────── */
+.pagination {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-inline-start: auto;
+  font-size: 12.5px;
+  color: var(--fz-text-soft);
+}
+
+.paginationRange {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.paginationSize {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.paginationSizeSelect {
+  height: 30px;
+  padding: 0 8px;
+  border-radius: var(--fz-radius-sm);
+  border: 1px solid var(--fz-border);
+  background: var(--fz-bg-elev);
+  color: var(--fz-text);
+  font-size: 12.5px;
+}
+
+.paginationButtons {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.paginationPage {
+  padding: 0 8px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.pageBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--fz-radius-sm);
+  border: 1px solid var(--fz-border);
+  background: var(--fz-bg-elev);
+  color: var(--fz-text-soft);
+  transition:
+    background var(--fz-t),
+    color var(--fz-t);
+}
+
+.pageBtn:not(:disabled):hover {
+  background: var(--fz-bg-soft);
+  color: var(--fz-text);
+}
+
+.pageBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Directional icons (chevrons) mirror in RTL — design system §6.3 */
+[dir="rtl"] .dirIcon {
+  transform: scaleX(-1);
 }
 
 /* ─── Modal ────────────────────────────────────────────────────────────── */
@@ -292,6 +505,10 @@
 
 .modalLg {
   max-width: 720px;
+}
+
+.modalSm {
+  max-width: 400px;
 }
 
 .modalHeader {
@@ -488,4 +705,331 @@
   width: 28px;
   height: 28px;
   font-size: 11px;
+}
+
+/* ─── ConfirmDialog ────────────────────────────────────────────────────── */
+.confirmBody {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.confirmIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--fz-info-bg);
+  color: var(--fz-info);
+}
+
+.confirmIconDanger {
+  background: var(--fz-danger-bg);
+  color: var(--fz-danger);
+}
+
+.confirmTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fz-text);
+}
+
+.confirmMessage {
+  margin-top: 6px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--fz-text-soft);
+}
+
+/* ─── Drawer (end-side, RTL-aware) ─────────────────────────────────────── */
+.drawerBackdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--fz-overlay, rgba(15, 23, 42, 0.45));
+  z-index: 100;
+  animation: fz-fade 160ms ease-out;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  inset-inline-end: 0;
+  width: min(var(--fz-drawer-w, 400px), 94vw);
+  background: var(--fz-bg-elev);
+  border-inline-start: 1px solid var(--fz-border);
+  box-shadow: var(--fz-elev-3, var(--fz-shadow-lg));
+  display: flex;
+  flex-direction: column;
+  z-index: 101;
+  animation: fz-drawer-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes fz-drawer-in {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Slide mirrors with the reading direction (drawer sits on the inline-end edge) */
+[dir="rtl"] .drawer {
+  animation-name: fz-drawer-in-rtl;
+}
+
+@keyframes fz-drawer-in-rtl {
+  from {
+    transform: translateX(-40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--fz-border);
+  flex-shrink: 0;
+}
+
+.drawerTitle {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.drawerBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.drawerFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--fz-border);
+  background: var(--fz-bg-soft);
+  flex-shrink: 0;
+}
+
+/* ─── Tabs (underline style — design system §5) ────────────────────────── */
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1px solid var(--fz-border);
+  overflow-x: auto;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px;
+  margin-bottom: -1px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--fz-text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color var(--fz-t),
+    border-color var(--fz-t);
+}
+
+.tab:hover:not(:disabled) {
+  color: var(--fz-text);
+}
+
+.tab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.tabActive {
+  color: var(--fz-text);
+  border-bottom-color: var(--fz-brand);
+}
+
+.tabCount {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--fz-bg-soft);
+  color: var(--fz-text-soft);
+}
+
+.tabActive .tabCount {
+  background: var(--fz-brand-50);
+  color: var(--fz-brand);
+}
+
+/* ─── EmptyState ───────────────────────────────────────────────────────── */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.emptyStateIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--fz-bg-soft);
+  color: var(--fz-text-muted);
+  margin-bottom: 4px;
+}
+
+.emptyStateTitle {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--fz-text);
+}
+
+.emptyStateDesc {
+  font-size: 13px;
+  color: var(--fz-text-muted);
+  max-width: 360px;
+  line-height: 1.55;
+}
+
+.emptyStateAction {
+  margin-top: 10px;
+}
+
+/* ─── Toast ────────────────────────────────────────────────────────────── */
+.toastViewport {
+  position: fixed;
+  bottom: 20px;
+  inset-inline-end: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 200;
+  max-width: min(380px, calc(100vw - 40px));
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--fz-radius-lg);
+  border: 1px solid var(--fz-border);
+  background: var(--fz-bg-elev);
+  box-shadow: var(--fz-elev-3, var(--fz-shadow-lg));
+  animation: fz-toast-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes fz-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toastIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.toastSuccess .toastIcon {
+  color: var(--fz-success);
+}
+
+.toastError .toastIcon {
+  color: var(--fz-danger);
+}
+
+.toastError {
+  border-color: var(--fz-danger-bg);
+}
+
+.toastInfo .toastIcon {
+  color: var(--fz-info);
+}
+
+.toastContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.toastTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fz-text);
+  margin-bottom: 2px;
+}
+
+.toastMessage {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fz-text-soft);
+  overflow-wrap: anywhere;
+}
+
+.toastClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--fz-radius-sm);
+  background: transparent;
+  color: var(--fz-text-muted);
+  cursor: pointer;
+  transition:
+    background var(--fz-t),
+    color var(--fz-t);
+}
+
+.toastClose:hover {
+  background: var(--fz-bg-soft);
+  color: var(--fz-text);
+}
+
+@media (max-width: 640px) {
+  .toastViewport {
+    inset-inline: 12px;
+    bottom: 12px;
+    max-width: none;
+  }
+
+  .drawer {
+    width: 100vw;
+    border-inline-start: none;
+  }
 }
