@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "@/i18n/hooks";
 import { freezoneApiUrl } from "@/lib/api-internal";
 import { Seo } from "@/components/seo/Seo";
+import { ResponsiveImage } from "@/components/ui/ResponsiveImage";
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en").format(n);
@@ -105,11 +106,17 @@ export default function CartPage() {
                   exit={{ opacity: 0, x: 20, transition: { duration: 0.22 } }}
                   transition={{ type: "spring", stiffness: 380, damping: 30 }}
                 >
-                  <img
-                    src={item.images?.[0] || "https://placehold.co/100x100"}
-                    alt={item.name}
-                    className={styles.itemImage}
-                  />
+                  {item.images?.[0] ? (
+                    <ResponsiveImage
+                      src={item.images[0]}
+                      alt={item.name}
+                      className={styles.itemImage}
+                      sizes="100px"
+                      aspectRatio={1}
+                    />
+                  ) : (
+                    <div className={styles.itemImage} aria-hidden />
+                  )}
                   <div className={styles.itemInfo}>
                     <h3 className={styles.itemName}>{item.name}</h3>
                     <div className={styles.itemBrand}>{item.brand}</div>

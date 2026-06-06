@@ -3,6 +3,7 @@
 import { ArrowRight } from "lucide-react";
 import { Link } from "@/navigation";
 import { useLocale } from "@/i18n/hooks";
+import { ResponsiveImage } from "@/components/ui/ResponsiveImage";
 import styles from "./PromoGrid.module.css";
 
 /** FROZEN payload — see fz-ws1-backend/docs/API_CONTRACTS.md §(j) `promo_grid`. */
@@ -62,12 +63,12 @@ export function PromoGrid({ payload }: { payload: Record<string, unknown> }) {
       <div className={`${styles.grid} ${LAYOUT_CLASS[layout]}`}>
         {tiles.map((tile, i) => (
           <Link key={tile.id} href={tile.href} className={styles.tile} prefetch>
-            <img
+            <ResponsiveImage
               src={tile.imageUrl}
               alt={tile.title}
               className={styles.image}
-              loading={i === 0 ? "eager" : "lazy"}
-              decoding="async"
+              sizes="(max-width: 720px) 100vw, 50vw"
+              priority={i === 0}
             />
             <div className={styles.scrim} aria-hidden />
             <div className={styles.copy}>

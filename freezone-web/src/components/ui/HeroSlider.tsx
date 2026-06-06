@@ -5,6 +5,7 @@ import styles from "./HeroSlider.module.css";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Link } from "@/navigation";
+import { ResponsiveImage } from "./ResponsiveImage";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { useLocale } from "@/i18n/hooks";
 import type { PublicHeroSlide } from "@/lib/layout-cms";
@@ -58,12 +59,12 @@ function HeroSlideBackground({ src, priority }: { src: string; priority: boolean
     return <div className={styles.bgImageFallback} aria-hidden />;
   }
   return (
-    <img
+    <ResponsiveImage
       src={src}
       alt=""
       className={styles.bgImage}
-      loading={priority ? "eager" : "lazy"}
-      decoding="async"
+      sizes="100vw"
+      priority={priority}
       onError={() => setFailed(true)}
     />
   );

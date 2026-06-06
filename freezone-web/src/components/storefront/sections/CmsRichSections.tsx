@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import { Link } from "@/navigation";
 import { useLocale } from "@/i18n/hooks";
+import { ResponsiveImage } from "@/components/ui/ResponsiveImage";
 import styles from "./CmsRichSections.module.css";
 
 function str(v: unknown): string {
@@ -91,7 +92,12 @@ export function SplitRichtext({ payload }: { payload: Record<string, unknown> })
           {body ? <p className={`fz-type-body ${styles.splitBody}`}>{body}</p> : null}
         </div>
         {imageUrl ? (
-          <img src={imageUrl} alt="" className={styles.splitImage} loading="lazy" decoding="async" />
+          <ResponsiveImage
+            src={imageUrl}
+            alt=""
+            className={styles.splitImage}
+            sizes="(max-width: 900px) 100vw, 50vw"
+          />
         ) : null}
       </div>
     </section>

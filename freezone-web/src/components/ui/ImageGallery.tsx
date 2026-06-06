@@ -3,6 +3,7 @@
 import { Suspense, lazy, useState } from "react";
 import styles from "./ImageGallery.module.css";
 import { Maximize, Box } from "lucide-react";
+import { ResponsiveImage } from "./ResponsiveImage";
 
 const ModelViewer = lazy(() => import("./ModelViewer").then((m) => ({ default: m.ModelViewer })));
 
@@ -44,7 +45,13 @@ export function ImageGallery({ images, model3d, alt }: ImageGalleryProps) {
             </Suspense>
           </div>
         ) : (
-          <img src={activeMedia} alt={alt} className={styles.mainImage} />
+          <ResponsiveImage
+            src={activeMedia}
+            alt={alt}
+            className={styles.mainImage}
+            sizes="(max-width: 900px) 100vw, 600px"
+            priority
+          />
         )}
 
         {!isFullscreen && (
@@ -71,7 +78,13 @@ export function ImageGallery({ images, model3d, alt }: ImageGalleryProps) {
                     <span>3D</span>
                   </div>
                 ) : (
-                  <img src={media} alt={`Thumbnail ${idx}`} className={styles.thumbnailImg} />
+                  <ResponsiveImage
+                    src={media}
+                    alt={`Thumbnail ${idx + 1}`}
+                    className={styles.thumbnailImg}
+                    sizes="96px"
+                    aspectRatio={1}
+                  />
                 )}
               </button>
             );

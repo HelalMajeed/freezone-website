@@ -5,6 +5,7 @@ import { Link } from "@/navigation";
 import { useLocale } from "@/i18n/hooks";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { GamingCategoriesGrid } from "@/components/ui/GamingCategoriesGrid";
+import { ResponsiveImage } from "@/components/ui/ResponsiveImage";
 import styles from "./CategoriesShowcase.module.css";
 
 /** FROZEN payload — see fz-ws1-backend/docs/API_CONTRACTS.md §(j) `categories_showcase`. */
@@ -62,12 +63,11 @@ export function CategoriesShowcase({ payload }: { payload: Record<string, unknow
         {items.map((item) => (
           <Link key={item.id} href={item.href} className={styles.card} prefetch>
             {item.imageUrl ? (
-              <img
+              <ResponsiveImage
                 src={item.imageUrl}
                 alt=""
                 className={styles.image}
-                loading="lazy"
-                decoding="async"
+                sizes="(max-width: 640px) 50vw, 25vw"
               />
             ) : null}
             <div className={styles.scrim} aria-hidden />

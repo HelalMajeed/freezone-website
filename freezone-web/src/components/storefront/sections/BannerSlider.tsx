@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@/navigation";
 import { useLocale } from "@/i18n/hooks";
+import { ResponsiveImage } from "@/components/ui/ResponsiveImage";
 import styles from "./BannerSlider.module.css";
 
 /** FROZEN payload — see fz-ws1-backend/docs/API_CONTRACTS.md §(j) `banner_slider`. */
@@ -98,12 +99,12 @@ export function BannerSlider({ payload }: { payload: Record<string, unknown> }) 
                 {item.imageUrlMobile ? (
                   <source media="(max-width: 640px)" srcSet={item.imageUrlMobile} />
                 ) : null}
-                <img
+                <ResponsiveImage
                   src={item.imageUrl}
                   alt={item.title}
                   className={styles.image}
-                  loading={i === 0 ? "eager" : "lazy"}
-                  decoding="async"
+                  sizes="100vw"
+                  priority={i === 0}
                 />
               </picture>
               {item.title || item.sub || item.badge ? <div className={styles.scrim} aria-hidden /> : null}
