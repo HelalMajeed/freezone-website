@@ -11,6 +11,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -18,6 +19,7 @@ import {
   type InputHTMLAttributes,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
+  type RefObject,
   type TextareaHTMLAttributes,
 } from "react";
 import {
@@ -515,12 +517,73 @@ export function Table<Row>({
   );
 }
 
+// ─── Dialog focus management (shared by Modal + Drawer) ──────────────────────
+
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Accessible dialog behaviour for an overlay surface: on open it captures the
+ * previously-focused element and moves focus into the panel; while open it traps
+ * Tab/Shift+Tab within the panel; on close it restores focus to the trigger.
+ * Satisfies WCAG 2.4.3 (Focus Order) and 2.1.2 (No Keyboard Trap — focus can
+ * always leave via Escape).
+ */
+function useDialogFocusTrap(open: boolean, panelRef: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    if (!open) return;
+    const panel = panelRef.current;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+
+    const focusables = () =>
+      panel
+        ? Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+            (el) => el.offsetParent !== null || el === panel,
+          )
+        : [];
+
+    /** Respect a child's autoFocus (e.g. ConfirmDialog's confirm button) —
+     *  only move focus if it isn't already inside the panel. */
+    if (panel && !panel.contains(document.activeElement)) {
+      (focusables()[0] ?? panel).focus();
+    }
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Tab" || !panel) return;
+      const items = focusables();
+      if (items.length === 0) {
+        e.preventDefault();
+        panel.focus();
+        return;
+      }
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey) {
+        if (active === first || !panel.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !panel.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => {
+      document.removeEventListener("keydown", onKey, true);
+      previouslyFocused?.focus?.();
+    };
+  }, [open, panelRef]);
+}
+
 // ─── Modal ──────────────────────────────────────────────────────────────────
 
 export function Modal({
   open,
   onClose,
   title,
+  ariaLabel,
   size = "md",
   footer,
   children,
@@ -528,11 +591,15 @@ export function Modal({
   open: boolean;
   onClose: () => void;
   title?: ReactNode;
+  /** Accessible name when no visible `title` is rendered. */
+  ariaLabel?: string;
   size?: "sm" | "md" | "lg";
   footer?: ReactNode;
   children: ReactNode;
 }) {
   const { t } = useDashboardLocale();
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -545,19 +612,25 @@ export function Modal({
       document.body.style.overflow = "";
     };
   }, [open, onClose]);
+  useDialogFocusTrap(open, panelRef);
 
   if (!open) return null;
   return (
     <div className={s.modalBackdrop} onClick={onClose}>
       <div
+        ref={panelRef}
         className={cx(s.modal, size === "lg" && s.modalLg, size === "sm" && s.modalSm)}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
+        {...(title ? { "aria-labelledby": titleId } : ariaLabel ? { "aria-label": ariaLabel } : {})}
         onClick={(e) => e.stopPropagation()}
       >
         {title && (
           <div className={s.modalHeader}>
-            <h2 className={s.modalTitle}>{title}</h2>
+            <h2 className={s.modalTitle} id={titleId}>
+              {title}
+            </h2>
             <Button variant="ghost" size="sm" iconOnly onClick={onClose} aria-label={t("dialog.close")}>
               <X size={16} aria-hidden />
             </Button>
@@ -698,6 +771,7 @@ export function Drawer({
   open,
   onClose,
   title,
+  ariaLabel,
   footer,
   width,
   children,
@@ -705,6 +779,8 @@ export function Drawer({
   open: boolean;
   onClose: () => void;
   title?: ReactNode;
+  /** Accessible name when no visible `title` is rendered. */
+  ariaLabel?: string;
   footer?: ReactNode;
   /** Defaults to `var(--fz-drawer-w)` (400px). */
   width?: string;
@@ -712,6 +788,7 @@ export function Drawer({
 }) {
   const { t } = useDashboardLocale();
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -721,15 +798,12 @@ export function Drawer({
     document.addEventListener("keydown", onKey);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    // Move focus into the panel for keyboard users.
-    panelRef.current
-      ?.querySelector<HTMLElement>("button, a[href], input, select, textarea, [tabindex]")
-      ?.focus();
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
     };
   }, [open, onClose]);
+  useDialogFocusTrap(open, panelRef);
 
   if (!open) return null;
   return (
@@ -740,10 +814,18 @@ export function Drawer({
         style={width ? { width } : undefined}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
+        {...(title ? { "aria-labelledby": titleId } : ariaLabel ? { "aria-label": ariaLabel } : {})}
         onClick={(e) => e.stopPropagation()}
       >
         <div className={s.drawerHeader}>
-          {title ? <h2 className={s.drawerTitle}>{title}</h2> : <span />}
+          {title ? (
+            <h2 className={s.drawerTitle} id={titleId}>
+              {title}
+            </h2>
+          ) : (
+            <span />
+          )}
           <Button variant="ghost" size="sm" iconOnly onClick={onClose} aria-label={t("drawer.close")}>
             <X size={16} aria-hidden />
           </Button>

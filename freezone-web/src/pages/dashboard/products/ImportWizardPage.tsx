@@ -52,56 +52,68 @@ const TARGET_FIELDS = [
 
 type TargetField = (typeof TARGET_FIELDS)[number]["field"];
 
-/** Minimal RFC4180-ish parser (mirror of the server's). */
+/**
+ * Minimal RFC4180-ish parser. Single-pass state machine that builds rows and
+ * cells together, so a quoted field containing commas or newlines is never
+ * mis-split (a previous two-pass version stripped the structural quotes first,
+ * then re-split on commas, corrupting the column mapping).
+ */
 function parseCsv(text: string): { headers: string[]; rows: string[][] } {
-  const lines: string[] = [];
-  let cur = "";
+  const records: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
   let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (ch === '"') {
-      if (inQuotes && text[i + 1] === '"') {
-        cur += '"';
-        i++;
-      } else inQuotes = !inQuotes;
-      continue;
-    }
-    if (!inQuotes && (ch === "\n" || ch === "\r")) {
-      if (ch === "\r" && text[i + 1] === "\n") i++;
-      if (cur.trim()) lines.push(cur);
-      cur = "";
-      continue;
-    }
-    cur += ch;
-  }
-  if (cur.trim()) lines.push(cur);
+  let cellHadContent = false;
 
-  const splitLine = (line: string): string[] => {
-    const out: string[] = [];
-    let cell = "";
-    let q = false;
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i];
-      if (c === '"') {
-        if (q && line[i + 1] === '"') {
-          cell += '"';
-          i++;
-        } else q = !q;
-        continue;
-      }
-      if (c === "," && !q) {
-        out.push(cell.trim());
-        cell = "";
-        continue;
-      }
-      cell += c;
-    }
-    out.push(cell.trim());
-    return out;
+  const pushCell = () => {
+    row.push(cell.trim());
+    cell = "";
+  };
+  const pushRow = () => {
+    pushCell();
+    /** Skip blank lines (a single empty cell and no real content). */
+    if (cellHadContent || row.length > 1 || row[0] !== "") records.push(row);
+    row = [];
+    cellHadContent = false;
   };
 
-  if (!lines.length) return { headers: [], rows: [] };
-  return { headers: splitLine(lines[0]), rows: lines.slice(1).map(splitLine) };
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') {
+          cell += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        cell += ch;
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inQuotes = true;
+      cellHadContent = true;
+      continue;
+    }
+    if (ch === ",") {
+      pushCell();
+      continue;
+    }
+    if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && text[i + 1] === "\n") i++;
+      pushRow();
+      continue;
+    }
+    cell += ch;
+    if (ch.trim()) cellHadContent = true;
+  }
+  /** Flush a trailing record with no final newline. */
+  if (inQuotes || cell !== "" || row.length > 0) pushRow();
+
+  if (!records.length) return { headers: [], rows: [] };
+  return { headers: records[0], rows: records.slice(1) };
 }
 
 function csvEscape(value: string): string {

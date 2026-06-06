@@ -475,8 +475,15 @@ export function NavBar() {
 
           {/* Actions: LOGO left already | SEARCH center | actions right */}
           <div className={styles.actions}>
-            <button className={`${styles.actionIcon} ${styles.menuToggle}`} onClick={() => setIsMobileMenuOpen(true)}>
-              <Menu size={24} />
+            <button
+              type="button"
+              className={`${styles.actionIcon} ${styles.menuToggle}`}
+              onClick={() => setIsMobileMenuOpen(true)}
+              aria-label={t("openMenu")}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-menu"
+            >
+              <Menu size={24} aria-hidden />
             </button>
 
             <Link
