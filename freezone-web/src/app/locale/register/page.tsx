@@ -7,9 +7,11 @@ import { Phone, Shield, UserPlus, User } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { useTranslations } from "@/i18n/hooks";
+import { Seo } from "@/components/seo/Seo";
 
 export default function RegisterPage() {
   const t = useTranslations("Auth");
+  const tSeo = useTranslations("Seo");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,6 +20,7 @@ export default function RegisterPage() {
 
   return (
     <div className={styles.wrapper}>
+      <Seo title={tSeo("registerTitle")} noindex />
       <motion.div
         initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

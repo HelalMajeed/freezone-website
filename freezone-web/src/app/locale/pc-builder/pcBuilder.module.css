@@ -3,7 +3,7 @@
 
 /* ── Page Hero ────────────────────────────────── */
 .pageHero {
-  background: var(--gray-950);
+  background: var(--color-surface-dark);
   color: white;
   padding: 48px 0 44px;
   border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -37,7 +37,7 @@
   font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--red-500);
+  color: var(--color-brand-500);
   margin-bottom: 8px;
   display: flex;
   align-items: center;
@@ -47,7 +47,7 @@
   content: '';
   width: 20px;
   height: 2px;
-  background: var(--red-500);
+  background: var(--color-brand-500);
   display: block;
 }
 
@@ -106,7 +106,7 @@
   content: '';
   width: 4px;
   height: 24px;
-  background: var(--red-600);
+  background: var(--color-accent);
   border-radius: 4px;
 }
 
@@ -197,14 +197,14 @@
   transition: all 0.2s;
 }
 .chooseBtn:hover {
-  border-color: var(--red-600);
-  color: var(--red-600);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
   background: rgba(11, 31, 59,0.04);
 }
 
 .removeBtn {
   background: transparent;
-  color: var(--red-600);
+  color: var(--color-accent);
   border: 1.5px solid rgba(11, 31, 59,0.25);
   padding: 8px 16px;
   border-radius: var(--radius-md);
@@ -213,7 +213,7 @@
   cursor: pointer;
   transition: all 0.2s;
 }
-.removeBtn:hover { background: rgba(11, 31, 59,0.06); border-color: var(--red-600); }
+.removeBtn:hover { background: rgba(11, 31, 59,0.06); border-color: var(--color-accent); }
 
 /* ── Summary Column ───────────────────────────── */
 .summaryCol {
@@ -263,7 +263,7 @@
 .summaryTotal span:last-child {
   font-family: var(--fz-font-display);
   font-size: 1.7rem;
-  color: var(--red-600);
+  color: var(--color-accent);
 }
 
 .checkoutBtn {
@@ -310,7 +310,7 @@
 .modalHeader h3 { font-weight: 800; font-size: 1.1rem; }
 
 .closeBtn {
-  background: var(--gray-200);
+  background: var(--color-neutral-200);
   border: none;
   width: 32px;
   height: 32px;
@@ -322,7 +322,7 @@
   justify-content: center;
   transition: all 0.2s;
 }
-.closeBtn:hover { color: var(--red-600); background: rgba(11, 31, 59,0.08); }
+.closeBtn:hover { color: var(--color-accent); background: rgba(11, 31, 59,0.08); }
 
 .modalBody {
   padding: 20px;
@@ -344,7 +344,7 @@
   min-height: 120px;
 }
 .selectCard:hover {
-  border-color: var(--red-600);
+  border-color: var(--color-accent);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
@@ -390,7 +390,7 @@
   cursor: pointer;
   transition: all 0.2s;
 }
-.badge3d:hover { background: var(--red-600); transform: scale(1.1); }
+.badge3d:hover { background: var(--color-accent); transform: scale(1.1); }
 
 .cardMain {
   flex: 1;
@@ -434,7 +434,7 @@
   font-family: var(--fz-font-display);
   font-weight: 900;
   font-size: 1.25rem;
-  color: var(--red-600);
+  color: var(--color-accent);
 }
 
 .priceLabel {
@@ -490,7 +490,7 @@
 
 .stepHint {
   font-size: 0.72rem;
-  color: var(--red-600);
+  color: var(--color-accent);
   margin-top: 6px;
   font-weight: 600;
   max-width: 280px;
@@ -542,7 +542,7 @@
 }
 
 .platformCard:hover {
-  border-color: var(--red-600);
+  border-color: var(--color-accent);
   background: rgba(11, 31, 59, 0.05);
 }
 
@@ -563,7 +563,7 @@
   margin: 0 0 4px;
   background: transparent;
   border: none;
-  color: var(--red-600);
+  color: var(--color-accent);
   font-weight: 700;
   font-size: 0.85rem;
   cursor: pointer;

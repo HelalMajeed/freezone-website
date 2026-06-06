@@ -18,6 +18,17 @@ export type StorefrontBootstrapPayload = {
   theme: ThemeTokens;
 };
 
+/** Shell slice of the bootstrap — everything NavBar/Footer/theme need, no catalog. */
+export type StorefrontShellData = {
+  site: PublicSite;
+  home: HomeCmsPayload;
+  theme: ThemeTokens;
+};
+
+export function shellFromBundle(bundle: StorefrontBootstrapPayload): StorefrontShellData {
+  return { site: bundle.site, home: bundle.home, theme: bundle.theme };
+}
+
 /** Announcement marquee strips are disabled on the public storefront. */
 function withoutMarqueeStrips(payload: StorefrontBootstrapPayload): StorefrontBootstrapPayload {
   return {
@@ -97,5 +108,56 @@ export async function fetchStorefrontBootstrap(locale: "en" | "ar"): Promise<Sto
       e,
     );
     return loadFallback(locale);
+  }
+}
+
+/**
+ * In-flight dedupe: the layout splits the bootstrap into a long-cached *shell*
+ * query (site/theme/home) and a short-cached *catalog* query — both share one
+ * HTTP request when fired in the same render.
+ */
+const inflightBootstrap = new Map<string, Promise<StorefrontBootstrapPayload>>();
+
+export function fetchStorefrontBootstrapShared(locale: "en" | "ar"): Promise<StorefrontBootstrapPayload> {
+  const existing = inflightBootstrap.get(locale);
+  if (existing) return existing;
+  const p = fetchStorefrontBootstrap(locale).finally(() => {
+    inflightBootstrap.delete(locale);
+  });
+  inflightBootstrap.set(locale, p);
+  return p;
+}
+
+/**
+ * localStorage shell snapshot — lets returning visitors paint the real
+ * NavBar/Footer chrome on first render while the network revalidates.
+ */
+const SHELL_SNAPSHOT_VERSION = 1;
+
+function shellSnapshotKey(locale: "en" | "ar"): string {
+  return `fz:shell-snapshot:v${SHELL_SNAPSHOT_VERSION}:${locale}`;
+}
+
+export function readShellSnapshot(locale: "en" | "ar"): StorefrontShellData | undefined {
+  try {
+    const raw = window.localStorage.getItem(shellSnapshotKey(locale));
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw) as Partial<StorefrontShellData> | null;
+    if (!parsed || typeof parsed !== "object" || !parsed.site || !parsed.home) return undefined;
+    return {
+      site: parsed.site as PublicSite,
+      home: parsed.home as HomeCmsPayload,
+      theme: mergeThemeTokens(parsed.theme),
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+export function writeShellSnapshot(locale: "en" | "ar", bundle: StorefrontBootstrapPayload): void {
+  try {
+    window.localStorage.setItem(shellSnapshotKey(locale), JSON.stringify(shellFromBundle(bundle)));
+  } catch {
+    /* private mode / quota — snapshot is an optimization only */
   }
 }

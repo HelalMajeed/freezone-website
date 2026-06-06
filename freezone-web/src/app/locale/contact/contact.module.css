@@ -15,7 +15,7 @@
 
 /* ── Page Hero ────────────────────────────────── */
 .pageHero {
-  background: var(--gray-950);
+  background: var(--color-surface-dark);
   color: white;
   padding: 56px 0 52px;
   text-align: center;
@@ -41,10 +41,10 @@
   font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--red-500);
+  color: var(--color-brand-500);
   margin-bottom: 12px;
 }
-.eyeLine { width: 24px; height: 2px; background: var(--red-500); }
+.eyeLine { width: 24px; height: 2px; background: var(--color-brand-500); }
 
 .headerTitle {
   font-family: var(--fz-font-display);
@@ -102,7 +102,7 @@
   width: 48px;
   height: 48px;
   background: rgba(11, 31, 59,0.08);
-  color: var(--red-600);
+  color: var(--color-accent);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -164,7 +164,7 @@
 }
 .input:focus, .textarea:focus {
   outline: none;
-  border-color: var(--red-600) !important;
+  border-color: var(--color-accent) !important;
   background: white;
   box-shadow: 0 0 0 3px rgba(11, 31, 59,0.1) !important;
 }

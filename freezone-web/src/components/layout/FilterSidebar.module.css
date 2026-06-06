@@ -40,7 +40,7 @@
 }
 
 .accordionHead:hover {
-  color: var(--red-600);
+  color: var(--color-accent);
 }
 
 .accordionTitle {
@@ -96,7 +96,7 @@
 .clearBtn {
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--red-600);
+  color: var(--color-accent);
   background: none;
   border: none;
   cursor: pointer;
@@ -148,11 +148,11 @@
   width: 100%;
   font-family: inherit;
 }
-.chip:hover { border-color: var(--red-600); color: var(--red-600); background: rgba(11, 31, 59,0.03); }
+.chip:hover { border-color: var(--color-accent); color: var(--color-accent); background: rgba(11, 31, 59,0.03); }
 
 .chipActive {
-  background: var(--gray-900) !important;
-  border-color: var(--gray-900) !important;
+  background: var(--color-neutral-900) !important;
+  border-color: var(--color-neutral-900) !important;
   color: white !important;
 }
 
@@ -170,7 +170,7 @@
   cursor: pointer;
   outline: none;
 }
-.select:focus { border-color: var(--red-600) !important; }
+.select:focus { border-color: var(--color-accent) !important; }
 
 /* ── Price Range ──────────────────────────────── */
 .priceInputs {
@@ -191,7 +191,7 @@
   outline: none;
   transition: border-color 0.2s;
 }
-.priceInputs input:focus { border-color: var(--red-600) !important; }
+.priceInputs input:focus { border-color: var(--color-accent) !important; }
 
 /* ── Checkboxes ───────────────────────────────── */
 .checkboxGroup {
@@ -213,7 +213,7 @@
 .checkboxLabel input {
   width: 16px;
   height: 16px;
-  accent-color: var(--red-600);
+  accent-color: var(--color-accent);
   cursor: pointer;
 }
 
@@ -223,7 +223,7 @@
   color: var(--text-secondary);
   margin-bottom: 18px;
   padding: 12px;
-  background: var(--gray-50);
+  background: var(--color-neutral-50);
   border-radius: var(--radius-md);
   border: 1px dashed var(--border-light);
 }
@@ -251,7 +251,7 @@
   margin-top: 0;
   width: 16px;
   height: 16px;
-  accent-color: var(--red-600);
+  accent-color: var(--color-accent);
   flex-shrink: 0;
   cursor: pointer;
 }
@@ -285,7 +285,7 @@
   padding: 6px 0;
   border: none;
   background: none;
-  color: var(--red-600);
+  color: var(--color-accent);
   font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
@@ -313,6 +313,6 @@
 .radioRow input {
   width: 16px;
   height: 16px;
-  accent-color: var(--red-600);
+  accent-color: var(--color-accent);
   cursor: pointer;
 }

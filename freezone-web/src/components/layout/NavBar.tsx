@@ -25,7 +25,20 @@ import { useStorefront, usePublicSite } from "@/components/providers/StorefrontP
 import { storedNavToResolved } from "@/lib/nav-from-json";
 import { DEFAULT_NAV_ITEMS } from "@/lib/default-mega-nav";
 import { useWishlist } from "@/lib/wishlist-store";
-import { filterSuggestions, pushRecentSearch, readRecentSearches, TRENDING_SEARCHES } from "@/lib/search-suggestions";
+import {
+  fetchSearchSuggestions,
+  filterSuggestions,
+  hasRemoteSuggestions,
+  pushRecentSearch,
+  readRecentSearches,
+  TRENDING_SEARCHES,
+} from "@/lib/search-suggestions";
+import { useQuery } from "@tanstack/react-query";
+import { ResponsiveImage } from "@/components/ui/ResponsiveImage";
+
+function formatMoney(n: number) {
+  return new Intl.NumberFormat("en").format(n);
+}
 
 export type { MegaMenuColumn, NavItemResolved } from "@/lib/nav-types";
 
@@ -77,6 +90,25 @@ export function NavBar() {
   const [headerSearchQuery, setHeaderSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  /** Live suggestions from the API contract, debounced; local trending/recent
+   *  lists remain the graceful fallback until the endpoint is deployed. */
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebouncedQuery(headerSearchQuery), 250);
+    return () => window.clearTimeout(id);
+  }, [headerSearchQuery]);
+  const suggestQ = debouncedQuery.trim();
+  const { data: remoteSuggestions } = useQuery({
+    queryKey: ["search-suggestions", suggestQ],
+    queryFn: () => fetchSearchSuggestions(suggestQ),
+    enabled: searchOpen && suggestQ.length >= 2,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+    retry: false,
+  });
+  const remote =
+    suggestQ.length >= 2 && hasRemoteSuggestions(remoteSuggestions) ? remoteSuggestions : null;
   const searchWrapRef = useRef<HTMLDivElement>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   /** Tier-1 bar: visible at page top, collapses when user scrolls down, returns when back to top */
@@ -280,50 +312,163 @@ export function NavBar() {
             </form>
             {searchOpen ? (
               <div id="fz-header-search-panel" className={styles.searchPanel} role="listbox" aria-label={t("search")}>
-                <div className={styles.searchPanelSection}>
-                  <div className={styles.searchPanelTitle}>Trending</div>
-                  {TRENDING_SEARCHES.slice(0, 6).map((row) => (
+                {remote ? (
+                  <>
+                    {remote.products.length > 0 ? (
+                      <div className={styles.searchPanelSection}>
+                        <div className={styles.searchPanelTitle}>{t("productsGroup")}</div>
+                        {remote.products.map((p) => {
+                          const name = locale === "ar" ? p.nameAr || p.nameEn : p.nameEn || p.nameAr;
+                          const price = p.salePrice ?? p.price;
+                          const oldPrice = p.salePrice != null && p.salePrice < p.price ? p.price : null;
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              className={styles.suggestProduct}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                pushRecentSearch(suggestQ);
+                                setSearchOpen(false);
+                                router.push(`/product/${p.id}`);
+                              }}
+                            >
+                              {p.image ? (
+                                <ResponsiveImage
+                                  src={p.image}
+                                  alt=""
+                                  className={styles.suggestThumb}
+                                  sizes="40px"
+                                  aspectRatio={1}
+                                />
+                              ) : (
+                                <span className={styles.suggestThumbFallback} aria-hidden />
+                              )}
+                              <span className={styles.suggestBody}>
+                                <span className={styles.suggestName}>{name}</span>
+                                <span className={styles.suggestPrice}>
+                                  {formatMoney(price)} IQD
+                                  {oldPrice != null ? (
+                                    <span className={styles.suggestOldPrice}>{formatMoney(oldPrice)}</span>
+                                  ) : null}
+                                </span>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                    {remote.categories.length > 0 ? (
+                      <div className={styles.searchPanelSection}>
+                        <div className={styles.searchPanelTitle}>{t("categoriesGroup")}</div>
+                        {remote.categories.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            className={styles.searchSuggestion}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setSearchOpen(false);
+                              router.push(`/category/${encodeURIComponent(c.slug)}`);
+                            }}
+                          >
+                            {locale === "ar" ? c.nameAr || c.nameEn : c.nameEn || c.nameAr}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                    {remote.brands.length > 0 ? (
+                      <div className={styles.searchPanelSection}>
+                        <div className={styles.searchPanelTitle}>{t("brandsGroup")}</div>
+                        {remote.brands.map((b) => (
+                          <button
+                            key={b.id}
+                            type="button"
+                            className={styles.searchSuggestion}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setSearchOpen(false);
+                              router.push(`/brand/${encodeURIComponent(b.slug)}`);
+                            }}
+                          >
+                            {locale === "ar" ? b.nameAr || b.nameEn : b.nameEn || b.nameAr}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                    {remote.queries.length > 0 ? (
+                      <div className={styles.searchPanelSection}>
+                        <div className={styles.searchPanelTitle}>{t("suggestions")}</div>
+                        {remote.queries.map((q) => (
+                          <button
+                            key={q}
+                            type="button"
+                            className={styles.searchSuggestion}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => applySuggestion(q)}
+                          >
+                            {q}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
                     <button
-                      key={row.q}
                       type="button"
-                      className={styles.searchSuggestion}
+                      className={styles.seeAllBtn}
                       onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => applySuggestion(row.q)}
+                      onClick={() => applySuggestion(suggestQ)}
                     >
-                      {row.label}
+                      {t("seeAllResults", { q: suggestQ })}
                     </button>
-                  ))}
-                </div>
-                {recentSearches.length > 0 ? (
-                  <div className={styles.searchPanelSection}>
-                    <div className={styles.searchPanelTitle}>Recent</div>
-                    {recentSearches.map((q) => (
-                      <button
-                        key={q}
-                        type="button"
-                        className={styles.searchSuggestion}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => applySuggestion(q)}
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-                <div className={styles.searchPanelSection}>
-                  <div className={styles.searchPanelTitle}>Suggestions</div>
-                  {filterSuggestions(headerSearchQuery).map((row) => (
-                    <button
-                      key={`${row.q}-${row.label}`}
-                      type="button"
-                      className={styles.searchSuggestion}
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => applySuggestion(row.q)}
-                    >
-                      {row.label}
-                    </button>
-                  ))}
-                </div>
+                  </>
+                ) : (
+                  <>
+                    <div className={styles.searchPanelSection}>
+                      <div className={styles.searchPanelTitle}>{t("trending")}</div>
+                      {TRENDING_SEARCHES.slice(0, 6).map((row) => (
+                        <button
+                          key={row.q}
+                          type="button"
+                          className={styles.searchSuggestion}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => applySuggestion(row.q)}
+                        >
+                          {row.label}
+                        </button>
+                      ))}
+                    </div>
+                    {recentSearches.length > 0 ? (
+                      <div className={styles.searchPanelSection}>
+                        <div className={styles.searchPanelTitle}>{t("recentSearches")}</div>
+                        {recentSearches.map((q) => (
+                          <button
+                            key={q}
+                            type="button"
+                            className={styles.searchSuggestion}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => applySuggestion(q)}
+                          >
+                            {q}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div className={styles.searchPanelSection}>
+                      <div className={styles.searchPanelTitle}>{t("suggestions")}</div>
+                      {filterSuggestions(headerSearchQuery).map((row) => (
+                        <button
+                          key={`${row.q}-${row.label}`}
+                          type="button"
+                          className={styles.searchSuggestion}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => applySuggestion(row.q)}
+                        >
+                          {row.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             ) : null}
           </div>
@@ -343,14 +488,14 @@ export function NavBar() {
               <span className={styles.actionLabel}>{isLoggedIn ? t("myAccount") : t("signIn")}</span>
             </Link>
 
-            <Link href="/account" className={styles.actionIcon} title="Wishlist" aria-label="Wishlist">
+            <Link href="/wishlist" className={styles.actionIcon} title={t("wishlist")} aria-label={t("wishlist")}>
               <Heart
                 size={22}
                 strokeWidth={1.75}
                 aria-hidden
                 fill={wishCount > 0 ? "currentColor" : "none"}
               />
-              <span className={styles.actionLabel}>Wishlist</span>
+              <span className={styles.actionLabel}>{t("wishlist")}</span>
               {wishCount > 0 ? <span className={styles.cartBadge}>{wishCount}</span> : null}
             </Link>
 

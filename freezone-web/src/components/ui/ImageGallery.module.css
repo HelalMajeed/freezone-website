@@ -80,8 +80,8 @@
 
 .expandBtn:hover {
   background: #fff;
-  color: var(--red-600);
-  border-color: color-mix(in srgb, var(--red-600) 35%, white);
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, white);
 }
 
 .closeBtn {
@@ -89,7 +89,7 @@
   top: 20px;
   right: 20px;
   z-index: 10;
-  background: var(--red-600);
+  background: var(--color-accent);
   color: white;
   border: none;
   padding: 8px 16px;
@@ -151,7 +151,7 @@
 }
 
 .thumbnailBtn.active {
-  border-color: var(--red-600);
+  border-color: var(--color-accent);
 }
 
 .thumbnailImg {

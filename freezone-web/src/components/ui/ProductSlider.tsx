@@ -35,7 +35,7 @@ export function ProductSlider({
   title,
   link,
   products,
-  bgColor = "var(--gray-50)",
+  bgColor = "var(--color-neutral-50)",
   viewAllLabel,
   ctaVariant = "gray",
   compact = false,

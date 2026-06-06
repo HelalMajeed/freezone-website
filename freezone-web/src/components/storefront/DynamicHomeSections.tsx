@@ -9,13 +9,22 @@ import { HeroSlider } from "@/components/ui/HeroSlider";
 import { CategoryIconStrip } from "@/components/ui/CategoryIconStrip";
 import { LucideByName } from "@/lib/lucide-icon-map";
 import { MotionReveal } from "@/components/motion/MotionReveal";
-import { Link } from "@/navigation";
 import { HomeCatalogShowcase } from "@/components/storefront/HomeCatalogShowcase";
 import { HomeCommerceStack } from "@/components/storefront/HomeCommerceStack";
 import { ProductSlider } from "@/components/ui/ProductSlider";
 import { resolveFeaturedProductList } from "@/lib/home-section-products";
 import { BrandTicker } from "@/components/ui/BrandTicker";
 import { StoreGallery } from "@/components/ui/StoreGallery";
+import { TabbedShowcase } from "@/components/ui/TabbedShowcase";
+import { FAQSection } from "@/components/ui/FAQSection";
+import { BannerSlider } from "@/components/storefront/sections/BannerSlider";
+import { CategoriesShowcase } from "@/components/storefront/sections/CategoriesShowcase";
+import { PromoGrid } from "@/components/storefront/sections/PromoGrid";
+import {
+  TestimonialsSection,
+  CtaSection,
+  SplitRichtext,
+} from "@/components/storefront/sections/CmsRichSections";
 import {
   buildHeroPreviewFromPayload,
   buildTrustItemsFromPayload,
@@ -27,17 +36,65 @@ function asObj(p: unknown): Record<string, unknown> {
   return p && typeof p === "object" && !Array.isArray(p) ? (p as Record<string, unknown>) : {};
 }
 
+function str(v: unknown): string {
+  return typeof v === "string" ? v : "";
+}
+
+function pick(locale: "en" | "ar", ar: unknown, en: unknown): string {
+  return locale === "ar" ? str(ar) || str(en) : str(en) || str(ar);
+}
+
 function SectionBlock({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
   return <MotionReveal delay={delay}>{children}</MotionReveal>;
 }
 
+/**
+ * Renders published CMS sections in stored order, then appends deterministic
+ * fallbacks for missing narrative beats — hero → categories → deals →
+ * product rails → trust → showroom (docs/STOREFRONT_DESIGN.md §5).
+ */
 export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSection[] }) {
   const locale = useLocale() as "en" | "ar";
   const { home, catalog } = useStorefront();
-  const hasPromoMega = sections.some((s) => s.type === "promo_mega");
-  const hasCategoryStrip = sections.some((s) => s.type === "category_strip");
-  const hasBrandsStrip = sections.some((s) => s.type === "brands_strip");
-  const hasShowroom = sections.some((s) => s.type === "showroom");
+  const has = (type: string) => sections.some((s) => s.type === type);
+
+  const hasPromoMega = has("promo_mega");
+  const hasCategoryStrip = has("category_strip");
+  const hasCategoriesShowcase = has("categories_showcase");
+  const hasBrandsStrip = has("brands_strip");
+  const hasShowroom = has("showroom");
+
+  /**
+   * Deterministic fallback order (replaces the old conditional ternary chain):
+   * 1. categories + commerce rails when the CMS provided none of them;
+   * 2. showroom proof at the very end.
+   */
+  const fallbackBlocks: { key: string; node: ReactNode }[] = [];
+  if (!hasPromoMega) {
+    if (!hasCategoryStrip && !hasCategoriesShowcase) {
+      /* No categories beat and no mega blocks → full commerce stack (strip → rails → brands → mega) */
+      fallbackBlocks.push({ key: "fallback-commerce", node: <HomeCatalogShowcase /> });
+    } else {
+      /* Categories exist → append rails/brands/mega only */
+      fallbackBlocks.push({
+        key: "fallback-rails",
+        node: <HomeCommerceStack showStrip={false} showBrands={!hasBrandsStrip} />,
+      });
+    }
+  } else if (!hasCategoryStrip && !hasCategoriesShowcase) {
+    /* Mega blocks exist but no categories beat → append the icon strip */
+    fallbackBlocks.push({
+      key: "fallback-categories",
+      node: (
+        <CategoryIconStrip
+          previewSpots={resolveCategoryStripItems(catalog.categories, locale, undefined, home.spotlights)}
+        />
+      ),
+    });
+  }
+  if (!hasShowroom) {
+    fallbackBlocks.push({ key: "fallback-showroom", node: <StoreGallery /> });
+  }
 
   return (
     <div className={styles.home} style={{ paddingBottom: "var(--fz-section-gap, 48px)" }}>
@@ -112,28 +169,15 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
             );
           }
           case "featured_products": {
-            const title =
-              (locale === "ar"
-                ? (typeof p.titleAr === "string" ? p.titleAr : "")
-                : (typeof p.titleEn === "string" ? p.titleEn : "")) ||
-              (locale === "ar"
-                ? (typeof p.titleEn === "string" ? p.titleEn : "")
-                : (typeof p.titleAr === "string" ? p.titleAr : ""));
-            const link = typeof p.link === "string" && p.link.trim() ? p.link.trim() : "/products";
+            const title = pick(locale, p.titleAr, p.titleEn);
+            const link = str(p.link).trim() || "/products";
             const filter = typeof p.filter === "string" ? p.filter : "featured";
             const limit = typeof p.limit === "number" ? p.limit : 16;
             const catSlug = typeof p.catSlug === "string" ? p.catSlug : undefined;
             const productIds = Array.isArray(p.productIds)
               ? p.productIds.map((x) => Number(x)).filter((n) => Number.isFinite(n))
               : undefined;
-            const viewAllRaw =
-              locale === "ar"
-                ? typeof p.viewAllAr === "string"
-                  ? p.viewAllAr
-                  : ""
-                : typeof p.viewAllEn === "string"
-                  ? p.viewAllEn
-                  : "";
+            const viewAllRaw = pick(locale, p.viewAllAr, p.viewAllEn);
             const products = resolveFeaturedProductList(
               catalog.products,
               filter,
@@ -158,13 +202,7 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
             );
           }
           case "brands_strip": {
-            const stripTitle =
-              (locale === "ar"
-                ? (typeof p.titleAr === "string" ? p.titleAr : "")
-                : (typeof p.titleEn === "string" ? p.titleEn : "")) ||
-              (locale === "ar"
-                ? (typeof p.titleEn === "string" ? p.titleEn : "")
-                : (typeof p.titleAr === "string" ? p.titleAr : ""));
+            const stripTitle = pick(locale, p.titleAr, p.titleEn);
             return (
               <SectionBlock key={sec.id} delay={delay}>
                 <BrandTicker title={stripTitle.trim() || undefined} />
@@ -172,128 +210,71 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
             );
           }
           case "banner_slider":
+            return (
+              <SectionBlock key={sec.id} delay={delay}>
+                <BannerSlider payload={p} />
+              </SectionBlock>
+            );
           case "categories_showcase":
+            return (
+              <SectionBlock key={sec.id} delay={delay}>
+                <CategoriesShowcase payload={p} />
+              </SectionBlock>
+            );
           case "promo_grid":
+            return (
+              <SectionBlock key={sec.id} delay={delay}>
+                <PromoGrid payload={p} />
+              </SectionBlock>
+            );
           case "tabbed_products":
-            return null;
-          case "testimonials": {
-            const items = Array.isArray(p.items) ? p.items : [];
             return (
               <SectionBlock key={sec.id} delay={delay}>
-                <section className="container" style={{ padding: "clamp(24px, 5vw, 48px) var(--fz-gutter, 12px)" }}>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
-                      gap: 12,
-                      width: "100%",
-                      minWidth: 0,
-                    }}
-                  >
-                    {items.map((raw, i) => {
-                      const it = asObj(raw);
-                      const text =
-                        locale === "ar"
-                          ? String(it.textAr ?? it.textEn ?? "")
-                          : String(it.textEn ?? it.textAr ?? "");
-                      const name =
-                        locale === "ar"
-                          ? String(it.nameAr ?? it.nameEn ?? "")
-                          : String(it.nameEn ?? it.nameAr ?? "");
-                      if (!text) return null;
-                      return (
-                        <div
-                          key={i}
-                          style={{
-                            background: "var(--fz-surface, #f8fafc)",
-                            borderRadius: "var(--fz-radius-card, 12px)",
-                            padding: 20,
-                            boxShadow: "var(--fz-shadow-card)",
-                          }}
-                        >
-                          <p style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 12 }}>{text}</p>
-                          <strong style={{ fontSize: 13 }}>{name}</strong>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
+                <TabbedShowcase config={p} />
+              </SectionBlock>
+            );
+          case "testimonials":
+            return (
+              <SectionBlock key={sec.id} delay={delay}>
+                <TestimonialsSection payload={p} />
+              </SectionBlock>
+            );
+          case "faq": {
+            const items = Array.isArray(p.items)
+              ? p.items
+                  .map((raw) => {
+                    const it = asObj(raw);
+                    return {
+                      q: pick(locale, it.qAr, it.qEn),
+                      a: pick(locale, it.aAr, it.aEn),
+                    };
+                  })
+                  .filter((x) => x.q.trim() && x.a.trim())
+              : [];
+            const manual = p.source === "manual" && items.length > 0;
+            const faqTitle = pick(locale, p.titleAr, p.titleEn);
+            return (
+              <SectionBlock key={sec.id} delay={delay}>
+                <FAQSection
+                  mode={manual ? "custom" : "i18n"}
+                  items={manual ? items : undefined}
+                  titleOverride={faqTitle.trim() || undefined}
+                />
               </SectionBlock>
             );
           }
-          case "faq":
-            return null;
-          case "cta": {
-            const title =
-              locale === "ar" ? String(p.titleAr ?? p.titleEn ?? "") : String(p.titleEn ?? p.titleAr ?? "");
-            const subtitle =
-              locale === "ar" ? String(p.subtitleAr ?? p.subtitleEn ?? "") : String(p.subtitleEn ?? p.subtitleAr ?? "");
-            const btn =
-              locale === "ar" ? String(p.buttonAr ?? p.buttonEn ?? "") : String(p.buttonEn ?? p.buttonAr ?? "");
-            const href = typeof p.href === "string" ? p.href : "/products";
-            const bg = typeof p.bg === "string" ? p.bg : "#0f172a";
+          case "cta":
             return (
               <SectionBlock key={sec.id} delay={delay}>
-                <section className="container" style={{ padding: "32px 16px" }}>
-                  <div
-                    style={{
-                      background: bg,
-                      color: "#fff",
-                      borderRadius: "var(--fz-radius-card, 12px)",
-                      padding: "40px 28px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {title ? <h2 style={{ fontSize: "1.5rem", marginBottom: 12 }}>{title}</h2> : null}
-                    {subtitle ? <p style={{ opacity: 0.9, marginBottom: 20 }}>{subtitle}</p> : null}
-                    <Link href={href} className="btn-primary" style={{ display: "inline-block", padding: "12px 28px" }}>
-                      {btn || href}
-                    </Link>
-                  </div>
-                </section>
+                <CtaSection payload={p} />
               </SectionBlock>
             );
-          }
-          case "split_richtext": {
-            const title =
-              locale === "ar" ? String(p.titleAr ?? p.titleEn ?? "") : String(p.titleEn ?? p.titleAr ?? "");
-            const body =
-              locale === "ar" ? String(p.bodyAr ?? p.bodyEn ?? "") : String(p.bodyEn ?? p.bodyAr ?? "");
-            const imageUrl = typeof p.imageUrl === "string" ? p.imageUrl : "";
-            const imageSide = p.imageSide === "left" ? "left" : "right";
+          case "split_richtext":
             return (
               <SectionBlock key={sec.id} delay={delay}>
-                <section className="container" style={{ padding: "40px 16px" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: imageSide === "left" ? "row-reverse" : "row",
-                      flexWrap: "wrap",
-                      gap: 28,
-                      alignItems: "center",
-                    }}
-                  >
-                    <div style={{ flex: "1 1 280px" }}>
-                      {title ? <h2 style={{ fontSize: "1.35rem", marginBottom: 12 }}>{title}</h2> : null}
-                      <p style={{ lineHeight: 1.7, color: "#475569" }}>{body}</p>
-                    </div>
-                    {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt=""
-                        style={{
-                          flex: "1 1 280px",
-                          maxWidth: "100%",
-                          borderRadius: "var(--fz-radius-card, 12px)",
-                          objectFit: "cover",
-                        }}
-                      />
-                    ) : null}
-                  </div>
-                </section>
+                <SplitRichtext payload={p} />
               </SectionBlock>
             );
-          }
           case "showroom":
             return (
               <SectionBlock key={sec.id} delay={delay}>
@@ -304,29 +285,11 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
             return null;
         }
       })}
-      {!hasCategoryStrip && !hasPromoMega ? (
-        <SectionBlock delay={0.06}>
-          <HomeCatalogShowcase />
+      {fallbackBlocks.map((block, i) => (
+        <SectionBlock key={block.key} delay={0.06 + i * 0.02}>
+          {block.node}
         </SectionBlock>
-      ) : !hasPromoMega ? (
-        <SectionBlock delay={0.07}>
-          <HomeCommerceStack
-            showStrip={false}
-            showBrands={!hasBrandsStrip}
-          />
-        </SectionBlock>
-      ) : !hasCategoryStrip ? (
-        <SectionBlock delay={0.08}>
-          <CategoryIconStrip
-            previewSpots={resolveCategoryStripItems(catalog.categories, locale, undefined, home.spotlights)}
-          />
-        </SectionBlock>
-      ) : null}
-      {!hasShowroom ? (
-        <SectionBlock delay={0.1}>
-          <StoreGallery />
-        </SectionBlock>
-      ) : null}
+      ))}
     </div>
   );
 }

@@ -82,7 +82,7 @@
   font-family: var(--fz-font-display);
   font-size: 1.4rem;
   font-weight: 800;
-  color: var(--gray-600);
+  color: var(--color-neutral-600);
   margin-top: 4px;
 }
 
@@ -123,7 +123,7 @@
 }
 
 .shopBtn {
-  background: var(--red-600);
+  background: var(--color-accent);
   color: white;
   padding: 10px 24px;
   border-radius: 9999px;

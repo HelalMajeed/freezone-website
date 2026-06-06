@@ -1,0 +1,131 @@
+/* CMS `promo_grid` — promo tiles in 2x2 / 3x1 / 1+2 layouts (FROZEN payload). */
+
+.section {
+  padding-block: calc(var(--rhythm-section) / 2);
+}
+
+.grid {
+  display: grid;
+  gap: var(--rhythm-item);
+}
+
+.layout2x2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.layout3x1 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* One large tile + two stacked beside it */
+.layout1p2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+}
+.layout1p2 > .tile:first-child {
+  grid-row: span 2;
+}
+
+@media (max-width: 640px) {
+  .layout2x2,
+  .layout3x1,
+  .layout1p2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .layout1p2 > .tile:first-child {
+    grid-row: auto;
+  }
+}
+
+.tile {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-dark);
+  aspect-ratio: 16 / 9;
+  isolation: isolate;
+}
+
+.layout1p2 > .tile:first-child {
+  aspect-ratio: auto;
+  min-height: 280px;
+}
+
+@media (max-width: 640px) {
+  .layout1p2 > .tile:first-child {
+    aspect-ratio: 16 / 9;
+    min-height: 0;
+  }
+}
+
+.image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s var(--ease-smooth);
+}
+.tile:hover .image {
+  transform: scale(1.04);
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.65) 0%,
+    rgba(0, 0, 0, 0.2) 50%,
+    transparent 75%
+  );
+  pointer-events: none;
+}
+
+.copy {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: 0;
+  padding: clamp(14px, 2.5vw, 24px);
+  color: var(--color-neutral-0);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.title {
+  color: inherit;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
+}
+
+.sub {
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-neutral-0);
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  padding: 8px 16px;
+  margin-block-start: var(--space-1);
+  transition: background var(--transition-base), color var(--transition-base);
+}
+.tile:hover .cta {
+  background: var(--color-accent);
+  color: var(--color-text-on-brand);
+}
+
+.ctaArrow {
+  transition: transform var(--transition-base);
+}
+html[dir="rtl"] .ctaArrow {
+  transform: scaleX(-1);
+}

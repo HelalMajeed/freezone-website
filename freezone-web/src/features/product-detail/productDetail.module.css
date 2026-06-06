@@ -32,9 +32,9 @@
   font-weight: 500;
 }
 .breadcrumb a { transition: color 0.2s; }
-.breadcrumb a:hover { color: var(--red-600); }
+.breadcrumb a:hover { color: var(--color-accent); }
 
-.separator { color: var(--gray-300); }
+.separator { color: var(--color-neutral-300); }
 
 .current {
   font-weight: 700;
@@ -84,7 +84,7 @@
   margin-bottom: 10px;
   letter-spacing: 0.8px;
 }
-.metaSep { color: var(--gray-300); }
+.metaSep { color: var(--color-neutral-300); }
 
 .title {
   font-weight: 900;
@@ -115,13 +115,13 @@
   font-family: var(--fz-font-display);
   font-weight: 900;
   font-size: clamp(2rem, 4vw, 2.8rem);
-  color: var(--red-600);
+  color: var(--color-accent);
   line-height: 1;
 }
 
 .oldPrice {
   font-size: 1.15rem;
-  color: var(--gray-400);
+  color: var(--color-neutral-400);
   text-decoration: line-through;
   font-weight: 500;
 }
@@ -178,7 +178,7 @@
 }
 
 .variantPrice {
-  color: var(--red-600);
+  color: var(--color-accent);
   font-weight: 700;
 }
 
@@ -210,7 +210,7 @@
   border: 1px solid rgba(185, 28, 28, 0.35);
   font-weight: 800;
 }
-.badgeNew      { background: rgba(11, 31, 59,0.1);   color: var(--red-600); border: 1px solid rgba(11, 31, 59,0.25); }
+.badgeNew      { background: rgba(11, 31, 59,0.1);   color: var(--color-accent); border: 1px solid rgba(11, 31, 59,0.25); }
 .badgeFeatured { background: rgba(245,158,11,0.12); color: #b45309;      border: 1px solid rgba(245,158,11,0.25); }
 
 /* ── Description ──────────────────────────────── */
@@ -432,8 +432,8 @@
   letter-spacing: 0.5px;
 }
 .actionBtn:disabled {
-  background: var(--gray-200) !important;
-  color: var(--gray-400) !important;
+  background: var(--color-neutral-200) !important;
+  color: var(--color-neutral-400) !important;
   cursor: not-allowed;
   transform: none !important;
   box-shadow: none !important;
@@ -451,8 +451,8 @@
   font-weight: 800;
   letter-spacing: 0.5px;
   background: #fff;
-  color: var(--red-600);
-  border: 2px solid var(--red-600);
+  color: var(--color-accent);
+  border: 2px solid var(--color-accent);
   cursor: pointer;
   transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
@@ -460,9 +460,9 @@
   background: rgba(11, 31, 59, 0.06);
 }
 .buyNowBtn:disabled {
-  border-color: var(--gray-300);
-  color: var(--gray-400);
-  background: var(--gray-50);
+  border-color: var(--color-neutral-300);
+  color: var(--color-neutral-400);
+  background: var(--color-neutral-50);
   cursor: not-allowed;
 }
 

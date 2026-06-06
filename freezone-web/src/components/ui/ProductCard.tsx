@@ -7,6 +7,7 @@ import { useCart } from "@/lib/store";
 import { useWishlist } from "@/lib/wishlist-store";
 import { useCompare } from "@/lib/compare-store";
 import { ShoppingCart, Heart, GitCompare, Star } from "lucide-react";
+import { ResponsiveImage } from "./ResponsiveImage";
 import styles from "./ProductCard.module.css";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import { buildProductSpecChips } from "@/lib/productSpecCardChips";
@@ -102,7 +103,12 @@ export function ProductCard({
         {/* Image Area */}
         <div className={styles.imageWrapper}>
           {product.images && product.images.length > 0 ? (
-            <img src={product.images[0]} alt={product.name} className={styles.image} />
+            <ResponsiveImage
+              src={product.images[0]}
+              alt={product.name}
+              className={styles.image}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
+            />
           ) : (
             <div className={styles.iconPlaceholder}>
               <span>{product.icon}</span>

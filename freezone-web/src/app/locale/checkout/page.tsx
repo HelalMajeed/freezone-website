@@ -12,6 +12,8 @@ import { useTranslations } from "@/i18n/hooks";
 import { freezoneApiUrl } from "@/lib/api-internal";
 import toast from "react-hot-toast";
 import clsx from "clsx";
+import { Seo } from "@/components/seo/Seo";
+import { rememberOrder } from "@/lib/order-tracking";
 
 type Fulfillment = "delivery" | "pickup";
 
@@ -226,6 +228,15 @@ export default function CheckoutPage() {
     if (paymentMethod === "qicard" && qiDisplay) lines.push(`*Qi Card ref:* ${qiDisplay}`);
     if (orderNotes.trim()) lines.push(``, `*Notes:* ${orderNotes.trim()}`);
 
+    /** Device-local order memory — feeds the account page + track-order deep link. */
+    rememberOrder({
+      orderNumber,
+      phone: form.phone.trim(),
+      total: grandTotal,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    });
+
     const waUrl = `${WHATSAPP_ORDER_CHAT_URL}?text=${encodeURIComponent(lines.join("\n"))}`;
     window.open(waUrl, "_blank");
 
@@ -274,12 +285,17 @@ export default function CheckoutPage() {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className={styles.successIcon}>
           <Check size={40} />
         </motion.div>
-        <h1 style={{ fontFamily: "var(--fz-font-display)", fontSize: "3rem", fontWeight: 900, marginBottom: "16px" }}>{t("orderPlaced")}</h1>
-        <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem", marginBottom: "12px" }}>{t("successMsg", { orderNumber: placedOrderNumber })}</p>
-        <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", marginBottom: "32px" }}>{t("successFollowUp")}</p>
-        <Link href="/" className="btn-primary">
-          {t("returnHome")}
-        </Link>
+        <h1 className={`fz-type-h1 ${styles.successTitle}`}>{t("orderPlaced")}</h1>
+        <p className={styles.successText}>{t("successMsg", { orderNumber: placedOrderNumber })}</p>
+        <p className={`fz-type-small ${styles.successText}`}>{t("successFollowUp")}</p>
+        <div className={styles.successActions}>
+          <Link href={`/track-order?order=${encodeURIComponent(placedOrderNumber)}`} className="btn-outline">
+            {t("trackYourOrder")}
+          </Link>
+          <Link href="/" className="btn-primary">
+            {t("returnHome")}
+          </Link>
+        </div>
       </div>
     );
   }
@@ -293,6 +309,7 @@ export default function CheckoutPage() {
 
   return (
     <div className={`container ${styles.layout}`}>
+      <Seo title={t("title")} noindex />
       <h1 className={styles.header}>{t("title")}</h1>
       <p className={styles.codNotice}>{t("checkoutIntro")}</p>
 
@@ -315,10 +332,10 @@ export default function CheckoutPage() {
         {step === 1 && (
           <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className={styles.card}>
             <h2 className={styles.cardTitle}>
-              <Truck style={{ display: "inline-block", marginRight: "10px" }} /> {t("shippingDetails")}
+              <Truck className={styles.cardTitleIcon} /> {t("shippingDetails")}
             </h2>
 
-            <p className={styles.paymentGroupTitle} style={{ borderTop: "none", marginTop: 0, paddingTop: 0 }}>
+            <p className={`${styles.paymentGroupTitle} ${styles.paymentGroupTitleFirst}`}>
               {t("fulfillmentLabel")}
             </p>
             <div className={styles.formGrid}>
@@ -328,12 +345,12 @@ export default function CheckoutPage() {
                   name="fulfillment"
                   checked={fulfillment === "delivery"}
                   onChange={() => setFulfillment("delivery")}
-                  style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #0b1f3b)" }}
+                  className={styles.radioInput}
                 />
                 <Truck size={22} className={styles.paymentOptionIcon} aria-hidden />
                 <div>
-                  <h4 style={{ fontWeight: 800, fontSize: "1.1rem" }}>{t("fulfillmentDelivery")}</h4>
-                  <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>{t("fulfillmentDeliveryDesc")}</p>
+                  <h4 className={styles.optionTitle}>{t("fulfillmentDelivery")}</h4>
+                  <p className={styles.optionDesc}>{t("fulfillmentDeliveryDesc")}</p>
                 </div>
               </label>
               <label className={clsx(styles.paymentOption, styles.fullWidth, fulfillment === "pickup" && styles.activePayment)}>
@@ -342,12 +359,12 @@ export default function CheckoutPage() {
                   name="fulfillment"
                   checked={fulfillment === "pickup"}
                   onChange={() => setFulfillment("pickup")}
-                  style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #0b1f3b)" }}
+                  className={styles.radioInput}
                 />
                 <Building2 size={22} className={styles.paymentOptionIcon} aria-hidden />
                 <div>
-                  <h4 style={{ fontWeight: 800, fontSize: "1.1rem" }}>{t("fulfillmentPickup")}</h4>
-                  <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>{t("fulfillmentPickupDesc")}</p>
+                  <h4 className={styles.optionTitle}>{t("fulfillmentPickup")}</h4>
+                  <p className={styles.optionDesc}>{t("fulfillmentPickupDesc")}</p>
                 </div>
               </label>
             </div>
@@ -359,7 +376,7 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            <div className={styles.formGrid} style={{ marginTop: 20 }}>
+            <div className={`${styles.formGrid} ${styles.formGridSpaced}`}>
               <div className={styles.formGroup}>
                 <label className={styles.label}>{t("fullName")}</label>
                 <input required type="text" className={styles.input} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -389,7 +406,7 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            <div className={styles.buttons} style={{ justifyContent: "flex-end" }}>
+            <div className={`${styles.buttons} ${styles.buttonsEnd}`}>
               <button type="button" className="btn-primary" onClick={goToPayment}>
                 {t("continueToPayment")}
               </button>
@@ -400,7 +417,7 @@ export default function CheckoutPage() {
         {step === 2 && (
           <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className={styles.card}>
             <h2 className={styles.cardTitle}>
-              <CreditCard style={{ display: "inline-block", marginRight: "10px" }} /> {t("paymentMethod")}
+              <CreditCard className={styles.cardTitleIcon} /> {t("paymentMethod")}
             </h2>
 
             <div className={styles.formGrid}>
@@ -419,12 +436,12 @@ export default function CheckoutPage() {
                             name="pay"
                             checked={active}
                             onChange={() => setPaymentMethod(m)}
-                            style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #0b1f3b)" }}
+                            className={styles.radioInput}
                           />
                           <Icon size={22} className={styles.paymentOptionIcon} aria-hidden />
                           <div>
-                            <h4 style={{ fontWeight: 800, fontSize: "1.1rem" }}>{methodTitle(m)}</h4>
-                            <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>{methodDesc(m)}</p>
+                            <h4 className={styles.optionTitle}>{methodTitle(m)}</h4>
+                            <p className={styles.optionDesc}>{methodDesc(m)}</p>
                           </div>
                         </label>
                       );
@@ -447,12 +464,12 @@ export default function CheckoutPage() {
                             name="pay"
                             checked={active}
                             onChange={() => setPaymentMethod(m)}
-                            style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #0b1f3b)" }}
+                            className={styles.radioInput}
                           />
                           <Icon size={22} className={styles.paymentOptionIcon} aria-hidden />
                           <div>
-                            <h4 style={{ fontWeight: 800, fontSize: "1.1rem" }}>{methodTitle(m)}</h4>
-                            <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>{methodDesc(m)}</p>
+                            <h4 className={styles.optionTitle}>{methodTitle(m)}</h4>
+                            <p className={styles.optionDesc}>{methodDesc(m)}</p>
                           </div>
                         </label>
                       );
@@ -473,12 +490,12 @@ export default function CheckoutPage() {
                         name="pay"
                         checked={active}
                         onChange={() => setPaymentMethod(m)}
-                        style={{ width: "20px", height: "20px", accentColor: "var(--accent-red, #0b1f3b)" }}
+                        className={styles.radioInput}
                       />
                       <Icon size={22} className={styles.paymentOptionIcon} aria-hidden />
                       <div>
-                        <h4 style={{ fontWeight: 800, fontSize: "1.1rem" }}>{methodTitle(m)}</h4>
-                        <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>{methodDesc(m)}</p>
+                        <h4 className={styles.optionTitle}>{methodTitle(m)}</h4>
+                        <p className={styles.optionDesc}>{methodDesc(m)}</p>
                       </div>
                     </label>
                   );
@@ -517,24 +534,24 @@ export default function CheckoutPage() {
         {step === 3 && (
           <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className={styles.card}>
             <h2 className={styles.cardTitle}>
-              <ClipboardList style={{ display: "inline-block", marginRight: "10px" }} /> {t("finalReview")}
+              <ClipboardList className={styles.cardTitleIcon} /> {t("finalReview")}
             </h2>
 
-            <div style={{ marginBottom: "24px", padding: "16px", background: "var(--gray-50)", borderRadius: "12px" }}>
-              <h4 style={{ fontWeight: 800, marginBottom: "8px" }}>{t("shippingTo")}</h4>
-              <p style={{ color: "var(--text-secondary)" }}>
+            <div className={styles.reviewBox}>
+              <h4 className={styles.reviewTitle}>{t("shippingTo")}</h4>
+              <p className={styles.reviewLine}>
                 {form.name} • {form.phone}
               </p>
-              <p style={{ color: "var(--text-secondary)" }}>{resolveAddress()}</p>
-              <p style={{ color: "var(--text-secondary)" }}>{form.city}</p>
-              <p style={{ marginTop: "10px", fontWeight: 700 }}>
+              <p className={styles.reviewLine}>{resolveAddress()}</p>
+              <p className={styles.reviewLine}>{form.city}</p>
+              <p className={styles.reviewStrong}>
                 {t("fulfillmentShort")}: {isPickup ? t("fulfillmentPickup") : t("fulfillmentDelivery")}
               </p>
-              <p style={{ marginTop: "6px", fontWeight: 700 }}>
+              <p className={styles.reviewStrong}>
                 {t("paymentMethod")}: {methodTitle(paymentMethod)}
               </p>
               {orderNotes.trim() && (
-                <p style={{ marginTop: "8px", color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+                <p className={`fz-type-small ${styles.reviewLine} ${styles.reviewStrong}`}>
                   {t("orderNotes")}: {orderNotes}
                 </p>
               )}
@@ -546,17 +563,17 @@ export default function CheckoutPage() {
                   <span>
                     {i.qty}× {i.name}
                   </span>
-                  <span style={{ color: "var(--text-primary)" }}>{new Intl.NumberFormat("en").format(i.price * i.qty)} IQD</span>
+                  <span>{new Intl.NumberFormat("en").format(i.price * i.qty)} IQD</span>
                 </div>
               ))}
-              <div className={styles.summaryRow} style={{ marginTop: "16px" }}>
+              <div className={`${styles.summaryRow} ${styles.summaryRowSpaced}`}>
                 <span>{t("subtotal")}</span>
                 <span>{new Intl.NumberFormat("en").format(lineSubtotal)} IQD</span>
               </div>
               {couponDiscount > 0 && (
                 <div className={styles.summaryRow}>
-                  <span>كوبون {couponCode}</span>
-                  <span style={{ color: "#059669" }}>
+                  <span>{t("couponDiscount", { code: couponCode ?? "" })}</span>
+                  <span className={styles.couponValue}>
                     −{new Intl.NumberFormat("en").format(couponDiscount)} IQD
                   </span>
                 </div>
@@ -575,7 +592,7 @@ export default function CheckoutPage() {
               <button type="button" className={styles.btnBack} onClick={() => setStep(2)}>
                 {t("btnBack")}
               </button>
-              <button type="button" className="btn-red" onClick={submitOrder} style={{ fontSize: "1.1rem", padding: "16px 32px" }}>
+              <button type="button" className={`btn-red ${styles.placeOrderBtn}`} onClick={submitOrder}>
                 {t("placeOrder")}
               </button>
             </div>

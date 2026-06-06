@@ -1,11 +1,30 @@
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { DynamicHomeSections } from "@/components/storefront/DynamicHomeSections";
 import { HomeLegacyContent } from "@/components/storefront/HomeLegacyContent";
+import { Seo } from "@/components/seo/Seo";
+import { useTranslations } from "@/i18n/hooks";
 
 export default function HomePage() {
-  const { homeSections } = useStorefront();
+  const { homeSections, site } = useStorefront();
+  const tSeo = useTranslations("Seo");
+  const seo = (
+    <Seo
+      title={site.metaTitle?.trim() || tSeo("homeTitle")}
+      description={site.metaDescription?.trim() || tSeo("homeDesc")}
+    />
+  );
   if (homeSections?.length) {
-    return <DynamicHomeSections sections={homeSections} />;
+    return (
+      <>
+        {seo}
+        <DynamicHomeSections sections={homeSections} />
+      </>
+    );
   }
-  return <HomeLegacyContent />;
+  return (
+    <>
+      {seo}
+      <HomeLegacyContent />
+    </>
+  );
 }

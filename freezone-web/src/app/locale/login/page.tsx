@@ -8,9 +8,11 @@ import { motion } from "framer-motion";
 import { useTranslations, useLocale } from "@/i18n/hooks";
 import { useStorefrontUser } from "@/lib/storefront-user";
 import { useNavigate } from "react-router-dom";
+import { Seo } from "@/components/seo/Seo";
 
 export default function LoginPage() {
   const t = useTranslations("Auth");
+  const tSeo = useTranslations("Seo");
   const locale = useLocale();
   const navigate = useNavigate();
   const setLoggedIn = useStorefrontUser((s) => s.setLoggedIn);
@@ -23,6 +25,7 @@ export default function LoginPage() {
 
   return (
     <div className={styles.wrapper}>
+      <Seo title={tSeo("loginTitle")} noindex />
       <motion.div
         initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

@@ -905,7 +905,7 @@ export function PcBuilderWizard() {
         {warnings.length > 0 && (
           <div className={styles.summaryRow} style={{ flexDirection: "column", alignItems: "stretch" }}>
             <span style={{ marginBottom: 6 }}>{tEng("warnings")}</span>
-            <ul style={{ margin: 0, paddingLeft: 18, fontSize: "0.78rem", color: "var(--red-600)" }}>
+            <ul style={{ margin: 0, paddingLeft: 18, fontSize: "0.78rem", color: "var(--color-accent)" }}>
               {warnings.map((w) => (
                 <li key={w.code}>{w.message}</li>
               ))}

@@ -10,9 +10,12 @@ import { usePublicSite } from "@/components/providers/StorefrontProvider";
 import { useLocale } from "@/i18n/hooks";
 import { staticPublicSite } from "@/lib/site-public";
 import toast from "react-hot-toast";
+import { Seo } from "@/components/seo/Seo";
+import { useTranslations } from "@/i18n/hooks";
 
 export default function ContactPage() {
   const locale = useLocale();
+  const tSeo = useTranslations("Seo");
   const site = usePublicSite();
   const phone = site.phone || "+964 000 000 0000";
   const waDigits = (site.whatsapp || site.phone || "+9640000000000").replace(/\D/g, "");
@@ -21,6 +24,7 @@ export default function ContactPage() {
 
   return (
     <div className={`container ${styles.wrapper}`}>
+      <Seo title={tSeo("contactTitle")} description={tSeo("contactDesc")} />
       <MotionReveal direction="down" amount={18}>
         <div className={styles.header}>
           <h1 className={styles.headerTitle}>Get in touch</h1>

@@ -8,7 +8,7 @@
   height: clamp(320px, min(52vh, 56vw), 540px);
   max-height: min(540px, 85vh);
   overflow: hidden;
-  background: var(--gray-950);
+  background: var(--color-surface-dark);
 }
 
 @media (max-width: 640px) {
@@ -46,6 +46,19 @@
 
 /* Subtle Ken Burns on active */
 .slide .bgImage { transform: scale(1.04); }
+
+/* Slide art missing/broken — token gradient with a faint crimson glow */
+.bgImageFallback {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      120% 90% at 80% 10%,
+      color-mix(in srgb, var(--color-accent) 24%, transparent) 0%,
+      transparent 55%
+    ),
+    linear-gradient(135deg, var(--color-neutral-900) 0%, var(--color-surface-dark) 100%);
+}
 
 /** Black scrim alpha set inline from CMS (`home.hero.scrimOpacity`) */
 .overlay {
@@ -92,9 +105,14 @@
 .badgeDot {
   width: 6px;
   height: 6px;
-  background: var(--fz-primary, #0b1f3b);
+  background: var(--color-accent);
   border-radius: 50%;
-  animation: pulse-glow 2s ease-in-out infinite;
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.8); }
 }
 
 .title {

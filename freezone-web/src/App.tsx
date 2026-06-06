@@ -16,6 +16,14 @@ const RegisterPage = lazy(() => import("@/app/locale/register/page"));
 const AccountPage = lazy(() => import("@/app/locale/account/page"));
 const AboutPage = lazy(() => import("@/app/locale/about/page"));
 const ContactPage = lazy(() => import("@/app/locale/contact/page"));
+const WishlistPage = lazy(() => import("@/app/locale/wishlist/page"));
+const ComparePage = lazy(() => import("@/app/locale/compare/page"));
+const TrackOrderPage = lazy(() => import("@/app/locale/track-order/page"));
+const CategoryLandingPage = lazy(() => import("@/app/locale/landing/CategoryLandingPage"));
+const BrandLandingPage = lazy(() => import("@/app/locale/landing/BrandLandingPage"));
+const PolicyPageLazy = lazy(() =>
+  import("@/app/locale/policies/PolicyPage").then((m) => ({ default: m.PolicyPage })),
+);
 import PcBuilderPage from "@/app/locale/pc-builder/page";
 
 function SuspensePage({ children }: { children: React.ReactNode }) {
@@ -90,6 +98,78 @@ export default function App() {
           }
         />
         <Route path="pc-builder" element={<PcBuilderPage />} />
+        <Route
+          path="wishlist"
+          element={
+            <SuspensePage>
+              <WishlistPage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="compare"
+          element={
+            <SuspensePage>
+              <ComparePage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="track-order"
+          element={
+            <SuspensePage>
+              <TrackOrderPage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="category/:slug"
+          element={
+            <SuspensePage>
+              <CategoryLandingPage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="brand/:slug"
+          element={
+            <SuspensePage>
+              <BrandLandingPage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="shipping"
+          element={
+            <SuspensePage>
+              <PolicyPageLazy kind="shipping" />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="returns"
+          element={
+            <SuspensePage>
+              <PolicyPageLazy kind="returns" />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="privacy"
+          element={
+            <SuspensePage>
+              <PolicyPageLazy kind="privacy" />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="terms"
+          element={
+            <SuspensePage>
+              <PolicyPageLazy kind="terms" />
+            </SuspensePage>
+          }
+        />
         {/* Locale-scoped 404 — keeps the storefront chrome + language. */}
         <Route path="*" element={<NotFoundPage />} />
       </Route>

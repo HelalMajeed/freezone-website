@@ -1,85 +1,45 @@
-/* Global styles — design tokens: src/theme/tokens.css (imported from main.tsx) */
+/* Global styles — design tokens: src/theme/tokens.css (imported from main.tsx).
+   Color rules: docs/STOREFRONT_DESIGN.md — tokens.css `--color-*` is canonical;
+   no raw color ramps may be declared here. */
 
 :root {
-  /* Measured live in NavBar (ResizeObserver); fallback ≈ top + middle + bottom nav */
-  --fz-storefront-sticky-offset: 152px;
+  /* Measured live in NavBar (ResizeObserver); fallback ≈ utility strip + main bar */
+  --fz-storefront-sticky-offset: 96px;
 
   /* Structure color (black) — set on `.fz-theme-root` by ThemeApplier from CMS */
   --fz-primary: var(--color-primary);
   --fz-primary-fg: #ffffff;
-  --fz-accent-deal: var(--color-deal);
-  --fz-accent-red: var(--color-accent);
-  --accent-red: var(--color-accent);
-  /**
-   * Legacy `--red-*` = brand accent ramp (true red).
-   * Decoupled from `--fz-primary` so structure stays black and accents stay red.
-   */
-  --red-400: #f87171;
-  --red-500: #ef4444;
-  --red-600: #dc2626;
-  --red-700: #b91c1c;
-  --red-900: #7f0000;
-
-  /* Neutral Scale */
-  --gray-50:  #f9fafb;
-  --gray-100: #f3f4f6;
-  --gray-200: #e5e7eb;
-  --gray-300: #d1d5db;
-  --gray-400: #9ca3af;
-  --gray-500: #6b7280;
-  --gray-600: #4b5563;
-  --gray-700: #374151;
-  --gray-800: #1f2937;
-  --gray-900: #111827;
-  --gray-950: #030712;
-
-  --accent-orange: var(--color-deal);
-  --accent-amber: #f59e0b;
-  --accent-cyan: var(--color-accent);
-  --accent-violet: color-mix(in srgb, var(--color-primary) 78%, white);
 
   /* Typography (LTR default — RTL overrides below) */
   --fz-font-display: var(--font-inter), "Inter", system-ui, sans-serif;
   --fz-font-body: var(--font-inter), "Inter", system-ui, sans-serif;
 
-  /* Glow (subtle red — gaming sections only) */
-  --glow-red: color-mix(in srgb, var(--color-accent) 22%, transparent);
-  --glow-amber: rgba(245, 158, 11, 0.2);
-
-  /* Semantic surfaces (align with tokens) */
-  --bg-primary:   var(--color-card);
+  /* Semantic bridges (resolve to tokens.css — kept as the storefront vocabulary) */
+  --bg-primary: var(--color-card);
   --bg-secondary: var(--color-surface);
-  --text-primary:   var(--color-text);
+  --text-primary: var(--color-text);
   --text-secondary: var(--color-text-muted);
   --border-light: var(--color-border);
-  --border-dark: #0a0a0a;
-
-  /* Legacy elevation (accent-tinted) */
-  --shadow-red: 0 8px 28px color-mix(in srgb, var(--color-accent) 22%, transparent);
 
   --radius-xl: 28px;
 
-  /* Transitions */
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  /**
+   * CMS payload compat: published `featured_products` payloads may store
+   * `bgColor: "var(--gray-50)"`. Keep this single alias until stored payloads
+   * are migrated — do not add new usages.
+   */
+  --gray-50: var(--color-neutral-50);
 }
 
-/**
- * Storefront theme root: keep accent red scale stable (see :root `--red-*`).
- * `--fz-primary` from Admin should be the black structure color (#0A0A0A).
- */
-.fz-theme-root {
-  --red-400: #f87171;
-  --red-500: #ef4444;
-  --red-600: #dc2626;
-  --red-700: #b91c1c;
-  --red-900: #7f0000;
-}
-
-/* Arabic (RTL): IBM Plex Sans Arabic (loaded as --font-cairo alias in index.html) */
+/* Arabic (RTL): IBM Plex Sans Arabic (self-hosted via @fontsource, see main.tsx) */
 html[dir="rtl"] {
   --fz-font-display: var(--font-ibm-arabic), "IBM Plex Sans Arabic", "Segoe UI", sans-serif;
   --fz-font-body: var(--font-ibm-arabic), "IBM Plex Sans Arabic", "Segoe UI", sans-serif;
+}
+
+/* Arabic global tuning: tracking breaks ligatures; uppercase is meaningless */
+html[dir="rtl"] body {
+  letter-spacing: 0;
 }
 
 /* ─── Reset ─────────────────────────────────────────────── */
@@ -94,13 +54,6 @@ html {
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .animate-fade-up,
-  .animate-fade-in,
-  .animate-zoom-in,
-  .animate-float {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-  }
 }
 
 body {
@@ -113,7 +66,11 @@ body {
   line-height: var(--fz-line-body, 1.6);
   overflow-x: clip;
   min-height: 100dvh;
-  -webkit-tap-highlight-color: rgba(201, 0, 0, 0.12);
+  -webkit-tap-highlight-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+html[dir="rtl"] body {
+  line-height: 1.75;
 }
 
 a { text-decoration: none; color: inherit; }
@@ -122,6 +79,13 @@ img {
   display: block;
   max-width: 100%;
   height: auto;
+}
+
+/** Storefront shell column: NavBar / main / Footer */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
 }
 
 /** Main content grows; prevents horizontal bleed on small screens */
@@ -160,11 +124,31 @@ input:focus, select:focus, textarea:focus {
   min-width: 0;
 }
 
+/* ─── Layout repair (formerly theme/mobile-repair.css) ───── */
+.fz-theme-root img,
+.fz-theme-root video {
+  max-width: 100%;
+  height: auto;
+}
+
+.fz-theme-root p,
+.fz-theme-root li,
+.fz-theme-root td,
+.fz-theme-root th {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .fz-theme-root section[class*="section"] {
+    scroll-margin-top: 8px;
+  }
+}
+
 /* ─── Buttons ─────────────────────────────────────────────── */
-/* Primary commerce: black → hover red */
+/* Primary commerce: black → hover crimson */
 .btn-primary {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-text-on-brand);
   border: none;
   cursor: pointer;
   transition: all 0.25s var(--ease-smooth);
@@ -185,10 +169,10 @@ input:focus, select:focus, textarea:focus {
   transform: translateY(0);
 }
 
-/* Deal / high-emphasis red CTA */
+/* Deal / high-emphasis crimson CTA */
 .btn-red {
   background: var(--color-accent);
-  color: #fff;
+  color: var(--color-text-on-brand);
   border: none;
   cursor: pointer;
   transition: all 0.25s var(--ease-smooth);
@@ -203,7 +187,7 @@ input:focus, select:focus, textarea:focus {
 .btn-red:hover {
   background: var(--color-accent-hover);
   transform: translateY(-2px);
-  box-shadow: var(--shadow-red);
+  box-shadow: var(--shadow-brand);
 }
 .btn-red:active { transform: translateY(0); }
 
@@ -225,125 +209,29 @@ input:focus, select:focus, textarea:focus {
   color: var(--color-accent);
 }
 
-/* ─── Glass / Blur ─────────────────────────────────────────── */
-.glass {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(14px) saturate(180%);
-  -webkit-backdrop-filter: blur(14px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-}
-
-.glass-dark {
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(14px) saturate(180%);
-  -webkit-backdrop-filter: blur(14px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-/* ─── Card base ───────────────────────────────────────────── */
-.card-hover {
-  transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-smooth);
-}
-.card-hover:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-xl);
-}
-
-/* ─── Sections ────────────────────────────────────────────── */
-.section-title {
-  font-family: var(--fz-font-display);
-  font-weight: 900;
-  font-size: clamp(1.8rem, 3.5vw, 2.8rem);
-  text-transform: uppercase;
-  letter-spacing: -0.5px;
-  line-height: 1.1;
-}
-
-html[dir="rtl"] .section-title {
+html[dir="rtl"] .btn-primary,
+html[dir="rtl"] .btn-red {
   letter-spacing: 0;
-  text-transform: none;
-  font-weight: 800;
 }
 
-.section-subtitle {
-  color: var(--text-secondary);
-  font-size: clamp(0.9rem, 1.5vw, 1.05rem);
-  font-weight: 400;
-  margin-top: 8px;
-}
-
-/* ─── Chip / Badge ────────────────────────────────────────── */
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 14px;
-  border-radius: var(--radius-full);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-}
-.chip-red   { background: color-mix(in srgb, var(--color-accent) 8%, var(--color-card));  color: var(--color-accent);  border: 1px solid color-mix(in srgb, var(--color-accent) 28%, var(--color-border)); }
-.chip-amber { background: rgba(245,158,11,0.1); color: #b45309;         border: 1px solid rgba(245,158,11,0.25); }
-.chip-green { background: rgba(5,150,105,0.1);  color: #047857;         border: 1px solid rgba(5,150,105,0.25); }
-
-/* ─── Animations ──────────────────────────────────────────── */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-@keyframes zoomIn {
-  from { opacity: 0; transform: scale(0.94); }
-  to   { opacity: 1; transform: scale(1); }
-}
-@keyframes floatY {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-10px); }
-}
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 var(--glow-red); }
-  50%       { box-shadow: 0 0 20px 8px var(--glow-red); }
-}
-@keyframes shimmer {
-  from { background-position: -200% 0; }
-  to   { background-position: 200% 0; }
-}
-
-.animate-fade-up  { animation: fadeUp  0.55s var(--ease-smooth) both; }
-.animate-fade-in  { animation: fadeIn  0.4s  var(--ease-smooth) both; }
-.animate-zoom-in  { animation: zoomIn  0.35s var(--ease-smooth) both; }
-.animate-float    { animation: floatY  3.5s  ease-in-out infinite; }
-@keyframes slideInSubtle {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.animate-section-in {
-  animation: slideInSubtle 0.55s var(--ease-smooth) both;
-}
-
-/* ─── Scrollbar ───────────────────────────────────────────── */
-::-webkit-scrollbar       { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--gray-100); }
+/* ─── Scrollbar (neutral; accent only on hover) ──────────── */
+::-webkit-scrollbar       { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--color-neutral-100); }
 ::-webkit-scrollbar-thumb {
-  background: var(--red-600);
+  background: var(--color-neutral-300);
   border-radius: var(--radius-full);
 }
-::-webkit-scrollbar-thumb:hover { background: var(--red-700); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
 
 /* ─── Selection ───────────────────────────────────────────── */
 ::selection {
-  background: var(--red-600);
-  color: white;
+  background: var(--color-primary);
+  color: var(--color-neutral-0);
 }
 
 /* ─── Focus ring ──────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid var(--red-600);
+  outline: 2px solid var(--color-accent);
   outline-offset: 3px;
 }
 body:focus-visible, html:focus-visible, main:focus-visible {

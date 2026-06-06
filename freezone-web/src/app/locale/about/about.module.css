@@ -7,7 +7,7 @@
 
 /* ── Hero ─────────────────────────────────────── */
 .hero {
-  background: var(--gray-950);
+  background: var(--color-surface-dark);
   padding: clamp(80px, 12vw, 120px) 0;
   text-align: center;
   color: white;
@@ -44,13 +44,13 @@
   font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--red-500);
+  color: var(--color-brand-500);
   margin-bottom: 16px;
 }
 .eyeLine {
   width: 24px;
   height: 2px;
-  background: var(--red-500);
+  background: var(--color-brand-500);
 }
 
 .heroTitle {
@@ -96,7 +96,7 @@
   width: 60px;
   height: 60px;
   background: rgba(11, 31, 59,0.08);
-  color: var(--red-600);
+  color: var(--color-accent);
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;

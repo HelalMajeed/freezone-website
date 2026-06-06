@@ -1,0 +1,105 @@
+/* CMS rich sections — testimonials / cta / split_richtext (token-styled). */
+
+.section {
+  padding-block: calc(var(--rhythm-section) / 2);
+}
+
+/* ── Testimonials ──────────────────────────────── */
+.testimonialsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: var(--rhythm-item);
+  width: 100%;
+  min-width: 0;
+}
+
+.testimonialCard {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--fz-radius-card, var(--radius-md));
+  padding: var(--space-5);
+  box-shadow: var(--fz-shadow-card, var(--shadow-sm));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.testimonialQuote {
+  color: var(--color-text-secondary);
+  flex: 1;
+}
+
+.testimonialName {
+  color: var(--color-text-primary);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+/* ── CTA ───────────────────────────────────────── */
+.ctaPanel {
+  /* `background` set inline from CMS payload (data, not styling) */
+  background: var(--color-surface-dark);
+  color: var(--color-neutral-0);
+  border-radius: var(--fz-radius-card, var(--radius-lg));
+  padding: clamp(28px, 5vw, 48px) var(--space-6);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ctaTitle {
+  color: inherit;
+}
+
+.ctaSubtitle {
+  color: inherit;
+  opacity: 0.85;
+  max-width: 560px;
+}
+
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-block-start: var(--space-2);
+  padding-inline: var(--space-8);
+}
+
+/* ── Split richtext ────────────────────────────── */
+.split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rhythm-block);
+  align-items: center;
+}
+
+.splitReverse {
+  flex-direction: row-reverse;
+}
+
+.splitText {
+  flex: 1 1 280px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.splitBody {
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+html[dir="rtl"] .splitBody {
+  line-height: 1.85;
+}
+
+.splitImage {
+  flex: 1 1 280px;
+  max-width: 100%;
+  border-radius: var(--fz-radius-card, var(--radius-lg));
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+}

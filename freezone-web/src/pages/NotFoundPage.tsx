@@ -1,5 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { useTranslations } from "@/i18n/hooks";
+import { Seo } from "@/components/seo/Seo";
+import styles from "./notFound.module.css";
 
 /**
  * Locale-aware 404. Replaces the previous silent `<Navigate to="/en">` catch-all
@@ -10,36 +12,23 @@ export default function NotFoundPage() {
   const { locale } = useParams<{ locale: string }>();
   const lc = locale === "ar" ? "ar" : "en";
   const t = useTranslations("NotFound");
+  const tSeo = useTranslations("Seo");
   const home = `/${lc}`;
   const products = `/${lc}/products`;
 
   return (
-    <div
-      style={{
-        minHeight: "60vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 16,
-        padding: "64px 24px",
-        textAlign: "center",
-      }}
-    >
-      <div style={{ fontSize: "4rem", fontWeight: 800, color: "#C90000", lineHeight: 1 }}>404</div>
-      <h1 style={{ fontSize: "1.4rem", margin: 0 }}>{t("title")}</h1>
-      <p style={{ maxWidth: 440, color: "#64748b", lineHeight: 1.6, margin: 0 }}>{t("body")}</p>
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center", marginTop: 8 }}>
-        <Link
-          to={home}
-          style={{ padding: "10px 20px", borderRadius: 8, background: "#0f172a", color: "#fff", textDecoration: "none", fontWeight: 600 }}
-        >
+    <div className={styles.wrapper}>
+      <Seo title={tSeo("notFoundTitle")} noindex />
+      <div className={styles.code} aria-hidden>
+        404
+      </div>
+      <h1 className={`fz-type-h2 ${styles.title}`}>{t("title")}</h1>
+      <p className={styles.body}>{t("body")}</p>
+      <div className={styles.actions}>
+        <Link to={home} className={styles.primaryLink}>
           {t("home")}
         </Link>
-        <Link
-          to={products}
-          style={{ padding: "10px 20px", borderRadius: 8, background: "#f1f5f9", color: "#0f172a", border: "1px solid #e2e8f0", textDecoration: "none", fontWeight: 600 }}
-        >
+        <Link to={products} className={styles.secondaryLink}>
           {t("browse")}
         </Link>
       </div>
