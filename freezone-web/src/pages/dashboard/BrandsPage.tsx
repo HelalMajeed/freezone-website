@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import {
   dashboardApi,
-  DashboardApiError,
   uploadDashboardFile,
   type Brand,
   type BrandUpdatePayload,
@@ -16,9 +14,10 @@ import {
   Input,
   Modal,
   Table,
+  useConfirm,
+  useToast,
 } from "@/components/dashboard/ui";
-
-type Lang = "ar" | "en";
+import { useDashboardLocale } from "@/lib/dashboard/i18n";
 
 type BrandFormState = {
   id?: number;
@@ -47,8 +46,9 @@ function resolveImage(url: string | null | undefined): string | undefined {
 }
 
 export function DashboardBrandsPage() {
-  const { i18n } = useTranslation();
-  const lang = ((i18n.resolvedLanguage ?? "en").startsWith("ar") ? "ar" : "en") as Lang;
+  const { lang, t, formatError } = useDashboardLocale();
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,10 +72,11 @@ export function DashboardBrandsPage() {
         setBrands(rows);
         setErr(null);
       })
-      .catch((e: Error) => setErr(e.message))
+      .catch((e: unknown) => setErr(formatError(e)))
       .finally(() => setLoading(false));
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   useEffect(load, []);
 
   const filtered = useMemo(() => {
@@ -130,7 +131,7 @@ export function DashboardBrandsPage() {
       });
       setForm((f) => ({ ...f, logoUrl: url }));
     } catch (e) {
-      setFormErr(e instanceof DashboardApiError ? e.code : "UPLOAD_FAILED");
+      setFormErr(formatError(e));
     } finally {
       setUploading(false);
     }
@@ -172,7 +173,7 @@ export function DashboardBrandsPage() {
       setModalOpen(false);
       load();
     } catch (e) {
-      setFormErr(e instanceof DashboardApiError ? e.code : "UNKNOWN");
+      setFormErr(formatError(e));
     } finally {
       setSaving(false);
     }
@@ -183,22 +184,24 @@ export function DashboardBrandsPage() {
       await dashboardApi.patch(`/api/admin/brands/${b.id}`, { active: !b.active });
       load();
     } catch (e) {
-      if (e instanceof DashboardApiError) setErr(e.code);
+      toast.error(formatError(e));
     }
   };
 
   const onDelete = async (b: Brand) => {
-    const sure = window.confirm(
-      lang === "ar"
-        ? `هل تريد حذف العلامة "${b.nameAr || b.nameEn}"؟ سيُزال ربطها من المنتجات.`
-        : `Delete brand "${b.nameEn}"? Products will be unlinked from it.`,
-    );
+    const sure = await confirm({
+      title: t("brands.deleteTitle"),
+      message: t("brands.deleteMessage", { name: lang === "ar" ? b.nameAr || b.nameEn : b.nameEn }),
+      confirmLabel: t("confirm.delete"),
+      tone: "danger",
+    });
     if (!sure) return;
     try {
       await dashboardApi.delete(`/api/admin/brands/${b.id}`);
+      toast.success(t("brands.deletedToast"));
       load();
     } catch (e) {
-      if (e instanceof DashboardApiError) setErr(e.code);
+      toast.error(formatError(e));
     }
   };
 

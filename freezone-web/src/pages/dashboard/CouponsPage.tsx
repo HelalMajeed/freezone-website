@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
 import {
   dashboardApi,
-  DashboardApiError,
   type Coupon,
   type CouponDiscountType,
   type CouponPayload,
@@ -17,7 +15,10 @@ import {
   Modal,
   Select,
   Table,
+  useConfirm,
+  useToast,
 } from "@/components/dashboard/ui";
+import { useDashboardLocale } from "@/lib/dashboard/i18n";
 
 type Lang = "ar" | "en";
 
@@ -90,8 +91,9 @@ function couponStatus(c: Coupon, now: Date): {
 }
 
 export function DashboardCouponsPage() {
-  const { i18n } = useTranslation();
-  const lang = ((i18n.resolvedLanguage ?? "en").startsWith("ar") ? "ar" : "en") as Lang;
+  const { lang, t, formatError } = useDashboardLocale();
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const [rows, setRows] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,12 +115,11 @@ export function DashboardCouponsPage() {
         setRows(d);
         setErr(null);
       })
-      .catch((e) =>
-        setErr(e instanceof DashboardApiError ? e.code : (e as Error).message),
-      )
+      .catch((e: unknown) => setErr(formatError(e)))
       .finally(() => setLoading(false));
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   useEffect(load, []);
 
   const filtered = useMemo(() => {
@@ -187,24 +188,26 @@ export function DashboardCouponsPage() {
       setModalOpen(false);
       load();
     } catch (e) {
-      setFormErr(e instanceof DashboardApiError ? e.code : "SAVE_FAILED");
+      setFormErr(formatError(e));
     } finally {
       setSaving(false);
     }
   };
 
   const onDelete = async (c: Coupon) => {
-    const sure = window.confirm(
-      lang === "ar"
-        ? `حذف الكوبون "${c.code}"؟ لا يمكن التراجع.`
-        : `Delete coupon "${c.code}"? This can't be undone.`,
-    );
+    const sure = await confirm({
+      title: t("coupons.deleteTitle"),
+      message: t("coupons.deleteMessage", { code: c.code }),
+      confirmLabel: t("confirm.delete"),
+      tone: "danger",
+    });
     if (!sure) return;
     try {
       await dashboardApi.delete(`/api/admin/coupons/${c.id}`);
+      toast.success(t("coupons.deletedToast"));
       load();
     } catch (e) {
-      setErr(e instanceof DashboardApiError ? e.code : (e as Error).message);
+      toast.error(formatError(e));
     }
   };
 
@@ -213,7 +216,7 @@ export function DashboardCouponsPage() {
       await dashboardApi.patch(`/api/admin/coupons/${c.id}`, { active: !c.active });
       load();
     } catch (e) {
-      setErr(e instanceof DashboardApiError ? e.code : (e as Error).message);
+      toast.error(formatError(e));
     }
   };
 

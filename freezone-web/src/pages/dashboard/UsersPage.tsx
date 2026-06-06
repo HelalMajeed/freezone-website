@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import {
   dashboardApi,
-  DashboardApiError,
   type DashboardUserDetail,
   type Role,
 } from "@/lib/dashboard/api";
@@ -17,9 +15,10 @@ import {
   Modal,
   Select,
   Table,
+  useConfirm,
+  useToast,
 } from "@/components/dashboard/ui";
-
-type Lang = "ar" | "en";
+import { useDashboardLocale } from "@/lib/dashboard/i18n";
 
 const ROLE_LABELS: Record<Role, { en: string; ar: string }> = {
   SUPER_ADMIN: { en: "Super admin", ar: "مدير عام" },
@@ -51,8 +50,9 @@ const EMPTY_FORM: UserFormState = {
 };
 
 export function DashboardUsersPage() {
-  const { i18n } = useTranslation();
-  const lang = ((i18n.resolvedLanguage ?? "en").startsWith("ar") ? "ar" : "en") as Lang;
+  const { lang, t, formatError } = useDashboardLocale();
+  const toast = useToast();
+  const confirm = useConfirm();
   const currentUser = useDashboardAuth((s) => s.user);
 
   const [users, setUsers] = useState<DashboardUserDetail[]>([]);
@@ -73,10 +73,11 @@ export function DashboardUsersPage() {
         setUsers(d.users);
         setErr(null);
       })
-      .catch((e: Error) => setErr(e.message))
+      .catch((e: unknown) => setErr(formatError(e)))
       .finally(() => setLoading(false));
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   useEffect(load, []);
 
   const openCreate = () => {
@@ -121,8 +122,7 @@ export function DashboardUsersPage() {
       setModalOpen(false);
       load();
     } catch (e) {
-      if (e instanceof DashboardApiError) setFormErr(e.code);
-      else setFormErr("UNKNOWN");
+      setFormErr(formatError(e));
     } finally {
       setSaving(false);
     }
@@ -130,29 +130,32 @@ export function DashboardUsersPage() {
 
   const onDelete = async (u: DashboardUserDetail) => {
     if (u.id === currentUser?.id) {
-      alert(lang === "ar" ? "لا يمكن حذف حسابك الحالي." : "You can't delete your own account.");
+      toast.error(t("users.deleteSelf"));
       return;
     }
-    const sure = window.confirm(
-      lang === "ar"
-        ? `هل تريد حذف ${u.name}؟ لا يمكن التراجع.`
-        : `Delete ${u.name}? This can't be undone.`,
-    );
+    const sure = await confirm({
+      title: t("users.deleteTitle"),
+      message: t("users.deleteMessage", { name: u.name }),
+      confirmLabel: t("confirm.delete"),
+      tone: "danger",
+    });
     if (!sure) return;
     try {
       await dashboardApi.delete(`/api/dashboard/users/${u.id}`);
+      toast.success(t("users.deletedToast"));
       load();
     } catch (e) {
-      if (e instanceof DashboardApiError) alert(e.code);
+      toast.error(formatError(e));
     }
   };
 
   const onUnlock = async (u: DashboardUserDetail) => {
     try {
       await dashboardApi.patch(`/api/dashboard/users/${u.id}`, { unlock: true });
+      toast.success(t("users.unlockedToast"));
       load();
     } catch (e) {
-      if (e instanceof DashboardApiError) alert(e.code);
+      toast.error(formatError(e));
     }
   };
 
