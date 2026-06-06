@@ -142,7 +142,7 @@ export default function ProductDetailClient({
             <span style={{ color: category?.color }}>{category?.name}</span>
           </div>
 
-          <h1 className={styles.title}>{product.name}</h1>
+          <h1 className={`fz-type-h1 ${styles.title}`}>{product.name}</h1>
 
           <div className={styles.priceRow}>
             <span className={styles.price}>{formatMoney(product.price)} IQD</span>
@@ -248,7 +248,7 @@ export default function ProductDetailClient({
 
       {hasSpecs ? (
         <section className={styles.specificationsCard} aria-labelledby="pdp-specifications-title">
-          <h2 id="pdp-specifications-title" className={styles.specificationsTitle}>
+          <h2 id="pdp-specifications-title" className={`fz-type-h2 ${styles.specificationsTitle}`}>
             {t("specificationsTitle")}
           </h2>
           <div className={styles.attributes}>
@@ -280,7 +280,7 @@ export default function ProductDetailClient({
       {relatedProducts.length > 0 ? (
         <MotionReveal direction="up" delay={0.05}>
           <section className={styles.relatedSection}>
-            <h2 className={styles.relatedTitle}>{t("relatedTitle")}</h2>
+            <h2 className={`fz-type-h2 ${styles.relatedTitle}`}>{t("relatedTitle")}</h2>
             <div className={styles.relatedGrid}>
               {relatedProducts.map((p, i) => (
                 <ProductCard key={p.id} product={p} categories={categories} delay={i * 50} />

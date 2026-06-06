@@ -457,7 +457,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
       <MotionReveal delay={0.04} className={`container ${collStyles.collectionWide} ${productsStyles.productsPageShell}`}>
         {activeCategory ? (
           <header className={collStyles.collectionHeader}>
-            <h1 className={collStyles.collectionTitle}>
+            <h1 className={`fz-type-h1 ${collStyles.collectionTitle}`}>
               {locale === "ar" ? activeCategory.nameAr || activeCategory.name : activeCategory.name}
             </h1>
             <p className={collStyles.collectionMeta}>
@@ -574,7 +574,9 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
             ) : null}
             {!catalogLoading && filtered.length === 0 ? (
               <div className={productsStyles.noResults}>
-                <span style={{ fontSize: "2.5rem" }}>🔍</span>
+                <span className={productsStyles.noResultsEmoji} aria-hidden>
+                  🔍
+                </span>
                 <h3 className={productsStyles.noResultsTitleBilingual}>
                   <span className={productsStyles.noResultsLang}>No results</span>
                   <span className={productsStyles.noResultsLang} dir="rtl" lang="ar">

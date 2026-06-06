@@ -30,29 +30,34 @@ export default function CartPage() {
   );
 
   const [couponInput, setCouponInput] = useState("");
-  const [couponMsg, setCouponMsg] = useState("");
+  const [couponMsg, setCouponMsg] = useState<{ text: string; error: boolean } | null>(null);
 
   async function applyCoupon() {
-    setCouponMsg("");
+    setCouponMsg(null);
     const code = couponInput.trim();
     if (!code) {
       setCoupon(null, 0);
       return;
     }
     const sub = items.reduce((s, i) => s + i.price * i.qty, 0);
-    const res = await fetch(freezoneApiUrl("/api/public/coupon/validate"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, subtotal: sub }),
-    });
-    const j = (await res.json()) as { ok?: boolean; discount?: number; code?: string; error?: string };
-    if (!res.ok || !j.ok) {
-      setCouponMsg(j.error ?? "فشل التحقق");
+    try {
+      const res = await fetch(freezoneApiUrl("/api/public/coupon/validate"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, subtotal: sub }),
+      });
+      const j = (await res.json()) as { ok?: boolean; discount?: number; code?: string; error?: string };
+      if (!res.ok || !j.ok) {
+        setCouponMsg({ text: j.error ?? t("couponFailed"), error: true });
+        setCoupon(null, 0);
+        return;
+      }
+      setCoupon(j.code ?? code.toUpperCase(), j.discount ?? 0);
+      setCouponMsg({ text: t("couponApplied"), error: false });
+    } catch {
+      setCouponMsg({ text: t("couponFailed"), error: true });
       setCoupon(null, 0);
-      return;
     }
-    setCoupon(j.code ?? code.toUpperCase(), j.discount ?? 0);
-    setCouponMsg("تم تطبيق الكوبون");
   }
 
   return (
@@ -87,7 +92,7 @@ export default function CartPage() {
             <ShoppingBag size={64} color="var(--color-neutral-300)" />
             <h2>{t("emptyTitle")}</h2>
             <p>{t("emptySub")}</p>
-            <Link href="/products" className="btn-primary" style={{ display: "inline-block", marginTop: "8px", padding: "12px 28px" }}>
+            <Link href="/products" className={`btn-primary ${styles.emptyCta}`}>
               {t("continueShopping")}
             </Link>
           </motion.div>
@@ -132,20 +137,18 @@ export default function CartPage() {
                   <motion.button
                     type="button"
                     onClick={() => removeItem(item.id)}
-                    style={{ background: "none", border: "none", color: "var(--color-accent)", cursor: "pointer", padding: "8px", borderRadius: "8px", transition: "background 0.2s" }}
-                    title="Remove item"
+                    className={styles.removeItemBtn}
+                    title={t("removeItem")}
+                    aria-label={t("removeItem")}
                     whileTap={{ scale: 0.92 }}
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={18} aria-hidden />
                   </motion.button>
                 </motion.div>
               ))}
               </AnimatePresence>
 
-              <button
-                onClick={clearCart}
-                style={{ color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer", padding: "8px 0", marginTop: "4px", fontWeight: "600", textDecoration: "underline", fontSize: "0.85rem" }}
-              >
+              <button type="button" onClick={clearCart} className={styles.clearCartBtn}>
                 {t("clearCart")}
               </button>
             </div>
@@ -159,44 +162,40 @@ export default function CartPage() {
             >
               <h2 className={styles.summaryTitle}>{t("orderSummary")}</h2>
 
-              <div style={{ marginBottom: 14, display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div className={styles.couponBlock}>
+                <div className={styles.couponRow}>
                   <input
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
-                    placeholder="رمز الكوبون"
-                    style={{
-                      flex: 1,
-                      minWidth: 120,
-                      padding: "10px 12px",
-                      borderRadius: 8,
-                      border: "1px solid var(--border-light, #e2e8f0)",
-                    }}
+                    placeholder={t("couponPlaceholder")}
+                    className={styles.couponInput}
                   />
-                  <button type="button" className="btn-outline" onClick={() => void applyCoupon()} style={{ padding: "10px 16px" }}>
-                    تطبيق
+                  <button
+                    type="button"
+                    className={`btn-outline ${styles.couponBtn}`}
+                    onClick={() => void applyCoupon()}
+                  >
+                    {t("couponApply")}
                   </button>
                   {(couponCode || couponDiscount > 0) && (
                     <button
                       type="button"
+                      className={styles.couponClearBtn}
                       onClick={() => {
                         setCoupon(null, 0);
                         setCouponInput("");
-                        setCouponMsg("");
-                      }}
-                      style={{
-                        padding: "10px 12px",
-                        borderRadius: 8,
-                        border: "1px solid var(--border-light)",
-                        background: "transparent",
-                        cursor: "pointer",
+                        setCouponMsg(null);
                       }}
                     >
-                      إزالة
+                      {t("couponRemove")}
                     </button>
                   )}
                 </div>
-                {couponMsg && <p style={{ fontSize: 12, margin: 0, color: couponMsg.includes("فشل") ? "#b91c1c" : "#059669" }}>{couponMsg}</p>}
+                {couponMsg && (
+                  <p className={`${styles.couponMsg} ${couponMsg.error ? styles.couponMsgError : ""}`}>
+                    {couponMsg.text}
+                  </p>
+                )}
               </div>
 
               <div className={styles.summaryRow}>
@@ -205,13 +204,13 @@ export default function CartPage() {
               </div>
               {couponDiscount > 0 && (
                 <div className={styles.summaryRow}>
-                  <span>خصم {couponCode}</span>
-                  <span style={{ color: "#059669", fontWeight: 700 }}>−{formatMoney(couponDiscount)} IQD</span>
+                  <span>{t("couponDiscount", { code: couponCode ?? "" })}</span>
+                  <span className={styles.couponDiscountValue}>−{formatMoney(couponDiscount)} IQD</span>
                 </div>
               )}
               <div className={styles.summaryRow}>
                 <span>{t("shipping")}</span>
-                <span style={{ color: shipping === 0 ? "#059669" : "inherit", fontWeight: 700 }}>
+                <span className={shipping === 0 ? styles.freeShipping : undefined}>
                   {shipping === 0 ? t("free") : `${formatMoney(shipping)} IQD`}
                 </span>
               </div>
@@ -225,10 +224,10 @@ export default function CartPage() {
                 <span>{formatMoney(grandTotal)} IQD</span>
               </div>
 
-              <Link href="/checkout" className={`btn-primary ${styles.actionBtn}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "14px 20px", fontSize: "1rem", fontWeight: "800", marginBottom: "10px" }}>
+              <Link href="/checkout" className={`btn-primary ${styles.actionBtn}`}>
                 {t("proceedToCheckout")}
               </Link>
-              <Link href="/products" style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "12px 20px", background: "var(--bg-secondary)", color: "var(--text-primary)", border: "1.5px solid var(--border-light)", borderRadius: "var(--radius-md)", fontWeight: 600, fontSize: "0.9rem", transition: "all 0.2s", width: "100%", textDecoration: "none" }}>
+              <Link href="/products" className={styles.continueLink}>
                 {t("continueShopping")}
               </Link>
             </motion.div>

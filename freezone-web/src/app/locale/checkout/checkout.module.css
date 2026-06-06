@@ -348,6 +348,82 @@
 }
 .btnBack:hover { background: var(--bg-secondary); border-color: var(--color-neutral-300); }
 
+/* ── Shared option/review chrome (was inline styles) ── */
+.radioInput {
+  inline-size: 20px;
+  block-size: 20px;
+  accent-color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.optionTitle {
+  font-weight: 800;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.optionDesc {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.cardTitleIcon {
+  display: inline-block;
+  vertical-align: middle;
+  margin-inline-end: 10px;
+}
+
+.paymentGroupTitleFirst {
+  border-block-start: none;
+  margin-block-start: 0;
+  padding-block-start: 0;
+}
+
+.formGridSpaced {
+  margin-block-start: 20px;
+}
+
+.buttonsEnd {
+  justify-content: flex-end;
+}
+
+.reviewBox {
+  margin-block-end: 24px;
+  padding: 16px;
+  background: var(--color-neutral-50);
+  border-radius: var(--radius-md);
+}
+
+.reviewTitle {
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.reviewLine {
+  color: var(--color-text-secondary);
+  margin: 0 0 4px;
+}
+
+.reviewStrong {
+  margin-block-start: 8px;
+  margin-block-end: 0;
+  font-weight: 700;
+}
+
+.summaryRowSpaced {
+  margin-block-start: 16px;
+}
+
+.couponValue {
+  color: var(--color-success);
+}
+
+.placeOrderBtn {
+  font-size: 1.1rem;
+  padding: 16px 32px;
+}
+
 /* ── Success Screen ───────────────────────────── */
 .successScreen {
   text-align: center;
