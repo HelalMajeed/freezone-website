@@ -129,9 +129,26 @@ const RATE_LIMITS: Record<string, RateLimitRule> = {
   "POST /api/dashboard/auth/login":       { scope: "dashboard/login",        limit: 5,  windowMs: 10 * 60_000 },
 };
 
+/**
+ * Normalize "METHOD /path" so the limit lookup cannot be bypassed by case
+ * (`/API/...`) or a trailing slash (`/api/public/contact/`). Express routing is
+ * case-insensitive and non-strict by default, so those variants still reach the
+ * same handler — the rate-limit key must collapse them the same way.
+ */
+function normalizeRateKey(method: string, path: string): string {
+  const cleanPath = path.replace(/\/+$/, "") || "/";
+  return `${method} ${cleanPath}`.toLowerCase();
+}
+
+const NORMALIZED_RATE_LIMITS = new Map<string, RateLimitRule>(
+  Object.entries(RATE_LIMITS).map(([k, v]) => {
+    const sep = k.indexOf(" ");
+    return [normalizeRateKey(k.slice(0, sep), k.slice(sep + 1)), v];
+  }),
+);
+
 function rateLimitMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const key = `${req.method} ${req.path}`;
-  const rule = RATE_LIMITS[key];
+  const rule = NORMALIZED_RATE_LIMITS.get(normalizeRateKey(req.method, req.path));
   if (!rule) return next();
   const decision = rateLimitCheck(rule.scope, ipKeyFromExpressReq(req), rule.limit, rule.windowMs);
   res.setHeader("X-RateLimit-Limit", String(rule.limit));

@@ -12,6 +12,11 @@ import { PUBLISHED_LIVE_WHERE } from "@/lib/admin-product-scope";
 
 const STATIC_PATHS = ["/", "/products", "/contact", "/about"];
 
+/** Hard cap so a single request never materializes the entire product table
+ *  into memory. Also keeps the document under the 50k-URL sitemap limit; once
+ *  the catalog can exceed this, split into a paged sitemap index. */
+const MAX_SITEMAP_PRODUCTS = 50_000;
+
 export async function GET(): Promise<Response> {
   const base =
     process.env.PUBLIC_SITE_ORIGIN?.trim().replace(/\/+$/, "") || "https://freezone-iq.com";
@@ -26,7 +31,8 @@ export async function GET(): Promise<Response> {
         prisma.product.findMany({
           where: { ...PUBLISHED_LIVE_WHERE, slug: { not: null } },
           select: { slug: true, updatedAt: true },
-          orderBy: { id: "asc" },
+          orderBy: { updatedAt: "desc" },
+          take: MAX_SITEMAP_PRODUCTS,
         }),
         prisma.category.findMany({
           where: { active: true },

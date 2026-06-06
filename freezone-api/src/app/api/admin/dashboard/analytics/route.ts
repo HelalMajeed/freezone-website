@@ -18,6 +18,9 @@ import { parseDateRangeParam } from "@/lib/admin-orders-query";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LIST_CAP = 20;
 const TOP_PRODUCTS_CAP = 10;
+/** Hard cap on the queryable span so a single request can never scan and
+ *  materialize the entire order/line-item history into Node memory. */
+const MAX_RANGE_DAYS = 366;
 
 const DELETED_EN = "(deleted)";
 const DELETED_AR = "(محذوف)";
@@ -49,11 +52,12 @@ export async function GET(req: Request): Promise<Response> {
 
   /** Whole days in the range (from 00:00:00.000 → to 23:59:59.999). */
   const rangeDays = Math.round((toEnd.getTime() + 1 - fromStart.getTime()) / DAY_MS);
+  if (rangeDays > MAX_RANGE_DAYS) return jsonError(400, "RANGE_TOO_LARGE");
   const prevToEnd = new Date(fromStart.getTime() - 1);
   const prevFromStart = new Date(fromStart.getTime() - rangeDays * DAY_MS);
 
   try {
-    const [totals, dayRows, lineItems, cityGroups, couponGroups] = await Promise.all([
+    const [totals, dayRows, lineItems, cityGroups, couponGroups, previous] = await Promise.all([
       computePeriodTotals(fromStart, toEnd),
       prisma.order.findMany({
         where: rangeWhere(fromStart, toEnd, { excludeCancelled: true }),
@@ -94,9 +98,10 @@ export async function GET(req: Request): Promise<Response> {
         _count: { _all: true },
         _sum: { total: true, discountTotal: true },
       }),
+      /** Previous-period totals run concurrently — they have no dependency on
+       *  the current-period batch. */
+      compare ? computePeriodTotals(prevFromStart, prevToEnd) : Promise.resolve(null),
     ]);
-
-    const previous = compare ? await computePeriodTotals(prevFromStart, prevToEnd) : null;
 
     /** revenueByDay — zero-filled for every day in the range. */
     const revenueByDay: Array<{ date: string; revenue: number; orders: number }> = [];
