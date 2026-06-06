@@ -7,3 +7,8 @@ export function sanitizeRichHtml(html: string): string {
     ADD_ATTR: ["target", "rel"],
   });
 }
+
+/** Remove ALL markup — for plain-text fields (e.g. public contact form). */
+export function stripHtml(input: string): string {
+  return DOMPurify.sanitize(input, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }).trim();
+}

@@ -121,6 +121,8 @@ function applySecurityHeaders(_req: express.Request, res: express.Response, next
 interface RateLimitRule { limit: number; windowMs: number; scope: string; }
 const RATE_LIMITS: Record<string, RateLimitRule> = {
   "POST /api/public/orders":              { scope: "public/orders",          limit: 5,  windowMs: 60_000 },
+  "POST /api/public/orders/track":        { scope: "public/order-track",     limit: 10, windowMs: 60_000 },
+  "POST /api/public/contact":             { scope: "public/contact",         limit: 5,  windowMs: 60_000 },
   "POST /api/public/coupon/validate":     { scope: "public/coupon-validate", limit: 10, windowMs: 60_000 },
   "POST /api/pc-build":                   { scope: "public/pc-build",        limit: 10, windowMs: 60_000 },
   "POST /api/admin/login":                { scope: "admin/login",            limit: 5,  windowMs: 10 * 60_000 },

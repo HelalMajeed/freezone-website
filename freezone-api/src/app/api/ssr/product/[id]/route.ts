@@ -1,4 +1,5 @@
-import { getProductById } from "@/lib/catalog";
+import { getProductById, mapDbToProduct, storefrontProductIncludeBase, type LocaleCode } from "@/lib/catalog";
+import type { Product } from "@/lib/data";
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { buildProductDetailPayload, type ProductVariantDto } from "@/lib/classification/product-detail-payload";
 import { loadCategoryAttributeSchema } from "@/lib/classification/persist";
@@ -20,6 +21,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
       specRows: [],
       attributes: [],
       variants: [],
+      related: [],
     });
   }
 
@@ -69,5 +71,32 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     row.specs,
     product.cat,
   );
-  return Response.json(payload);
+  const related = await loadRelatedProducts(id, row.categoryId, locale);
+  return Response.json({ ...payload, related });
+}
+
+const RELATED_LIMIT = 8;
+
+/**
+ * Best-effort related products: published, non-deleted rows from the same
+ * primary category (best sellers first), excluding the product itself. Same
+ * storefront `Product` shape as the catalog endpoints so cards render as-is.
+ */
+async function loadRelatedProducts(
+  productId: number,
+  categoryId: number,
+  locale: LocaleCode,
+): Promise<Product[]> {
+  try {
+    const rows = await prisma.product.findMany({
+      where: { categoryId, published: true, deletedAt: null, id: { not: productId } },
+      orderBy: [{ sales: "desc" }, { reviews: "desc" }],
+      take: RELATED_LIMIT,
+      include: { ...storefrontProductIncludeBase },
+    });
+    return rows.map((r) => mapDbToProduct(r, locale));
+  } catch (e) {
+    console.error("[ssr/product] related query failed:", e instanceof Error ? e.message : e);
+    return [];
+  }
 }
