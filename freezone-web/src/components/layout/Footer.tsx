@@ -133,7 +133,7 @@ export function Footer() {
               <Link href="/pc-builder" className={styles.linkItem}>
                 {t("pcBuilder")}
               </Link>
-              <Link href="/contact" className={styles.linkItem}>
+              <Link href="/track-order" className={styles.linkItem}>
                 {t("trackOrder")}
               </Link>
             </div>
@@ -143,19 +143,19 @@ export function Footer() {
           <motion.div variants={colV}>
             <h4 className={styles.colTitle}>{t("colInfo")}</h4>
             <div className={styles.linksList}>
-              <Link href="#" className={styles.linkItem}>
+              <Link href="/shipping" className={styles.linkItem}>
                 {t("shipping")}
               </Link>
-              <Link href="#" className={styles.linkItem}>
+              <Link href="/returns" className={styles.linkItem}>
                 {t("warranty")}
               </Link>
-              <Link href="#" className={styles.linkItem}>
+              <Link href="/privacy" className={styles.linkItem}>
                 {t("privacy")}
               </Link>
-              <Link href="#" className={styles.linkItem}>
+              <Link href="/terms" className={styles.linkItem}>
                 {t("terms")}
               </Link>
-              <Link href="#" className={styles.linkItem}>
+              <Link href="/contact" className={styles.linkItem}>
                 {t("faq")}
               </Link>
             </div>

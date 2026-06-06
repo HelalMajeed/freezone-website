@@ -1,0 +1,117 @@
+.wrapper {
+  padding-block-end: var(--rhythm-section);
+}
+
+.hero {
+  background: var(--color-surface-dark, #0a0a0a);
+  color: var(--color-text-on-brand);
+  padding-block: var(--rhythm-section);
+  margin-block-end: var(--rhythm-block);
+  position: relative;
+  overflow: hidden;
+}
+
+.heroImage {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  opacity: 0.28;
+}
+
+.heroInner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-brand-300, #ee8f8f);
+}
+
+html[dir="rtl"] .eyebrow {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.heroTitle {
+  margin: 0;
+}
+
+.heroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.countPill {
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.filtersLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-text-on-brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.filtersLink:hover {
+  color: var(--color-brand-300, #ee8f8f);
+}
+
+.brandLogo {
+  inline-size: 120px;
+  block-size: 56px;
+  object-fit: contain;
+  background: var(--color-neutral-0);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--rhythm-item);
+}
+
+.empty {
+  padding-block: var(--rhythm-section);
+  text-align: center;
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.footerCta {
+  display: flex;
+  justify-content: center;
+  margin-block-start: var(--rhythm-block);
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+  }
+}

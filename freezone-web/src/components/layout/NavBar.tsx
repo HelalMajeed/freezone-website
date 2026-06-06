@@ -343,14 +343,14 @@ export function NavBar() {
               <span className={styles.actionLabel}>{isLoggedIn ? t("myAccount") : t("signIn")}</span>
             </Link>
 
-            <Link href="/account" className={styles.actionIcon} title="Wishlist" aria-label="Wishlist">
+            <Link href="/wishlist" className={styles.actionIcon} title={t("wishlist")} aria-label={t("wishlist")}>
               <Heart
                 size={22}
                 strokeWidth={1.75}
                 aria-hidden
                 fill={wishCount > 0 ? "currentColor" : "none"}
               />
-              <span className={styles.actionLabel}>Wishlist</span>
+              <span className={styles.actionLabel}>{t("wishlist")}</span>
               {wishCount > 0 ? <span className={styles.cartBadge}>{wishCount}</span> : null}
             </Link>
 

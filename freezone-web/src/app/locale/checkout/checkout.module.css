@@ -358,12 +358,29 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: #059669;
-  color: white;
+  background: var(--color-success);
+  color: var(--color-text-on-brand);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 24px;
   font-size: 2rem;
-  box-shadow: 0 8px 24px rgba(5,150,105,0.3);
+  box-shadow: 0 8px 24px rgba(5, 150, 105, 0.3);
+}
+
+.successActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.successTitle {
+  margin-block-end: var(--space-4);
+}
+
+.successText {
+  color: var(--color-text-secondary);
+  margin-block-end: var(--space-3);
 }

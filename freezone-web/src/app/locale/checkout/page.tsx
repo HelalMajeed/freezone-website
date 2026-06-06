@@ -13,6 +13,7 @@ import { freezoneApiUrl } from "@/lib/api-internal";
 import toast from "react-hot-toast";
 import clsx from "clsx";
 import { Seo } from "@/components/seo/Seo";
+import { rememberOrder } from "@/lib/order-tracking";
 
 type Fulfillment = "delivery" | "pickup";
 
@@ -227,6 +228,15 @@ export default function CheckoutPage() {
     if (paymentMethod === "qicard" && qiDisplay) lines.push(`*Qi Card ref:* ${qiDisplay}`);
     if (orderNotes.trim()) lines.push(``, `*Notes:* ${orderNotes.trim()}`);
 
+    /** Device-local order memory — feeds the account page + track-order deep link. */
+    rememberOrder({
+      orderNumber,
+      phone: form.phone.trim(),
+      total: grandTotal,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    });
+
     const waUrl = `${WHATSAPP_ORDER_CHAT_URL}?text=${encodeURIComponent(lines.join("\n"))}`;
     window.open(waUrl, "_blank");
 
@@ -275,12 +285,17 @@ export default function CheckoutPage() {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className={styles.successIcon}>
           <Check size={40} />
         </motion.div>
-        <h1 style={{ fontFamily: "var(--fz-font-display)", fontSize: "3rem", fontWeight: 900, marginBottom: "16px" }}>{t("orderPlaced")}</h1>
-        <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem", marginBottom: "12px" }}>{t("successMsg", { orderNumber: placedOrderNumber })}</p>
-        <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", marginBottom: "32px" }}>{t("successFollowUp")}</p>
-        <Link href="/" className="btn-primary">
-          {t("returnHome")}
-        </Link>
+        <h1 className={`fz-type-h1 ${styles.successTitle}`}>{t("orderPlaced")}</h1>
+        <p className={styles.successText}>{t("successMsg", { orderNumber: placedOrderNumber })}</p>
+        <p className={`fz-type-small ${styles.successText}`}>{t("successFollowUp")}</p>
+        <div className={styles.successActions}>
+          <Link href={`/track-order?order=${encodeURIComponent(placedOrderNumber)}`} className="btn-outline">
+            {t("trackYourOrder")}
+          </Link>
+          <Link href="/" className="btn-primary">
+            {t("returnHome")}
+          </Link>
+        </div>
       </div>
     );
   }
