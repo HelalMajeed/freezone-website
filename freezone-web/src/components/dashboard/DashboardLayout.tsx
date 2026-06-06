@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Award,
+  Bell,
   ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
   FolderTree,
   History,
   Image,
@@ -17,6 +19,7 @@ import {
   Settings,
   ShieldCheck,
   Truck,
+  Upload,
   UserRound,
   Users,
   X,
@@ -51,6 +54,7 @@ const NAV: NavGroupDef[] = [
     label: { en: "Overview", ar: "نظرة عامة" },
     items: [
       { to: "/dashboard", end: true, label: { en: "Dashboard", ar: "اللوحة" }, icon: LayoutDashboard },
+      { to: "/dashboard/notifications", label: { en: "Notifications", ar: "الإشعارات" }, icon: Bell },
       { to: "/dashboard/audit", label: { en: "Activity", ar: "السجل" }, icon: History },
     ],
   },
@@ -58,6 +62,8 @@ const NAV: NavGroupDef[] = [
     label: { en: "Catalog", ar: "الكتالوج" },
     items: [
       { to: "/dashboard/products", label: { en: "Products", ar: "المنتجات" }, icon: Package },
+      { to: "/dashboard/products/review", label: { en: "Review queue", ar: "قائمة المراجعة" }, icon: ClipboardCheck, minRole: "admin" },
+      { to: "/dashboard/products/import", label: { en: "CSV import", ar: "استيراد CSV" }, icon: Upload, minRole: "editor" },
       { to: "/dashboard/categories", label: { en: "Categories", ar: "الأقسام" }, icon: FolderTree },
       { to: "/dashboard/brands", label: { en: "Brands", ar: "العلامات" }, icon: Award },
       { to: "/dashboard/data-quality", label: { en: "Data quality", ar: "جودة البيانات" }, icon: ShieldCheck },
@@ -93,8 +99,6 @@ const CRUMB_LABELS: Record<string, { en: string; ar: string }> = Object.fromEntr
   NAV.flatMap((g) => g.items.map((it) => [it.to, it.label])),
 );
 CRUMB_LABELS["/dashboard/profile"] = { en: "Profile & password", ar: "حسابي وكلمة السر" };
-/* ws3-operations crumb labels */
-CRUMB_LABELS["/dashboard/notifications"] = { en: "Notifications", ar: "الإشعارات" };
 
 const SIDEBAR_PREF_KEY = "fz-dashboard-sidebar-collapsed";
 
