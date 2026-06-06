@@ -14,9 +14,12 @@ type FAQItem = { q: string; a: string };
 export function FAQSection({
   mode = "i18n",
   items: customItems,
+  titleOverride,
 }: {
   mode?: "i18n" | "custom";
   items?: FAQItem[];
+  /** CMS `faq` payload title (manual mode) — beats pageCopy/i18n titles */
+  titleOverride?: string;
 }) {
   const t = useTranslations("FAQ");
   const locale = useLocale();
@@ -91,7 +94,10 @@ export function FAQSection({
         {/* Right Side: Title Block */}
         <MotionReveal direction="left" delay={0.08} className={styles.titleBlock}>
           {(() => {
-            const titleOv = (ar ? pc?.faqTitleAr?.trim() : pc?.faqTitleEn?.trim()) || (ar ? pc?.faqTitleEn?.trim() : pc?.faqTitleAr?.trim());
+            const titleOv =
+              titleOverride?.trim() ||
+              (ar ? pc?.faqTitleAr?.trim() : pc?.faqTitleEn?.trim()) ||
+              (ar ? pc?.faqTitleEn?.trim() : pc?.faqTitleAr?.trim());
             const descOv = (ar ? pc?.faqDescAr?.trim() : pc?.faqDescEn?.trim()) || (ar ? pc?.faqDescEn?.trim() : pc?.faqDescAr?.trim());
             const btnOv = (ar ? pc?.faqContactBtnAr?.trim() : pc?.faqContactBtnEn?.trim()) || (ar ? pc?.faqContactBtnEn?.trim() : pc?.faqContactBtnAr?.trim());
             return (

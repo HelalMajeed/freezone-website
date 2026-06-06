@@ -1,0 +1,79 @@
+/* CMS `categories_showcase` (manual mode) — category card grid (FROZEN payload). */
+
+.section {
+  padding-block: calc(var(--rhythm-section) / 2);
+}
+
+.head {
+  text-align: center;
+  margin-block-end: var(--rhythm-block);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  gap: var(--rhythm-item);
+}
+
+.card {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface-dark);
+  isolation: isolate;
+}
+
+.image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.85;
+  transition: transform 0.45s var(--ease-smooth), opacity 0.3s ease;
+}
+.card:hover .image {
+  transform: scale(1.05);
+  opacity: 1;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.1) 60%);
+  pointer-events: none;
+}
+
+.label {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: 0;
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-neutral-0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.labelText {
+  color: inherit;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.labelArrow {
+  flex-shrink: 0;
+  color: var(--color-brand-300);
+  transition: transform var(--transition-base);
+}
+.card:hover .labelArrow {
+  transform: translateX(3px);
+}
+html[dir="rtl"] .card:hover .labelArrow {
+  transform: translateX(-3px) scaleX(-1);
+}
+html[dir="rtl"] .labelArrow {
+  transform: scaleX(-1);
+}

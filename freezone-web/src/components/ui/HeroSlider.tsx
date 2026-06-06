@@ -48,24 +48,23 @@ type PreviewHero = {
   navBoxBackground: string;
 };
 
-const HERO_FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920";
-
+/** No external fallback image — broken/missing slide art degrades to a token gradient. */
 function HeroSlideBackground({ src, priority }: { src: string; priority: boolean }) {
-  const [current, setCurrent] = useState(src);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
-    setCurrent(src);
+    setFailed(false);
   }, [src]);
+  if (!src?.trim() || failed) {
+    return <div className={styles.bgImageFallback} aria-hidden />;
+  }
   return (
     <img
-      src={current}
+      src={src}
       alt=""
       className={styles.bgImage}
       loading={priority ? "eager" : "lazy"}
       decoding="async"
-      onError={() => {
-        if (current !== HERO_FALLBACK_IMAGE) setCurrent(HERO_FALLBACK_IMAGE);
-      }}
+      onError={() => setFailed(true)}
     />
   );
 }
