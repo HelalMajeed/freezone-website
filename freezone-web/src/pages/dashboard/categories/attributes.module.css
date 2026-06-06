@@ -1,0 +1,211 @@
+/* Category attribute & template builder. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fz-sp-2, 16px);
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--fz-text-soft);
+  text-decoration: none;
+  width: fit-content;
+}
+
+.backLink:hover {
+  color: var(--fz-brand);
+}
+
+[dir="rtl"] .dirIcon {
+  transform: scaleX(-1);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--fz-sp-3, 24px);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--fz-bg-soft);
+  border-radius: var(--fz-radius);
+}
+
+.statLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fz-text-muted);
+}
+
+.statValue {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--fz-font-mono);
+}
+
+.attrRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-block-end: 1px solid var(--fz-border);
+}
+
+.attrInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.attrName {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.attrKey {
+  font-size: 11.5px;
+  color: var(--fz-text-muted);
+  font-family: var(--fz-font-mono);
+}
+
+.attrBadges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--fz-bg-soft);
+  border: 1px solid var(--fz-border);
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 12px;
+}
+
+.chipRemove {
+  display: inline-flex;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--fz-text-muted);
+  padding: 0;
+}
+
+.chipRemove:hover {
+  color: var(--fz-danger);
+}
+
+.attrActions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.unsavedBadge {
+  display: inline-flex;
+}
+
+.templateRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-block-end: 1px solid var(--fz-border);
+}
+
+.templateInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.templateName {
+  font-weight: 600;
+  font-size: 13.5px;
+}
+
+.templateCount {
+  font-size: 12px;
+  color: var(--fz-text-muted);
+}
+
+.drawerForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.flagsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px;
+  background: var(--fz-bg-soft);
+  border-radius: var(--fz-radius);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.optionAddRow {
+  display: flex;
+  gap: 6px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.errorBox {
+  padding: 16px;
+  color: var(--fz-danger);
+}

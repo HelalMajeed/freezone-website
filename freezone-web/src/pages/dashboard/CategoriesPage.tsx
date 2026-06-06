@@ -1,33 +1,31 @@
+/**
+ * Categories — tree-ordered list with attribute-schema health badges and a
+ * deep link into the per-category attribute & filter builder. Reads the
+ * GlobalSearch `?search=` seed from the URL.
+ */
 import { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  dashboardApi,
-  DashboardApiError,
-  type CategoryFull,
-} from "@/lib/dashboard/api";
-import { freezoneApiUrl } from "@/lib/api-internal";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { FolderTree, Plus, SlidersHorizontal } from "lucide-react";
+import { dashboardApi, DashboardApiError, type CategoryFull } from "@/lib/dashboard/api";
 import {
   Badge,
   Button,
   Card,
   Input,
   Table,
+  useConfirm,
+  useToast,
 } from "@/components/dashboard/ui";
+import { useDashboardLocale, type DashboardLang } from "@/lib/dashboard/i18n";
+import { resolveUploadUrl } from "./products/shared";
 import { CategoryFormModal } from "./categories/CategoryFormModal";
-
-type Lang = "ar" | "en";
-
-function resolveImage(url: string | null | undefined): string | undefined {
-  if (!url) return undefined;
-  if (/^https?:\/\//i.test(url)) return url;
-  return freezoneApiUrl(url);
-}
+import s from "./products.module.css";
 
 /**
  * Sort categories so parents precede children, then by sortOrder/name.
  * Returns flat list with a `depth` annotation for indentation.
  */
-function buildTree(rows: CategoryFull[], lang: Lang): Array<CategoryFull & { depth: number }> {
+function buildTree(rows: CategoryFull[], lang: DashboardLang): Array<CategoryFull & { depth: number }> {
   const byParent = new Map<number | null, CategoryFull[]>();
   for (const c of rows) {
     const list = byParent.get(c.parentId) ?? [];
@@ -61,13 +59,16 @@ function buildTree(rows: CategoryFull[], lang: Lang): Array<CategoryFull & { dep
 }
 
 export function DashboardCategoriesPage() {
-  const { i18n } = useTranslation();
-  const lang = ((i18n.resolvedLanguage ?? "en").startsWith("ar") ? "ar" : "en") as Lang;
+  const { t, lang, formatError } = useDashboardLocale();
+  const toast = useToast();
+  const confirm = useConfirm();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [rows, setRows] = useState<CategoryFull[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const search = searchParams.get("search") ?? "";
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<CategoryFull | null>(null);
@@ -80,12 +81,11 @@ export function DashboardCategoriesPage() {
         setRows(d);
         setErr(null);
       })
-      .catch((e) =>
-        setErr(e instanceof DashboardApiError ? e.code : (e as Error).message),
-      )
+      .catch((e) => setErr(formatError(e)))
       .finally(() => setLoading(false));
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   useEffect(load, []);
 
   const tree = useMemo(() => buildTree(rows, lang), [rows, lang]);
@@ -101,58 +101,55 @@ export function DashboardCategoriesPage() {
     );
   }, [tree, search]);
 
-  const onCreate = () => {
-    setEditing(null);
-    setModalOpen(true);
+  const setSearch = (value: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (value) next.set("search", value);
+        else next.delete("search");
+        return next;
+      },
+      { replace: true },
+    );
   };
 
-  const onEdit = (c: CategoryFull) => {
-    setEditing(c);
-    setModalOpen(true);
-  };
+  const catName = (c: CategoryFull) => (lang === "ar" ? c.nameAr || c.nameEn : c.nameEn);
 
   const onToggleActive = async (c: CategoryFull) => {
     try {
       await dashboardApi.patch(`/api/admin/categories/${c.id}`, { active: !c.active });
+      toast.success(c.active ? t("categories.disabledToast") : t("categories.enabledToast"));
       load();
     } catch (e) {
-      setErr(e instanceof DashboardApiError ? e.code : (e as Error).message);
+      toast.error(formatError(e));
     }
   };
 
   const onDelete = async (c: CategoryFull) => {
     if (c.primaryProductCount > 0) {
-      window.alert(
-        lang === "ar"
-          ? `لا يمكن حذف هذا القسم — ${c.primaryProductCount} منتج مرتبط به. عطّله بدلاً من الحذف.`
-          : `Can't delete — ${c.primaryProductCount} product(s) reference this category. Disable it instead.`,
-      );
+      toast.error(t("categories.deleteBlocked", { count: c.primaryProductCount }));
       return;
     }
-    const sure = window.confirm(
-      lang === "ar"
-        ? `حذف "${c.nameAr || c.nameEn}"؟ لا يمكن التراجع.`
-        : `Delete "${c.nameEn}"? This can't be undone.`,
-    );
-    if (!sure) return;
+    const ok = await confirm({
+      title: t("categories.deleteTitle"),
+      message: t("categories.deleteMessage", { name: catName(c) }),
+      confirmLabel: t("confirm.delete"),
+      tone: "danger",
+    });
+    if (!ok) return;
     try {
       await dashboardApi.delete(`/api/admin/categories/${c.id}`);
+      toast.success(t("categories.deletedToast"));
       load();
     } catch (e) {
       if (e instanceof DashboardApiError) {
         const extra = (e.extra as { productCount?: number } | undefined) ?? {};
         if (extra.productCount && extra.productCount > 0) {
-          window.alert(
-            lang === "ar"
-              ? `لا يمكن الحذف — ${extra.productCount} منتج مرتبط.`
-              : `Can't delete — ${extra.productCount} linked product(s).`,
-          );
-        } else {
-          setErr(e.code);
+          toast.error(t("categories.deleteBlocked", { count: extra.productCount }));
+          return;
         }
-      } else {
-        setErr((e as Error).message);
       }
+      toast.error(formatError(e));
     }
   };
 
@@ -160,121 +157,133 @@ export function DashboardCategoriesPage() {
     <>
       <div className="dashboard-page-header">
         <div>
-          <h1 className="dashboard-page-title">
-            {lang === "ar" ? "الأقسام" : "Categories"}
-          </h1>
-          <div className="dashboard-page-subtitle">
-            {lang === "ar"
-              ? "أنشئ شجرة الأقسام، وحدّث ترتيبها، أيقوناتها، ألوانها وصور خلفياتها."
-              : "Build the category tree, set ordering, icons, colors, and background images."}
-          </div>
+          <h1 className="dashboard-page-title">{t("categories.title")}</h1>
+          <div className="dashboard-page-subtitle">{t("categories.subtitle")}</div>
         </div>
-        <Button onClick={onCreate}>
-          + {lang === "ar" ? "قسم جديد" : "New category"}
+        <Button
+          onClick={() => {
+            setEditing(null);
+            setModalOpen(true);
+          }}
+        >
+          <Plus size={15} aria-hidden /> {t("categories.new")}
         </Button>
       </div>
 
       <Card tight>
-        <div
-          style={{
-            padding: "14px 16px",
-            borderBottom: "1px solid var(--fz-border, #e5e7eb)",
-          }}
-        >
+        <div className={s.searchBar}>
           <Input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={lang === "ar" ? "ابحث بالاسم أو الـ slug…" : "Search by name or slug…"}
+            placeholder={t("categories.searchPlaceholder")}
           />
         </div>
 
         {loading ? (
           <div className="dashboard-loader" />
         ) : err ? (
-          <div style={{ padding: 20, color: "var(--fz-danger)" }}>{err}</div>
+          <div className={s.errorBox}>{err}</div>
         ) : (
           <Table
             rowKey={(c) => c.id}
             rows={filtered}
-            empty={
-              rows.length === 0
-                ? lang === "ar"
-                  ? "لا توجد أقسام بعد. أنشئ أول قسم."
-                  : "No categories yet. Create your first one."
-                : lang === "ar"
-                  ? "لا نتائج مطابقة."
-                  : "No matches."
-            }
+            empty={rows.length === 0 ? t("categories.empty") : t("categories.emptyFiltered")}
             columns={[
               {
-                header: lang === "ar" ? "القسم" : "Category",
+                header: t("categories.colCategory"),
                 cell: (c) => (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      paddingInlineStart: c.depth * 18,
-                    }}
-                  >
-                    <CategoryThumb url={c.backgroundImageUrl} icon={c.icon} color={c.color} />
+                  <div className={s.treeCell} style={{ paddingInlineStart: c.depth * 18 }}>
+                    <span
+                      className={s.catThumb}
+                      style={{ background: c.color || "var(--fz-bg-soft)" }}
+                    >
+                      {c.backgroundImageUrl ? (
+                        <img src={resolveUploadUrl(c.backgroundImageUrl)} alt="" />
+                      ) : (
+                        c.icon || <FolderTree size={16} aria-hidden />
+                      )}
+                    </span>
                     <div>
-                      <div style={{ fontWeight: 600 }}>
-                        {lang === "ar" ? c.nameAr || c.nameEn : c.nameEn}
-                      </div>
-                      <div style={{ fontSize: 12, color: "var(--fz-text-muted)" }}>
-                        /{c.slug}
-                      </div>
+                      <div className={s.cellTitle}>{catName(c)}</div>
+                      <div className={s.cellSub}>/{c.slug}</div>
                     </div>
                   </div>
                 ),
               },
               {
-                header: lang === "ar" ? "المنتجات" : "Products",
+                header: t("categories.colProducts"),
                 width: "120px",
                 cell: (c) => (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <span style={{ fontWeight: 600 }}>{c.primaryProductCount}</span>
+                  <div className={s.countCell}>
+                    <span className={s.countMain}>{c.primaryProductCount}</span>
                     {c.secondaryLinkCount > 0 && (
-                      <span style={{ fontSize: 11, color: "var(--fz-text-muted)" }}>
-                        + {c.secondaryLinkCount}{" "}
-                        {lang === "ar" ? "ثانوي" : "secondary"}
+                      <span className={s.cellSub}>
+                        {t("categories.secondaryCount", { count: c.secondaryLinkCount })}
                       </span>
                     )}
                   </div>
                 ),
               },
               {
-                header: lang === "ar" ? "الترتيب" : "Sort",
-                width: "80px",
-                cell: (c) => (
-                  <span style={{ color: "var(--fz-text-soft)" }}>{c.sortOrder}</span>
-                ),
+                header: t("categories.colAttributes"),
+                width: "150px",
+                cell: (c) =>
+                  (c.categoryAttributes?.length ?? 0) > 0 ? (
+                    <Badge tone="info">
+                      {t("categories.attrCount", { count: c.categoryAttributes.length })}
+                    </Badge>
+                  ) : (
+                    <Badge tone="warning">{t("categories.noAttrs")}</Badge>
+                  ),
               },
               {
-                header: lang === "ar" ? "الحالة" : "Status",
+                header: t("categories.colSort"),
+                width: "80px",
+                align: "end",
+                mono: true,
+                cell: (c) => <span className={s.cellSoft}>{c.sortOrder}</span>,
+              },
+              {
+                header: t("categories.colStatus"),
                 width: "100px",
                 cell: (c) =>
                   c.active ? (
-                    <Badge tone="success">{lang === "ar" ? "نشط" : "Active"}</Badge>
+                    <Badge tone="success">{t("categories.active")}</Badge>
                   ) : (
-                    <Badge tone="neutral">{lang === "ar" ? "معطّل" : "Disabled"}</Badge>
+                    <Badge tone="neutral">{t("categories.disabled")}</Badge>
                   ),
               },
               {
                 header: "",
                 cell: (c) => (
-                  <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                    <Button size="sm" variant="secondary" onClick={() => onToggleActive(c)}>
-                      {c.active
-                        ? lang === "ar" ? "تعطيل" : "Disable"
-                        : lang === "ar" ? "تفعيل" : "Enable"}
+                  <div className={s.rowActions}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => navigate(`/dashboard/categories/${c.id}/attributes`)}
+                    >
+                      <SlidersHorizontal size={13} aria-hidden /> {t("categories.attributes")}
                     </Button>
-                    <Button size="sm" variant="secondary" onClick={() => onEdit(c)}>
-                      {lang === "ar" ? "تعديل" : "Edit"}
+                    <Button size="sm" variant="secondary" onClick={() => void onToggleActive(c)}>
+                      {c.active ? t("categories.disable") : t("categories.enable")}
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => onDelete(c)}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setEditing(c);
+                        setModalOpen(true);
+                      }}
+                    >
+                      {t("common.edit")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label={t("common.delete")}
+                      onClick={() => void onDelete(c)}
+                    >
                       ✕
                     </Button>
                   </div>
@@ -289,50 +298,14 @@ export function DashboardCategoriesPage() {
         open={modalOpen}
         category={editing}
         allCategories={rows}
-        lang={lang}
         onClose={() => setModalOpen(false)}
         onSaved={() => {
           setModalOpen(false);
+          toast.success(t("catForm.savedToast"));
           load();
         }}
       />
     </>
-  );
-}
-
-function CategoryThumb({
-  url,
-  icon,
-  color,
-}: {
-  url: string | null;
-  icon: string;
-  color: string;
-}) {
-  const src = resolveImage(url);
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        width: 40,
-        height: 40,
-        borderRadius: 10,
-        overflow: "hidden",
-        background: color || "var(--fz-bg-soft, #f1f5f9)",
-        color: "#fff",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: 18,
-        border: "1px solid var(--fz-border, #e5e7eb)",
-        flexShrink: 0,
-      }}
-    >
-      {src ? (
-        <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      ) : (
-        icon || "📦"
-      )}
-    </span>
   );
 }
 

@@ -1,3 +1,7 @@
+/**
+ * Category create/edit modal — bilingual fields, parent picker (cycle-safe),
+ * icon/color/background image.
+ */
 import { useEffect, useRef, useState } from "react";
 import {
   dashboardApi,
@@ -7,16 +11,10 @@ import {
   type CategoryFull,
   type CategoryUpdatePayload,
 } from "@/lib/dashboard/api";
-import { freezoneApiUrl } from "@/lib/api-internal";
-import {
-  Button,
-  Field,
-  Input,
-  Modal,
-  Select,
-} from "@/components/dashboard/ui";
-
-type Lang = "ar" | "en";
+import { Button, Field, Input, Modal, Select } from "@/components/dashboard/ui";
+import { useDashboardLocale } from "@/lib/dashboard/i18n";
+import { isRawApiMessage, resolveUploadUrl } from "../products/shared";
+import s from "./category-form.module.css";
 
 type FormState = {
   nameEn: string;
@@ -56,17 +54,10 @@ function fromRow(c: CategoryFull): FormState {
   };
 }
 
-function resolveImage(url: string | undefined): string | undefined {
-  if (!url) return undefined;
-  if (/^https?:\/\//i.test(url)) return url;
-  return freezoneApiUrl(url);
-}
-
 export function CategoryFormModal({
   open,
   category,
   allCategories,
-  lang,
   onClose,
   onSaved,
 }: {
@@ -75,10 +66,10 @@ export function CategoryFormModal({
   category: CategoryFull | null;
   /** Used to populate parent dropdown — excludes self + self-descendants on edit. */
   allCategories: CategoryFull[];
-  lang: Lang;
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t, lang, formatError } = useDashboardLocale();
   const editing = category != null;
   const [form, setForm] = useState<FormState>(EMPTY);
   const [saving, setSaving] = useState(false);
@@ -95,14 +86,19 @@ export function CategoryFormModal({
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
+  const showError = (e: unknown) => {
+    if (e instanceof DashboardApiError && isRawApiMessage(e.code)) setErr(e.code);
+    else setErr(formatError(e));
+  };
+
   const onPickBackground = async (file: File | undefined) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setErr(lang === "ar" ? "اختر صورة." : "Pick an image.");
+      setErr(t("catForm.pickImage"));
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setErr(lang === "ar" ? "الحد الأقصى ٥ ميغابايت." : "Max 5 MB.");
+      setErr(t("catForm.maxSize"));
       return;
     }
     setErr(null);
@@ -114,7 +110,7 @@ export function CategoryFormModal({
       });
       update("backgroundImageUrl", url);
     } catch (e) {
-      setErr(e instanceof DashboardApiError ? e.code : "UPLOAD_FAILED");
+      showError(e);
     } finally {
       setUploading(false);
     }
@@ -125,7 +121,7 @@ export function CategoryFormModal({
     const nameEn = form.nameEn.trim();
     const nameAr = form.nameAr.trim() || nameEn;
     if (!nameEn) {
-      setErr(lang === "ar" ? "الاسم بالإنجليزية مطلوب." : "English name is required.");
+      setErr(t("catForm.nameRequired"));
       return;
     }
     const sortOrderNum = Number(form.sortOrder);
@@ -164,7 +160,7 @@ export function CategoryFormModal({
       }
       onSaved();
     } catch (e) {
-      setErr(e instanceof DashboardApiError ? e.code : "SAVE_FAILED");
+      showError(e);
     } finally {
       setSaving(false);
     }
@@ -188,7 +184,7 @@ export function CategoryFormModal({
   })();
 
   const parentOptions = [
-    { value: "", label: lang === "ar" ? "— لا يوجد (قسم جذر) —" : "— None (top level) —" },
+    { value: "", label: t("catForm.noParent") },
     ...allCategories
       .filter((c) => !blockedIds.has(c.id))
       .sort((a, b) =>
@@ -206,76 +202,49 @@ export function CategoryFormModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={
-        editing
-          ? lang === "ar" ? "تعديل القسم" : "Edit category"
-          : lang === "ar" ? "قسم جديد" : "New category"
-      }
+      title={editing ? t("catForm.titleEdit") : t("catForm.titleNew")}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            {lang === "ar" ? "إلغاء" : "Cancel"}
+            {t("common.cancel")}
           </Button>
-          <Button onClick={save} loading={saving}>
-            {lang === "ar" ? "حفظ" : "Save"}
+          <Button onClick={() => void save()} loading={saving}>
+            {t("common.save")}
           </Button>
         </>
       }
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {err && (
-          <div
-            style={{
-              background: "var(--fz-danger-bg)",
-              color: "var(--fz-danger)",
-              padding: "10px 14px",
-              borderRadius: "var(--fz-radius)",
-              fontSize: 13,
-            }}
-          >
-            {err}
-          </div>
-        )}
+      <div className={s.form}>
+        {err && <div className={s.errorBox}>{err}</div>}
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-          <Field
-            label={lang === "ar" ? "الاسم بالإنجليزية" : "Name (English)"}
-            hint={lang === "ar" ? "مطلوب." : "Required."}
-          >
+        <div className={s.grid2}>
+          <Field label={t("catForm.nameEn")} required hint={t("common.required")}>
             <Input
               value={form.nameEn}
               onChange={(e) => update("nameEn", e.target.value)}
               placeholder="Laptops"
             />
           </Field>
-          <Field
-            label={lang === "ar" ? "الاسم بالعربية" : "Name (Arabic)"}
-            hint={lang === "ar" ? "اختياري." : "Optional."}
-          >
+          <Field label={t("catForm.nameAr")} hint={t("common.optional")}>
             <Input
               value={form.nameAr}
+              dir="rtl"
               onChange={(e) => update("nameAr", e.target.value)}
               placeholder="لابتوبات"
             />
           </Field>
         </div>
 
-        <Field
-          label="Slug"
-          hint={
-            lang === "ar"
-              ? "اختياري. يُولَّد من الاسم إن تُرك فارغاً."
-              : "Optional. Auto-generated from the name if blank."
-          }
-        >
+        <Field label={t("catForm.slug")} hint={t("catForm.slugHint")}>
           <Input
             value={form.slug}
+            dir="ltr"
             onChange={(e) => update("slug", e.target.value)}
             placeholder="laptops"
           />
         </Field>
 
-        <Field label={lang === "ar" ? "القسم الأب" : "Parent category"}>
+        <Field label={t("catForm.parent")}>
           <Select
             value={form.parentId}
             onChange={(e) => update("parentId", (e.target as HTMLSelectElement).value)}
@@ -283,41 +252,32 @@ export function CategoryFormModal({
           />
         </Field>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
-          <Field
-            label={lang === "ar" ? "الأيقونة" : "Icon"}
-            hint={lang === "ar" ? "إيموجي أو اسم Lucide." : "Emoji or Lucide name."}
-          >
+        <div className={s.grid3}>
+          <Field label={t("catForm.icon")} hint={t("catForm.iconHint")}>
             <Input
               value={form.icon}
               onChange={(e) => update("icon", e.target.value)}
               placeholder="💻"
             />
           </Field>
-          <Field label={lang === "ar" ? "اللون" : "Color"}>
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <Field label={t("catForm.color")}>
+            <div className={s.colorRow}>
               <input
                 type="color"
+                className={s.colorSwatch}
                 value={form.color}
                 onChange={(e) => update("color", e.target.value)}
-                style={{
-                  width: 40,
-                  height: 36,
-                  border: "1px solid var(--fz-border, #e5e7eb)",
-                  borderRadius: 6,
-                  padding: 2,
-                  background: "#fff",
-                  cursor: "pointer",
-                }}
+                aria-label={t("catForm.color")}
               />
               <Input
                 value={form.color}
+                dir="ltr"
                 onChange={(e) => update("color", e.target.value)}
                 placeholder="#64748b"
               />
             </div>
           </Field>
-          <Field label={lang === "ar" ? "الترتيب" : "Sort order"}>
+          <Field label={t("catForm.sortOrder")}>
             <Input
               type="number"
               value={form.sortOrder}
@@ -326,22 +286,24 @@ export function CategoryFormModal({
           </Field>
         </div>
 
-        <Field label={lang === "ar" ? "صورة الخلفية" : "Background image"}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <CategoryThumb
-              url={form.backgroundImageUrl || null}
-              icon={form.icon}
-              color={form.color}
-            />
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+        <Field label={t("catForm.background")}>
+          <div className={s.backgroundRow}>
+            <span className={s.thumb} style={{ background: form.color || "var(--fz-bg-soft)" }}>
+              {form.backgroundImageUrl ? (
+                <img src={resolveUploadUrl(form.backgroundImageUrl)} alt="" />
+              ) : (
+                form.icon || "📦"
+              )}
+            </span>
+            <div className={s.backgroundControls}>
               <input
                 ref={fileRef}
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
-                style={{ display: "none" }}
-                onChange={(e) => onPickBackground(e.target.files?.[0])}
+                className={s.hiddenInput}
+                onChange={(e) => void onPickBackground(e.target.files?.[0])}
               />
-              <div style={{ display: "flex", gap: 6 }}>
+              <div className={s.backgroundButtons}>
                 <Button
                   size="sm"
                   variant="secondary"
@@ -349,9 +311,7 @@ export function CategoryFormModal({
                   loading={uploading}
                   onClick={() => fileRef.current?.click()}
                 >
-                  {form.backgroundImageUrl
-                    ? lang === "ar" ? "استبدال" : "Replace"
-                    : lang === "ar" ? "رفع صورة" : "Upload image"}
+                  {form.backgroundImageUrl ? t("catForm.replace") : t("catForm.upload")}
                 </Button>
                 {form.backgroundImageUrl && (
                   <Button
@@ -360,77 +320,28 @@ export function CategoryFormModal({
                     type="button"
                     onClick={() => update("backgroundImageUrl", "")}
                   >
-                    {lang === "ar" ? "إزالة" : "Remove"}
+                    {t("common.remove")}
                   </Button>
                 )}
               </div>
               <Input
                 value={form.backgroundImageUrl}
                 onChange={(e) => update("backgroundImageUrl", e.target.value)}
-                placeholder={lang === "ar" ? "أو ألصق رابطاً" : "Or paste a URL"}
+                placeholder={t("catForm.pasteUrl")}
               />
             </div>
           </div>
         </Field>
 
-        <label
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: 10,
-            background: "var(--fz-bg-soft, #f8fafc)",
-            borderRadius: "var(--fz-radius)",
-            fontSize: 13,
-          }}
-        >
+        <label className={s.activeRow}>
           <input
             type="checkbox"
             checked={form.active}
             onChange={(e) => update("active", e.target.checked)}
           />
-          <span>
-            {lang === "ar"
-              ? "نشط — يظهر في المتجر."
-              : "Active — visible on the storefront."}
-          </span>
+          <span>{t("catForm.activeLabel")}</span>
         </label>
       </div>
     </Modal>
-  );
-}
-
-function CategoryThumb({
-  url,
-  icon,
-  color,
-}: {
-  url: string | null;
-  icon: string;
-  color: string;
-}) {
-  const src = resolveImage(url ?? undefined);
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        width: 56,
-        height: 56,
-        borderRadius: 12,
-        overflow: "hidden",
-        background: color || "var(--fz-bg-soft, #f1f5f9)",
-        color: "#fff",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: 22,
-        border: "1px solid var(--fz-border, #e5e7eb)",
-      }}
-    >
-      {src ? (
-        <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      ) : (
-        icon || "📦"
-      )}
-    </span>
   );
 }
