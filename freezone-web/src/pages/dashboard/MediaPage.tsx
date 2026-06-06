@@ -1,62 +1,71 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  dashboardApi,
-  DashboardApiError,
-  uploadDashboardFile,
-  type MediaAsset,
-  type MediaKind,
-  type MediaUpdatePayload,
-} from "@/lib/dashboard/api";
+/**
+ * Media library — drag-drop multi-upload with per-file progress, server
+ * pagination, bulk select/delete (Table selection + confirm dialog), copy-URL,
+ * and import-from-URL via /api/admin/media/import-image.
+ */
+import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
+import { Box, Clapperboard, Copy, Image as ImageIcon, Link2, Pencil, Trash2, UploadCloud } from "lucide-react";
+import { DashboardApiError, type MediaAsset, type MediaKind } from "@/lib/dashboard/api";
+import { mediaApi, uploadFileWithProgress, type MediaListResponse } from "@/lib/dashboard/api-extra";
+import { dashboardErrorByCode, useDashboardLocale, type DashboardMessageKey } from "@/lib/dashboard/i18n";
+import { formatBytes, formatDate } from "@/lib/dashboard/format";
 import { freezoneApiUrl } from "@/lib/api-internal";
 import {
   Badge,
   Button,
   Card,
+  EmptyState,
   Field,
   Input,
   Modal,
   Select,
+  Table,
+  useConfirm,
+  useToast,
 } from "@/components/dashboard/ui";
+import s from "./Media.module.css";
 
-type Lang = "ar" | "en";
-
-const KIND_LABELS: Record<MediaKind, { en: string; ar: string }> = {
-  image: { en: "Image", ar: "صورة" },
-  video: { en: "Video", ar: "فيديو" },
-  model3d: { en: "3D model", ar: "نموذج ثلاثي" },
+const KIND_KEYS: Record<MediaKind, DashboardMessageKey> = {
+  image: "media.kindImage",
+  video: "media.kindVideo",
+  model3d: "media.kindModel3d",
 };
+
+const MAX_FILE_BYTES = 16 * 1024 * 1024;
+
+const ACCEPT =
+  "image/png,image/jpeg,image/webp,application/pdf,model/gltf-binary,model/gltf+json,.glb,.gltf";
 
 function resolveUrl(url: string): string {
   if (/^https?:\/\//i.test(url)) return url;
   return freezoneApiUrl(url);
 }
 
-function formatBytes(bytes: number | null, lang: Lang): string {
-  if (bytes == null) return "—";
-  const units = ["B", "KB", "MB", "GB"];
-  let value = bytes;
-  let unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024;
-    unit++;
-  }
-  const num = value.toFixed(value >= 10 || unit === 0 ? 0 : 1);
-  return lang === "ar" ? `${num} ${units[unit]}` : `${num} ${units[unit]}`;
-}
+type UploadState = {
+  name: string;
+  progress: number;
+  status: "uploading" | "done" | "error";
+};
 
 export function DashboardMediaPage() {
-  const { i18n } = useTranslation();
-  const lang = ((i18n.resolvedLanguage ?? "en").startsWith("ar") ? "ar" : "en") as Lang;
+  const { lang, t, formatError } = useDashboardLocale();
+  const toast = useToast();
+  const confirm = useConfirm();
 
-  const [rows, setRows] = useState<MediaAsset[]>([]);
+  const [data, setData] = useState<MediaListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [kindFilter, setKindFilter] = useState<"" | MediaKind>("");
+  const [kind, setKind] = useState<"" | MediaKind>("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [selected, setSelected] = useState<Array<string | number>>([]);
 
+  const [uploads, setUploads] = useState<UploadState[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [editing, setEditing] = useState<MediaAsset | null>(null);
@@ -66,59 +75,104 @@ export function DashboardMediaPage() {
   const [editKind, setEditKind] = useState<MediaKind>("image");
   const [saving, setSaving] = useState(false);
 
-  const load = (q?: string) => {
-    setLoading(true);
-    const url = q && q.trim() ? `/api/admin/media?q=${encodeURIComponent(q.trim())}` : "/api/admin/media";
-    dashboardApi
-      .get<MediaAsset[]>(url)
-      .then((d) => {
-        setRows(d);
-        setErr(null);
-      })
-      .catch((e) =>
-        setErr(e instanceof DashboardApiError ? e.code : (e as Error).message),
-      )
-      .finally(() => setLoading(false));
-  };
+  const [importOpen, setImportOpen] = useState(false);
+  const [importUrl, setImportUrl] = useState("");
+  const [importing, setImporting] = useState(false);
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  // Debounce search (server-side)
-  useEffect(() => {
-    const t = window.setTimeout(() => load(search), 300);
-    return () => window.clearTimeout(t);
-  }, [search]);
-
-  const filtered = useMemo(
-    () => (kindFilter ? rows.filter((r) => r.kind === kindFilter) : rows),
-    [rows, kindFilter],
-  );
-
-  const handleUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    setErr(null);
-    setUploading(true);
+  const load = useCallback(async () => {
     try {
-      for (const file of Array.from(files)) {
-        if (file.size > 16 * 1024 * 1024) {
-          setErr(lang === "ar" ? "كل ملف ≤ ١٦ ميغابايت." : "Each file must be ≤ 16 MB.");
-          continue;
-        }
-        await uploadDashboardFile(file, {
-          register: true,
-          title: file.name.replace(/\.[^.]+$/, ""),
-        });
-      }
-      load(search);
+      const res = await mediaApi.list({
+        page,
+        pageSize,
+        q: search || undefined,
+        kind: kind || undefined,
+      });
+      setData(res);
+      setErr(null);
     } catch (e) {
-      setErr(e instanceof DashboardApiError ? e.code : "UPLOAD_FAILED");
+      setErr(formatError(e));
     } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
+      setLoading(false);
     }
+  }, [page, pageSize, search, kind, formatError]);
+
+  useEffect(() => {
+    setLoading(true);
+    void load();
+  }, [load]);
+
+  // Debounced server-side search.
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const next = searchInput.trim();
+      if (next === search) return;
+      setPage(1);
+      setSearch(next);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchInput, search]);
+
+  // ── Uploads ────────────────────────────────────────────────────────────────
+
+  const handleFiles = async (files: FileList | File[] | null) => {
+    const list = Array.from(files ?? []);
+    if (list.length === 0) return;
+
+    const accepted: File[] = [];
+    for (const file of list) {
+      if (file.size > MAX_FILE_BYTES) {
+        toast.error(t("media.tooLarge", { name: file.name }));
+      } else {
+        accepted.push(file);
+      }
+    }
+    if (accepted.length === 0) return;
+
+    setUploading(true);
+    setUploads(accepted.map((f) => ({ name: f.name, progress: 0, status: "uploading" })));
+
+    let done = 0;
+    for (let i = 0; i < accepted.length; i++) {
+      const file = accepted[i];
+      try {
+        await uploadFileWithProgress(
+          file,
+          { register: true, title: file.name.replace(/\.[^.]+$/, "") },
+          (fraction) => {
+            setUploads((prev) =>
+              prev.map((u, idx) => (idx === i ? { ...u, progress: fraction } : u)),
+            );
+          },
+        );
+        done++;
+        setUploads((prev) =>
+          prev.map((u, idx) => (idx === i ? { ...u, progress: 1, status: "done" } : u)),
+        );
+      } catch (e) {
+        setUploads((prev) =>
+          prev.map((u, idx) => (idx === i ? { ...u, status: "error" } : u)),
+        );
+        toast.error(formatError(e), file.name);
+      }
+    }
+
+    setUploading(false);
+    if (done > 0) {
+      toast.success(t("media.uploadDone", { count: done }));
+      setPage(1);
+      await load();
+    }
+    window.setTimeout(() => setUploads([]), 2500);
+    if (fileRef.current) fileRef.current.value = "";
   };
+
+  const onDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (!uploading) void handleFiles(e.dataTransfer.files);
+  };
+
+  // ── Edit / delete / import ────────────────────────────────────────────────
 
   const openEdit = (m: MediaAsset) => {
     setEditing(m);
@@ -132,263 +186,417 @@ export function DashboardMediaPage() {
     if (!editing) return;
     setSaving(true);
     try {
-      const payload: MediaUpdatePayload = {
+      await mediaApi.update(editing.id, {
         title: editTitle,
         altAr: editAltAr,
         altEn: editAltEn,
         kind: editKind,
-      };
-      await dashboardApi.patch(`/api/admin/media/${editing.id}`, payload);
+      });
+      toast.success(t("media.saved"));
       setEditing(null);
-      load(search);
+      await load();
     } catch (e) {
-      setErr(e instanceof DashboardApiError ? e.code : (e as Error).message);
+      toast.error(formatError(e));
     } finally {
       setSaving(false);
     }
   };
 
-  const onDelete = async (m: MediaAsset) => {
-    const sure = window.confirm(
-      lang === "ar"
-        ? "حذف هذا الأصل من المكتبة؟ لن يُحذف الملف من السيرفر، لكن لن يظهر في المكتبة."
-        : "Delete this asset from the library? The file remains on disk but won't show in the library.",
-    );
-    if (!sure) return;
+  const deleteAssets = async (ids: number[]) => {
+    const ok = await confirm({
+      title: t("media.deleteTitle"),
+      message:
+        ids.length === 1
+          ? t("media.deleteOneMessage")
+          : t("media.deleteManyMessage", { count: ids.length }),
+      confirmLabel: t("common.delete"),
+      tone: "danger",
+    });
+    if (!ok) return;
     try {
-      await dashboardApi.delete(`/api/admin/media/${m.id}`);
-      load(search);
+      await Promise.all(ids.map((id) => mediaApi.remove(id)));
+      toast.success(t("media.deleted"));
+      setSelected((prev) => prev.filter((key) => !ids.includes(Number(key))));
+      await load();
     } catch (e) {
-      setErr(e instanceof DashboardApiError ? e.code : (e as Error).message);
+      toast.error(formatError(e));
+      await load();
     }
   };
+
+  const copyUrl = async (m: MediaAsset) => {
+    try {
+      await navigator.clipboard.writeText(resolveUrl(m.url));
+      toast.success(t("common.copied"));
+    } catch {
+      toast.error(formatError(new Error("copy")));
+    }
+  };
+
+  const onImport = async () => {
+    const url = importUrl.trim();
+    if (!url) return;
+    setImporting(true);
+    try {
+      const image = await mediaApi.importImage(url);
+      await mediaApi.register({
+        url: image.url,
+        kind: "image",
+        mimeType: image.mimeType,
+        title: image.filename.replace(/\.[^.]+$/, ""),
+        fileSize: image.size,
+      });
+      toast.success(t("media.importDone"));
+      setImportOpen(false);
+      setImportUrl("");
+      setPage(1);
+      await load();
+    } catch (e) {
+      // import-image responses carry the machine code in `code` (the `error`
+      // field is a pre-localized Arabic message) — prefer the bilingual map.
+      const machineCode =
+        e instanceof DashboardApiError && typeof (e.extra as { code?: unknown })?.code === "string"
+          ? ((e.extra as { code: string }).code)
+          : null;
+      toast.error(machineCode ? dashboardErrorByCode(machineCode)[lang] : formatError(e));
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const rows = data?.items ?? [];
+  const uploadingCount = uploads.filter((u) => u.status === "uploading").length;
 
   return (
     <>
       <div className="dashboard-page-header">
         <div>
-          <h1 className="dashboard-page-title">
-            {lang === "ar" ? "مكتبة الوسائط" : "Media library"}
-          </h1>
-          <div className="dashboard-page-subtitle">
-            {lang === "ar"
-              ? "ارفع الصور والفيديو ونماذج 3D وأدر نصوصها البديلة."
-              : "Upload images, video, and 3D assets; manage alt text and metadata."}
-          </div>
+          <h1 className="dashboard-page-title">{t("media.title")}</h1>
+          <div className="dashboard-page-subtitle">{t("media.subtitle")}</div>
         </div>
-        <input
-          ref={fileRef}
-          type="file"
-          multiple
-          accept="image/png,image/jpeg,image/webp,application/pdf,model/gltf-binary,model/gltf+json,.glb,.gltf"
-          style={{ display: "none" }}
-          onChange={(e) => handleUpload(e.target.files)}
-        />
-        <Button onClick={() => fileRef.current?.click()} loading={uploading}>
-          + {lang === "ar" ? "رفع وسائط" : "Upload media"}
-        </Button>
+        <div className={s.headerActions}>
+          <input
+            ref={fileRef}
+            type="file"
+            multiple
+            accept={ACCEPT}
+            style={{ display: "none" }}
+            onChange={(e) => void handleFiles(e.target.files)}
+          />
+          <Button variant="secondary" onClick={() => setImportOpen(true)}>
+            <Link2 size={15} aria-hidden /> {t("media.importUrl")}
+          </Button>
+          <Button onClick={() => fileRef.current?.click()} loading={uploading}>
+            <UploadCloud size={15} aria-hidden /> {t("media.upload")}
+          </Button>
+        </div>
       </div>
 
       <Card tight>
+        {/* ── Drop zone ── */}
         <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "2fr 1fr",
-            gap: 10,
-            padding: 14,
-            borderBottom: "1px solid var(--fz-border, #e5e7eb)",
+          className={[s.dropZone, dragOver && s.dropZoneActive].filter(Boolean).join(" ")}
+          role="button"
+          tabIndex={0}
+          aria-label={t("media.dropHint")}
+          onClick={() => !uploading && fileRef.current?.click()}
+          onKeyDown={(e) => {
+            if ((e.key === "Enter" || e.key === " ") && !uploading) {
+              e.preventDefault();
+              fileRef.current?.click();
+            }
           }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={onDrop}
         >
-          <Input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={lang === "ar" ? "ابحث بالعنوان أو الرابط…" : "Search by title or URL…"}
-          />
-          <Select
-            value={kindFilter}
-            onChange={(e) => setKindFilter((e.target as HTMLSelectElement).value as "" | MediaKind)}
-            options={[
-              { value: "", label: lang === "ar" ? "كل الأنواع" : "All kinds" },
-              { value: "image", label: lang === "ar" ? "صور" : "Images" },
-              { value: "video", label: lang === "ar" ? "فيديو" : "Video" },
-              { value: "model3d", label: lang === "ar" ? "نماذج ثلاثية" : "3D models" },
-            ]}
-          />
+          <UploadCloud size={22} aria-hidden />
+          <div className={s.dropTitle}>{t("media.dropHint")}</div>
+          <div className={s.dropSub}>{t("media.dropHintSub")}</div>
         </div>
 
-        {loading ? (
-          <div className="dashboard-loader" />
-        ) : err ? (
-          <div style={{ padding: 20, color: "var(--fz-danger)" }}>{err}</div>
-        ) : filtered.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "var(--fz-text-muted)" }}>
-            {rows.length === 0
-              ? lang === "ar"
-                ? "لا وسائط بعد. ابدأ بالرفع."
-                : "No media yet. Start by uploading."
-              : lang === "ar"
-                ? "لا نتائج مطابقة."
-                : "No matches."}
-          </div>
-        ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-              gap: 12,
-              padding: 14,
-            }}
-          >
-            {filtered.map((m) => (
+        {uploads.length > 0 && (
+          <div className={s.progressList} aria-live="polite">
+            {uploadingCount > 0 && (
+              <div className={s.dropSub}>
+                {t("media.uploadProgress", {
+                  done: uploads.filter((u) => u.status !== "uploading").length + 1,
+                  total: uploads.length,
+                })}
+              </div>
+            )}
+            {uploads.map((u, i) => (
               <div
-                key={m.id}
-                style={{
-                  border: "1px solid var(--fz-border, #e5e7eb)",
-                  borderRadius: 12,
-                  overflow: "hidden",
-                  background: "#fff",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
+                key={`${u.name}-${i}`}
+                className={[
+                  s.progressRow,
+                  u.status === "done" && s.progressDone,
+                  u.status === "error" && s.progressError,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
               >
-                <div
-                  style={{
-                    aspectRatio: "1 / 1",
-                    background: "var(--fz-bg-soft, #f1f5f9)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    overflow: "hidden",
-                  }}
-                >
-                  {m.kind === "image" ? (
-                    <img
-                      src={resolveUrl(m.url)}
-                      alt={m.altEn || m.title}
-                      style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
-                    />
-                  ) : m.kind === "video" ? (
-                    <span style={{ fontSize: 36 }}>🎬</span>
-                  ) : (
-                    <span style={{ fontSize: 36 }}>🧊</span>
-                  )}
-                </div>
-                <div
-                  style={{
-                    padding: 10,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 6,
-                    fontSize: 12,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontWeight: 600,
-                      fontSize: 13,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                    title={m.title || m.url}
-                  >
-                    {m.title || m.url.split("/").pop()}
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
-                    <Badge tone="info">{KIND_LABELS[m.kind][lang]}</Badge>
-                    <span style={{ color: "var(--fz-text-muted)" }}>{formatBytes(m.fileSize, lang)}</span>
-                  </div>
-                  <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
-                    <Button size="sm" variant="secondary" onClick={() => openEdit(m)}>
-                      {lang === "ar" ? "تعديل" : "Edit"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        navigator.clipboard.writeText(m.url);
-                      }}
-                      title={m.url}
-                    >
-                      {lang === "ar" ? "نسخ الرابط" : "Copy URL"}
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => onDelete(m)}>
-                      ✕
-                    </Button>
-                  </div>
-                </div>
+                <span className={s.progressName}>{u.name}</span>
+                <span className={s.progressTrack}>
+                  <span
+                    className={s.progressFill}
+                    style={{ width: `${Math.round(u.progress * 100)}%` }}
+                  />
+                </span>
+                <span className={s.progressPct}>{Math.round(u.progress * 100)}%</span>
               </div>
             ))}
           </div>
         )}
+
+        {/* ── Filters ── */}
+        <div className={s.filterBar}>
+          <Input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder={t("media.searchPlaceholder")}
+            aria-label={t("common.search")}
+          />
+          <Select
+            value={kind}
+            onChange={(e) => {
+              setPage(1);
+              setKind((e.target as HTMLSelectElement).value as "" | MediaKind);
+            }}
+            options={[
+              { value: "", label: t("media.allKinds") },
+              { value: "image", label: t("media.kindImage") },
+              { value: "video", label: t("media.kindVideo") },
+              { value: "model3d", label: t("media.kindModel3d") },
+            ]}
+            aria-label={t("media.colKind")}
+          />
+        </div>
+
+        {selected.length > 0 && (
+          <div className={s.bulkBar}>
+            <span>{t("table.selectedCount", { count: selected.length })}</span>
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={() => void deleteAssets(selected.map(Number))}
+            >
+              <Trash2 size={13} aria-hidden /> {t("media.deleteSelected")}
+            </Button>
+          </div>
+        )}
+
+        {loading && !data ? (
+          <div className="dashboard-loader" />
+        ) : err ? (
+          <div className={s.errorBox} role="alert">
+            {err}
+          </div>
+        ) : (
+          <Table<MediaAsset>
+            rowKey={(m) => m.id}
+            rows={rows}
+            selectable
+            selected={selected}
+            onSelectedChange={setSelected}
+            empty={
+              <EmptyState
+                icon={<ImageIcon size={26} />}
+                title={t("media.empty")}
+                description={t("media.emptyHint")}
+              />
+            }
+            pagination={{
+              page,
+              pageSize,
+              total: data?.total ?? 0,
+              onPageChange: setPage,
+              onPageSizeChange: (next) => {
+                setPage(1);
+                setPageSize(next);
+              },
+            }}
+            columns={[
+              {
+                header: t("media.colPreview"),
+                width: "70px",
+                cell: (m) => (
+                  <span className={s.thumb}>
+                    {m.kind === "image" ? (
+                      <img src={resolveUrl(m.url)} alt={m.altEn || m.title} loading="lazy" />
+                    ) : m.kind === "video" ? (
+                      <Clapperboard size={18} aria-hidden />
+                    ) : (
+                      <Box size={18} aria-hidden />
+                    )}
+                  </span>
+                ),
+              },
+              {
+                header: t("media.colTitle"),
+                cell: (m) => (
+                  <div className={s.titleCell}>
+                    <div className={s.titleMain} title={m.title || m.url}>
+                      {m.title || m.url.split("/").pop()}
+                    </div>
+                    <div className={s.titleSub} title={m.url}>
+                      {m.url}
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                header: t("media.colKind"),
+                width: "110px",
+                cell: (m) => <Badge tone="info">{t(KIND_KEYS[m.kind])}</Badge>,
+              },
+              {
+                header: t("media.colSize"),
+                align: "end",
+                mono: true,
+                width: "90px",
+                cell: (m) => formatBytes(m.fileSize),
+              },
+              {
+                header: t("media.colDimensions"),
+                align: "end",
+                mono: true,
+                width: "110px",
+                cell: (m) => (m.width && m.height ? `${m.width}×${m.height}` : "—"),
+              },
+              {
+                header: t("media.colCreated"),
+                width: "120px",
+                cell: (m) => <span className={s.titleSub}>{formatDate(m.createdAt, lang)}</span>,
+              },
+              {
+                header: t("common.actions"),
+                align: "end",
+                cell: (m) => (
+                  <span className={s.rowActions}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      iconOnly
+                      aria-label={t("media.copyUrl")}
+                      title={t("media.copyUrl")}
+                      onClick={() => void copyUrl(m)}
+                    >
+                      <Copy size={14} aria-hidden />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      iconOnly
+                      aria-label={t("common.edit")}
+                      title={t("common.edit")}
+                      onClick={() => openEdit(m)}
+                    >
+                      <Pencil size={14} aria-hidden />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      iconOnly
+                      aria-label={t("common.delete")}
+                      title={t("common.delete")}
+                      onClick={() => void deleteAssets([m.id])}
+                    >
+                      <Trash2 size={14} aria-hidden />
+                    </Button>
+                  </span>
+                ),
+              },
+            ]}
+          />
+        )}
       </Card>
 
+      {/* ── Edit modal ── */}
       <Modal
         open={editing != null}
         onClose={() => setEditing(null)}
-        title={lang === "ar" ? "تعديل بيانات الأصل" : "Edit asset"}
+        title={t("media.editAsset")}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setEditing(null)}>
-              {lang === "ar" ? "إلغاء" : "Cancel"}
+            <Button variant="ghost" onClick={() => setEditing(null)} disabled={saving}>
+              {t("common.cancel")}
             </Button>
-            <Button onClick={saveEdit} loading={saving}>
-              {lang === "ar" ? "حفظ" : "Save"}
+            <Button onClick={() => void saveEdit()} loading={saving}>
+              {t("common.save")}
             </Button>
           </>
         }
       >
         {editing && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                background: "var(--fz-bg-soft, #f8fafc)",
-                borderRadius: "var(--fz-radius)",
-                padding: 16,
-                minHeight: 120,
-                alignItems: "center",
-              }}
-            >
+          <div className={s.editFields}>
+            <div className={s.editPreview}>
               {editing.kind === "image" ? (
-                <img
-                  src={resolveUrl(editing.url)}
-                  alt={editing.altEn}
-                  style={{ maxWidth: "100%", maxHeight: 220, objectFit: "contain" }}
-                />
+                <img src={resolveUrl(editing.url)} alt={editing.altEn} />
+              ) : editing.kind === "video" ? (
+                <Clapperboard size={48} aria-hidden />
               ) : (
-                <span style={{ fontSize: 64 }}>
-                  {editing.kind === "video" ? "🎬" : "🧊"}
-                </span>
+                <Box size={48} aria-hidden />
               )}
             </div>
             <Field label="URL">
-              <Input value={editing.url} readOnly style={{ fontFamily: "monospace", fontSize: 12 }} />
+              <Input value={editing.url} readOnly className={s.monoInput} />
             </Field>
-            <Field label={lang === "ar" ? "النوع" : "Kind"}>
+            <Field label={t("media.fieldKind")}>
               <Select
                 value={editKind}
                 onChange={(e) => setEditKind((e.target as HTMLSelectElement).value as MediaKind)}
                 options={[
-                  { value: "image", label: KIND_LABELS.image[lang] },
-                  { value: "video", label: KIND_LABELS.video[lang] },
-                  { value: "model3d", label: KIND_LABELS.model3d[lang] },
+                  { value: "image", label: t(KIND_KEYS.image) },
+                  { value: "video", label: t(KIND_KEYS.video) },
+                  { value: "model3d", label: t(KIND_KEYS.model3d) },
                 ]}
               />
             </Field>
-            <Field label={lang === "ar" ? "العنوان" : "Title"}>
+            <Field label={t("media.fieldTitle")}>
               <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
             </Field>
-            <Field label={lang === "ar" ? "النص البديل (عربي)" : "Alt text (Arabic)"}>
-              <Input value={editAltAr} onChange={(e) => setEditAltAr(e.target.value)} />
+            <Field label={t("media.fieldAltAr")}>
+              <Input dir="rtl" value={editAltAr} onChange={(e) => setEditAltAr(e.target.value)} />
             </Field>
-            <Field label={lang === "ar" ? "النص البديل (إنجليزي)" : "Alt text (English)"}>
-              <Input value={editAltEn} onChange={(e) => setEditAltEn(e.target.value)} />
+            <Field label={t("media.fieldAltEn")}>
+              <Input dir="ltr" value={editAltEn} onChange={(e) => setEditAltEn(e.target.value)} />
             </Field>
           </div>
         )}
+      </Modal>
+
+      {/* ── Import-from-URL modal ── */}
+      <Modal
+        open={importOpen}
+        onClose={() => !importing && setImportOpen(false)}
+        title={t("media.importTitle")}
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setImportOpen(false)} disabled={importing}>
+              {t("common.cancel")}
+            </Button>
+            <Button onClick={() => void onImport()} loading={importing} disabled={!importUrl.trim()}>
+              {t("media.importUrl")}
+            </Button>
+          </>
+        }
+      >
+        <Field label={t("media.importUrlLabel")} hint={t("media.importHint")}>
+          <Input
+            dir="ltr"
+            type="url"
+            value={importUrl}
+            onChange={(e) => setImportUrl(e.target.value)}
+            placeholder="https://…"
+            className={s.monoInput}
+          />
+        </Field>
       </Modal>
     </>
   );

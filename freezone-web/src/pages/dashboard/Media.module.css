@@ -1,0 +1,207 @@
+/* Media library — dropzone, upload progress, asset table */
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dropZone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 28px 20px;
+  margin: 14px;
+  border: 2px dashed var(--fz-border-strong);
+  border-radius: var(--fz-radius-lg);
+  background: var(--fz-bg-soft);
+  color: var(--fz-text-soft);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color var(--fz-t),
+    background var(--fz-t),
+    color var(--fz-t);
+}
+
+.dropZone:hover,
+.dropZoneActive {
+  border-color: var(--fz-brand);
+  background: var(--fz-brand-50);
+  color: var(--fz-brand);
+}
+
+.dropTitle {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.dropSub {
+  font-size: 12px;
+  color: var(--fz-text-muted);
+}
+
+/* ── Upload progress ── */
+.progressList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 14px 14px;
+}
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.progressName {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.progressTrack {
+  flex: 2;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--fz-bg-soft);
+  overflow: hidden;
+}
+
+.progressFill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--fz-brand);
+  transition: width 120ms linear;
+}
+
+.progressDone .progressFill {
+  background: var(--fz-success);
+}
+
+.progressError .progressFill {
+  background: var(--fz-danger);
+}
+
+.progressPct {
+  width: 42px;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  color: var(--fz-text-muted);
+}
+
+/* ── Filters ── */
+.filterBar {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 10px;
+  padding: 14px;
+  border-bottom: 1px solid var(--fz-border);
+}
+
+@media (max-width: 700px) {
+  .filterBar {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bulkBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--fz-border);
+  background: var(--fz-brand-50);
+  font-size: 13px;
+}
+
+/* ── Table cells ── */
+.thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--fz-radius-sm);
+  border: 1px solid var(--fz-border);
+  background: var(--fz-bg-soft);
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fz-text-muted);
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.titleCell {
+  max-width: 280px;
+}
+
+.titleMain {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.titleSub {
+  font-size: 11.5px;
+  color: var(--fz-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: ltr;
+  text-align: start;
+}
+
+.rowActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+/* ── Edit modal preview ── */
+.editPreview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--fz-bg-soft);
+  border-radius: var(--fz-radius);
+  padding: 16px;
+  min-height: 120px;
+  margin-bottom: 14px;
+}
+
+.editPreview img {
+  max-width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+}
+
+.editFields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.monoInput {
+  font-family: var(--fz-font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  direction: ltr;
+}
+
+.errorBox {
+  padding: 20px;
+  color: var(--fz-danger);
+}
