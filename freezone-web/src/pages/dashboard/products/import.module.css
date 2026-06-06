@@ -1,0 +1,134 @@
+/* Products CSV import wizard. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fz-sp-2, 16px);
+}
+
+.steps {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--fz-radius);
+  border: 1px solid var(--fz-border);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fz-text-muted);
+  background: var(--fz-bg-elev);
+}
+
+.stepActive {
+  border-color: var(--fz-brand);
+  color: var(--fz-brand);
+  background: var(--fz-brand-50);
+}
+
+.stepDone {
+  color: var(--fz-success);
+}
+
+.dropZone {
+  border: 2px dashed var(--fz-border-strong);
+  border-radius: var(--fz-radius);
+  padding: var(--fz-sp-5, 40px);
+  text-align: center;
+  color: var(--fz-text-soft);
+  font-size: 13.5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.dropZoneActive {
+  border-color: var(--fz-brand);
+  background: var(--fz-brand-50);
+}
+
+.fileInfo {
+  font-size: 13px;
+  color: var(--fz-text-soft);
+  font-family: var(--fz-font-mono);
+}
+
+.pasteArea {
+  font-family: var(--fz-font-mono);
+  font-size: 12.5px;
+  min-block-size: 160px;
+}
+
+.mapGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--fz-sp-2, 16px);
+}
+
+.previewWrap {
+  overflow-x: auto;
+}
+
+.footerNav {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.footerNavEnd {
+  display: flex;
+  gap: 8px;
+}
+
+.summaryRow {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.summaryOk {
+  color: var(--fz-success);
+  font-weight: 600;
+}
+
+.summaryFail {
+  color: var(--fz-danger);
+  font-weight: 600;
+}
+
+.errorBox {
+  background: var(--fz-danger-bg);
+  color: var(--fz-danger);
+  padding: 10px 14px;
+  border-radius: var(--fz-radius);
+  font-size: 13px;
+}
+
+.refList {
+  columns: 3 220px;
+  font-size: 12.5px;
+  color: var(--fz-text-soft);
+}
+
+.refList li {
+  margin-block-end: 2px;
+  break-inside: avoid;
+}
+
+.doneCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: var(--fz-sp-4, 32px);
+  text-align: center;
+}
+.hiddenInput { display: none; }
