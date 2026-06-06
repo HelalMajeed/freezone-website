@@ -300,6 +300,7 @@ export function NavBar() {
                   }}
                   autoComplete="off"
                   enterKeyHint="search"
+                  role="combobox"
                   aria-expanded={searchOpen}
                   aria-controls="fz-header-search-panel"
                   aria-autocomplete="list"

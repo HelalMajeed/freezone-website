@@ -285,6 +285,7 @@ export const dashboardEn = {
   "editor.imagesUploading": "Uploading… {pct}%",
   "editor.imagesEmpty": "No images yet.",
   "editor.imagesCover": "Cover",
+  "editor.imagesReorder": "Drag to reorder image (use arrow keys after pressing space)",
   "editor.imagesAltEn": "Alt text (English)",
   "editor.imagesAltAr": "Alt text (Arabic)",
   "editor.imagesOnly": "Images only (PNG, JPEG, WebP).",

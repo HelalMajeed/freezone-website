@@ -9,6 +9,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -145,6 +146,12 @@ function useAdminSearch(query: string) {
   return { status, data };
 }
 
+/** Stable per-render option id so the combobox input can point at the active
+ *  option via aria-activedescendant. */
+function optionId(listId: string, index: number): string {
+  return `${listId}-opt-${index}`;
+}
+
 function ResultsList({
   entries,
   status,
@@ -153,6 +160,7 @@ function ResultsList({
   onPick,
   onHover,
   locale,
+  listId,
 }: {
   entries: SearchEntry[];
   status: SearchStatus;
@@ -161,6 +169,7 @@ function ResultsList({
   onPick: (entry: SearchEntry) => void;
   onHover: (index: number) => void;
   locale: DashboardLocale;
+  listId: string;
 }) {
   const { t } = locale;
   if (status === "short" || status === "idle") {
@@ -194,6 +203,9 @@ function ResultsList({
             {showGroup && <div className={s.groupLabel}>{t(GROUP_LABEL_KEYS[entry.group])}</div>}
             <button
               type="button"
+              id={optionId(listId, index)}
+              role="option"
+              aria-selected={index === activeIndex}
               className={[s.resultItem, index === activeIndex && s.resultItemActive]
                 .filter(Boolean)
                 .join(" ")}
@@ -255,6 +267,7 @@ export function TopbarSearch() {
   const navigate = useNavigate();
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const listId = useId();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const { status, data } = useAdminSearch(query);
@@ -296,6 +309,11 @@ export function TopbarSearch() {
         value={query}
         role="combobox"
         aria-expanded={open}
+        aria-autocomplete="list"
+        aria-controls={listId}
+        aria-activedescendant={
+          open && entries.length > 0 ? optionId(listId, activeIndex) : undefined
+        }
         onChange={(e) => {
           setQuery(e.target.value);
           setOpen(true);
@@ -314,7 +332,7 @@ export function TopbarSearch() {
         {t("search.shortcutHint")}
       </span>
       {open && query.trim().length > 0 && (
-        <div className={s.dropdown}>
+        <div className={s.dropdown} id={listId} role="listbox" aria-label={t("search.aria")}>
           <ResultsList
             entries={entries}
             status={status}
@@ -323,6 +341,7 @@ export function TopbarSearch() {
             onPick={pick}
             onHover={setActiveIndex}
             locale={locale}
+            listId={listId}
           />
         </div>
       )}
@@ -346,6 +365,7 @@ export function CommandPalette({
   const { t, lang, pick: pickLabel } = locale;
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const listId = useId();
   const [query, setQuery] = useState("");
   const { status, data } = useAdminSearch(query);
 
@@ -383,6 +403,7 @@ export function CommandPalette({
   useEffect(() => {
     if (!open) return;
     setQuery("");
+    const previouslyFocused = document.activeElement as HTMLElement | null;
     const frame = requestAnimationFrame(() => inputRef.current?.focus());
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -394,6 +415,8 @@ export function CommandPalette({
       cancelAnimationFrame(frame);
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
+      /** Return focus to whatever opened the palette. */
+      previouslyFocused?.focus?.();
     };
   }, [open, onClose]);
 
@@ -415,12 +438,17 @@ export function CommandPalette({
             placeholder={t("palette.placeholder")}
             aria-label={t("palette.title")}
             value={query}
+            role="combobox"
+            aria-expanded
+            aria-autocomplete="list"
+            aria-controls={listId}
+            aria-activedescendant={entries.length > 0 ? optionId(listId, activeIndex) : undefined}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
           />
           {status === "loading" && <Loader2 size={15} className={s.spinIcon} aria-hidden />}
         </div>
-        <div className={s.paletteResults}>
+        <div className={s.paletteResults} id={listId} role="listbox" aria-label={t("palette.title")}>
           {query.trim().length === 0 && entries.length > 0 ? (
             <>
               <div className={s.groupLabel}>{t("search.pages")}</div>
@@ -428,6 +456,9 @@ export function CommandPalette({
                 <button
                   key={entry.key}
                   type="button"
+                  id={optionId(listId, index)}
+                  role="option"
+                  aria-selected={index === activeIndex}
                   className={[s.resultItem, index === activeIndex && s.resultItemActive]
                     .filter(Boolean)
                     .join(" ")}
@@ -452,6 +483,7 @@ export function CommandPalette({
               onPick={pick}
               onHover={setActiveIndex}
               locale={locale}
+              listId={listId}
             />
           )}
         </div>

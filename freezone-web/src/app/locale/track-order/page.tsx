@@ -126,6 +126,8 @@ export default function TrackOrderPage() {
               autoComplete="off"
               required
               dir="ltr"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? "fz-track-error" : undefined}
             />
           </div>
           <div className={styles.formGroup}>
@@ -143,9 +145,15 @@ export default function TrackOrderPage() {
               placeholder={t("phonePlaceholder")}
               required
               dir="ltr"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? "fz-track-error" : undefined}
             />
           </div>
-          {error ? <p className={styles.error}>{t(error === "notFound" ? "notFound" : "errorGeneric")}</p> : null}
+          {error ? (
+            <p id="fz-track-error" className={styles.error} role="alert">
+              {t(error === "notFound" ? "notFound" : "errorGeneric")}
+            </p>
+          ) : null}
           <div className={styles.submitRow}>
             <button type="submit" className="btn-primary" disabled={loading}>
               {loading ? t("loading") : t("submit")}

@@ -6,6 +6,7 @@
 import { useRef, useState } from "react";
 import {
   DndContext,
+  KeyboardSensor,
   PointerSensor,
   closestCenter,
   useSensor,
@@ -16,6 +17,7 @@ import {
   SortableContext,
   arrayMove,
   rectSortingStrategy,
+  sortableKeyboardCoordinates,
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -55,7 +57,7 @@ function SortableImageCard({
       className={`${s.imageCard} ${isDragging ? s.imageCardDragging : ""}`}
       style={{ transform: CSS.Transform.toString(transform), transition }}
     >
-      <div className={s.imageThumb} {...attributes} {...listeners}>
+      <div className={s.imageThumb} aria-label={t("editor.imagesReorder")} {...attributes} {...listeners}>
         <img src={resolveUploadUrl(image.url)} alt={image.altTextEn || `#${index + 1}`} />
         {index === 0 && (
           <span className={s.coverChip}>
@@ -102,7 +104,10 @@ export function ImagesTab({ images, onChange, onError }: ImagesTabProps) {
   const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const onDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;

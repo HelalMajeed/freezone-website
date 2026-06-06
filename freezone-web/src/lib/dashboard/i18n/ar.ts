@@ -281,6 +281,7 @@ export const dashboardAr: Record<DashboardMessageKey, string> = {
   "editor.imagesUploading": "جارٍ الرفع… {pct}٪",
   "editor.imagesEmpty": "لا توجد صور بعد.",
   "editor.imagesCover": "غلاف",
+  "editor.imagesReorder": "اسحب لإعادة ترتيب الصورة (استخدم مفاتيح الأسهم بعد الضغط على المسافة)",
   "editor.imagesAltEn": "نص بديل (إنجليزي)",
   "editor.imagesAltAr": "نص بديل (عربي)",
   "editor.imagesOnly": "صور فقط (PNG، JPEG، WebP).",
