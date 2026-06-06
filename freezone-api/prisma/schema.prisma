@@ -226,6 +226,7 @@ model Product {
   secondaryCategories ProductSecondaryCategory[]
   attributeValues     ProductAttributeValue[]
   comments            ProductComment[]
+  stockMovements      StockMovement[]
 
   /// Original list price as scraped, BEFORE the FreeZone markup multiplier is applied to `price`.
   sourcePrice   Int?
@@ -344,8 +345,74 @@ model Order {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   items         OrderLineItem[]
+  statusEvents  OrderStatusEvent[]
+  stockMovements StockMovement[]
 
   @@index([createdAt(sort: Desc)])
+}
+
+/// Append-only order timeline: status transitions AND internal staff notes.
+model OrderStatusEvent {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// "status" (fromStatus -> toStatus) | "note" (internal note, statuses null)
+  kind       String   @default("status")
+  fromStatus String?
+  toStatus   String?
+  note       String?  @db.Text
+  userId     Int?
+  userEmail  String?
+  createdAt  DateTime @default(now())
+
+  @@index([orderId, createdAt])
+  @@index([kind, createdAt])
+}
+
+/// Persistent dashboard notification. recipientId null = broadcast to all admins
+/// (read-state on broadcast rows is global — acceptable for a small ops team).
+model Notification {
+  id          Int        @id @default(autoincrement())
+  recipientId Int?
+  recipient   AdminUser? @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  /// order.created | order.cancelled | stock.low | stock.out | review.pending | contact.message | system
+  type        String
+  titleEn     String
+  titleAr     String
+  bodyEn      String     @default("")
+  bodyAr      String     @default("")
+  /// Dashboard deep-link, e.g. /dashboard/orders/1042
+  href        String?
+  entity      String?
+  entityId    String?
+  payloadJson Json?
+  readAt      DateTime?
+  createdAt   DateTime   @default(now())
+
+  @@index([recipientId, readAt, createdAt(sort: Desc)])
+  @@index([type, createdAt])
+}
+
+/// Append-only inventory ledger. delta < 0 = stock out (sale), delta > 0 = stock in.
+model StockMovement {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  delta     Int
+  /// order_placed | order_cancelled_restore | manual_adjust | import | correction
+  reason    String
+  orderId   Int?
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  qtyBefore Int?
+  qtyAfter  Int?
+  userId    Int?
+  userEmail String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([productId, createdAt])
+  @@index([orderId])
+  @@index([reason, createdAt])
 }
 
 model OrderLineItem {
@@ -654,6 +721,7 @@ model AdminUser {
   updatedAt    DateTime       @updatedAt
   sessions     AdminSession[]
   comments     ProductComment[]
+  notifications Notification[]
 
   @@index([active])
   @@index([role])
