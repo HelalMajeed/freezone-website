@@ -15,6 +15,19 @@ import { CLASSIFICATION_SEED_BY_SLUG } from "../src/lib/classification/seed-pres
 const prisma = new PrismaClient();
 
 async function main() {
+  /**
+   * The seed wipes orders, products, CMS content, … — running it against a
+   * production database would destroy live data. Refuse unless explicitly
+   * forced (SEED_FORCE=true) for intentional production re-seeds.
+   */
+  if (process.env.NODE_ENV === "production" && process.env.SEED_FORCE !== "true") {
+    console.error(
+      "Refusing to seed: NODE_ENV=production. The seed deletes all orders/products/CMS rows.\n" +
+        "Set SEED_FORCE=true to override intentionally.",
+    );
+    process.exit(1);
+  }
+
   await prisma.orderLineItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.coupon.deleteMany();
