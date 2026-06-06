@@ -1,240 +1,560 @@
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { dashboardApi, type OverviewResponse } from "@/lib/dashboard/api";
-import { Badge, Card } from "@/components/dashboard/ui";
-import ui from "@/components/dashboard/ui/ui.module.css";
+/**
+ * Overview — dashboard home per the design-system pattern (§4.3):
+ * date-range presets + period-over-period comparison from
+ * GET /api/admin/dashboard/analytics (frozen contract f), KPI cards with delta
+ * badges, lightweight inline-SVG revenue area chart, category/brand share
+ * bars, sales-by-city + coupon performance, quick actions, and the
+ * threshold-aware low-stock list from /api/dashboard/overview.
+ */
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
+import {
+  Image,
+  LayoutTemplate,
+  Package,
+  PackageX,
+  Percent,
+  Settings,
+  TrendingDown,
+  TrendingUp,
+  Truck,
+} from "lucide-react";
+import {
+  analyticsApi,
+  dashboardApi,
+  type AnalyticsResponse,
+  type OverviewResponse,
+} from "@/lib/dashboard/api";
+import { useDashboardLocale, type DashboardMessageKey } from "@/lib/dashboard/i18n";
+import {
+  daysAgoInputValue,
+  formatDate,
+  formatDeltaPct,
+  formatInt,
+  formatIQD,
+  toDateInputValue,
+} from "@/lib/dashboard/format";
+import { Badge, Button, Card, ui } from "@/components/dashboard/ui";
 import s from "./Overview.module.css";
 
-function formatIQD(n: number, lang: "ar" | "en"): string {
-  // Iraqi Dinar — no decimals, thousands separator
-  const formatted = new Intl.NumberFormat(lang === "ar" ? "ar-IQ" : "en-IQ", {
-    maximumFractionDigits: 0,
-  }).format(n);
-  return lang === "ar" ? `${formatted} د.ع` : `${formatted} IQD`;
+type Preset = "today" | "7d" | "30d" | "custom";
+
+type LowStockRow = OverviewResponse["lowStock"][number] & { lowStockThreshold?: number };
+
+const PRESET_KEYS: Array<{ value: Preset; key: DashboardMessageKey }> = [
+  { value: "today", key: "overview.rangeToday" },
+  { value: "7d", key: "overview.range7d" },
+  { value: "30d", key: "overview.range30d" },
+  { value: "custom", key: "overview.rangeCustom" },
+];
+
+function presetRange(preset: Exclude<Preset, "custom">): { from: string; to: string } {
+  const today = toDateInputValue(new Date());
+  if (preset === "today") return { from: today, to: today };
+  if (preset === "7d") return { from: daysAgoInputValue(6), to: today };
+  return { from: daysAgoInputValue(29), to: today };
 }
 
-function formatDate(iso: string, lang: "ar" | "en"): string {
-  const d = new Date(iso);
-  return new Intl.DateTimeFormat(lang === "ar" ? "ar-IQ" : "en-GB", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d);
+/** Tiny inline SVG area chart — no chart library (per WS3-B constraints). */
+function RevenueAreaChart({
+  points,
+  label,
+}: {
+  points: AnalyticsResponse["revenueByDay"];
+  label: (p: AnalyticsResponse["revenueByDay"][number]) => string;
+}) {
+  const W = 600;
+  const H = 180;
+  const PAD = 6;
+  const max = Math.max(1, ...points.map((p) => p.revenue));
+  const stepX = points.length > 1 ? (W - PAD * 2) / (points.length - 1) : 0;
+  const coords = points.map((p, i) => {
+    const x = points.length > 1 ? PAD + i * stepX : W / 2;
+    const y = H - PAD - (p.revenue / max) * (H - PAD * 2);
+    return [x, y] as const;
+  });
+  const line = coords
+    .map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`)
+    .join(" ");
+  const area =
+    coords.length > 0
+      ? `${line} L${coords[coords.length - 1][0].toFixed(1)},${H - PAD} L${coords[0][0].toFixed(1)},${H - PAD} Z`
+      : "";
+
+  return (
+    <svg
+      className={s.chartSvg}
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="none"
+      role="img"
+      aria-hidden={points.length === 0}
+    >
+      {/* horizontal grid lines */}
+      {[0.25, 0.5, 0.75].map((f) => (
+        <line
+          key={f}
+          x1={PAD}
+          x2={W - PAD}
+          y1={PAD + f * (H - PAD * 2)}
+          y2={PAD + f * (H - PAD * 2)}
+          stroke="var(--fz-chart-grid)"
+          strokeWidth={1}
+          strokeDasharray="3 4"
+          vectorEffect="non-scaling-stroke"
+        />
+      ))}
+      {area && <path d={area} fill="var(--fz-chart-area-fill)" stroke="none" />}
+      {line && (
+        <path
+          d={line}
+          fill="none"
+          stroke="var(--fz-chart-1)"
+          strokeWidth={2}
+          vectorEffect="non-scaling-stroke"
+          strokeLinejoin="round"
+        />
+      )}
+      {/* invisible hover bands with native tooltips */}
+      {points.map((p, i) => {
+        const bandW = points.length > 1 ? stepX : W;
+        const x = points.length > 1 ? PAD + i * stepX - bandW / 2 : 0;
+        return (
+          <rect key={p.date} x={x} y={0} width={bandW} height={H} fill="transparent">
+            <title>{label(p)}</title>
+          </rect>
+        );
+      })}
+    </svg>
+  );
 }
 
-function statusTone(status: string): "success" | "info" | "warning" | "danger" | "neutral" {
-  switch (status) {
-    case "delivered":
-      return "success";
-    case "shipped":
-    case "processing":
-      return "info";
-    case "confirmed":
-    case "pending":
-      return "warning";
-    case "cancelled":
-      return "danger";
-    default:
-      return "neutral";
-  }
+function DeltaBadge({ pct, invert }: { pct: number | null; invert?: boolean }) {
+  const { lang } = useDashboardLocale();
+  if (pct === null) return null;
+  const up = pct > 0;
+  const flat = pct === 0;
+  const good = flat ? null : invert ? !up : up;
+  const cls = [
+    s.deltaBadge,
+    flat ? s.deltaFlat : good ? s.deltaUp : s.deltaDown,
+  ].join(" ");
+  return (
+    <span className={cls}>
+      {!flat && (up ? <TrendingUp size={11} aria-hidden /> : <TrendingDown size={11} aria-hidden />)}
+      {formatDeltaPct(pct, lang)}
+    </span>
+  );
 }
 
 export function DashboardOverviewPage() {
-  const { i18n } = useTranslation();
-  const lang = (i18n.resolvedLanguage ?? "en").startsWith("ar") ? "ar" : "en";
+  const { lang, t, formatError } = useDashboardLocale();
 
-  const [data, setData] = useState<OverviewResponse | null>(null);
+  const [preset, setPreset] = useState<Preset>("30d");
+  const [range, setRange] = useState(() => presetRange("30d"));
+  const [draftFrom, setDraftFrom] = useState(range.from);
+  const [draftTo, setDraftTo] = useState(range.to);
+
+  const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
+  const [overview, setOverview] = useState<OverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
+    let alive = true;
     setLoading(true);
+    analyticsApi
+      .range({ from: range.from, to: range.to, compare: true })
+      .then((d) => {
+        if (!alive) return;
+        setAnalytics(d);
+        setErr(null);
+      })
+      .catch((e: unknown) => {
+        if (alive) setErr(formatError(e));
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [range, formatError]);
+
+  useEffect(() => {
+    let alive = true;
     dashboardApi
       .get<OverviewResponse>("/api/dashboard/overview")
       .then((d) => {
-        setData(d);
-        setErr(null);
+        if (alive) setOverview(d);
       })
-      .catch((e: Error) => setErr(e.message))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        /* low-stock rail is best-effort */
+      });
+    return () => {
+      alive = false;
+    };
   }, []);
 
-  if (loading) return <div className="dashboard-loader" />;
-  if (err) return <Card title={lang === "ar" ? "خطأ" : "Error"}>{err}</Card>;
-  if (!data) return null;
+  const onPreset = (next: Preset) => {
+    setPreset(next);
+    if (next !== "custom") {
+      const r = presetRange(next);
+      setRange(r);
+      setDraftFrom(r.from);
+      setDraftTo(r.to);
+    }
+  };
 
-  const maxRev = Math.max(1, ...data.sparkline.map((p) => p.revenue));
+  const applyCustom = () => {
+    if (!draftFrom || !draftTo) return;
+    setRange({ from: draftFrom, to: draftTo });
+  };
+
+  const totals = analytics?.totals;
+  const previous = analytics?.previous ?? null;
+  const delta = analytics?.delta ?? null;
+
+  const cancelRate = useMemo(() => {
+    if (!totals) return null;
+    const all = totals.orders + totals.cancelledOrders;
+    return all > 0 ? (totals.cancelledOrders / all) * 100 : 0;
+  }, [totals]);
+
+  const prevCancelRate = useMemo(() => {
+    if (!previous) return null;
+    const all = previous.orders + previous.cancelledOrders;
+    return all > 0 ? (previous.cancelledOrders / all) * 100 : 0;
+  }, [previous]);
+
+  const cancelDelta =
+    cancelRate !== null && prevCancelRate !== null ? cancelRate - prevCancelRate : null;
+
+  const pickName = (row: { nameEn: string; nameAr: string }) =>
+    lang === "ar" ? row.nameAr || row.nameEn : row.nameEn || row.nameAr;
+
+  const lowStock: LowStockRow[] = (overview?.lowStock ?? []) as LowStockRow[];
+
+  const quickActions: Array<{ to: string; key: DashboardMessageKey; icon: ReactNode }> = [
+    { to: "/dashboard/products", key: "overview.qaProducts", icon: <Package size={16} aria-hidden /> },
+    { to: "/dashboard/orders", key: "overview.qaOrders", icon: <Truck size={16} aria-hidden /> },
+    { to: "/dashboard/coupons", key: "overview.qaCoupons", icon: <Percent size={16} aria-hidden /> },
+    { to: "/dashboard/media", key: "overview.qaMedia", icon: <Image size={16} aria-hidden /> },
+    { to: "/dashboard/cms", key: "overview.qaCms", icon: <LayoutTemplate size={16} aria-hidden /> },
+    { to: "/dashboard/settings", key: "overview.qaSettings", icon: <Settings size={16} aria-hidden /> },
+  ];
 
   return (
     <>
       <div className="dashboard-page-header">
         <div>
-          <h1 className="dashboard-page-title">{lang === "ar" ? "لوحة التحكم" : "Dashboard"}</h1>
-          <div className="dashboard-page-subtitle">
-            {lang === "ar"
-              ? "نظرة سريعة على متجرك الآن"
-              : "A live snapshot of your store right now"}
+          <h1 className="dashboard-page-title">{t("overview.title")}</h1>
+          <div className="dashboard-page-subtitle">{t("overview.subtitle")}</div>
+        </div>
+        <div className={s.rangeBar}>
+          <div className={s.presets} role="group" aria-label={t("overview.rangeCustom")}>
+            {PRESET_KEYS.map((p) => (
+              <button
+                key={p.value}
+                type="button"
+                className={[s.presetBtn, preset === p.value && s.presetActive]
+                  .filter(Boolean)
+                  .join(" ")}
+                aria-pressed={preset === p.value}
+                onClick={() => onPreset(p.value)}
+              >
+                {t(p.key)}
+              </button>
+            ))}
           </div>
+          {preset === "custom" && (
+            <span className={s.customRange}>
+              <input
+                type="date"
+                className={s.dateInput}
+                value={draftFrom}
+                max={draftTo || undefined}
+                onChange={(e) => setDraftFrom(e.target.value)}
+                aria-label={t("common.from")}
+              />
+              <input
+                type="date"
+                className={s.dateInput}
+                value={draftTo}
+                min={draftFrom || undefined}
+                onChange={(e) => setDraftTo(e.target.value)}
+                aria-label={t("common.to")}
+              />
+              <Button size="sm" variant="secondary" onClick={applyCustom} disabled={!draftFrom || !draftTo}>
+                {t("common.apply")}
+              </Button>
+            </span>
+          )}
         </div>
       </div>
 
-      {/* KPI cards */}
-      <div className={ui.kpiGrid}>
-        <Kpi label={lang === "ar" ? "طلبات اليوم" : "Orders today"} value={data.kpis.ordersToday.toString()} />
-        <Kpi
-          label={lang === "ar" ? "إيراد اليوم" : "Revenue today"}
-          value={formatIQD(data.kpis.revenueToday, lang)}
-        />
-        <Kpi label={lang === "ar" ? "طلبات الأسبوع" : "Orders 7d"} value={data.kpis.ordersWeek.toString()} />
-        <Kpi
-          label={lang === "ar" ? "إيراد الأسبوع" : "Revenue 7d"}
-          value={formatIQD(data.kpis.revenueWeek, lang)}
-        />
-        <Kpi label={lang === "ar" ? "المنتجات" : "Products"} value={data.kpis.products.toString()} />
-        <Kpi label={lang === "ar" ? "الأقسام" : "Categories"} value={data.kpis.categories.toString()} />
-        <Kpi label={lang === "ar" ? "العلامات" : "Brands"} value={data.kpis.brands.toString()} />
-        <Kpi
-          label={lang === "ar" ? "كوبونات فعّالة" : "Active coupons"}
-          value={data.kpis.activeCoupons.toString()}
-        />
-      </div>
-
-      <div className={ui.twoCol}>
-        {/* Left column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <Card title={lang === "ar" ? "آخر ١٤ يوم — الإيراد" : "Last 14 days — revenue"}>
-            <div className={s.sparkRow}>
-              {data.sparkline.map((p, i) => {
-                const h = Math.max(2, (p.revenue / maxRev) * 100);
-                return (
-                  <div
-                    key={i}
-                    className={s.sparkBar}
-                    style={{ height: `${h}%` }}
-                    data-tip={`${p.date}: ${formatIQD(p.revenue, lang)} (${p.orders})`}
-                  />
-                );
-              })}
+      {loading && !analytics ? (
+        <div className="dashboard-loader" />
+      ) : err && !analytics ? (
+        <Card>
+          <div className={s.errorBox} role="alert">
+            {err}
+          </div>
+        </Card>
+      ) : analytics && totals ? (
+        <>
+          {/* ── KPI row ── */}
+          <div className={ui.kpiGrid}>
+            <div className={ui.kpi}>
+              <div className={ui.kpiLabel}>{t("overview.kpiRevenue")}</div>
+              <div className={ui.kpiValue}>{formatIQD(totals.revenue, lang)}</div>
+              <div className={s.kpiDeltaRow}>
+                <DeltaBadge pct={delta?.revenuePct ?? null} />
+                {analytics.previousRange && <span>{t("overview.vsPrevious")}</span>}
+              </div>
             </div>
-            <div className={s.sparkAxis}>
-              <span>{data.sparkline[0]?.date}</span>
-              <span>{data.sparkline[data.sparkline.length - 1]?.date}</span>
+            <div className={ui.kpi}>
+              <div className={ui.kpiLabel}>{t("overview.kpiOrders")}</div>
+              <div className={ui.kpiValue}>{formatInt(totals.orders, lang)}</div>
+              <div className={s.kpiDeltaRow}>
+                <DeltaBadge pct={delta?.ordersPct ?? null} />
+                {analytics.previousRange && <span>{t("overview.vsPrevious")}</span>}
+              </div>
             </div>
-          </Card>
+            <div className={ui.kpi}>
+              <div className={ui.kpiLabel}>{t("overview.kpiAov")}</div>
+              <div className={ui.kpiValue}>{formatIQD(totals.aov, lang)}</div>
+              <div className={s.kpiDeltaRow}>
+                <DeltaBadge pct={delta?.aovPct ?? null} />
+                {analytics.previousRange && <span>{t("overview.vsPrevious")}</span>}
+              </div>
+            </div>
+            <div className={ui.kpi}>
+              <div className={ui.kpiLabel}>{t("overview.kpiUnits")}</div>
+              <div className={ui.kpiValue}>{formatInt(totals.units, lang)}</div>
+              <div className={s.kpiDeltaRow}>
+                <DeltaBadge pct={delta?.unitsPct ?? null} />
+                {analytics.previousRange && <span>{t("overview.vsPrevious")}</span>}
+              </div>
+            </div>
+            <div className={ui.kpi}>
+              <div className={ui.kpiLabel}>{t("overview.kpiCancelRate")}</div>
+              <div className={ui.kpiValue}>
+                {cancelRate !== null
+                  ? `${new Intl.NumberFormat(lang === "ar" ? "ar-IQ" : "en-GB", {
+                      maximumFractionDigits: 1,
+                    }).format(cancelRate)}%`
+                  : "—"}
+              </div>
+              <div className={s.kpiDeltaRow}>
+                <DeltaBadge pct={cancelDelta} invert />
+                {analytics.previousRange && <span>{t("overview.vsPrevious")}</span>}
+              </div>
+            </div>
+          </div>
 
-          <Card title={lang === "ar" ? "آخر الطلبات" : "Recent orders"}>
-            <div className={ui.tableWrap}>
-              <table className={ui.table}>
-                <thead>
-                  <tr>
-                    <th>{lang === "ar" ? "الرقم" : "Order"}</th>
-                    <th>{lang === "ar" ? "الزبون" : "Customer"}</th>
-                    <th>{lang === "ar" ? "الحالة" : "Status"}</th>
-                    <th>{lang === "ar" ? "الإجمالي" : "Total"}</th>
-                    <th>{lang === "ar" ? "التاريخ" : "Date"}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.recentOrders.map((o) => (
-                    <tr key={o.id}>
-                      <td style={{ fontFamily: "var(--fz-font-mono)", fontSize: 12 }}>{o.orderNumber}</td>
-                      <td>{o.customerName}</td>
-                      <td>
-                        <Badge tone={statusTone(o.status)}>{o.status}</Badge>
-                      </td>
-                      <td style={{ fontWeight: 600 }}>{formatIQD(o.total, lang)}</td>
-                      <td style={{ color: "var(--fz-text-muted)" }}>{formatDate(o.createdAt, lang)}</td>
-                    </tr>
-                  ))}
-                  {data.recentOrders.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className={ui.empty}>
-                        {lang === "ar" ? "لا توجد طلبات بعد" : "No orders yet"}
-                      </td>
-                    </tr>
+          <div className={ui.twoCol}>
+            {/* ── Main column ── */}
+            <div className={s.mainCol}>
+              <Card title={t("overview.revenueByDay")}>
+                {analytics.revenueByDay.length === 0 ? (
+                  <div className={s.emptyNote}>{t("overview.noData")}</div>
+                ) : (
+                  <div className={s.chartWrap}>
+                    <RevenueAreaChart
+                      points={analytics.revenueByDay}
+                      label={(p) =>
+                        `${formatDate(p.date, lang)} — ${formatIQD(p.revenue, lang)} (${formatInt(
+                          p.orders,
+                          lang,
+                        )} ${t("overview.ordersSuffix")})`
+                      }
+                    />
+                    <div className={s.chartAxis}>
+                      <span>{formatDate(analytics.range.from, lang)}</span>
+                      <span>{formatDate(analytics.range.to, lang)}</span>
+                    </div>
+                  </div>
+                )}
+              </Card>
+
+              <div className={s.splitCards}>
+                <Card title={t("overview.revenueByCategory")}>
+                  {analytics.revenueByCategory.length === 0 ? (
+                    <div className={s.emptyNote}>{t("overview.noData")}</div>
+                  ) : (
+                    <div className={s.barList}>
+                      {analytics.revenueByCategory.slice(0, 8).map((row) => (
+                        <div key={`${row.categoryId}-${row.slug}`} className={s.barRow}>
+                          <div className={s.barHead}>
+                            <span className={s.barName}>{pickName(row)}</span>
+                            <span className={s.barValue}>{formatIQD(row.revenue, lang)}</span>
+                          </div>
+                          <div className={s.barTrack}>
+                            <div
+                              className={s.barFill}
+                              style={{ width: `${Math.max(1, Math.min(100, row.sharePct))}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        </div>
+                </Card>
 
-        {/* Right column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <Card title={lang === "ar" ? "حالات الطلبات" : "Order status"}>
-            <div className={s.statusGrid}>
-              {Object.entries(data.statusCounts).map(([status, n]) => (
-                <div key={status} className={s.statusItem}>
-                  <div className={s.statusLabel}>{status}</div>
-                  <div className={s.statusValue}>{n}</div>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card title={lang === "ar" ? "الأكثر مبيعاً" : "Top sellers"}>
-            {data.topProducts.length === 0 ? (
-              <div className={ui.empty}>{lang === "ar" ? "لا بيانات" : "No data"}</div>
-            ) : (
-              data.topProducts.map((p) => (
-                <div className={s.productRow} key={p.id}>
-                  <div className={s.productThumb}>
-                    {p.images[0]?.url ? <img src={p.images[0].url} alt="" /> : "▢"}
-                  </div>
-                  <div className={s.productInfo}>
-                    <div className={s.productName}>{lang === "ar" ? p.nameAr || p.nameEn : p.nameEn}</div>
-                    <div className={s.productMeta}>
-                      ★ {p.rating.toFixed(1)} · {p.sales} {lang === "ar" ? "مباع" : "sold"}
+                <Card title={t("overview.revenueByBrand")}>
+                  {analytics.revenueByBrand.length === 0 ? (
+                    <div className={s.emptyNote}>{t("overview.noData")}</div>
+                  ) : (
+                    <div className={s.barList}>
+                      {analytics.revenueByBrand.slice(0, 8).map((row) => (
+                        <div key={`${row.brandId}-${row.slug}`} className={s.barRow}>
+                          <div className={s.barHead}>
+                            <span className={s.barName}>{pickName(row)}</span>
+                            <span className={s.barValue}>{formatIQD(row.revenue, lang)}</span>
+                          </div>
+                          <div className={s.barTrack}>
+                            <div
+                              className={`${s.barFill} ${s.barFillAlt}`}
+                              style={{ width: `${Math.max(1, Math.min(100, row.sharePct))}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                  <div className={s.productRight}>{formatIQD(p.price, lang)}</div>
-                </div>
-              ))
-            )}
-          </Card>
+                  )}
+                </Card>
+              </div>
 
-          <Card
-            title={
-              <span>
-                {lang === "ar" ? "مخزون منخفض" : "Low stock"}{" "}
-                <Badge tone="warning">{data.lowStock.length}</Badge>
-              </span>
-            }
-          >
-            {data.lowStock.length === 0 ? (
-              <div className={ui.empty}>{lang === "ar" ? "كل شيء بخير" : "All good"}</div>
-            ) : (
-              data.lowStock.map((p) => (
-                <div className={s.productRow} key={p.id}>
-                  <div className={s.productThumb}>
-                    {p.images[0]?.url ? <img src={p.images[0].url} alt="" /> : "▢"}
-                  </div>
-                  <div className={s.productInfo}>
-                    <div className={s.productName}>{lang === "ar" ? p.nameAr || p.nameEn : p.nameEn}</div>
-                    <div className={s.productMeta}>
-                      {p.brand} · {p.sku || "—"}
-                    </div>
-                  </div>
-                  <div className={s.productRight} style={{ color: "var(--fz-danger)" }}>
-                    {p.quantity}
-                  </div>
+              <Card title={t("overview.couponPerformance")} tight>
+                {analytics.couponPerformance.length === 0 ? (
+                  <div className={s.emptyNote}>{t("overview.noData")}</div>
+                ) : (
+                  <table className={s.couponTable}>
+                    <thead>
+                      <tr>
+                        <th>{t("overview.colCoupon")}</th>
+                        <th className={s.numCell}>{t("overview.colUses")}</th>
+                        <th className={s.numCell}>{t("overview.colDiscount")}</th>
+                        <th className={s.numCell}>{t("overview.colRevenue")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analytics.couponPerformance.map((c) => (
+                        <tr key={c.code}>
+                          <td>
+                            <div className={s.couponCode} dir="ltr">
+                              {c.code}
+                            </div>
+                            <div className={s.listMeta}>
+                              {lang === "ar" ? c.labelAr || c.labelEn : c.labelEn || c.labelAr}
+                            </div>
+                          </td>
+                          <td className={s.numCell}>{formatInt(c.uses, lang)}</td>
+                          <td className={s.numCell}>{formatIQD(c.discountTotal, lang)}</td>
+                          <td className={s.numCell}>{formatIQD(c.revenue, lang)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </Card>
+            </div>
+
+            {/* ── End rail ── */}
+            <div className={s.railCol}>
+              <Card title={t("overview.quickActions")}>
+                <div className={s.quickActions}>
+                  {quickActions.map((qa) => (
+                    <Link key={qa.to} to={qa.to} className={s.quickAction}>
+                      <span className={s.quickActionIcon}>{qa.icon}</span>
+                      <span>{t(qa.key)}</span>
+                    </Link>
+                  ))}
                 </div>
-              ))
-            )}
-          </Card>
-        </div>
-      </div>
+              </Card>
+
+              <Card title={t("overview.salesByCity")}>
+                {analytics.salesByCity.length === 0 ? (
+                  <div className={s.emptyNote}>{t("overview.noData")}</div>
+                ) : (
+                  analytics.salesByCity.slice(0, 10).map((c) => (
+                    <div key={c.city} className={s.listRow}>
+                      <div className={s.listMain}>
+                        <div className={s.listName}>{c.city || t("common.none")}</div>
+                        <div className={s.listMeta}>
+                          {formatInt(c.orders, lang)} {t("overview.ordersSuffix")}
+                        </div>
+                      </div>
+                      <div className={s.listEnd}>{formatIQD(c.revenue, lang)}</div>
+                    </div>
+                  ))
+                )}
+              </Card>
+
+              <Card title={t("overview.topProducts")}>
+                {analytics.topProducts.length === 0 ? (
+                  <div className={s.emptyNote}>{t("overview.noData")}</div>
+                ) : (
+                  analytics.topProducts.map((p) => (
+                    <div key={p.productId} className={s.listRow}>
+                      <div className={s.listMain}>
+                        <div className={s.listName}>{pickName(p)}</div>
+                        <div className={s.listMeta}>
+                          {formatInt(p.units, lang)} {t("overview.unitsSuffix")}
+                        </div>
+                      </div>
+                      <div className={s.listEnd}>{formatIQD(p.revenue, lang)}</div>
+                    </div>
+                  ))
+                )}
+              </Card>
+
+              <Card
+                title={
+                  <span>
+                    {t("overview.lowStock")}{" "}
+                    {lowStock.length > 0 && <Badge tone="warning">{lowStock.length}</Badge>}
+                  </span>
+                }
+              >
+                <div className={s.sectionHint}>{t("overview.lowStockHint")}</div>
+                {lowStock.length === 0 ? (
+                  <div className={s.emptyNote}>{t("overview.lowStockEmpty")}</div>
+                ) : (
+                  lowStock.map((p) => (
+                    <div key={p.id} className={s.listRow}>
+                      <span className={s.thumb}>
+                        {p.images[0]?.url ? (
+                          <img src={p.images[0].url} alt="" />
+                        ) : (
+                          <PackageX size={16} aria-hidden />
+                        )}
+                      </span>
+                      <div className={s.listMain}>
+                        <div className={s.listName}>
+                          {lang === "ar" ? p.nameAr || p.nameEn : p.nameEn || p.nameAr}
+                        </div>
+                        <div className={s.listMeta}>
+                          {[p.brand, p.sku].filter(Boolean).join(" · ") || "—"}
+                        </div>
+                      </div>
+                      <div className={s.listEnd}>
+                        <span className={s.lowQty}>{formatInt(p.quantity, lang)}</span>
+                        {typeof p.lowStockThreshold === "number" && (
+                          <div className={s.listMeta}>
+                            {t("overview.thresholdShort", { n: p.lowStockThreshold })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </Card>
+            </div>
+          </div>
+        </>
+      ) : null}
     </>
-  );
-}
-
-function Kpi({ label, value }: { label: string; value: string }) {
-  return (
-    <div className={ui.kpi}>
-      <div className={ui.kpiLabel}>{label}</div>
-      <div className={ui.kpiValue}>{value}</div>
-    </div>
   );
 }
 
