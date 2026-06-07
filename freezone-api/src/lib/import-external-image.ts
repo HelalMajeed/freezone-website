@@ -1,12 +1,32 @@
 import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { Agent, fetch as undiciFetch } from "undici";
 import { getBestImageUrlCandidates } from "./image-url-candidates";
-import { assertSafeExternalUrl } from "./ssrf-url";
+import { resolveSafeExternalUrl } from "./ssrf-url";
 import { detectImageExt, mimeFromImageExt, readImageDimensions } from "./image-magic";
 
 const MAX_BYTES = 15 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 25_000;
+
+/** Build a one-shot dispatcher that forces the outbound socket to connect to the
+ *  already-validated public IP, while leaving the request's hostname (Host header
+ *  and TLS SNI) untouched. This pins DNS at validation time and closes the
+ *  DNS-rebinding window between `resolveSafeExternalUrl` and the actual connect. */
+function pinnedDispatcher(address: string, family: number): Agent {
+  const lookup = (
+    _hostname: string,
+    options: { all?: boolean },
+    cb: (err: Error | null, address: string | { address: string; family: number }[], family?: number) => void,
+  ): void => {
+    if (options && options.all) {
+      cb(null, [{ address, family }]);
+    } else {
+      cb(null, address, family);
+    }
+  };
+  return new Agent({ connect: { lookup } });
+}
 
 export type ImportedImageResult = {
   url: string;
@@ -36,17 +56,31 @@ function contentTypeAllowed(contentType: string, ext: string): boolean {
   return [".png", ".jpg", ".webp", ".gif"].includes(ext);
 }
 
+/** Reject content types that are definitely not images BEFORE downloading the
+ *  body. Magic-byte sniffing later is the primary gate; this is a cheap, early
+ *  allowlist layer. Empty/octet-stream is allowed through to the byte check
+ *  because some legitimate image CDNs mislabel responses. */
+function responseContentTypeRejected(contentType: string): boolean {
+  const ct = contentType.split(";")[0].trim().toLowerCase();
+  if (!ct || ct === "application/octet-stream" || ct === "binary/octet-stream") return false;
+  if (ct.startsWith("image/") && !ct.includes("svg")) return false;
+  return true;
+}
+
 async function fetchImageBuffer(startUrl: string): Promise<{ buf: Buffer; contentType: string }> {
   let current = startUrl;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
     for (let hop = 0; hop < 6; hop++) {
-      await assertSafeExternalUrl(current);
-      const res = await fetch(current, {
+      // Re-validate AND re-resolve on every hop, then pin the socket to the
+      // resolved public IP so a rebinding DNS answer can't redirect us inward.
+      const { url: safeUrl, address, family } = await resolveSafeExternalUrl(current);
+      const res = await undiciFetch(safeUrl.href, {
         method: "GET",
         redirect: "manual",
         signal: controller.signal,
+        dispatcher: pinnedDispatcher(address, family),
         headers: {
           Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
           "User-Agent": "FreeZone-Admin-ImageImport/1.0",
@@ -60,6 +94,9 @@ async function fetchImageBuffer(startUrl: string): Promise<{ buf: Buffer; conten
       }
       if (!res.ok) {
         throw new Error(`HTTP_${res.status}`);
+      }
+      if (responseContentTypeRejected(res.headers.get("content-type") ?? "")) {
+        throw new Error("NOT_IMAGE");
       }
       const lenHeader = res.headers.get("content-length");
       if (lenHeader) {
@@ -84,7 +121,7 @@ export async function importExternalImage(
   sourceUrl: string,
   opts?: { productId?: number },
 ): Promise<ImportedImageResult> {
-  await assertSafeExternalUrl(sourceUrl);
+  await resolveSafeExternalUrl(sourceUrl);
   const candidates = getBestImageUrlCandidates(sourceUrl);
   let lastErr: Error | null = null;
   let buf: Buffer | null = null;
@@ -93,7 +130,7 @@ export async function importExternalImage(
 
   for (const candidate of candidates) {
     try {
-      await assertSafeExternalUrl(candidate);
+      await resolveSafeExternalUrl(candidate);
       const fetched = await fetchImageBuffer(candidate);
       const ext = detectImageExt(fetched.buf);
       if (!ext) {
