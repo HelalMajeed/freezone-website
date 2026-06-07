@@ -6,9 +6,10 @@ import { useCart, computeCheckoutTotals } from "@/lib/store";
 import { usePublicSite } from "@/components/providers/StorefrontProvider";
 import { useSite, PaymentMethod } from "@/lib/siteStore";
 import { Check, Truck, CreditCard, ClipboardList, Banknote, Smartphone, WalletCards, Building2 } from "lucide-react";
-import { Link, useRouter } from "@/navigation";
+import { Link } from "@/navigation";
+import { Navigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTranslations } from "@/i18n/hooks";
+import { useLocale, useTranslations } from "@/i18n/hooks";
 import { freezoneApiUrl } from "@/lib/api-internal";
 import toast from "react-hot-toast";
 import clsx from "clsx";
@@ -69,7 +70,7 @@ export default function CheckoutPage() {
   const site = usePublicSite();
   const { addOrder } = useSite();
   const [step, setStep] = useState(1);
-  const router = useRouter();
+  const locale = useLocale();
 
   const threshold = site.freeDeliveryThreshold ?? 100000;
   const shipFee = site.standardShippingFee ?? 5000;
@@ -127,6 +128,14 @@ export default function CheckoutPage() {
   };
 
   const submitOrder = async () => {
+    /**
+     * Open the WhatsApp tab synchronously inside the click gesture. If we wait
+     * until after the awaited POST below, transient activation has expired and
+     * popup blockers (Safari/Firefox/Chrome) silently swallow the handoff tab.
+     * We point the placeholder tab at the final URL once the order resolves.
+     */
+    const waWindow = window.open("", "_blank");
+
     const orderItems = items.map((i) => ({
       productId: i.id,
       name: i.name,
@@ -191,9 +200,11 @@ export default function CheckoutPage() {
         orderNumber = saveLocalOrder().orderNumber;
         toast.success(t("orderLocalFallback"));
       } else if (res.status === 400) {
+        waWindow?.close();
         toast.error(typeof data.error === "string" && data.error.trim() ? data.error : t("orderValidationError"));
         return;
       } else {
+        waWindow?.close();
         toast.error(typeof data.error === "string" && data.error.trim() ? data.error : t("orderServerError"));
         return;
       }
@@ -238,7 +249,12 @@ export default function CheckoutPage() {
     });
 
     const waUrl = `${WHATSAPP_ORDER_CHAT_URL}?text=${encodeURIComponent(lines.join("\n"))}`;
-    window.open(waUrl, "_blank");
+    if (waWindow) {
+      waWindow.location.href = waUrl;
+    } else {
+      /* Placeholder tab was blocked outright — best-effort fallback. */
+      window.open(waUrl, "_blank");
+    }
 
     clearCart();
     setPlacedOrderNumber(orderNumber);
@@ -289,7 +305,10 @@ export default function CheckoutPage() {
         <p className={styles.successText}>{t("successMsg", { orderNumber: placedOrderNumber })}</p>
         <p className={`fz-type-small ${styles.successText}`}>{t("successFollowUp")}</p>
         <div className={styles.successActions}>
-          <Link href={`/track-order?order=${encodeURIComponent(placedOrderNumber)}`} className="btn-outline">
+          <Link
+            href={`/track-order?order=${encodeURIComponent(placedOrderNumber)}&phone=${encodeURIComponent(form.phone.trim())}`}
+            className="btn-outline"
+          >
             {t("trackYourOrder")}
           </Link>
           <Link href="/" className="btn-primary">
@@ -301,10 +320,7 @@ export default function CheckoutPage() {
   }
 
   if (items.length === 0) {
-    if (typeof window !== "undefined") {
-      router.push("/cart");
-    }
-    return null;
+    return <Navigate to={`/${locale}/cart`} replace />;
   }
 
   return (
