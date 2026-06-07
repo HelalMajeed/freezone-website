@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useLayoutEffect } from "react";
-import { Outlet, useParams } from "react-router-dom";
+import { Navigate, Outlet, useLocation, useParams } from "react-router-dom";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 import { NavBar } from "@/components/layout/NavBar";
@@ -20,6 +20,7 @@ import { LocaleRouteFallback } from "@/routes/LocaleRouteFallback";
 import { StorefrontErrorScreen, MaintenanceScreen } from "@/routes/LocaleShellScreens";
 import { StorefrontBottomDock } from "@/components/layout/StorefrontBottomDock";
 import { StorefrontWhatsAppFab } from "@/components/layout/StorefrontWhatsAppFab";
+import { locales, defaultLocale, type AppLocale } from "@/navigation";
 
 const Footer = lazy(() => import("@/components/layout/Footer").then((m) => ({ default: m.Footer })));
 
@@ -28,6 +29,8 @@ const EMPTY_CATALOG = { products: [], categories: [], brands: [] };
 
 export function LocaleLayout() {
   const { locale: loc } = useParams<{ locale: string }>();
+  const location = useLocation();
+  const isKnownLocale = !!loc && locales.includes(loc as AppLocale);
   const locale = loc === "ar" ? "ar" : "en";
   const dir = locale === "ar" ? "rtl" : "ltr";
   const lc = locale;
@@ -69,6 +72,15 @@ export function LocaleLayout() {
   }, [lc]);
 
   const baseUrl = import.meta.env.VITE_PUBLIC_SITE_URL || window.location.origin;
+
+  /**
+   * Unknown first segment (typo or un-prefixed link like /cart) — bounce to the
+   * default locale keeping the path, so it resolves to a real localized route or
+   * the locale 404 instead of silently rendering the English homepage.
+   */
+  if (!isKnownLocale) {
+    return <Navigate to={`/${defaultLocale}${location.pathname}${location.search}`} replace />;
+  }
 
   if (isError && !bundle) {
     const msg = error instanceof Error ? error.message : String(error ?? "Unknown error");
