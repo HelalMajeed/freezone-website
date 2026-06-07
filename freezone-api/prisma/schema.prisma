@@ -396,8 +396,10 @@ model Notification {
 /// Append-only inventory ledger. delta < 0 = stock out (sale), delta > 0 = stock in.
 model StockMovement {
   id        Int      @id @default(autoincrement())
-  productId Int
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// Nullable so the append-only ledger SURVIVES a hard product delete
+  /// (FK is SetNull, not Cascade). Kept indexed for per-product history.
+  productId Int?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
   delta     Int
   /// order_placed | order_cancelled_restore | manual_adjust | import | correction
   reason    String
