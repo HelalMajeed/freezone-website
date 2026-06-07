@@ -454,6 +454,8 @@
     "fillAddressError": "Please enter your delivery address.",
     "free": "FREE",
     "orderValidationError": "Please check your details, coupon, and totals, then try again.",
+    "orderOutOfStock": "The requested quantity is no longer in stock. Please update your cart and try again.",
+    "orderUnknownProduct": "One of the products is no longer available. Please update your cart and try again.",
     "orderServerError": "Could not save the order on the server. Please try again.",
     "orderLocalFallback": "Note: Order saved on this device only — database not connected. Set DATABASE_URL for it to appear in admin.",
     "couponDiscount": "Coupon {{code}}",

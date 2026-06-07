@@ -127,6 +127,20 @@ export default function CheckoutPage() {
     setStep(3);
   };
 
+  /** Maps a stable server rejection `code` to a localized message. Returns null
+   *  when the code is unknown so callers fall back to a generic localized error
+   *  (the API's raw `error` text is Arabic-only and must not be shown verbatim). */
+  const localizedOrderError = (code?: string): string | null => {
+    switch (code) {
+      case "OUT_OF_STOCK":
+        return t("orderOutOfStock");
+      case "UNKNOWN_PRODUCT":
+        return t("orderUnknownProduct");
+      default:
+        return null;
+    }
+  };
+
   const submitOrder = async () => {
     /**
      * Open the WhatsApp tab synchronously inside the click gesture. If we wait
@@ -201,11 +215,13 @@ export default function CheckoutPage() {
         toast.success(t("orderLocalFallback"));
       } else if (res.status === 400) {
         waWindow?.close();
-        toast.error(typeof data.error === "string" && data.error.trim() ? data.error : t("orderValidationError"));
+        // Map stable server codes to localized strings; the raw `error` is
+        // Arabic-only, so never echo it to non-Arabic shoppers.
+        toast.error(localizedOrderError(data.code) ?? t("orderValidationError"));
         return;
       } else {
         waWindow?.close();
-        toast.error(typeof data.error === "string" && data.error.trim() ? data.error : t("orderServerError"));
+        toast.error(localizedOrderError(data.code) ?? t("orderServerError"));
         return;
       }
     } catch {
