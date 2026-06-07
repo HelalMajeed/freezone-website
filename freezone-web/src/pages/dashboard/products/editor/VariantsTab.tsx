@@ -4,7 +4,14 @@
  * upsert keyed by sourceVariantId). The endpoint never deletes — rows are
  * deactivated instead.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { Plus } from "lucide-react";
 import { Badge, Button, Field, Input, useToast } from "@/components/dashboard/ui";
 import { useDashboardLocale } from "@/lib/dashboard/i18n";
@@ -58,15 +65,27 @@ function newVariantRow(sortOrder: number): VariantRow {
   };
 }
 
-export function VariantsTab({
-  productId,
-  onDirtyChange,
-}: {
-  productId: number | null;
-  /** Reports whether the variant rows differ from the loaded baseline, so the
-   *  parent editor can fold it into its unsaved-changes guard. */
-  onDirtyChange?: (dirty: boolean) => void;
-}) {
+/** Result of flushing pending variant edits during the editor's unified save. */
+export type VariantFlushResult = "ok" | "invalid" | "error";
+
+export type VariantsTabHandle = {
+  /** True when the rows differ from the last loaded/saved baseline. */
+  isDirty: () => boolean;
+  /** Persist pending variant edits silently (no own toasts). Resolves "ok" when
+   *  saved or there was nothing to save, "invalid" on price validation failure,
+   *  "error" on a request failure — so the caller can surface one message. */
+  flush: () => Promise<VariantFlushResult>;
+};
+
+export const VariantsTab = forwardRef<
+  VariantsTabHandle,
+  {
+    productId: number | null;
+    /** Reports whether the variant rows differ from the loaded baseline, so the
+     *  parent editor can fold it into its unsaved-changes guard. */
+    onDirtyChange?: (dirty: boolean) => void;
+  }
+>(function VariantsTab({ productId, onDirtyChange }, ref) {
   const { t, formatError } = useDashboardLocale();
   const toast = useToast();
   const [rows, setRows] = useState<VariantRow[]>([]);
@@ -141,12 +160,12 @@ export function VariantsTab({
       ),
     );
 
-  const save = async () => {
-    if (productId == null) return;
+  const runSave = async (opts?: { quiet?: boolean }): Promise<VariantFlushResult> => {
+    if (productId == null) return "ok";
     const editable = rows.filter((r) => r.sourceVariantId);
     if (editable.some((r) => parsePrice(r.priceOverride) === undefined || parsePrice(r.oldPrice) === undefined)) {
-      toast.error(t("editor.variantsPriceInvalid"));
-      return;
+      if (!opts?.quiet) toast.error(t("editor.variantsPriceInvalid"));
+      return "invalid";
     }
     const payload: ProductVariantInput[] = editable.map((r, i) => ({
       sourceVariantId: r.sourceVariantId,
@@ -168,14 +187,31 @@ export function VariantsTab({
     setSaving(true);
     try {
       await variantsApi.upsert(productId, payload);
-      toast.success(t("editor.variantsSaved"));
+      if (!opts?.quiet) toast.success(t("editor.variantsSaved"));
       await load();
+      return "ok";
     } catch (e) {
-      toast.error(formatError(e));
+      if (!opts?.quiet) toast.error(formatError(e));
+      return "error";
     } finally {
       setSaving(false);
     }
   };
+
+  const save = () => void runSave();
+
+  // Let the parent editor fold variant persistence into its primary Save.
+  useImperativeHandle(
+    ref,
+    () => ({
+      isDirty: () => dirty,
+      flush: () => (dirty ? runSave({ quiet: true }) : Promise.resolve<VariantFlushResult>("ok")),
+    }),
+    // `runSave` is recreated each render (it closes over `rows`); listing `dirty`
+    // and `rows` keeps the exposed handle current for a synchronous save call.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dirty, rows, productId],
+  );
 
   if (productId == null) {
     return <div className={s.noticeBox}>{t("editor.variantNeedsCreate")}</div>;
@@ -307,4 +343,4 @@ export function VariantsTab({
       )}
     </>
   );
-}
+});

@@ -47,7 +47,7 @@ import { useGuardedNavigate, useUnsavedGuard } from "../../useUnsavedGuard";
 import { BasicTab, PricingTab, InventoryTab, ContentTab, SeoTab, ShippingTab, AdvancedTab } from "./tabs";
 import { SpecsTab } from "./SpecsTab";
 import { ImagesTab } from "./ImagesTab";
-import { VariantsTab } from "./VariantsTab";
+import { VariantsTab, type VariantsTabHandle } from "./VariantsTab";
 import { CommentsDrawer } from "./CommentsDrawer";
 import s from "./editor.module.css";
 
@@ -108,6 +108,7 @@ export function DashboardProductEditorPage() {
   const [commentCount, setCommentCount] = useState<number | null>(null);
   const [variantsDirty, setVariantsDirty] = useState(false);
 
+  const variantsRef = useRef<VariantsTabHandle>(null);
   const baselineRef = useRef(formSnapshot(EMPTY_FORM));
   const baselineImagesRef = useRef(JSON.stringify(imagesToWritePayload(EMPTY_FORM.images)));
 
@@ -279,7 +280,18 @@ export function DashboardProductEditorPage() {
         return;
       }
 
-      toast.success(t("editor.saved"));
+      // One Save persists the whole product, variants included. The tab keeps
+      // its own Save too; flushing here is silent so we can surface a single,
+      // accurate result. A failed/invalid flush leaves the variant rows dirty
+      // (the guard stays armed) while the product fields are already saved.
+      const variantResult = variantsRef.current ? await variantsRef.current.flush() : "ok";
+      if (variantResult === "invalid") {
+        toast.error(t("editor.savedVariantsInvalid"));
+      } else if (variantResult === "error") {
+        toast.error(t("editor.savedVariantsFailed"));
+      } else {
+        toast.success(t("editor.saved"));
+      }
       await loadDetail();
     } catch (e) {
       showApiError(e);
@@ -407,7 +419,7 @@ export function DashboardProductEditorPage() {
             <SpecsTab form={form} set={setField} errors={errors} attributes={attributes} />
           )}
           {tab === "variants" && (
-            <VariantsTab productId={productId} onDirtyChange={setVariantsDirty} />
+            <VariantsTab ref={variantsRef} productId={productId} onDirtyChange={setVariantsDirty} />
           )}
           {tab === "images" && (
             <ImagesTab

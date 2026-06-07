@@ -198,6 +198,10 @@ export const dashboardAr: Record<DashboardMessageKey, string> = {
   "editor.saved": "تم حفظ المنتج.",
   "editor.savedImagesFailed":
     "حُفظت حقول المنتج لكن فشل تحديث الصور — لم يتغيّر معرض الصور. عالج المشكلة ثم احفظ مجدداً.",
+  "editor.savedVariantsInvalid":
+    "حُفظ المنتج لكن لم تُحفظ المتغيّرات — يجب أن يكون سعر المتغيّر والسعر القديم أرقامًا صحيحة غير سالبة. صحّحها ثم احفظ مجدداً.",
+  "editor.savedVariantsFailed":
+    "حُفظ المنتج لكن فشل حفظ المتغيّرات — لم تتغيّر. عالج المشكلة ثم احفظ مجدداً.",
   "editor.validationToast": "بعض الحقول غير صالحة — راجع التبويبات المعلَّمة.",
   "editor.loadFailed": "تعذّر تحميل هذا المنتج.",
   "editor.notFound": "المنتج غير موجود.",
@@ -263,7 +267,7 @@ export const dashboardAr: Record<DashboardMessageKey, string> = {
   "editor.specsFreeValue": "القيمة",
   "editor.specsAddRow": "إضافة مواصفة",
   "editor.variantsTitle": "المتغيّرات",
-  "editor.variantsHint": "تُحفظ المتغيّرات بشكل منفصل عن المنتج بالزر أدناه.",
+  "editor.variantsHint": "تُحفظ المتغيّرات مع المنتج عند الضغط على حفظ، أو بمفردها بالزر أدناه.",
   "editor.variantsAdd": "إضافة متغيّر",
   "editor.variantsSave": "حفظ المتغيّرات",
   "editor.variantsSaved": "تم حفظ المتغيّرات.",

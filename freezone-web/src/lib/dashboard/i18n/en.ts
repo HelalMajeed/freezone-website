@@ -201,6 +201,10 @@ export const dashboardEn = {
   "editor.saved": "Product saved.",
   "editor.savedImagesFailed":
     "Product fields were saved, but updating the images failed — the gallery was NOT changed. Fix the issue and save again.",
+  "editor.savedVariantsInvalid":
+    "Product saved, but the variants were NOT saved — variant price and old price must be whole non-negative numbers. Fix them and save again.",
+  "editor.savedVariantsFailed":
+    "Product saved, but saving the variants failed — they were NOT changed. Fix the issue and save again.",
   "editor.validationToast": "Some fields are invalid — check the highlighted tabs.",
   "editor.loadFailed": "Couldn't load this product.",
   "editor.notFound": "Product not found.",
@@ -267,7 +271,7 @@ export const dashboardEn = {
   "editor.specsAddRow": "Add spec",
   "editor.variantsTitle": "Variants",
   "editor.variantsHint":
-    "Variants are saved separately from the product with the button below.",
+    "Variants save with the product when you click Save, or on their own with the button below.",
   "editor.variantsAdd": "Add variant",
   "editor.variantsSave": "Save variants",
   "editor.variantsSaved": "Variants saved.",
