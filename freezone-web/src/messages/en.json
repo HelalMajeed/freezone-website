@@ -687,6 +687,7 @@
     "loading": "Checking…",
     "notFound": "We couldn't find that order. Double-check the order number and phone.",
     "errorGeneric": "Tracking is unavailable right now — please try again in a minute.",
+    "rateLimited": "Too many tracking attempts. Please wait a moment and try again.",
     "resultTitle": "Order {{orderNumber}}",
     "placedOn": "Placed on",
     "fulfillment": "Fulfillment",
