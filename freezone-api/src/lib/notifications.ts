@@ -89,3 +89,32 @@ export async function notifyOrderCreated(order: {
     entityId: order.id,
   });
 }
+
+/**
+ * Inventory alert for the dashboard inbox (broadcast). `stock.out` when a product
+ * reaches 0, `stock.low` when it crosses at/under its low-stock threshold. Emit
+ * only on the crossing edge so the inbox is not re-notified on every later order.
+ */
+export async function notifyStockEvent(input: {
+  type: "stock.low" | "stock.out";
+  productId: number;
+  nameEn: string;
+  nameAr: string;
+  quantity: number;
+}): Promise<void> {
+  const out = input.type === "stock.out";
+  await createNotification({
+    type: input.type,
+    titleEn: out ? `Out of stock: ${input.nameEn}` : `Low stock: ${input.nameEn}`,
+    titleAr: out ? `نفد المخزون: ${input.nameAr}` : `مخزون منخفض: ${input.nameAr}`,
+    bodyEn: out
+      ? `${input.nameEn} is now out of stock.`
+      : `${input.nameEn} has ${formatIqd(input.quantity)} left in stock.`,
+    bodyAr: out
+      ? `${input.nameAr} نفد من المخزون.`
+      : `${input.nameAr} متبقٍ منه ${formatIqd(input.quantity)} في المخزون.`,
+    href: `/dashboard/products/${input.productId}`,
+    entity: "Product",
+    entityId: input.productId,
+  });
+}

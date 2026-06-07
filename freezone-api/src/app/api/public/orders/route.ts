@@ -1,6 +1,14 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { validateCouponRecord } from "@/lib/coupon-service";
-import { notifyOrderCreated } from "@/lib/notifications";
+import { notifyOrderCreated, notifyStockEvent } from "@/lib/notifications";
+
+type StockEvent = {
+  type: "stock.low" | "stock.out";
+  productId: number;
+  nameEn: string;
+  nameAr: string;
+  quantity: number;
+};
 
 type OrderItemIn = {
   productId: number;
@@ -219,7 +227,25 @@ export async function POST(req: Request) {
         }),
       });
 
-      return { id: order.id, orderNumber, customerName: order.customerName, total: expectedTotal };
+      /** Inventory alerts (emitted best-effort after commit): flag products this
+       *  order pushed to zero (stock.out) or at/under their low-stock threshold
+       *  (stock.low). Only on the crossing edge — `before` is the pre-decrement
+       *  quantity, `after` the committed one — so the ops inbox is not spammed on
+       *  every subsequent order while a product stays low. */
+      const stockEvents: StockEvent[] = [];
+      for (const p of products) {
+        const after = afterById.get(p.id);
+        if (after == null) continue;
+        const before = p.quantity;
+        const threshold = p.lowStockThreshold ?? 0;
+        if (after === 0 && before > 0) {
+          stockEvents.push({ type: "stock.out", productId: p.id, nameEn: p.nameEn, nameAr: p.nameAr, quantity: after });
+        } else if (threshold > 0 && after > 0 && after <= threshold && before > threshold) {
+          stockEvents.push({ type: "stock.low", productId: p.id, nameEn: p.nameEn, nameAr: p.nameAr, quantity: after });
+        }
+      }
+
+      return { id: order.id, orderNumber, customerName: order.customerName, total: expectedTotal, stockEvents };
     });
 
     /** New-order hook (contract (e)): broadcast a persistent dashboard
@@ -230,6 +256,12 @@ export async function POST(req: Request) {
       customerName: result.customerName,
       total: result.total,
     });
+
+    /** Low/out-of-stock alerts — best-effort, must never fail the placed order
+     *  (createNotification already swallows its own errors). */
+    for (const ev of result.stockEvents) {
+      await notifyStockEvent(ev);
+    }
 
     return Response.json({ id: result.id, orderNumber: result.orderNumber });
   } catch (e) {
