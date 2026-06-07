@@ -127,6 +127,7 @@ const RATE_LIMITS: Record<string, RateLimitRule> = {
   "POST /api/pc-build":                   { scope: "public/pc-build",        limit: 10, windowMs: 60_000 },
   "POST /api/admin/login":                { scope: "admin/login",            limit: 5,  windowMs: 10 * 60_000 },
   "POST /api/dashboard/auth/login":       { scope: "dashboard/login",        limit: 5,  windowMs: 10 * 60_000 },
+  "POST /api/dashboard/auth/direct-login":{ scope: "dashboard/direct-login", limit: 5,  windowMs: 10 * 60_000 },
 };
 
 /**

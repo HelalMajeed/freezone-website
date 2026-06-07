@@ -24,6 +24,18 @@ async function main() {
   const name = process.env.DASHBOARD_SEED_NAME ?? "Site Owner";
   const password = process.env.DASHBOARD_SEED_PASSWORD ?? "ChangeMe!2026";
 
+  /** Never provision/unlock a SUPER_ADMIN with the repo's built-in default
+   *  password in production — that credential is committed in VCS and this seed
+   *  also resets the password and re-activates an existing account on rerun.
+   *  Require an explicit DASHBOARD_SEED_PASSWORD when NODE_ENV=production. */
+  if (!process.env.DASHBOARD_SEED_PASSWORD && process.env.NODE_ENV === "production") {
+    console.error(
+      "Refusing to seed a superadmin with the built-in default password in production. " +
+        "Set DASHBOARD_SEED_PASSWORD (and ideally DASHBOARD_SEED_EMAIL) explicitly.",
+    );
+    process.exit(1);
+  }
+
   if (password.length < 8) {
     console.error("Password must be at least 8 characters.");
     process.exit(1);
