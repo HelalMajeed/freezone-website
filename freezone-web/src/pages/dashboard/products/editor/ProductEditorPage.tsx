@@ -249,6 +249,10 @@ export function DashboardProductEditorPage() {
           published: false,
         });
         id = created.id;
+        // Record the new id immediately so any later failure (PATCH or images)
+        // reuses this row on retry via the edit path instead of creating a
+        // duplicate draft.
+        setCreatedId(id);
         // The create endpoint only takes the basics — PATCH the rest. New rows
         // start as DRAFT; only send a status when the user picked another one.
         if (patch.catalogStatus === "DRAFT") delete patch.catalogStatus;

@@ -58,6 +58,16 @@ export function DashboardLoginPage() {
     }
     if (status === "unauthenticated" && !autoTriedDirect.current) {
       autoTriedDirect.current = true;
+      // An explicit sign-out (or account switch) sets this marker so we land on
+      // the form instead of silently auto-authenticating straight back in.
+      let suppressed = false;
+      try {
+        suppressed = window.sessionStorage.getItem("fz:suppress-direct-entry") === "1";
+        if (suppressed) window.sessionStorage.removeItem("fz:suppress-direct-entry");
+      } catch {
+        /* private mode — treat as no suppression */
+      }
+      if (suppressed) return;
       directEntry()
         .then(() => navigate(next, { replace: true }))
         .catch(() => {
