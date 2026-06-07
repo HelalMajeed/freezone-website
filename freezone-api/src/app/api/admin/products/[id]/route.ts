@@ -138,26 +138,44 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       finalSpecs = persisted.specs;
     }
 
-    await prisma.product.update({
-      where: { id },
-      data: { ...built.data, specs: finalSpecs as object },
-    });
-
-    /** Inventory ledger: record manual quantity edits (StockMovement, contract (k)). */
-    if (typeof body.quantity === "number" && body.quantity !== existing.quantity) {
-      const actor = actorForAudit(mutateGuard.actor);
-      await prisma.stockMovement.create({
-        data: {
-          productId: id,
-          delta: body.quantity - existing.quantity,
-          reason: "manual_adjust",
-          qtyBefore: existing.quantity,
-          qtyAfter: body.quantity,
-          userId: actor.userId,
-          userEmail: actor.userEmail,
-        },
+    /** Atomic: the product row write and its append-only inventory-ledger row
+     *  must commit together — otherwise a thrown StockMovement.create (or a crash
+     *  between the two awaits) leaves the quantity changed but the ledger missing
+     *  the adjustment, so it no longer balances. Every other StockMovement writer
+     *  (order placement, cancel) is transactional; this path was the outlier.
+     *  qtyBefore/qtyAfter are derived inside the tx (re-read current quantity)
+     *  so two concurrent manual edits can't record overlapping before/after
+     *  values from a stale pre-update snapshot. */
+    await prisma.$transaction(async (tx) => {
+      const recordMovement = typeof body.quantity === "number";
+      let qtyBefore = existing.quantity;
+      if (recordMovement) {
+        const current = await tx.product.findUnique({
+          where: { id },
+          select: { quantity: true },
+        });
+        if (current) qtyBefore = current.quantity;
+      }
+      const updated = await tx.product.update({
+        where: { id },
+        data: { ...built.data, specs: finalSpecs as object },
+        select: { quantity: true },
       });
-    }
+      if (recordMovement && updated.quantity !== qtyBefore) {
+        const actor = actorForAudit(mutateGuard.actor);
+        await tx.stockMovement.create({
+          data: {
+            productId: id,
+            delta: updated.quantity - qtyBefore,
+            reason: "manual_adjust",
+            qtyBefore,
+            qtyAfter: updated.quantity,
+            userId: actor.userId,
+            userEmail: actor.userEmail,
+          },
+        });
+      }
+    });
 
     if (body.secondaryCategoryIds !== undefined) {
       await replaceProductSecondaryCategories(id, nextCategoryId, body.secondaryCategoryIds ?? []);

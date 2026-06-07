@@ -93,6 +93,15 @@ export async function buildProductUpdateData(
   if (body.storage !== undefined) data.storage = body.storage;
   if (body.model3d !== undefined) data.model3d = body.model3d?.trim() || null;
   if (body.inStock !== undefined) data.inStock = body.inStock;
+  /** Keep inStock consistent with an edited quantity (mirrors the order/cancel
+   *  reconciliation): quantity 0 always forces out-of-stock, and a positive
+   *  restock flips it back in-stock unless inStock was set explicitly in this
+   *  same request. Without this, editing quantity to 0 leaves a product showing
+   *  "in stock" with none left, and restocking a 0-qty product leaves it hidden. */
+  if (typeof body.quantity === "number") {
+    if (body.quantity === 0) data.inStock = false;
+    else if (body.inStock === undefined) data.inStock = true;
+  }
   if (body.featured !== undefined) data.featured = body.featured;
   if (body.isNew !== undefined) data.isNew = body.isNew;
   if (body.icon !== undefined) data.icon = body.icon;
