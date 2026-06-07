@@ -133,15 +133,16 @@ export function DashboardLoginPage() {
           {errMsg && <div className={s.errorBanner}>{errMsg}</div>}
 
           <div className={s.formFields}>
-            <Field label={lang === "ar" ? "البريد الإلكتروني" : "Email"}>
+            <Field label={lang === "ar" ? "اسم المستخدم" : "Username"}>
               <Input
-                type="email"
-                autoComplete="email"
+                type="text"
+                inputMode="text"
+                autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoFocus
-                placeholder={lang === "ar" ? "you@freezone-iq.com" : "you@freezone-iq.com"}
+                placeholder={lang === "ar" ? "admin-free-zone" : "admin-free-zone"}
               />
             </Field>
 
