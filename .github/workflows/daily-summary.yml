@@ -18,16 +18,21 @@ jobs:
       - name: Login + fetch recent batches
         id: fetch
         env:
+          ADMIN_EMAIL: ${{ secrets.FREEZONE_ADMIN_EMAIL }}
           ADMIN_PASSWORD: ${{ secrets.FREEZONE_ADMIN_PASSWORD }}
         run: |
           set -euo pipefail
+          : "${ADMIN_EMAIL:?FREEZONE_ADMIN_EMAIL secret is not set}"
           : "${ADMIN_PASSWORD:?FREEZONE_ADMIN_PASSWORD secret is not set}"
 
+          # Use the DB-backed dashboard session (fz_dashboard_session). The legacy
+          # fz_admin_session HMAC cookie is rejected by /api/admin/* guards unless
+          # LEGACY_ADMIN_COOKIE=true, so the old admin/login flow 401'd every day.
           login=$(curl -sS -i -X POST -H "Content-Type: application/json" \
-            -d "{\"password\":\"${ADMIN_PASSWORD}\"}" \
-            "${API_URL}/api/admin/login")
-          cookie=$(printf "%s\n" "$login" | grep -i '^set-cookie:' | grep -o 'fz_admin_session=[^;]*' | head -1)
-          if [ -z "$cookie" ]; then echo "::error::no session cookie"; exit 1; fi
+            -d "{\"email\":\"${ADMIN_EMAIL}\",\"password\":\"${ADMIN_PASSWORD}\"}" \
+            "${API_URL}/api/dashboard/auth/login")
+          cookie=$(printf "%s\n" "$login" | grep -i '^set-cookie:' | grep -o 'fz_dashboard_session=[^;]*' | head -1)
+          if [ -z "$cookie" ]; then echo "::error::no dashboard session cookie"; exit 1; fi
 
           batches=$(curl -sS -H "Cookie: $cookie" "${API_URL}/api/admin/import/globaliraq/batches?limit=50")
           echo "$batches" > /tmp/batches.json
