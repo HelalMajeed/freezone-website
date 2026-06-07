@@ -1,11 +1,11 @@
 // Thin observability shim — structured stdout + optional Sentry hand-off.
 //
-// We don't install `@sentry/node` directly so the deploy works without the DSN
-// being configured. As soon as `SENTRY_DSN_API` is set on Fly + `@sentry/node`
-// is added to package.json, the dynamic import below picks Sentry up at boot
-// and forwards everything captured through this module to it.
-//
-// Tracking issue: see `assumption` label issues for the secrets/install steps.
+// `@sentry/node` is a dependency (see package.json). When a DSN is configured the
+// dynamic import below initializes Sentry once at first capture and forwards
+// everything captured through this module to it; without a DSN we only log to
+// stdout. The DSN var is `SENTRY_DSN` (canonical, also used by .env.example), with
+// `SENTRY_DSN_API` accepted as a fallback alias. This is the single Sentry init
+// path for the API.
 
 type Severity = "info" | "warning" | "error" | "fatal";
 
@@ -24,7 +24,7 @@ let initPromise: Promise<void> | null = null;
 async function ensureSentry(): Promise<void> {
   if (sentry || initPromise) return initPromise ?? Promise.resolve();
   initPromise = (async () => {
-    const dsn = process.env.SENTRY_DSN_API;
+    const dsn = process.env.SENTRY_DSN ?? process.env.SENTRY_DSN_API;
     if (!dsn) return;
     try {
       const mod = (await import("@sentry/node")) as unknown as SentryLike;
@@ -35,7 +35,7 @@ async function ensureSentry(): Promise<void> {
       });
       sentry = mod;
     } catch (e) {
-      console.error("[observability] @sentry/node not installed yet:", e instanceof Error ? e.message : e);
+      console.error("[observability] Sentry init failed:", e instanceof Error ? e.message : e);
     }
   })();
   return initPromise;
