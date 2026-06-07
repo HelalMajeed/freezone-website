@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim AS builder
+FROM node:22-bookworm-slim AS builder
 # Monorepo root deploy: --build-arg SERVICE_PATH=freezone-api (see repo root fly.toml).
 # Subdir deploy (Docker context = freezone-api): default SERVICE_PATH=.
 ARG SERVICE_PATH=.
@@ -17,7 +17,7 @@ RUN npx prisma generate
 RUN npm run build
 RUN npm prune --omit=dev
 
-FROM node:20-bookworm-slim AS runner
+FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
