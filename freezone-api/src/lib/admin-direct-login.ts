@@ -1,13 +1,15 @@
 /**
- * Passwordless admin access (temporary / internal only).
+ * Passwordless admin access.
  *
- * Disabled in production regardless of the env flags — mirrors the dev-login
- * NODE_ENV guard. This endpoint grants a passwordless SUPER_ADMIN session, so a
- * stray `ADMIN_SKIP_AUTH`/`ADMIN_DIRECT_LOGIN` flag on the Fly app (NODE_ENV is
- * baked to "production" there) must never be enough to hand out full admin.
+ * SECURITY: when enabled, anyone who reaches the dashboard gets a full
+ * SUPER_ADMIN session with NO password. This is an explicit, owner-requested
+ * convenience and is OFF by default. It turns on ONLY when the operator sets
+ * `ADMIN_DIRECT_LOGIN=true` (or `ADMIN_SKIP_AUTH=true`) as an env var/Fly secret
+ * — including in production. To revert to secure password login, unset that
+ * secret (`flyctl secrets unset ADMIN_DIRECT_LOGIN -a freezone-website`); the
+ * normal username/password login keeps working either way.
  */
 export function isAdminDirectLoginEnabled(): boolean {
-  if (process.env.NODE_ENV === "production") return false;
   return (
     process.env.ADMIN_SKIP_AUTH === "true" || process.env.ADMIN_DIRECT_LOGIN === "true"
   );

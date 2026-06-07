@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useDashboardAuth } from "@/lib/dashboard/auth-store";
@@ -21,6 +21,10 @@ const ERROR_MESSAGES: Record<string, { en: string; ar: string }> = {
     en: "Dev-login is not enabled on this API. Set DASHBOARD_DEV_BYPASS=true on freezone-api.",
     ar: "تخطي التطوير غير مفعّل على الـ API. اضبط DASHBOARD_DEV_BYPASS=true في freezone-api.",
   },
+  DIRECT_LOGIN_DISABLED: {
+    en: "Direct entry is turned off. Sign in with your username and password.",
+    ar: "الدخول المباشر مُطفأ. سجّل الدخول باسم المستخدم وكلمة المرور.",
+  },
 };
 
 export function DashboardLoginPage() {
@@ -32,20 +36,53 @@ export function DashboardLoginPage() {
   const status = useDashboardAuth((s) => s.status);
   const login = useDashboardAuth((s) => s.login);
   const refresh = useDashboardAuth((s) => s.refresh);
+  const directEntry = useDashboardAuth((s) => s.directEntry);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [devBypassing, setDevBypassing] = useState(false);
+  const [directEntering, setDirectEntering] = useState(false);
+  const autoTriedDirect = useRef(false);
 
   const lang = (i18n.resolvedLanguage ?? "en").startsWith("ar") ? "ar" : "en";
 
-  // If already signed in, bounce
+  // If already signed in, bounce. Otherwise try passwordless direct entry once
+  // (silent: if the API has direct login off, it 403s and we just show the form).
   useEffect(() => {
     if (status === "idle") void refresh();
-    if (status === "authenticated") navigate(next, { replace: true });
-  }, [status, refresh, navigate, next]);
+    if (status === "authenticated") {
+      navigate(next, { replace: true });
+      return;
+    }
+    if (status === "unauthenticated" && !autoTriedDirect.current) {
+      autoTriedDirect.current = true;
+      directEntry()
+        .then(() => navigate(next, { replace: true }))
+        .catch(() => {
+          /* direct entry disabled — fall back to the password form silently */
+        });
+    }
+  }, [status, refresh, navigate, next, directEntry]);
+
+  // Manual passwordless entry (shows errors, unlike the silent auto-attempt).
+  const onDirectEntry = async () => {
+    setErrorCode(null);
+    setDirectEntering(true);
+    try {
+      await directEntry();
+      navigate(next, { replace: true });
+    } catch (err) {
+      if (err instanceof DashboardApiError) {
+        setErrorCode(err.status === 403 ? "DIRECT_LOGIN_DISABLED" : err.code);
+      } else {
+        setErrorCode("NETWORK");
+      }
+    } finally {
+      setDirectEntering(false);
+    }
+  };
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -131,6 +168,20 @@ export function DashboardLoginPage() {
           </p>
 
           {errMsg && <div className={s.errorBanner}>{errMsg}</div>}
+
+          <Button
+            type="button"
+            size="lg"
+            className={s.fullBtn}
+            onClick={onDirectEntry}
+            loading={directEntering}
+          >
+            {lang === "ar" ? "الدخول إلى لوحة التحكم" : "Enter dashboard"}
+          </Button>
+
+          <div className={s.bottomNote} style={{ marginTop: 4, marginBottom: 4 }}>
+            {lang === "ar" ? "أو سجّل الدخول يدوياً" : "or sign in manually"}
+          </div>
 
           <div className={s.formFields}>
             <Field label={lang === "ar" ? "اسم المستخدم" : "Username"}>
