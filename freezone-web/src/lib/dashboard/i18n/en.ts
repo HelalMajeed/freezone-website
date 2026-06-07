@@ -24,6 +24,11 @@ export const dashboardEn = {
   "shell.profile": "Profile & password",
   "shell.signOut": "Sign out",
 
+  // ── Route role guard ──────────────────────────────────────────────────────
+  "guard.notAuthorizedTitle": "You don't have access to this page",
+  "guard.notAuthorizedBody": "Your role doesn't include this area. Contact an administrator if you think this is a mistake.",
+  "guard.backToDashboard": "Back to dashboard",
+
   // ── Topbar search / command palette ──────────────────────────────────────
   "search.placeholder": "Quick search…",
   "search.aria": "Search the dashboard",
@@ -266,6 +271,7 @@ export const dashboardEn = {
   "editor.variantsAdd": "Add variant",
   "editor.variantsSave": "Save variants",
   "editor.variantsSaved": "Variants saved.",
+  "editor.variantsPriceInvalid": "Variant price and old price must be whole non-negative numbers.",
   "editor.variantsEmpty": "No variants for this product.",
   "editor.variantsLocked": "This variant was imported without a stable id and can't be edited here.",
   "editor.variantLabelEn": "Label (English)",
