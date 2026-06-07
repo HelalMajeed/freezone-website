@@ -12,8 +12,8 @@ import s from "./login.module.css";
 const DEV_MODE = import.meta.env.DEV;
 
 const ERROR_MESSAGES: Record<string, { en: string; ar: string }> = {
-  MISSING_CREDENTIALS: { en: "Enter your email and password.", ar: "الرجاء إدخال البريد وكلمة المرور." },
-  INVALID_CREDENTIALS: { en: "Wrong email or password.", ar: "البريد أو كلمة المرور غير صحيحة." },
+  MISSING_CREDENTIALS: { en: "Enter your username and password.", ar: "الرجاء إدخال اسم المستخدم وكلمة المرور." },
+  INVALID_CREDENTIALS: { en: "Wrong username or password.", ar: "اسم المستخدم أو كلمة المرور غير صحيحة." },
   ACCOUNT_DISABLED: { en: "This account is disabled.", ar: "هذا الحساب معطّل." },
   ACCOUNT_LOCKED: { en: "Too many failed attempts. Try again in 15 minutes.", ar: "محاولات كثيرة. حاول بعد ١٥ دقيقة." },
   NETWORK: { en: "Can't reach the server. Check your connection.", ar: "تعذّر الاتصال بالخادم." },
