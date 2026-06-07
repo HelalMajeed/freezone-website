@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "./cart.module.css";
 import { useCart, computeCartTotals } from "@/lib/store";
 import { usePublicSite } from "@/components/providers/StorefrontProvider";
@@ -59,6 +59,41 @@ export default function CartPage() {
       setCoupon(null, 0);
     }
   }
+
+  // Keep an applied coupon honest as the cart changes: qty/remove edits can make
+  // a fixed discount exceed the new subtotal, leave a percentage discount stale,
+  // or drop the cart below the coupon's minSubtotal. Re-validate against the live
+  // subtotal and recompute the discount (or clear the coupon if it no longer
+  // applies) so cart + checkout totals are never wrong.
+  useEffect(() => {
+    if (!couponCode) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(freezoneApiUrl("/api/public/coupon/validate"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: couponCode, subtotal: lineSubtotal }),
+        });
+        if (res.status === 503) return; // DB offline — leave the persisted coupon untouched
+        const j = (await res.json()) as { ok?: boolean; discount?: number; code?: string; error?: string };
+        if (cancelled) return;
+        if (!res.ok || !j.ok) {
+          setCoupon(null, 0);
+          setCouponMsg({ text: j.error ?? t("couponFailed"), error: true });
+          return;
+        }
+        if ((j.discount ?? 0) !== couponDiscount) {
+          setCoupon(j.code ?? couponCode, j.discount ?? 0);
+        }
+      } catch {
+        /* transient network error — keep the existing coupon as-is */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [lineSubtotal, couponCode, couponDiscount, setCoupon, t]);
 
   return (
     <>
