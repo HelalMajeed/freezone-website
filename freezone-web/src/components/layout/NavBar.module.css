@@ -310,7 +310,8 @@
   transition: background 0.15s var(--ease-smooth), color 0.15s;
 }
 .searchSuggestion:hover,
-.searchSuggestion:focus-visible {
+.searchSuggestion:focus-visible,
+.searchSuggestion[aria-selected="true"] {
   background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface, #f5f5f5));
   color: var(--color-text, #0a0a0a);
   outline: none;
@@ -332,7 +333,8 @@
   transition: background 0.15s var(--ease-smooth);
 }
 .suggestProduct:hover,
-.suggestProduct:focus-visible {
+.suggestProduct:focus-visible,
+.suggestProduct[aria-selected="true"] {
   background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface, #f5f5f5));
   outline: none;
 }
@@ -401,7 +403,8 @@
   cursor: pointer;
 }
 .seeAllBtn:hover,
-.seeAllBtn:focus-visible {
+.seeAllBtn:focus-visible,
+.seeAllBtn[aria-selected="true"] {
   background: var(--color-brand-50);
   outline: none;
 }
