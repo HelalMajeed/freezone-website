@@ -21,6 +21,11 @@ export const dashboardAr: Record<DashboardMessageKey, string> = {
   "shell.profile": "حسابي وكلمة السر",
   "shell.signOut": "تسجيل الخروج",
 
+  // ── Route role guard ──────────────────────────────────────────────────────
+  "guard.notAuthorizedTitle": "ليس لديك صلاحية الوصول إلى هذه الصفحة",
+  "guard.notAuthorizedBody": "صلاحيتك لا تشمل هذا القسم. تواصل مع المسؤول إذا كنت تعتقد أن هذا خطأ.",
+  "guard.backToDashboard": "العودة إلى اللوحة",
+
   // ── Topbar search / command palette ──────────────────────────────────────
   "search.placeholder": "بحث سريع…",
   "search.aria": "البحث في لوحة التحكم",
@@ -262,6 +267,7 @@ export const dashboardAr: Record<DashboardMessageKey, string> = {
   "editor.variantsAdd": "إضافة متغيّر",
   "editor.variantsSave": "حفظ المتغيّرات",
   "editor.variantsSaved": "تم حفظ المتغيّرات.",
+  "editor.variantsPriceInvalid": "يجب أن يكون سعر المتغيّر والسعر القديم أرقامًا صحيحة غير سالبة.",
   "editor.variantsEmpty": "لا توجد متغيّرات لهذا المنتج.",
   "editor.variantsLocked": "هذا المتغيّر استُورد بدون معرّف ثابت ولا يمكن تعديله هنا.",
   "editor.variantLabelEn": "التسمية بالإنجليزية",

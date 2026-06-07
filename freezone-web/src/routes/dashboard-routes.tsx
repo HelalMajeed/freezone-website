@@ -1,7 +1,12 @@
-import { lazy, Suspense } from "react";
-import { Route } from "react-router-dom";
+import { lazy, Suspense, type ReactNode } from "react";
+import { Link, Route } from "react-router-dom";
+import { Lock } from "lucide-react";
 import { DashboardGuard } from "@/components/dashboard/DashboardGuard";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { Button, EmptyState } from "@/components/dashboard/ui";
+import { useDashboardAuth } from "@/lib/dashboard/auth-store";
+import { useDashboardLocale } from "@/lib/dashboard/i18n";
+import type { LegacyRoleAlias } from "@/lib/dashboard/api";
 
 const DashboardLoginPage = lazy(() => import("@/app/dashboard/LoginPage"));
 const DashboardOverviewPage = lazy(() => import("@/pages/dashboard/OverviewPage"));
@@ -45,6 +50,35 @@ function L({ children }: { children: React.ReactNode }) {
 }
 
 /**
+ * Per-route role gate — defense-in-depth alongside the API permission checks.
+ * The sidebar already hides links a user can't use; this stops a lower-privilege
+ * admin (e.g. a CATALOG_EDITOR) from mounting a privileged page via a direct URL
+ * and landing in a broken error state. Renders an explicit not-authorized panel
+ * (mirrors the same minRole map as the NAV).
+ */
+function RequireRole({ minRole, children }: { minRole: LegacyRoleAlias; children: ReactNode }) {
+  // Subscribe to `user` so the gate re-evaluates if the session/role changes.
+  const user = useDashboardAuth((s) => s.user);
+  const hasRole = useDashboardAuth((s) => s.hasRole);
+  const { t } = useDashboardLocale();
+
+  if (user && hasRole(minRole)) return <>{children}</>;
+
+  return (
+    <EmptyState
+      icon={<Lock size={26} />}
+      title={t("guard.notAuthorizedTitle")}
+      description={t("guard.notAuthorizedBody")}
+      action={
+        <Link to="/dashboard">
+          <Button type="button">{t("guard.backToDashboard")}</Button>
+        </Link>
+      }
+    />
+  );
+}
+
+/**
  * Mount in `<Routes>`:
  *
  *   import { freezoneDashboardRouteBranch } from "@/routes/dashboard-routes";
@@ -75,27 +109,27 @@ export const freezoneDashboardRouteBranch = (
           }
         />
         <Route path="audit" element={<L><DashboardAuditPage /></L>} />
-        <Route path="users" element={<L><DashboardUsersPage /></L>} />
+        <Route path="users" element={<RequireRole minRole="superadmin"><L><DashboardUsersPage /></L></RequireRole>} />
         <Route path="profile" element={<L><DashboardProfilePage /></L>} />
         <Route path="products" element={<L><DashboardProductsPage /></L>} />
         <Route path="categories" element={<L><DashboardCategoriesPage /></L>} />
         <Route path="brands" element={<L><DashboardBrandsPage /></L>} />
-        <Route path="orders" element={<L><DashboardOrdersPage /></L>} />
-        <Route path="coupons" element={<L><DashboardCouponsPage /></L>} />
+        <Route path="orders" element={<RequireRole minRole="admin"><L><DashboardOrdersPage /></L></RequireRole>} />
+        <Route path="coupons" element={<RequireRole minRole="admin"><L><DashboardCouponsPage /></L></RequireRole>} />
         <Route path="cms" element={<L><DashboardCmsPage /></L>} />
         <Route path="media" element={<L><DashboardMediaPage /></L>} />
         <Route path="design" element={<L><DashboardDesignPage /></L>} />
-        <Route path="settings" element={<L><DashboardSettingsPage /></L>} />
+        <Route path="settings" element={<RequireRole minRole="admin"><L><DashboardSettingsPage /></L></RequireRole>} />
         <Route path="data-quality" element={<L><DashboardDataQualityPage /></L>} />
         {/* ws3-catalog routes */}
         <Route path="products/new" element={<L><DashboardProductEditorPage /></L>} />
         <Route path="products/import" element={<L><DashboardProductsImportPage /></L>} />
-        <Route path="products/review" element={<L><DashboardReviewQueuePage /></L>} />
+        <Route path="products/review" element={<RequireRole minRole="admin"><L><DashboardReviewQueuePage /></L></RequireRole>} />
         <Route path="products/:id" element={<L><DashboardProductEditorPage /></L>} />
         <Route path="categories/:id/attributes" element={<L><DashboardCategoryAttributesPage /></L>} />
         {/* end ws3-catalog routes */}
         {/* ws3-operations routes */}
-        <Route path="orders/:id" element={<L><DashboardOrderDetailPage /></L>} />
+        <Route path="orders/:id" element={<RequireRole minRole="admin"><L><DashboardOrderDetailPage /></L></RequireRole>} />
         <Route path="notifications" element={<L><DashboardNotificationsPage /></L>} />
         {/* /ws3-operations routes */}
       </Route>

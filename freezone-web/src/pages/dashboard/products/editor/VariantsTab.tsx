@@ -26,6 +26,19 @@ type VariantRow = {
   options: Array<{ name: string; value: string }>;
 };
 
+/**
+ * Parse a price input. Empty → null (clears the override); a finite,
+ * non-negative integer → that number; anything else (e.g. pasted non-numeric
+ * text that slips past the number input) → `undefined`, signalling invalid so
+ * the caller can block the save instead of silently dropping the value to null.
+ */
+function parsePrice(raw: string): number | null | undefined {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const n = parseInt(trimmed, 10);
+  return Number.isFinite(n) && n >= 0 ? n : undefined;
+}
+
 function newVariantRow(sortOrder: number): VariantRow {
   return {
     sourceVariantId: `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -45,12 +58,24 @@ function newVariantRow(sortOrder: number): VariantRow {
   };
 }
 
-export function VariantsTab({ productId }: { productId: number | null }) {
+export function VariantsTab({
+  productId,
+  onDirtyChange,
+}: {
+  productId: number | null;
+  /** Reports whether the variant rows differ from the loaded baseline, so the
+   *  parent editor can fold it into its unsaved-changes guard. */
+  onDirtyChange?: (dirty: boolean) => void;
+}) {
   const { t, formatError } = useDashboardLocale();
   const toast = useToast();
   const [rows, setRows] = useState<VariantRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Serialized snapshot of the last-loaded/saved rows — anything different means
+  // there are unsaved variant edits.
+  const baselineRef = useRef<string>(JSON.stringify([] as VariantRow[]));
 
   // Stable ref so a language switch never re-triggers the loader (it would
   // clobber unsaved variant edits).
@@ -62,25 +87,25 @@ export function VariantsTab({ productId }: { productId: number | null }) {
     setLoading(true);
     try {
       const variants = await variantsApi.list(productId);
-      setRows(
-        variants.map((v) => ({
-          id: v.id,
-          sourceVariantId: v.sourceVariantId,
-          sku: v.sku,
-          labelEn: v.labelEn,
-          labelAr: v.labelAr,
-          priceOverride: v.priceOverride != null ? String(v.priceOverride) : "",
-          oldPrice: v.oldPrice != null ? String(v.oldPrice) : "",
-          quantity: String(v.quantity),
-          active: v.active,
-          sortOrder: v.sortOrder,
-          options: [
-            { name: v.optionName1 ?? "", value: v.optionValue1 ?? "" },
-            { name: v.optionName2 ?? "", value: v.optionValue2 ?? "" },
-            { name: v.optionName3 ?? "", value: v.optionValue3 ?? "" },
-          ],
-        })),
-      );
+      const mapped: VariantRow[] = variants.map((v) => ({
+        id: v.id,
+        sourceVariantId: v.sourceVariantId,
+        sku: v.sku,
+        labelEn: v.labelEn,
+        labelAr: v.labelAr,
+        priceOverride: v.priceOverride != null ? String(v.priceOverride) : "",
+        oldPrice: v.oldPrice != null ? String(v.oldPrice) : "",
+        quantity: String(v.quantity),
+        active: v.active,
+        sortOrder: v.sortOrder,
+        options: [
+          { name: v.optionName1 ?? "", value: v.optionValue1 ?? "" },
+          { name: v.optionName2 ?? "", value: v.optionValue2 ?? "" },
+          { name: v.optionName3 ?? "", value: v.optionValue3 ?? "" },
+        ],
+      }));
+      baselineRef.current = JSON.stringify(mapped);
+      setRows(mapped);
     } catch (e) {
       localeRef.current.toast.error(localeRef.current.formatError(e));
     } finally {
@@ -91,6 +116,15 @@ export function VariantsTab({ productId }: { productId: number | null }) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const dirty = JSON.stringify(rows) !== baselineRef.current;
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
+  // On unmount (e.g. switching tabs), clear the dirty signal — the row state is
+  // gone, so there is nothing left for the guard to protect.
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
 
   const patch = (index: number, patchRow: Partial<VariantRow>) =>
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patchRow } : r)));
@@ -110,13 +144,17 @@ export function VariantsTab({ productId }: { productId: number | null }) {
   const save = async () => {
     if (productId == null) return;
     const editable = rows.filter((r) => r.sourceVariantId);
+    if (editable.some((r) => parsePrice(r.priceOverride) === undefined || parsePrice(r.oldPrice) === undefined)) {
+      toast.error(t("editor.variantsPriceInvalid"));
+      return;
+    }
     const payload: ProductVariantInput[] = editable.map((r, i) => ({
       sourceVariantId: r.sourceVariantId,
       sku: r.sku.trim(),
       labelEn: r.labelEn.trim(),
       labelAr: r.labelAr.trim(),
-      priceOverride: r.priceOverride.trim() ? parseInt(r.priceOverride, 10) : null,
-      oldPrice: r.oldPrice.trim() ? parseInt(r.oldPrice, 10) : null,
+      priceOverride: parsePrice(r.priceOverride),
+      oldPrice: parsePrice(r.oldPrice),
       quantity: r.quantity.trim() ? Math.max(0, parseInt(r.quantity, 10) || 0) : 0,
       active: r.active,
       sortOrder: i,
