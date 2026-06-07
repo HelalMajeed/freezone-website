@@ -101,15 +101,19 @@ export function DashboardProductEditorPage() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [loading, setLoading] = useState(routeId != null);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [notFound, setNotFound] = useState(false);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<EditorTabKey>("basic");
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [commentCount, setCommentCount] = useState<number | null>(null);
+  const [variantsDirty, setVariantsDirty] = useState(false);
 
   const baselineRef = useRef(formSnapshot(EMPTY_FORM));
   const baselineImagesRef = useRef(JSON.stringify(imagesToWritePayload(EMPTY_FORM.images)));
 
-  const dirty = formSnapshot(form) !== baselineRef.current;
+  // VariantsTab persists separately, but its unsaved edits must still arm the
+  // navigation guard so they aren't lost silently.
+  const dirty = formSnapshot(form) !== baselineRef.current || variantsDirty;
   useUnsavedGuard(dirty);
   const guardedNavigate = useGuardedNavigate(dirty);
 
@@ -135,6 +139,7 @@ export function DashboardProductEditorPage() {
     if (productId == null || !Number.isFinite(productId)) return;
     setLoading(true);
     setLoadFailed(false);
+    setNotFound(false);
     try {
       const p = await productEditorApi.detail(productId);
       setDetail(p);
@@ -144,11 +149,11 @@ export function DashboardProductEditorPage() {
       baselineRef.current = formSnapshot(next);
       baselineImagesRef.current = JSON.stringify(imagesToWritePayload(next.images));
     } catch (e) {
+      const is404 = e instanceof DashboardApiError && e.status === 404;
       setLoadFailed(true);
+      setNotFound(is404);
       localeRef.current.toast.error(
-        e instanceof DashboardApiError && e.status === 404
-          ? localeRef.current.t("editor.notFound")
-          : localeRef.current.t("editor.loadFailed"),
+        is404 ? localeRef.current.t("editor.notFound") : localeRef.current.t("editor.loadFailed"),
       );
     } finally {
       setLoading(false);
@@ -284,13 +289,21 @@ export function DashboardProductEditorPage() {
   };
 
   if (badId || loadFailed) {
+    const isDeadEnd = badId || notFound;
     return (
       <div className={s.page}>
         <Link className={s.backLink} to="/dashboard/products">
           <ArrowLeft size={14} className={s.dirIcon} aria-hidden />
           {t("editor.backToList")}
         </Link>
-        <div className={s.inlineError}>{badId ? t("editor.notFound") : t("editor.loadFailed")}</div>
+        <div className={s.inlineError}>{isDeadEnd ? t("editor.notFound") : t("editor.loadFailed")}</div>
+        {!isDeadEnd && (
+          <div className={s.headerActions}>
+            <Button type="button" onClick={() => void loadDetail()}>
+              {t("common.retry")}
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -393,7 +406,9 @@ export function DashboardProductEditorPage() {
           {tab === "specs" && (
             <SpecsTab form={form} set={setField} errors={errors} attributes={attributes} />
           )}
-          {tab === "variants" && <VariantsTab productId={productId} />}
+          {tab === "variants" && (
+            <VariantsTab productId={productId} onDirtyChange={setVariantsDirty} />
+          )}
           {tab === "images" && (
             <ImagesTab
               images={form.images}
