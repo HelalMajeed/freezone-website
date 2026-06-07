@@ -15,6 +15,21 @@ export class DashboardApiError extends Error {
   }
 }
 
+/**
+ * Fired (on `window`) whenever any dashboard API call returns 401 mid-session.
+ * `DashboardGuard` listens for it and resets the auth store so the next render
+ * bounces to /dashboard/login — giving the admin an in-app recovery path
+ * instead of an endless stream of "UNAUTHORIZED" toasts. Callers still receive
+ * the thrown `DashboardApiError` so they can show inline errors if they want.
+ */
+export const DASHBOARD_UNAUTHORIZED_EVENT = "fz:dashboard-unauthorized";
+
+function notifyDashboardUnauthorized(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(DASHBOARD_UNAUTHORIZED_EVENT));
+  }
+}
+
 async function request<T>(method: string, path: string, body?: unknown, init?: RequestInit): Promise<T> {
   const url = path.startsWith("http") ? path : freezoneApiUrl(path);
   const headers: HeadersInit = {
@@ -41,6 +56,7 @@ async function request<T>(method: string, path: string, body?: unknown, init?: R
   }
 
   if (!res.ok) {
+    if (res.status === 401) notifyDashboardUnauthorized();
     const j = json as { error?: string; [k: string]: unknown };
     throw new DashboardApiError(res.status, j.error ?? `HTTP_${res.status}`, j.error, j);
   }
@@ -87,6 +103,7 @@ export async function uploadDashboardFile(
     json = {};
   }
   if (!res.ok) {
+    if (res.status === 401) notifyDashboardUnauthorized();
     const j = json as { error?: string };
     throw new DashboardApiError(res.status, j.error ?? `HTTP_${res.status}`, j.error, j as Record<string, unknown>);
   }
@@ -731,6 +748,7 @@ async function requestCsv(path: string, fallbackName: string): Promise<{ blob: B
     headers: { Accept: "text/csv" },
   });
   if (!res.ok) {
+    if (res.status === 401) notifyDashboardUnauthorized();
     let code = `HTTP_${res.status}`;
     try {
       const j = (await res.json()) as { error?: string };
