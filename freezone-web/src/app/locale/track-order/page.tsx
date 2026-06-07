@@ -41,7 +41,7 @@ export default function TrackOrderPage() {
   const [orderNumber, setOrderNumber] = useState(searchParams.get("order") ?? "");
   const [phone, setPhone] = useState(searchParams.get("phone") ?? "");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<"" | "notFound" | "errorGeneric">("");
+  const [error, setError] = useState<"" | "notFound" | "rateLimited" | "errorGeneric">("");
   const [result, setResult] = useState<PublicTrackedOrder | null>(null);
   const [recent, setRecent] = useState<RememberedOrder[]>([]);
   const autoSubmitted = useRef(false);
@@ -69,7 +69,13 @@ export default function TrackOrderPage() {
       });
       setRecent(readRememberedOrders());
     } catch (e) {
-      setError(e instanceof OrderTrackError && e.code === "NOT_FOUND" ? "notFound" : "errorGeneric");
+      if (e instanceof OrderTrackError && e.code === "NOT_FOUND") {
+        setError("notFound");
+      } else if (e instanceof OrderTrackError && e.code === "RATE_LIMITED") {
+        setError("rateLimited");
+      } else {
+        setError("errorGeneric");
+      }
     } finally {
       setLoading(false);
     }
@@ -151,7 +157,7 @@ export default function TrackOrderPage() {
           </div>
           {error ? (
             <p id="fz-track-error" className={styles.error} role="alert">
-              {t(error === "notFound" ? "notFound" : "errorGeneric")}
+              {t(error === "notFound" ? "notFound" : error === "rateLimited" ? "rateLimited" : "errorGeneric")}
             </p>
           ) : null}
           <div className={styles.submitRow}>
