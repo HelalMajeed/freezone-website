@@ -15,7 +15,7 @@ import {
 import { BrandMarkIcon } from "./BrandMarkIcon";
 import { LucideByName } from "@/lib/lucide-icon-map";
 import styles from "./NavBar.module.css";
-import { useState, useRef, useEffect, useLayoutEffect, type FormEvent } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { EASE_OUT } from "@/lib/motion";
 import { MobileMenu } from "./MobileMenu";
@@ -110,6 +110,9 @@ export function NavBar() {
   const remote =
     suggestQ.length >= 2 && hasRemoteSuggestions(remoteSuggestions) ? remoteSuggestions : null;
   const searchWrapRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  /** Highlighted suggestion index across all groups (visual order); -1 = none. */
+  const [activeOption, setActiveOption] = useState(-1);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   /** Tier-1 bar: visible at page top, collapses when user scrolls down, returns when back to top */
   const [topAnnouncementVisible, setTopAnnouncementVisible] = useState(true);
@@ -154,6 +157,18 @@ export function NavBar() {
     return () => document.removeEventListener("mousedown", onDoc);
   }, [searchOpen]);
 
+  /** Reset the keyboard highlight whenever the suggestion set changes or the panel closes. */
+  useEffect(() => {
+    setActiveOption(-1);
+  }, [searchOpen, headerSearchQuery, remoteSuggestions]);
+
+  /** Keep the highlighted option scrolled into view while navigating with the keyboard. */
+  useEffect(() => {
+    if (activeOption < 0) return;
+    const el = searchWrapRef.current?.querySelector<HTMLElement>('[aria-selected="true"]');
+    el?.scrollIntoView({ block: "nearest" });
+  }, [activeOption]);
+
   /** Publish header height so sticky sidebars (e.g. products filter) sit below the bar, not under it (z-index). */
   useLayoutEffect(() => {
     const el = navRef.current;
@@ -174,6 +189,108 @@ export function NavBar() {
       document.documentElement.style.removeProperty("--fz-storefront-sticky-offset");
     };
   }, []);
+
+  /** Fallback lists (no remote results): computed once so the rendered panel and
+   *  the flat keyboard-navigation list stay perfectly in sync. */
+  const trendingRows = TRENDING_SEARCHES.slice(0, 6);
+  const fallbackSuggestions = filterSuggestions(headerSearchQuery);
+
+  /** Flat list of every visible option in visual order — drives ArrowUp/Down,
+   *  Home/End, Enter and aria-activedescendant across all groups. */
+  const searchOptions: { id: string; activate: () => void }[] = [];
+  if (remote) {
+    remote.products.forEach((p) =>
+      searchOptions.push({
+        id: `fz-sg-product-${p.id}`,
+        activate: () => {
+          pushRecentSearch(suggestQ);
+          setSearchOpen(false);
+          router.push(`/product/${p.id}`);
+        },
+      }),
+    );
+    remote.categories.forEach((c) =>
+      searchOptions.push({
+        id: `fz-sg-category-${c.id}`,
+        activate: () => {
+          setSearchOpen(false);
+          router.push(`/category/${encodeURIComponent(c.slug)}`);
+        },
+      }),
+    );
+    remote.brands.forEach((b) =>
+      searchOptions.push({
+        id: `fz-sg-brand-${b.id}`,
+        activate: () => {
+          setSearchOpen(false);
+          router.push(`/brand/${encodeURIComponent(b.slug)}`);
+        },
+      }),
+    );
+    remote.queries.forEach((q, i) =>
+      searchOptions.push({ id: `fz-sg-query-${i}`, activate: () => applySuggestion(q) }),
+    );
+    searchOptions.push({ id: "fz-sg-seeall", activate: () => applySuggestion(suggestQ) });
+  } else {
+    trendingRows.forEach((row, i) =>
+      searchOptions.push({ id: `fz-sg-trending-${i}`, activate: () => applySuggestion(row.q) }),
+    );
+    recentSearches.forEach((q, i) =>
+      searchOptions.push({ id: `fz-sg-recent-${i}`, activate: () => applySuggestion(q) }),
+    );
+    fallbackSuggestions.forEach((row, i) =>
+      searchOptions.push({ id: `fz-sg-suggest-${i}`, activate: () => applySuggestion(row.q) }),
+    );
+  }
+  const activeOptionId =
+    activeOption >= 0 && activeOption < searchOptions.length
+      ? searchOptions[activeOption].id
+      : undefined;
+
+  const onSearchKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (!searchOpen) {
+      if (e.key === "ArrowDown") {
+        setRecentSearches(readRecentSearches());
+        setSearchOpen(true);
+      }
+      return;
+    }
+    const n = searchOptions.length;
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        if (n > 0) setActiveOption((i) => (i + 1) % n);
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (n > 0) setActiveOption((i) => (i <= 0 ? n - 1 : i - 1));
+        break;
+      case "Home":
+        if (n > 0) {
+          e.preventDefault();
+          setActiveOption(0);
+        }
+        break;
+      case "End":
+        if (n > 0) {
+          e.preventDefault();
+          setActiveOption(n - 1);
+        }
+        break;
+      case "Enter":
+        if (activeOption >= 0 && activeOption < n) {
+          e.preventDefault();
+          searchOptions[activeOption].activate();
+        }
+        break;
+      case "Escape":
+        e.preventDefault();
+        setSearchOpen(false);
+        setActiveOption(-1);
+        searchInputRef.current?.focus();
+        break;
+    }
+  };
 
   return (
     <motion.div
@@ -286,6 +403,7 @@ export function NavBar() {
                 <span className={styles.visuallyHidden}>{t("search")}</span>
                 <Search className={styles.searchBarIcon} size={22} strokeWidth={2} aria-hidden />
                 <input
+                  ref={searchInputRef}
                   type="search"
                   className={styles.searchInput}
                   placeholder={t("search")}
@@ -298,12 +416,14 @@ export function NavBar() {
                     setRecentSearches(readRecentSearches());
                     setSearchOpen(true);
                   }}
+                  onKeyDown={onSearchKeyDown}
                   autoComplete="off"
                   enterKeyHint="search"
                   role="combobox"
                   aria-expanded={searchOpen}
                   aria-controls="fz-header-search-panel"
                   aria-autocomplete="list"
+                  aria-activedescendant={activeOptionId}
                 />
               </label>
               <button type="submit" className={styles.searchBtnInside}>
@@ -312,20 +432,31 @@ export function NavBar() {
               </button>
             </form>
             {searchOpen ? (
-              <div id="fz-header-search-panel" className={styles.searchPanel} role="listbox" aria-label={t("search")}>
+              <div
+                id="fz-header-search-panel"
+                className={styles.searchPanel}
+                role="listbox"
+                aria-label={t("search")}
+                onMouseMove={() => setActiveOption((i) => (i === -1 ? i : -1))}
+              >
                 {remote ? (
                   <>
                     {remote.products.length > 0 ? (
-                      <div className={styles.searchPanelSection}>
-                        <div className={styles.searchPanelTitle}>{t("productsGroup")}</div>
+                      <div className={styles.searchPanelSection} role="group" aria-label={t("productsGroup")}>
+                        <div className={styles.searchPanelTitle} aria-hidden>{t("productsGroup")}</div>
                         {remote.products.map((p) => {
                           const name = locale === "ar" ? p.nameAr || p.nameEn : p.nameEn || p.nameAr;
                           const price = p.salePrice ?? p.price;
                           const oldPrice = p.salePrice != null && p.salePrice < p.price ? p.price : null;
+                          const optId = `fz-sg-product-${p.id}`;
                           return (
                             <button
                               key={p.id}
+                              id={optId}
                               type="button"
+                              role="option"
+                              aria-selected={activeOptionId === optId}
+                              aria-label={`${name} — ${formatMoney(price)} IQD`}
                               className={styles.suggestProduct}
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={() => {
@@ -360,61 +491,82 @@ export function NavBar() {
                       </div>
                     ) : null}
                     {remote.categories.length > 0 ? (
-                      <div className={styles.searchPanelSection}>
-                        <div className={styles.searchPanelTitle}>{t("categoriesGroup")}</div>
-                        {remote.categories.map((c) => (
-                          <button
-                            key={c.id}
-                            type="button"
-                            className={styles.searchSuggestion}
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => {
-                              setSearchOpen(false);
-                              router.push(`/category/${encodeURIComponent(c.slug)}`);
-                            }}
-                          >
-                            {locale === "ar" ? c.nameAr || c.nameEn : c.nameEn || c.nameAr}
-                          </button>
-                        ))}
+                      <div className={styles.searchPanelSection} role="group" aria-label={t("categoriesGroup")}>
+                        <div className={styles.searchPanelTitle} aria-hidden>{t("categoriesGroup")}</div>
+                        {remote.categories.map((c) => {
+                          const optId = `fz-sg-category-${c.id}`;
+                          return (
+                            <button
+                              key={c.id}
+                              id={optId}
+                              type="button"
+                              role="option"
+                              aria-selected={activeOptionId === optId}
+                              className={styles.searchSuggestion}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                setSearchOpen(false);
+                                router.push(`/category/${encodeURIComponent(c.slug)}`);
+                              }}
+                            >
+                              {locale === "ar" ? c.nameAr || c.nameEn : c.nameEn || c.nameAr}
+                            </button>
+                          );
+                        })}
                       </div>
                     ) : null}
                     {remote.brands.length > 0 ? (
-                      <div className={styles.searchPanelSection}>
-                        <div className={styles.searchPanelTitle}>{t("brandsGroup")}</div>
-                        {remote.brands.map((b) => (
-                          <button
-                            key={b.id}
-                            type="button"
-                            className={styles.searchSuggestion}
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => {
-                              setSearchOpen(false);
-                              router.push(`/brand/${encodeURIComponent(b.slug)}`);
-                            }}
-                          >
-                            {locale === "ar" ? b.nameAr || b.nameEn : b.nameEn || b.nameAr}
-                          </button>
-                        ))}
+                      <div className={styles.searchPanelSection} role="group" aria-label={t("brandsGroup")}>
+                        <div className={styles.searchPanelTitle} aria-hidden>{t("brandsGroup")}</div>
+                        {remote.brands.map((b) => {
+                          const optId = `fz-sg-brand-${b.id}`;
+                          return (
+                            <button
+                              key={b.id}
+                              id={optId}
+                              type="button"
+                              role="option"
+                              aria-selected={activeOptionId === optId}
+                              className={styles.searchSuggestion}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                setSearchOpen(false);
+                                router.push(`/brand/${encodeURIComponent(b.slug)}`);
+                              }}
+                            >
+                              {locale === "ar" ? b.nameAr || b.nameEn : b.nameEn || b.nameAr}
+                            </button>
+                          );
+                        })}
                       </div>
                     ) : null}
                     {remote.queries.length > 0 ? (
-                      <div className={styles.searchPanelSection}>
-                        <div className={styles.searchPanelTitle}>{t("suggestions")}</div>
-                        {remote.queries.map((q) => (
-                          <button
-                            key={q}
-                            type="button"
-                            className={styles.searchSuggestion}
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => applySuggestion(q)}
-                          >
-                            {q}
-                          </button>
-                        ))}
+                      <div className={styles.searchPanelSection} role="group" aria-label={t("suggestions")}>
+                        <div className={styles.searchPanelTitle} aria-hidden>{t("suggestions")}</div>
+                        {remote.queries.map((q, i) => {
+                          const optId = `fz-sg-query-${i}`;
+                          return (
+                            <button
+                              key={q}
+                              id={optId}
+                              type="button"
+                              role="option"
+                              aria-selected={activeOptionId === optId}
+                              className={styles.searchSuggestion}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => applySuggestion(q)}
+                            >
+                              {q}
+                            </button>
+                          );
+                        })}
                       </div>
                     ) : null}
                     <button
+                      id="fz-sg-seeall"
                       type="button"
+                      role="option"
+                      aria-selected={activeOptionId === "fz-sg-seeall"}
                       className={styles.seeAllBtn}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => applySuggestion(suggestQ)}
@@ -424,49 +576,67 @@ export function NavBar() {
                   </>
                 ) : (
                   <>
-                    <div className={styles.searchPanelSection}>
-                      <div className={styles.searchPanelTitle}>{t("trending")}</div>
-                      {TRENDING_SEARCHES.slice(0, 6).map((row) => (
-                        <button
-                          key={row.q}
-                          type="button"
-                          className={styles.searchSuggestion}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => applySuggestion(row.q)}
-                        >
-                          {row.label}
-                        </button>
-                      ))}
-                    </div>
-                    {recentSearches.length > 0 ? (
-                      <div className={styles.searchPanelSection}>
-                        <div className={styles.searchPanelTitle}>{t("recentSearches")}</div>
-                        {recentSearches.map((q) => (
+                    <div className={styles.searchPanelSection} role="group" aria-label={t("trending")}>
+                      <div className={styles.searchPanelTitle} aria-hidden>{t("trending")}</div>
+                      {trendingRows.map((row, i) => {
+                        const optId = `fz-sg-trending-${i}`;
+                        return (
                           <button
-                            key={q}
+                            key={row.q}
+                            id={optId}
                             type="button"
+                            role="option"
+                            aria-selected={activeOptionId === optId}
                             className={styles.searchSuggestion}
                             onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => applySuggestion(q)}
+                            onClick={() => applySuggestion(row.q)}
                           >
-                            {q}
+                            {row.label}
                           </button>
-                        ))}
+                        );
+                      })}
+                    </div>
+                    {recentSearches.length > 0 ? (
+                      <div className={styles.searchPanelSection} role="group" aria-label={t("recentSearches")}>
+                        <div className={styles.searchPanelTitle} aria-hidden>{t("recentSearches")}</div>
+                        {recentSearches.map((q, i) => {
+                          const optId = `fz-sg-recent-${i}`;
+                          return (
+                            <button
+                              key={q}
+                              id={optId}
+                              type="button"
+                              role="option"
+                              aria-selected={activeOptionId === optId}
+                              className={styles.searchSuggestion}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => applySuggestion(q)}
+                            >
+                              {q}
+                            </button>
+                          );
+                        })}
                       </div>
                     ) : null}
-                    <div className={styles.searchPanelSection}>
-                      <div className={styles.searchPanelTitle}>{t("suggestions")}</div>
-                      {filterSuggestions(headerSearchQuery).map((row) => (
-                        <button
-                          key={`${row.q}-${row.label}`}
-                          type="button"
-                          className={styles.searchSuggestion}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => applySuggestion(row.q)}
-                        >
-                          {row.label}
-                        </button>
-                      ))}
+                    <div className={styles.searchPanelSection} role="group" aria-label={t("suggestions")}>
+                      <div className={styles.searchPanelTitle} aria-hidden>{t("suggestions")}</div>
+                      {fallbackSuggestions.map((row, i) => {
+                        const optId = `fz-sg-suggest-${i}`;
+                        return (
+                          <button
+                            key={`${row.q}-${row.label}`}
+                            id={optId}
+                            type="button"
+                            role="option"
+                            aria-selected={activeOptionId === optId}
+                            className={styles.searchSuggestion}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => applySuggestion(row.q)}
+                          >
+                            {row.label}
+                          </button>
+                        );
+                      })}
                     </div>
                   </>
                 )}
