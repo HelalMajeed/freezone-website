@@ -1,10 +1,12 @@
-# Manual + weekly production DB backup (requires DATABASE_URL_PROD secret).
+# Manual + daily production DB backup (requires DATABASE_URL_PROD secret).
+# Runs daily at 03:00 UTC to honor the documented RPO <= 24h
+# (see docs/DISASTER_RECOVERY.md). Artifacts are retained for 7 days.
 name: Backup production database
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 3 * * 0"
+    - cron: "0 3 * * *"
 
 jobs:
   pg-dump:

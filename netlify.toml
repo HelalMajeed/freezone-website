@@ -54,6 +54,22 @@
   to = "/index.html"
   status = 200
 
+# Baseline security headers for the whole site. Protects against clickjacking
+# (X-Frame-Options / frame-ancestors) and MIME-sniffing (nosniff), enforces HTTPS
+# (HSTS), and — per docs/SECURITY_REVIEW.md — sets Referrer-Policy: no-referrer at
+# the edge so the secret admin link can never leak via the Referer header.
+# A full resource CSP is intentionally omitted here to avoid breaking the SPA;
+# only the frame-ancestors directive (safe, no resource impact) is set.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "no-referrer"
+    Permissions-Policy = "geolocation=(), camera=(), microphone=(), payment=()"
+    Content-Security-Policy = "frame-ancestors 'none'"
+
 [[headers]]
   for = "/index.html"
   [headers.values]

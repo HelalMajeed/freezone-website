@@ -16,8 +16,51 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Gate every production deploy on the same lint/test/build checks that CI runs,
+  # against the exact SHA being deployed. Without this, a push to main that fails
+  # CI would still deploy (deploy-production has no dependency on the CI workflow),
+  # so broken code could reach Fly/Netlify despite a red CI run.
+  verify-api:
+    name: Verify API (routes, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: freezone-api
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: freezone-api/package-lock.json
+      - run: npm ci
+      - run: npm run routes:check
+      - run: npm run test
+      - run: npm run build
+
+  verify-web:
+    name: Verify web (lint, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: freezone-web
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: freezone-web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build
+        env:
+          PRERENDER_SKIP: "1"
+
   deploy-api:
     name: Fly.io API + DB migrate
+    needs: [verify-api, verify-web]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
