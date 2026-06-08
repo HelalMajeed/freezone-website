@@ -37,7 +37,7 @@ export function StoreJsonLd({ site, locale, baseUrl }: { site: PublicSite; local
         publisher: { "@id": `${baseUrl}/#organization` },
         potentialAction: {
           "@type": "SearchAction",
-          target: `${baseUrl}/${locale}/products?search={search_term_string}`,
+          target: `${baseUrl}/${locale}/products?q={search_term_string}`,
           "query-input": "required name=search_term_string",
         },
       },
