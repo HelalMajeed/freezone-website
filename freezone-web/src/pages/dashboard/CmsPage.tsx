@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Card } from "@/components/dashboard/ui";
+import { Card, Tabs } from "@/components/dashboard/ui";
 import { HeroSlidesTab } from "./cms/HeroSlidesTab";
 import { TickerTab } from "./cms/TickerTab";
 import { PromoBannersTab } from "./cms/PromoBannersTab";
@@ -61,38 +61,13 @@ export function DashboardCmsPage() {
       </div>
 
       <Card tight>
-        <div
-          style={{
-            display: "flex",
-            gap: 4,
-            padding: "10px 14px",
-            borderBottom: "1px solid var(--fz-border, #e5e7eb)",
-            flexWrap: "wrap",
-          }}
-        >
-          {TAB_ORDER.map((k) => {
-            const isActive = tab === k;
-            return (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setTab(k)}
-                style={{
-                  background: isActive ? "var(--fz-brand, #2563eb)" : "transparent",
-                  color: isActive ? "#fff" : "var(--fz-text)",
-                  border: "1px solid",
-                  borderColor: isActive ? "var(--fz-brand, #2563eb)" : "var(--fz-border, #e5e7eb)",
-                  padding: "8px 14px",
-                  borderRadius: "var(--fz-radius)",
-                  cursor: "pointer",
-                  fontSize: 13,
-                  fontWeight: 500,
-                }}
-              >
-                {TAB_LABELS[k][lang]}
-              </button>
-            );
-          })}
+        <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--fz-border, #e5e7eb)" }}>
+          <Tabs
+            items={TAB_ORDER.map((k) => ({ key: k, label: TAB_LABELS[k][lang] }))}
+            value={tab}
+            onChange={(key) => setTab(key as TabKey)}
+            ariaLabel={lang === "ar" ? "أقسام محتوى الصفحة الرئيسية" : "Homepage content sections"}
+          />
         </div>
 
         <div style={{ padding: 16 }}>
