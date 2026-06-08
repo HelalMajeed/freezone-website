@@ -319,7 +319,7 @@ export const dashboardAr: Record<DashboardMessageKey, string> = {
   "editor.dimHeightCm": "الارتفاع (سم)",
   "editor.specialHandling": "يتطلب مناولة خاصة",
   "editor.excludedProvinces": "محافظات مستثناة",
-  "editor.excludedProvincesHint": "محافظة واحدة في كل سطر — يُحظر التوصيل إليها.",
+  "editor.excludedProvincesHint": "اختر المحافظات التي يُحظر التوصيل إليها لهذا المنتج.",
   "editor.internalNotes": "ملاحظات داخلية",
   "editor.internalNotesHint": "للفريق فقط — لا تظهر في المتجر أبداً.",
   "editor.secondaryCategories": "أقسام ثانوية",

@@ -1,5 +1,6 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { validateCouponRecord } from "@/lib/coupon-service";
+import { isProvinceExcluded } from "@/lib/iraq-provinces";
 import { notifyOrderCreated, notifyStockEvent } from "@/lib/notifications";
 
 type StockEvent = {
@@ -105,6 +106,15 @@ export async function POST(req: Request) {
         if (!p.published) throw new Error("UNAVAILABLE");
         if (!p.inStock) throw new Error("OUT_OF_STOCK");
         if (p.quantity < line.qty) throw new Error("OUT_OF_STOCK");
+        /** Per-product delivery restriction: refuse a *delivery* order whose
+         *  destination province is on the product's excludedProvinces list.
+         *  Pickup orders are exempt (the buyer collects from the store). The
+         *  destination string and the stored list are reconciled to canonical
+         *  province codes, so an English dropdown value matches an Arabic
+         *  exclusion. */
+        if (fulfillment === "delivery" && isProvinceExcluded(p.excludedProvinces, city)) {
+          throw new Error(`DELIVERY_RESTRICTED:${p.nameAr || p.nameEn || `#${p.id}`}`);
+        }
         priced.push({
           productId: p.id,
           qty: line.qty,
@@ -300,6 +310,18 @@ export async function POST(req: Request) {
     if (msg === "OUT_OF_STOCK") {
       return Response.json(
         { error: "الكمية المطلوبة غير متوفرة في المخزون", code: "OUT_OF_STOCK" },
+        { status: 400 },
+      );
+    }
+    if (msg.startsWith("DELIVERY_RESTRICTED")) {
+      const product = msg.slice("DELIVERY_RESTRICTED:".length);
+      return Response.json(
+        {
+          error: product
+            ? `التوصيل غير متاح لمحافظتك لأحد المنتجات (${product})، اختر محافظة أخرى أو الاستلام من المتجر`
+            : "التوصيل غير متاح لمحافظتك، اختر محافظة أخرى أو الاستلام من المتجر",
+          code: "DELIVERY_RESTRICTED",
+        },
         { status: 400 },
       );
     }

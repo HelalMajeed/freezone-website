@@ -15,6 +15,7 @@ import toast from "react-hot-toast";
 import clsx from "clsx";
 import { Seo } from "@/components/seo/Seo";
 import { rememberOrder } from "@/lib/order-tracking";
+import { IRAQ_PROVINCES, provinceLabel } from "@/lib/iraq-provinces";
 
 type Fulfillment = "delivery" | "pickup";
 
@@ -83,7 +84,7 @@ export default function CheckoutPage() {
     name: "",
     phone: "",
     address: "",
-    city: "Baghdad",
+    city: "baghdad",
   });
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
@@ -420,10 +421,11 @@ export default function CheckoutPage() {
               <div className={styles.formGroup}>
                 <label className={styles.label}>{t("city")}</label>
                 <select className={styles.input} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}>
-                  <option value="Baghdad">بغداد / Baghdad</option>
-                  <option value="Basra">البصرة / Basra</option>
-                  <option value="Erbil">أربيل / Erbil</option>
-                  <option value="Mosul">الموصل / Mosul</option>
+                  {IRAQ_PROVINCES.map((p) => (
+                    <option key={p.code} value={p.code}>
+                      {provinceLabel(p)}
+                    </option>
+                  ))}
                 </select>
               </div>
               {!isPickup && (

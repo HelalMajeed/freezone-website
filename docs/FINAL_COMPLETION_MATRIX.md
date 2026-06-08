@@ -20,9 +20,9 @@ that changed status this session, or the residual gap.
 | UI kit | ConfirmDialog/ConfirmProvider + focus-trapped Modal/Drawer, toasts, RTL Tabs/Pagination | Complete | none | `components/dashboard/ui/index.tsx` | WCAG-compliant focus trap, aria-modal, aria-live toasts. |
 | Destructive actions | Confirm dialogs instead of window.confirm/alert | Complete | none | products/cms/categories/coupons/users/media + OrderDetailPage | 16 files use useConfirm; no native confirm/alert in code. |
 | Orders | Order detail: items, timeline, status transitions, cancel-with-restock, notes, shipping edit, invoice print | Complete | none | `orders/OrderDetailPage.tsx` | Full loading/error/empty states, confirm modal, RTL. |
-| Auth | Secret-link-only login bridge (no username/password fields) | Complete | none | `app/dashboard/LoginPage.tsx` | 4 phases, no credential inputs, key stripped from URL. |
+| Auth | Passwordless direct-entry login bridge (no username/password fields) | Complete | none | `app/dashboard/LoginPage.tsx` | **Updated** 06f25c6 — auto-enters when `ADMIN_DIRECT_LOGIN=true`; no credential inputs, secret-link token gate removed. |
 | CMS | Homepage content tabs switcher accessibility | Complete | none | `CmsPage.tsx`, `cms/*Tab.tsx` | **Fixed** d8654d0 — now uses accessible Tabs primitive (role=tablist/tab/aria-selected/arrow-key nav). |
-| Profile | Account info + (removed) change-password form | Complete | none | `ProfilePage.tsx` | **Fixed** 7219c1b — dropped dead-end change-password card (dashboard is secret-link-only). |
+| Profile | Account info + (removed) change-password form | Complete | none | `ProfilePage.tsx` | **Fixed** 7219c1b — dropped dead-end change-password card (dashboard entry is passwordless). |
 | Design | Theme editor with live preview | Complete | low | `DesignPage.tsx` | Wired to PATCH /api/admin/theme; raw error code + non-responsive inline grids remain (cosmetic). |
 | Settings | Site config + logo upload | Complete | low | `SettingsPage.tsx` | Wired to /api/admin/site-config; same raw-error/inline-grid pattern. |
 | Mobile | Responsive page-level form layouts | Partial | low | Profile/Design/Settings/Coupons + cms tabs | ~28 inline 1fr/1fr grids not covered by shell media queries; cramped fields on phones. |
@@ -42,7 +42,7 @@ that changed status this session, or the residual gap.
 | Coupons | Server-side validation + usedCount inc/dec + mismatch guard | Complete | none | `lib/coupon-service.ts`; `public/orders/route.ts` | Recomputes discount, rejects COUPON_MISMATCH, floors usedCount. |
 | Checkout | Server-trusted pricing (anti-tamper) | Complete | none | `public/orders/route.ts` | Prices/names/images from DB; client price ignored; qty cap 999. |
 | Checkout | Shipping fee recomputed server-side | Complete | none | `public/orders/route.ts` | **Fixed** 121f0ed — server recomputes vs free-delivery threshold/standard fee; client value no longer trusted. |
-| Delivery | Per-product excludedProvinces enforced at checkout | Broken | medium | `public/orders/route.ts`; `schema.prisma` | **Open** — order POST still never checks city vs product.excludedProvinces; needs province-taxonomy alignment first (cross-lane). |
+| Delivery | Per-product excludedProvinces enforced at checkout | Complete | none | `public/orders/route.ts`; `lib/iraq-provinces.ts` | **Fixed** — canonical 18-province taxonomy + `normalizeProvince` folds Arabic/English/code/alias to one code; delivery orders to an excluded province now rejected `DELIVERY_RESTRICTED` (pickup exempt). Covered by `iraq-provinces.test.ts`. |
 | Payment | paymentMethod validated against allowed set | Partial | low | `public/orders/route.ts` | Any non-empty string accepted/stored; no allowlist. |
 | Upload | Content validation (magic bytes, size) | Complete | none | `admin/upload/route.ts`; `admin/upload/product-image/route.ts` | Magic-byte detection + multer 50MB + sharp re-encode. |
 | Rate limits | Limits on sensitive routes | Complete | none | `server.ts`; `lib/rate-limit.ts` | Covers orders/contact/coupon/login/direct-login; in-memory per-process. |
@@ -63,7 +63,7 @@ that changed status this session, or the residual gap.
 | SEO/Schema | Schema.org Organization + WebSite | Complete | none | `seo/StoreJsonLd.tsx`; `routes/LocaleLayout.tsx` | @graph rendered on all public pages. |
 | SEO/Schema | Schema.org BreadcrumbList | Complete | none | `seo/BreadcrumbJsonLd.tsx`; ProductDetail/Category/Brand landing | **Fixed** 36fc594 — BreadcrumbList added to product, category, brand pages. |
 | SEO/Schema | WebSite SearchAction target works | Complete | none | `StoreJsonLd.tsx`; `ProductsCollectionClient.tsx` | **Fixed** 070569a — SearchAction now points at the ?q= param the listing reads. |
-| SEO/Sitemap | sitemap.xml URL format matches live storefront routes | Broken | critical | `freezone-api/src/app/api/public/sitemap.xml/route.ts` | **Open** — emits /products/{slug}?... with no locale; live routes are /{locale}/product/{id}. API-lane regeneration required. |
+| SEO/Sitemap | sitemap.xml URL format matches live storefront routes | Complete | none | `freezone-api/src/app/api/public/sitemap.xml/route.ts` | **Fixed** 0eb9d4b — now emits `/{locale}/product/{id}`, `/{locale}/category/{id}`, `/{locale}/brand/{id}` per supported locale. |
 | SEO/Sitemap | sitemap reachable at origin (robots + netlify proxy) | Complete | none | `netlify.toml`; `public/robots.txt` | Delivery confirmed; contents are the problem, not reach. |
 | SEO/Prerender | Static SSR shells for crawlers (Vite stopgap) | Partial | medium | `freezone-web/scripts/prerender.mjs` | Prerenders static + product pages per locale (20 + 87x2 this run); category/brand shells still not emitted (coupled to sitemap rework). |
 | SEO/Migration | Next.js SEO storefront | Placeholder | medium | `freezone-storefront/src/app` | 3 files only; migration unstarted. Vite+prerender is the de-facto SEO path (decision undocumented as ADR). |
@@ -78,10 +78,10 @@ that changed status this session, or the residual gap.
 | Stock integrity | Atomic decrement + explicit restore on cancel | Complete | none | `public/orders/route.ts`; `orders/[id]/cancel/route.ts` | No oversell / no double-restore; StockMovement. |
 | Coupons | Server-side validation, usedCount inc/dec, mismatch guard | Complete | none | `lib/coupon-service.ts`; `public/coupon/validate`; `public/orders` | Active/window/minSubtotal/usageLimit checks. |
 | Shipping integrity | Shipping fee recomputed server-side | Complete | none | `public/orders/route.ts` | **Fixed** 121f0ed (see API section). |
-| Delivery rules | Per-product excludedProvinces enforced | Broken | medium | `public/orders/route.ts`; `schema.prisma` | **Open** (see API section). |
+| Delivery rules | Per-product excludedProvinces enforced | Complete | none | `public/orders/route.ts`; `lib/iraq-provinces.ts` | **Fixed** (see API section). Checkout dropdown + dashboard editor now share the canonical 18-province vocabulary. |
 | Payment gateways | ZainCash/FastPay behind feature flags, no fake success | Partial | medium | `checkout/page.tsx` | No fake success (compliant); no gateway code/flag; FastPay absent; not documented-as-flagged. |
 | Payment method | paymentMethod validated server-side | Partial | low | `public/orders/route.ts` | No allowlist. |
-| Shipping config | Fee rules by city/province + full Iraq list | Partial | low | `checkout/page.tsx`; `lib/site-public.ts` | Flat threshold+fee; city dropdown hardcodes 4 of 18 provinces. |
+| Shipping config | Fee rules by city/province + full Iraq list | Partial | low | `checkout/page.tsx`; `lib/iraq-provinces.ts` | Full 18-province dropdown now shipped; fee is still a flat threshold+fee (no per-province rate). |
 | WhatsApp handoff | Order handed off with full order text | Complete | none | `checkout/page.tsx` | Synchronous popup-safe wa.me link; NO_DATABASE fallback. |
 | Invoice/print | Admin invoice print + status/cancel UI states | Complete | none | `OrderDetailPage.tsx`; `OrderDetail.module.css` | useReactToPrint, transition control, cancel-with-restock confirm. |
 | Order export | Admin CSV export with filters | Complete | none | `admin/orders/export/route.ts` | Shares buildOrdersWhere filter parsing. |
@@ -132,7 +132,7 @@ All commands run from each package directory on Windows/PowerShell.
 |---------|---------|--------|
 | freezone-api | `npx prisma generate` | PASS |
 | freezone-api | `npm run build` (tsc --noEmit + esbuild) | PASS |
-| freezone-api | `npm test` | PASS — 130/130 |
+| freezone-api | `npm test` | PASS — 147/147 (incl. 22 `iraq-provinces` tests; secret-link suite removed with passwordless entry) |
 | freezone-api | `npm run routes:check` | PASS — every legacy route covered |
 | freezone-web | `npm run lint` | PASS |
 | freezone-web | `npx tsc -b` | PASS |

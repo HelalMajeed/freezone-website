@@ -323,7 +323,7 @@ export const dashboardEn = {
   "editor.dimHeightCm": "Height (cm)",
   "editor.specialHandling": "Requires special handling",
   "editor.excludedProvinces": "Excluded provinces",
-  "editor.excludedProvincesHint": "One province per line — delivery to these is blocked.",
+  "editor.excludedProvincesHint": "Select the provinces delivery is blocked to for this product.",
   "editor.internalNotes": "Internal notes",
   "editor.internalNotesHint": "Staff-only — never shown on the storefront.",
   "editor.secondaryCategories": "Secondary categories",

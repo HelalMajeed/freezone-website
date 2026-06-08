@@ -5,6 +5,7 @@
  */
 import { Field, Input, Select, Textarea } from "@/components/dashboard/ui";
 import { useDashboardLocale } from "@/lib/dashboard/i18n";
+import { IRAQ_PROVINCES, type ProvinceCode } from "@/lib/iraq-provinces";
 import type { Brand, CategoryOption, ProductCatalogStatus, Role } from "@/lib/dashboard/api";
 import type { ProductAvailability } from "@/lib/dashboard/api-extra";
 import type { EditorForm, FieldErrors } from "./form";
@@ -381,7 +382,15 @@ export function SeoTab({ form, set }: TabProps) {
 // ─── Shipping ───────────────────────────────────────────────────────────────
 
 export function ShippingTab({ form, set, errors }: TabProps) {
-  const { t } = useDashboardLocale();
+  const { t, lang } = useDashboardLocale();
+  const toggleProvince = (code: ProvinceCode) => {
+    set(
+      "excludedProvinces",
+      form.excludedProvinces.includes(code)
+        ? form.excludedProvinces.filter((c) => c !== code)
+        : [...form.excludedProvinces, code],
+    );
+  };
   return (
     <>
       <div className={s.grid4}>
@@ -433,11 +442,18 @@ export function ShippingTab({ form, set, errors }: TabProps) {
         </label>
       </div>
       <Field label={t("editor.excludedProvinces")} hint={t("editor.excludedProvincesHint")}>
-        <Textarea
-          rows={4}
-          value={form.excludedProvinces}
-          onChange={(e) => set("excludedProvinces", e.target.value)}
-        />
+        <div className={s.grid4} role="group" aria-label={t("editor.excludedProvinces")}>
+          {IRAQ_PROVINCES.map((p) => (
+            <label key={p.code} className={s.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={form.excludedProvinces.includes(p.code)}
+                onChange={() => toggleProvince(p.code)}
+              />
+              {lang === "ar" ? p.ar : p.en}
+            </label>
+          ))}
+        </div>
       </Field>
     </>
   );

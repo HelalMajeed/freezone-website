@@ -31,24 +31,31 @@ BreadcrumbList structured data, CI now runs api tests + routes:check, deploy
 gated on lint/test/build, daily DB backup, storefront edge security headers, and
 the completion docs.
 
+## Resolved since last handoff
+
+- **C1 (Critical) — Sitemap URL mismatch.** DONE (commit 0eb9d4b). `sitemap.xml`
+  now emits `/{locale}/product|category|brand/{id}` per supported locale.
+- **Auth — passwordless direct entry.** DONE (commit 06f25c6). Dashboard
+  auto-enters when `ADMIN_DIRECT_LOGIN=true`; secret-link token gate removed.
+- **M1 (Medium) — excludedProvinces enforced at checkout.** DONE (this session).
+  New canonical taxonomy `freezone-{api,web}/src/lib/iraq-provinces.ts` (18
+  governorates + `normalizeProvince` folding Arabic/English/code/alias to one
+  code). Order POST rejects delivery to an excluded province
+  (`DELIVERY_RESTRICTED`, pickup exempt). Checkout dropdown expanded 4 -> 18
+  provinces; dashboard editor swapped its free-text textarea for a province
+  multi-select storing codes. Tests: `freezone-api/src/lib/iraq-provinces.test.ts`
+  (22 cases). API 147/147, web lint+tsc+build green.
+
 ## What remains (priority order)
 
-1. **C1 (Critical) — Sitemap URL mismatch.** `sitemap.xml` emits the wrong route
-   shape (no locale, slug/query form) vs live `/{locale}/product/{id}` etc.
-   Every entry redirects/404s. API lane.
-   - File: `freezone-api/src/app/api/public/sitemap.xml/route.ts`
-2. **M1 (Medium) — excludedProvinces not enforced at checkout.** Needs province
-   taxonomy alignment (storefront dropdown -> canonical 18 provinces) then a
-   server-side city check with a localized error. Cross-lane.
-   - Files: `freezone-api/src/app/api/public/orders/route.ts`, `schema.prisma`,
-     `freezone-web/src/app/locale/checkout/page.tsx`
-3. **M2/M4 (Medium) — Category/brand SEO.** Prerender category/brand shells and
-   move from opaque ids to slugs; reconcile with C1. Plan as one change.
-4. **M3 (Medium) — Storefront ADR.** Record that Vite+prerender is the SEO path
+1. **M2/M4 (Medium) — Category/brand SEO.** Prerender category/brand shells and
+   move from opaque ids to slugs; reconcile with the now-fixed C1 sitemap URL
+   shape (`/{locale}/category|brand/{id}`). Plan as one change.
+2. **M3 (Medium) — Storefront ADR.** Record that Vite+prerender is the SEO path
    (Next storefront paused) or commit to the migration. `docs/adr/`.
-5. **M6/M7/M8 (Medium) — Test depth.** jsdom/component+a11y tests, Playwright
+3. **M6/M7/M8 (Medium) — Test depth.** jsdom/component+a11y tests, Playwright
    smoke/a11y specs, pc-build + web coupon-service unit tests.
-6. **Low items L1–L8** — Zod on coupons, paymentMethod allowlist, responsive
+4. **Low items L1–L8** — Zod on coupons, paymentMethod allowlist, responsive
    page grids, ConfirmDialog focus trap, order-tracking tests, prod CORS
    localhost fallback, shared rate-limit store, schema drift assertion.
 
@@ -99,8 +106,8 @@ This repo does NOT use npm workspaces — install/run inside each package dir.
 
 ## Exact next step
 
-Fix C1: rewrite `freezone-api/src/app/api/public/sitemap.xml/route.ts` to emit
-`/{locale}/product/{id}`, `/{locale}/category/{id}`, `/{locale}/brand/{id}` for
-each supported locale, then validate by fetching `/sitemap.xml` and confirming a
-sampled URL returns 200 on the storefront. Coordinate the id-vs-slug decision
-(M4) before finalizing the URL shape.
+Tackle M2/M4 together: decide id-vs-slug for category/brand URLs, then prerender
+category/brand shells in `freezone-web/scripts/prerender.mjs` so crawlers get SSR
+content for the `/{locale}/category|brand/{id}` routes the sitemap (C1, now fixed)
+already advertises. The sitemap URL shape is settled; align the prerender output
+and the storefront route matcher to whatever id/slug form you choose.

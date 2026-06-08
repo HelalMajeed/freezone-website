@@ -10,6 +10,7 @@ import type {
   SpecsPayload,
 } from "@/lib/dashboard/api-extra";
 import type { DashboardMessageKey } from "@/lib/dashboard/i18n";
+import { normalizeProvince, type ProvinceCode } from "@/lib/iraq-provinces";
 
 export type EditorImage = {
   /** Stable client key for drag & drop. */
@@ -72,7 +73,8 @@ export type EditorForm = {
   dimWidthCm: string;
   dimHeightCm: string;
   requiresSpecialHandling: boolean;
-  excludedProvinces: string;
+  /** Canonical province codes delivery is blocked to (see lib/iraq-provinces). */
+  excludedProvinces: string[];
   // Advanced
   internalNotes: string;
   secondaryCategoryIds: number[];
@@ -163,7 +165,7 @@ export const EMPTY_FORM: EditorForm = {
   dimWidthCm: "",
   dimHeightCm: "",
   requiresSpecialHandling: false,
-  excludedProvinces: "",
+  excludedProvinces: [],
   internalNotes: "",
   secondaryCategoryIds: [],
   model3d: "",
@@ -260,7 +262,9 @@ export function detailToForm(p: ProductEditorDetail): EditorForm {
     dimWidthCm: numStr(p.dimWidthCm),
     dimHeightCm: numStr(p.dimHeightCm),
     requiresSpecialHandling: p.requiresSpecialHandling ?? false,
-    excludedProvinces: lines(p.excludedProvinces),
+    excludedProvinces: Array.from(
+      new Set((p.excludedProvinces ?? []).map(normalizeProvince).filter((c): c is ProvinceCode => c !== null)),
+    ),
     internalNotes: p.internalNotes ?? "",
     secondaryCategoryIds: (p.secondaryCategories ?? []).map((s) => s.categoryId),
     model3d: p.model3d ?? "",
@@ -435,7 +439,7 @@ export function buildPatch(
     dimWidthCm: optFloat(form.dimWidthCm),
     dimHeightCm: optFloat(form.dimHeightCm),
     requiresSpecialHandling: form.requiresSpecialHandling,
-    excludedProvinces: splitLines(form.excludedProvinces, 50),
+    excludedProvinces: Array.from(new Set(form.excludedProvinces)).slice(0, 50),
     internalNotes: form.internalNotes.trim() || null,
     model3d: form.model3d.trim() || null,
     secondaryCategoryIds: form.secondaryCategoryIds,
