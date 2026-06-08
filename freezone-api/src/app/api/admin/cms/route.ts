@@ -1,6 +1,6 @@
 import { prisma, isDatabaseConfigured, getDatabaseBlockReason } from "@/lib/prisma";
 import { DEFAULT_TOP_BAR_SOCIAL_COLOR } from "@/lib/site-public";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { guardAdminRead, guardAdminMutate, auditContext } from "@/lib/admin-route-guard";
 import type { AdminCmsDraft } from "@/lib/admin-draft-to-storefront";
 import { getOfflineCmsPayload, getOfflineCmsPayloadDbUnreachable } from "@/lib/admin-offline-cms";
 import { Prisma } from "@prisma/client";
@@ -31,9 +31,8 @@ function jsonSaveError(e: unknown): Response {
 }
 
 export async function GET(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await guardAdminRead(req);
+  if (!auth.ok) return auth.response;
   if (!isDatabaseConfigured()) {
     return Response.json({
       ...getOfflineCmsPayload(),
@@ -73,9 +72,8 @@ export async function GET(req: Request) {
 }
 
 export async function PUT(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await guardAdminMutate(req);
+  if (!auth.ok) return auth.response;
   if (!isDatabaseConfigured()) {
     return Response.json(
       {
@@ -290,7 +288,7 @@ export async function PUT(req: Request) {
     });
 
     revalidateStorefrontData();
-    await logAdminAction("cms.save", "SiteConfig", { entityId: 1 });
+    await logAdminAction("cms.save", "SiteConfig", { ...auditContext(auth.actor, req), entityId: 1 });
     return Response.json({ ok: true });
   } catch (e) {
     try {

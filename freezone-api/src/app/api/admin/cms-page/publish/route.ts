@@ -1,14 +1,13 @@
 import { Prisma } from "@prisma/client";
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { guardAdminMutate, auditContext } from "@/lib/admin-route-guard";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 
 export async function POST(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await guardAdminMutate(req);
+  if (!auth.ok) return auth.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -34,7 +33,7 @@ export async function POST(req: Request) {
     );
 
     revalidateStorefrontData();
-    await logAdminAction("cmsPage.publish", "CmsPage", { payload: { slug } });
+    await logAdminAction("cmsPage.publish", "CmsPage", { ...auditContext(auth.actor, req), payload: { slug } });
     return Response.json({ ok: true });
   } catch (e) {
     return handleRouteDbError(e);

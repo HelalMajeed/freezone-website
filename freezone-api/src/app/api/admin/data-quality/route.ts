@@ -1,14 +1,13 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { guardAdminRead } from "@/lib/admin-route-guard";
 import {
   computeCatalogHealthSummary,
   listDataQualityIssues,
 } from "@/lib/admin-catalog-health";
 
 export async function GET(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await guardAdminRead(req);
+  if (!auth.ok) return auth.response;
 
   const url = new URL(req.url);
   const tabRaw = url.searchParams.get("tab") ?? "invalid_filters";

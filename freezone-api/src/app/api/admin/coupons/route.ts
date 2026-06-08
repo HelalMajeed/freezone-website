@@ -1,12 +1,11 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { guardAdminRead, guardAdminMutate, auditContext } from "@/lib/admin-route-guard";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 
 export async function GET(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await guardAdminRead(req);
+  if (!auth.ok) return auth.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -19,9 +18,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await guardAdminMutate(req);
+  if (!auth.ok) return auth.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -68,7 +66,7 @@ export async function POST(req: Request) {
             : null,
       },
     });
-    await logAdminAction("coupon.create", "Coupon", { entityId: row.id, payload: { code: row.code } });
+    await logAdminAction("coupon.create", "Coupon", { ...auditContext(auth.actor, req), entityId: row.id, payload: { code: row.code } });
     return Response.json(row);
   } catch (e) {
     return handleRouteDbError(e);

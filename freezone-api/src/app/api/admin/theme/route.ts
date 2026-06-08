@@ -1,15 +1,14 @@
 import { Prisma } from "@prisma/client";
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { guardAdminRead, guardAdminMutate, auditContext } from "@/lib/admin-route-guard";
 import { mergeThemeTokens } from "@/lib/theme-tokens";
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 
 export async function GET(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await guardAdminRead(req);
+  if (!auth.ok) return auth.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ tokens: mergeThemeTokens(null) });
   }
@@ -22,9 +21,8 @@ export async function GET(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await guardAdminMutate(req);
+  if (!auth.ok) return auth.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -41,7 +39,7 @@ export async function PATCH(req: Request) {
       data: { themeTokens: merged as unknown as Prisma.InputJsonValue },
     });
     revalidateStorefrontData();
-    await logAdminAction("theme.update", "SiteConfig", { entityId: 1 });
+    await logAdminAction("theme.update", "SiteConfig", { ...auditContext(auth.actor, req), entityId: 1 });
     return Response.json({ ok: true, tokens: merged });
   } catch (e) {
     return handleRouteDbError(e);

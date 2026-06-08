@@ -1,12 +1,11 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { guardAdminMutate, auditContext } from "@/lib/admin-route-guard";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 
 export async function PUT(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await guardAdminMutate(req);
+  if (!auth.ok) return auth.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -26,7 +25,7 @@ export async function PUT(req: Request) {
         }),
       ),
     );
-    await logAdminAction("cmsSection.reorder", "CmsPageSection", { payload: { count: ids.length } });
+    await logAdminAction("cmsSection.reorder", "CmsPageSection", { ...auditContext(auth.actor, req), payload: { count: ids.length } });
     return Response.json({ ok: true });
   } catch (e) {
     return handleRouteDbError(e);

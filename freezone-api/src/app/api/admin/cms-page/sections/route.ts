@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { guardAdminMutate, auditContext } from "@/lib/admin-route-guard";
 import { defaultDraftPayload } from "@/lib/cms-section-defaults";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
@@ -14,9 +14,8 @@ async function ensurePage(slug: string) {
 }
 
 export async function POST(req: Request) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await guardAdminMutate(req);
+  if (!auth.ok) return auth.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -44,7 +43,7 @@ export async function POST(req: Request) {
           draftPayload: src.draftPayload as Prisma.InputJsonValue,
         },
       });
-      await logAdminAction("cmsSection.duplicate", "CmsPageSection", { entityId: row.id });
+      await logAdminAction("cmsSection.duplicate", "CmsPageSection", { ...auditContext(auth.actor, req), entityId: row.id });
       return Response.json(row);
     }
 
@@ -67,7 +66,7 @@ export async function POST(req: Request) {
         visible: true,
       },
     });
-    await logAdminAction("cmsSection.create", "CmsPageSection", { entityId: row.id, payload: { type } });
+    await logAdminAction("cmsSection.create", "CmsPageSection", { ...auditContext(auth.actor, req), entityId: row.id, payload: { type } });
     return Response.json(row);
   } catch (e) {
     return handleRouteDbError(e);

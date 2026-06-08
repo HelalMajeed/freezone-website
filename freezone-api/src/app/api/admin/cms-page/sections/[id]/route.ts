@@ -1,14 +1,13 @@
 import { Prisma } from "@prisma/client";
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { guardAdminMutate, auditContext } from "@/lib/admin-route-guard";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 import { validateSectionPayload } from "@/lib/cms-section-payloads";
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await guardAdminMutate(req);
+  if (!auth.ok) return auth.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -57,7 +56,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
         ...(typeof body.sortOrder === "number" ? { sortOrder: body.sortOrder } : {}),
       },
     });
-    await logAdminAction("cmsSection.update", "CmsPageSection", { entityId: id });
+    await logAdminAction("cmsSection.update", "CmsPageSection", { ...auditContext(auth.actor, req), entityId: id });
     return Response.json({ ok: true });
   } catch (e) {
     return handleRouteDbError(e);
@@ -65,9 +64,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 }
 
 export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await guardAdminMutate(req);
+  if (!auth.ok) return auth.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -75,7 +73,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   if (!Number.isFinite(id)) return Response.json({ error: "bad id" }, { status: 400 });
   try {
     await prisma.cmsPageSection.delete({ where: { id } });
-    await logAdminAction("cmsSection.delete", "CmsPageSection", { entityId: id });
+    await logAdminAction("cmsSection.delete", "CmsPageSection", { ...auditContext(auth.actor, req), entityId: id });
     return Response.json({ ok: true });
   } catch (e) {
     return handleRouteDbError(e);

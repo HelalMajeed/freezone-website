@@ -1,5 +1,5 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { isAdminAuthenticatedFromRequest } from "@/lib/admin-session";
+import { guardAdminMutate, auditContext } from "@/lib/admin-route-guard";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 
@@ -10,9 +10,8 @@ function parseDate(v: string | null | undefined): Date | null {
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await guardAdminMutate(req);
+  if (!auth.ok) return auth.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -62,7 +61,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
           : {}),
       },
     });
-    await logAdminAction("coupon.update", "Coupon", { entityId: id });
+    await logAdminAction("coupon.update", "Coupon", { ...auditContext(auth.actor, req), entityId: id });
     return Response.json({ ok: true });
   } catch (e) {
     return handleRouteDbError(e);
@@ -70,9 +69,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 }
 
 export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  if (!isAdminAuthenticatedFromRequest(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await guardAdminMutate(req);
+  if (!auth.ok) return auth.response;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
@@ -81,7 +79,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
 
   try {
     await prisma.coupon.delete({ where: { id } });
-    await logAdminAction("coupon.delete", "Coupon", { entityId: id });
+    await logAdminAction("coupon.delete", "Coupon", { ...auditContext(auth.actor, req), entityId: id });
     return Response.json({ ok: true });
   } catch (e) {
     return handleRouteDbError(e);
