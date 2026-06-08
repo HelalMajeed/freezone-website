@@ -80,7 +80,9 @@ function headBlock({ title, description, path: routePath, ogType = "website", im
     lines.push(`<meta name="twitter:image" content="${esc(abs)}" data-fz-seo="1" />`);
   }
   if (jsonLd) {
-    lines.push(`<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, "\\u003c")}</script>`);
+    for (const block of Array.isArray(jsonLd) ? jsonLd : [jsonLd]) {
+      lines.push(`<script type="application/ld+json">${JSON.stringify(block).replace(/</g, "\\u003c")}</script>`);
+    }
   }
   return lines.join("\n    ");
 }
@@ -107,7 +109,23 @@ async function fetchCatalog(locale) {
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} — ${url}`);
   const data = await res.json();
   if (!Array.isArray(data?.catalog?.products)) throw new Error(`invalid bootstrap payload from ${url}`);
-  return data.catalog.products;
+  return {
+    products: data.catalog.products,
+    categories: Array.isArray(data.catalog.categories) ? data.catalog.categories : [],
+  };
+}
+
+function breadcrumbJsonLd(items) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((it, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: it.name,
+      item: `${SITE_ORIGIN}${it.path}`,
+    })),
+  };
 }
 
 function productJsonLd(p, locale) {
@@ -172,16 +190,23 @@ async function main() {
   for (const locale of LOCALES) {
     try {
       const seo = await loadSeoMessages(locale);
-      const products = (await fetchCatalog(locale)).slice(0, MAX_PRODUCTS);
+      const { products: allProducts, categories } = await fetchCatalog(locale);
+      const categoryById = new Map(categories.filter((c) => c?.id).map((c) => [c.id, c]));
+      const homeLabel = seo.breadcrumbHome || "Home";
+      const products = allProducts.slice(0, MAX_PRODUCTS);
       for (const p of products) {
         if (!p?.id || !p?.name) continue;
         const description = (p.desc ?? "").trim().slice(0, 250) || fill(seo.productDesc, { name: p.name });
+        const breadcrumbItems = [{ name: homeLabel, path: `/${locale}` }];
+        const cat = categoryById.get(p.cat);
+        if (cat?.name) breadcrumbItems.push({ name: cat.name, path: `/${locale}/category/${cat.id}` });
+        breadcrumbItems.push({ name: p.name, path: `/${locale}/product/${p.id}` });
         await writeRoute(template, locale, `/${locale}/product/${p.id}`, {
           title: p.name,
           description,
           ogType: "product",
           image: p.images?.[0] ?? null,
-          jsonLd: productJsonLd(p, locale),
+          jsonLd: [productJsonLd(p, locale), breadcrumbJsonLd(breadcrumbItems)],
         });
       }
       console.log(`[prerender] wrote ${products.length} product pages for "${locale}".`);
