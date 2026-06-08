@@ -9,8 +9,8 @@ type AuthState = {
   user: DashboardUser | null;
   refresh: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  /** Passwordless entry — succeeds only when the API has ADMIN_DIRECT_LOGIN on. */
-  directEntry: () => Promise<void>;
+  /** Secret-link entry — requires the secret key; 403s without/with a wrong key. */
+  directLogin: (key: string) => Promise<void>;
   logout: () => Promise<void>;
   hasRole: (min: Role | LegacyRoleAlias) => boolean;
 };
@@ -54,8 +54,11 @@ export const useDashboardAuth = create<AuthState>((set, get) => ({
     set({ status: "authenticated", user });
   },
 
-  async directEntry() {
-    const user = await dashboardApi.post<DashboardUser>("/api/dashboard/auth/direct-login");
+  async directLogin(key: string) {
+    if (!key) throw new Error("DIRECT_LOGIN_TOKEN_REQUIRED");
+    const user = await dashboardApi.post<DashboardUser>("/api/dashboard/auth/direct-login", {
+      key,
+    });
     set({ status: "authenticated", user });
   },
 

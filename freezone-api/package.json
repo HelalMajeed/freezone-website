@@ -7,7 +7,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json --noEmit && node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && esbuild src/server.ts \"src/app/api/**/route.ts\" --bundle --splitting --platform=node --target=node22 --format=esm --outdir=dist --outbase=src --packages=external --alias:@=./src",
     "routes:check": "node scripts/check-route-parity.mjs",
-    "test": "tsx --test src/lib/import-globaliraq/resolve-category.test.ts src/lib/import-globaliraq/category-attributes.test.ts src/lib/import-globaliraq/warranty.test.ts src/lib/import-globaliraq/map-product.test.ts src/lib/rate-limit.test.ts src/lib/coupon-service.test.ts src/lib/catalog.test.ts",
+    "test": "tsx --test src/lib/import-globaliraq/resolve-category.test.ts src/lib/import-globaliraq/category-attributes.test.ts src/lib/import-globaliraq/warranty.test.ts src/lib/import-globaliraq/map-product.test.ts src/lib/rate-limit.test.ts src/lib/coupon-service.test.ts src/lib/catalog.test.ts src/lib/admin-direct-login.test.ts",
     "start": "node dist/server.js",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",

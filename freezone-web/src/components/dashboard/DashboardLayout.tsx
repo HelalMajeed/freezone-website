@@ -235,15 +235,8 @@ export function DashboardLayout() {
 
   const onLogout = async () => {
     await logout();
-    // Tell the login page to skip its one-shot auto direct-entry for this
-    // navigation, so an explicit sign-out actually lands on the form (and lets
-    // the operator sign in as a different account) even when ADMIN_DIRECT_LOGIN
-    // is enabled. Cold visits still auto-enter.
-    try {
-      window.sessionStorage.setItem("fz:suppress-direct-entry", "1");
-    } catch {
-      /* private mode — auto-entry suppression simply not persisted */
-    }
+    // Dashboard entry is secret-link only: signing out lands on /dashboard/login,
+    // which never creates a session without the secret key in the URL.
     navigate("/dashboard/login", { replace: true });
   };
 

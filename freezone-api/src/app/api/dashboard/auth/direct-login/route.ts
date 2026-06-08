@@ -1,62 +1,105 @@
 import { prisma } from "@/lib/prisma";
-import { isAdminDirectLoginEnabled } from "@/lib/admin-direct-login";
 import {
-  createSession,
-  isRole,
-  jsonWithDashboardCookie,
-} from "@/lib/dashboard-auth";
+  adminDirectLoginGate,
+  verifyAdminDirectLinkToken,
+} from "@/lib/admin-direct-login";
+import { createSession, isRole, jsonWithDashboardCookie } from "@/lib/dashboard-auth";
 import { clientIpFromRequest, jsonError } from "@/lib/dashboard-guard";
 import { signAdminSession } from "@/lib/admin-session";
+import { logAdminAction } from "@/lib/admin-audit";
 
 /**
  * POST /api/dashboard/auth/direct-login
- * No body. Only when ADMIN_SKIP_AUTH or ADMIN_DIRECT_LOGIN is set.
+ *
+ * Secret-link admin entry. The caller must present the secret token via one of:
+ *   - query param   ?key=<token>
+ *   - JSON body      { "key": "<token>" }
+ *   - header         x-admin-direct-key: <token>
+ *
+ * Issues a SUPER_ADMIN dashboard session ONLY when the secret-link gate is open
+ * AND the token matches (constant-time). Never reveals the expected token.
  */
-export async function POST(req: Request): Promise<Response> {
-  if (!isAdminDirectLoginEnabled()) {
-    return jsonError(403, "DIRECT_LOGIN_DISABLED");
+function noStore(res: Response): Response {
+  res.headers.set("Cache-Control", "no-store");
+  return res;
+}
+
+function legacyAdminCookieParts(): string[] {
+  const ss =
+    process.env.ADMIN_SESSION_SAMESITE?.trim().toLowerCase() === "none"
+      ? "None"
+      : process.env.ADMIN_SESSION_SAMESITE?.trim().toLowerCase() === "strict"
+        ? "Strict"
+        : "Lax";
+  const secure = process.env.NODE_ENV === "production" || ss === "None";
+  const parts = [
+    `fz_admin_session=${encodeURIComponent(signAdminSession())}`,
+    "Path=/",
+    "HttpOnly",
+    `SameSite=${ss}`,
+    `Max-Age=${7 * 24 * 60 * 60}`,
+  ];
+  if (secure) parts.push("Secure");
+  return parts;
+}
+
+async function readKey(req: Request): Promise<string | null> {
+  const header = req.headers.get("x-admin-direct-key");
+  if (header && header.trim()) return header.trim();
+
+  try {
+    const qp = new URL(req.url).searchParams.get("key");
+    if (qp && qp.trim()) return qp.trim();
+  } catch {
+    /* malformed URL — ignore */
   }
 
+  const body = (await req.json().catch(() => null)) as { key?: unknown } | null;
+  if (body && typeof body.key === "string" && body.key.trim()) return body.key.trim();
+
+  return null;
+}
+
+export async function POST(req: Request): Promise<Response> {
+  // 1) Is the secret-link mechanism allowed to issue a session at all?
+  const gate = adminDirectLoginGate();
+  if (!gate.ok) {
+    return noStore(jsonError(403, gate.code));
+  }
+
+  // 2) A key must be supplied...
+  const key = await readKey(req);
+  if (!key) {
+    return noStore(jsonError(403, "DIRECT_LOGIN_TOKEN_REQUIRED"));
+  }
+
+  // 3) ...and it must match (constant-time). Never disclose the expected value.
+  if (!verifyAdminDirectLinkToken(key)) {
+    return noStore(jsonError(403, "DIRECT_LOGIN_TOKEN_INVALID"));
+  }
+
+  // 4) Resolve the admin to sign in as (first active SUPER_ADMIN, else any active).
   const user =
     (await prisma.adminUser.findFirst({
       where: { active: true, role: "SUPER_ADMIN" },
       orderBy: { id: "asc" },
     })) ??
-    (await prisma.adminUser.findFirst({
-      where: { active: true },
-      orderBy: { id: "asc" },
-    }));
+    (await prisma.adminUser.findFirst({ where: { active: true }, orderBy: { id: "asc" } }));
 
+  // No usable admin row → fall back to a legacy HMAC-cookie session so the owner
+  // is never locked out, but record nothing sensitive.
   if (!user || !isRole(user.role)) {
-    const legacyToken = signAdminSession();
-    const headers = new Headers({ "Content-Type": "application/json" });
-    const ss =
-      process.env.ADMIN_SESSION_SAMESITE?.trim().toLowerCase() === "none"
-        ? "None"
-        : process.env.ADMIN_SESSION_SAMESITE?.trim().toLowerCase() === "strict"
-          ? "Strict"
-          : "Lax";
-    const secure = process.env.NODE_ENV === "production" || ss === "None";
-    const legacyParts = [
-      `fz_admin_session=${encodeURIComponent(legacyToken)}`,
-      "Path=/",
-      "HttpOnly",
-      `SameSite=${ss}`,
-      `Max-Age=${7 * 24 * 60 * 60}`,
-    ];
-    if (secure) legacyParts.push("Secure");
-    headers.append("Set-Cookie", legacyParts.join("; "));
+    const headers = new Headers({ "Content-Type": "application/json", "Cache-Control": "no-store" });
+    headers.append("Set-Cookie", legacyAdminCookieParts().join("; "));
+    await logAdminAction("auth.secret-link-login", "AdminUser", {
+      entityId: 0,
+      payload: { mode: "legacy" },
+    });
     return new Response(
       JSON.stringify({
         ok: true,
         mode: "legacy",
-        user: {
-          id: 0,
-          email: "legacy@admin",
-          name: "مسؤول — دخول مباشر",
-          role: "SUPER_ADMIN",
-          avatarUrl: null,
-        },
+        user: { id: 0, email: "legacy@admin", name: "Admin", role: "SUPER_ADMIN", avatarUrl: null },
       }),
       { status: 200, headers },
     );
@@ -82,24 +125,12 @@ export async function POST(req: Request): Promise<Response> {
     },
     token,
   );
+  res.headers.append("Set-Cookie", legacyAdminCookieParts().join("; "));
 
-  const legacyToken = signAdminSession();
-  const ss =
-    process.env.ADMIN_SESSION_SAMESITE?.trim().toLowerCase() === "none"
-      ? "None"
-      : process.env.ADMIN_SESSION_SAMESITE?.trim().toLowerCase() === "strict"
-        ? "Strict"
-        : "Lax";
-  const secure = process.env.NODE_ENV === "production" || ss === "None";
-  const legacyParts = [
-    `fz_admin_session=${encodeURIComponent(legacyToken)}`,
-    "Path=/",
-    "HttpOnly",
-    `SameSite=${ss}`,
-    `Max-Age=${7 * 24 * 60 * 60}`,
-  ];
-  if (secure) legacyParts.push("Secure");
-  res.headers.append("Set-Cookie", legacyParts.join("; "));
+  await logAdminAction("auth.secret-link-login", "AdminUser", {
+    entityId: user.id,
+    payload: { mode: "dashboard", email: user.email },
+  });
 
-  return res;
+  return noStore(res);
 }
