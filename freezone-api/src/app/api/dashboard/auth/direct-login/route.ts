@@ -1,8 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import {
-  adminDirectLoginGate,
-  verifyAdminDirectLinkToken,
-} from "@/lib/admin-direct-login";
+import { adminDirectLoginGate } from "@/lib/admin-direct-login";
 import { createSession, isRole, jsonWithDashboardCookie } from "@/lib/dashboard-auth";
 import { clientIpFromRequest, jsonError } from "@/lib/dashboard-guard";
 import { signAdminSession } from "@/lib/admin-session";
@@ -11,13 +8,9 @@ import { logAdminAction } from "@/lib/admin-audit";
 /**
  * POST /api/dashboard/auth/direct-login
  *
- * Secret-link admin entry. The caller must present the secret token via one of:
- *   - query param   ?key=<token>
- *   - JSON body      { "key": "<token>" }
- *   - header         x-admin-direct-key: <token>
- *
- * Issues a SUPER_ADMIN dashboard session ONLY when the secret-link gate is open
- * AND the token matches (constant-time). Never reveals the expected token.
+ * Passwordless direct entry. No body, no key. When ADMIN_DIRECT_LOGIN (or
+ * ADMIN_SKIP_AUTH) is enabled, issues a SUPER_ADMIN dashboard session; otherwise
+ * returns 403.
  */
 function noStore(res: Response): Response {
   res.headers.set("Cache-Control", "no-store");
@@ -43,42 +36,12 @@ function legacyAdminCookieParts(): string[] {
   return parts;
 }
 
-async function readKey(req: Request): Promise<string | null> {
-  const header = req.headers.get("x-admin-direct-key");
-  if (header && header.trim()) return header.trim();
-
-  try {
-    const qp = new URL(req.url).searchParams.get("key");
-    if (qp && qp.trim()) return qp.trim();
-  } catch {
-    /* malformed URL — ignore */
-  }
-
-  const body = (await req.json().catch(() => null)) as { key?: unknown } | null;
-  if (body && typeof body.key === "string" && body.key.trim()) return body.key.trim();
-
-  return null;
-}
-
 export async function POST(req: Request): Promise<Response> {
-  // 1) Is the secret-link mechanism allowed to issue a session at all?
   const gate = adminDirectLoginGate();
   if (!gate.ok) {
     return noStore(jsonError(403, gate.code));
   }
 
-  // 2) A key must be supplied...
-  const key = await readKey(req);
-  if (!key) {
-    return noStore(jsonError(403, "DIRECT_LOGIN_TOKEN_REQUIRED"));
-  }
-
-  // 3) ...and it must match (constant-time). Never disclose the expected value.
-  if (!verifyAdminDirectLinkToken(key)) {
-    return noStore(jsonError(403, "DIRECT_LOGIN_TOKEN_INVALID"));
-  }
-
-  // 4) Resolve the admin to sign in as (first active SUPER_ADMIN, else any active).
   const user =
     (await prisma.adminUser.findFirst({
       where: { active: true, role: "SUPER_ADMIN" },
@@ -87,11 +50,11 @@ export async function POST(req: Request): Promise<Response> {
     (await prisma.adminUser.findFirst({ where: { active: true }, orderBy: { id: "asc" } }));
 
   // No usable admin row → fall back to a legacy HMAC-cookie session so the owner
-  // is never locked out, but record nothing sensitive.
+  // is never locked out.
   if (!user || !isRole(user.role)) {
     const headers = new Headers({ "Content-Type": "application/json", "Cache-Control": "no-store" });
     headers.append("Set-Cookie", legacyAdminCookieParts().join("; "));
-    await logAdminAction("auth.secret-link-login", "AdminUser", {
+    await logAdminAction("auth.direct-login", "AdminUser", {
       entityId: 0,
       payload: { mode: "legacy" },
     });
@@ -127,7 +90,7 @@ export async function POST(req: Request): Promise<Response> {
   );
   res.headers.append("Set-Cookie", legacyAdminCookieParts().join("; "));
 
-  await logAdminAction("auth.secret-link-login", "AdminUser", {
+  await logAdminAction("auth.direct-login", "AdminUser", {
     entityId: user.id,
     payload: { mode: "dashboard", email: user.email },
   });

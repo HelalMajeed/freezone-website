@@ -235,8 +235,8 @@ export function DashboardLayout() {
 
   const onLogout = async () => {
     await logout();
-    // Dashboard entry is secret-link only: signing out lands on /dashboard/login,
-    // which never creates a session without the secret key in the URL.
+    // Passwordless direct entry: signing out lands on /dashboard/login, which
+    // immediately re-enters when ADMIN_DIRECT_LOGIN is enabled on the API.
     navigate("/dashboard/login", { replace: true });
   };
 
