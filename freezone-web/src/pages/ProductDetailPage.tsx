@@ -7,6 +7,7 @@ import { productsShareAnyCategory } from "@/lib/productCategoryMembership";
 import { getProductDetail } from "@/lib/product-detail";
 import { Seo } from "@/components/seo/Seo";
 import { ProductJsonLd } from "@/components/seo/ProductJsonLd";
+import { BreadcrumbJsonLd, type BreadcrumbItem } from "@/components/seo/BreadcrumbJsonLd";
 import { useTranslations } from "@/i18n/hooks";
 
 export default function ProductDetailPage() {
@@ -48,6 +49,20 @@ export default function ProductDetailPage() {
     ? product.desc.trim().slice(0, 250)
     : tSeo("productDesc", { name: product.name });
 
+  const breadcrumbCategory = catalog.categories.find((c) => c.id === product.cat);
+  const breadcrumbItems: BreadcrumbItem[] = [
+    { name: tSeo("breadcrumbHome"), path: `/${lc}` },
+    ...(breadcrumbCategory
+      ? [
+          {
+            name: lc === "ar" ? breadcrumbCategory.nameAr || breadcrumbCategory.name : breadcrumbCategory.name,
+            path: `/${lc}/category/${breadcrumbCategory.id}`,
+          },
+        ]
+      : []),
+    { name: product.name, path: `/${lc}/product/${product.id}` },
+  ];
+
   return (
     <>
       <Seo
@@ -57,6 +72,7 @@ export default function ProductDetailPage() {
         ogType="product"
       />
       <ProductJsonLd product={product} locale={lc} />
+      <BreadcrumbJsonLd items={breadcrumbItems} />
       <ProductDetailClient
         product={product}
         categories={catalog.categories}

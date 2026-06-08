@@ -9,6 +9,7 @@ import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { productBelongsToCategory } from "@/lib/productCategoryMembership";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { Seo } from "@/components/seo/Seo";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import styles from "./landing.module.css";
 
 /** Category landing page — /:locale/category/:slug (docs/STOREFRONT_DESIGN.md). */
@@ -39,6 +40,12 @@ export default function CategoryLandingPage() {
         title={tSeo("categoryTitle", { name })}
         description={tSeo("categoryDesc", { name })}
         image={category.img}
+      />
+      <BreadcrumbJsonLd
+        items={[
+          { name: tSeo("breadcrumbHome"), path: `/${lc}` },
+          { name, path: `/${lc}/category/${category.id}` },
+        ]}
       />
 
       <header className={styles.hero}>

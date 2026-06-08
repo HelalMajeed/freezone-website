@@ -8,6 +8,7 @@ import { useTranslations } from "@/i18n/hooks";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { Seo } from "@/components/seo/Seo";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import styles from "./landing.module.css";
 
 /** URL-safe brand slug (brands have no DB slug on the storefront payload). */
@@ -51,6 +52,12 @@ export default function BrandLandingPage() {
   return (
     <div className={styles.wrapper}>
       <Seo title={tSeo("brandTitle", { name: displayName })} description={tSeo("brandDesc", { name: displayName })} />
+      <BreadcrumbJsonLd
+        items={[
+          { name: tSeo("breadcrumbHome"), path: `/${lc}` },
+          { name: displayName, path: `/${lc}/brand/${slug}` },
+        ]}
+      />
 
       <header className={styles.hero}>
         <div className={`container ${styles.heroInner}`}>
