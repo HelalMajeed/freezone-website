@@ -66,10 +66,10 @@ export async function POST(req: Request) {
     return Response.json({ error: "INVALID_QTY" }, { status: 400 });
   }
 
-  const shipping = body.shipping;
+  const clientShipping = body.shipping;
   const total = body.total;
 
-  if (!Number.isFinite(shipping) || shipping < 0 || !Number.isFinite(total) || total < 0) {
+  if (!Number.isFinite(clientShipping) || clientShipping < 0 || !Number.isFinite(total) || total < 0) {
     return Response.json({ error: "Invalid order payload" }, { status: 400 });
   }
 
@@ -141,7 +141,26 @@ export async function POST(req: Request) {
       }
 
       const afterDiscount = Math.max(0, lineSubtotal - discountTotal);
+
+      /**
+       * Recompute the shipping fee server-side from SiteConfig — the client
+       * `shipping` value is never trusted (a tampered client could otherwise
+       * submit shipping=0 with a matching total on an under-threshold order).
+       * Mirrors the storefront formula in freezone-web/src/lib/store.ts:
+       *   pickup → free; else free over the threshold, otherwise the flat fee.
+       * Defaults match the storefront fallbacks (100000 / 5000).
+       */
+      const site = await tx.siteConfig.findUnique({
+        where: { id: 1 },
+        select: { freeDeliveryThreshold: true, standardShippingFee: true },
+      });
+      const freeThreshold = site?.freeDeliveryThreshold ?? 100000;
+      const shipFee = site?.standardShippingFee ?? 5000;
+      const shipping =
+        fulfillment === "pickup" ? 0 : afterDiscount >= freeThreshold ? 0 : shipFee;
+
       const expectedTotal = afterDiscount + shipping;
+      /** Client total is accepted only as a sanity guard against the server figure. */
       if (Math.abs(expectedTotal - total) > 2) {
         throw new Error("TOTAL_MISMATCH");
       }
