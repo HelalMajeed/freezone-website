@@ -20,7 +20,9 @@ cookies, lockout, rate limits) — deliberately chosen over JWT for instant revo
 Swapping to JWT would *weaken* security (no mid-session revocation/lockout) and risk
 breaking 79 guarded route files mid-sprint. **We keep DB sessions** for admin and use
 the same pattern for the new customer accounts (`CustomerSession`). The mission's
-intent (secure, expiring, refreshable auth) is met: sessions expire and slide.
+intent (secure, expiring, revocable auth) is met: fixed expiry (7d admin / 30d
+customer) + instant revocation. *(Corrected 2026-06-11: an earlier wording claimed
+sessions "slide"; they do not — fixed expiry, which is stricter.)*
 
 ## A-3 · SEO approach: extend build-time prerender, no runtime HTML server
 No server renders HTML in production (Netlify static + Fly JSON API). Introducing
@@ -79,6 +81,50 @@ includes the deploy checklist. Nothing is pushed to `main` by the sprint.
 `^07[0-9]{9}$` (11 digits) for customers and reviews, normalizing Arabic-indic digits
 (٠٧…) and stripping spaces/dashes before validation. Admin login accepts email or
 phone in one identifier field.
+
+## A-14 · `.env.example` files cannot be edited from this environment
+The session permission policy denies read/write on every `.env*` path, including
+the example files. All new env vars are documented in
+`docs/ENV_VARS_GLOBAL_LAUNCH.md`; the owner copies those blocks into
+`freezone-api/.env.example` and `freezone-web/.env.example` (and should delete the
+stale secret-link paragraphs in `deploy.env.example` that contradict A-1).
+
+## A-15 · Category tree: four legacy top-levels not re-parented
+Mission §4B nests Components/Monitors/Printers under Computers and the CCTV
+family under Security & Surveillance. These slugs predate the sprint, carry live
+products and live URLs, and re-parenting them would change live page composition
+and homepage strips. They remain top-level siblings; all other mission children
+(27) are seeded with `parentId`. Re-parent later via the admin Categories form +
+redirects if desired (`docs/CATEGORY_TREE.md`).
+
+## A-16 · zod scope on admin writes
+Mission 3.4 says "zod on every endpoint". Every **public** write and every
+**new** admin route is zod-validated; the highest-risk legacy admin writes
+(coupons create/update, orders PATCH, products create) were formalized with zod
+in the ship run. The remaining legacy admin writes keep their existing careful
+manual validation — they all sit behind session+RBAC guards and audit logging,
+and rewriting ~30 working routes mid-ship would violate the minimal-diff rule.
+
+## A-17 · Legacy upload images stay jpg/png
+The image pipeline (uploads + demo seed) is WebP end-to-end with responsive
+variants. 43 pre-sprint committed files under `freezone-api/public/uploads/`
+remain jpg/png; converting them requires touching production `ProductImage`
+rows. Accepted as legacy (P2 cut per mission §7).
+
+## A-18 · Storefront default language flipped to Arabic
+Mission 3.3 and CLAUDE.md define Arabic as primary. The storefront previously
+defaulted to `/en`; the ship run flips the root/unknown-path redirects and i18n
+default to `ar`, persists the visitor's explicit language choice (localStorage)
+and honors it on `/`. Existing `/en/*` URLs, prerendered shells, and hreflang
+alternates are unchanged; `x-default` continues to point at the `en` variant
+(international audience), which is an SEO judgment call, not an oversight.
+
+## A-13 · MISSION.md materialized from the inline spec (2026-06-11)
+The recovery run instructed "read MISSION.md at the repo root", but no such file
+existed — the mission was only ever delivered inline (identically, twice). The
+inline spec has been committed verbatim as `MISSION.md` so audits and subagents
+reference one canonical document. If the owner's intended MISSION.md differed,
+diff it against this file and re-run the SPRINT_STATUS audit.
 
 ## A-12 · Analytics env names
 `VITE_GA4_ID` and `VITE_META_PIXEL_ID` (mission naming). Loaders are no-ops when
