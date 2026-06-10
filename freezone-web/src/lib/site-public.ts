@@ -1,6 +1,7 @@
 import { isDatabaseConfigured } from "./prisma";
 import type { PublicMarqueeStrip } from "./marquee-strips";
 import { staticMarqueeStrips } from "./marquee-strips";
+import { IRAQ_PROVINCES, type ProvinceCode } from "./iraq-provinces";
 
 export type { PublicMarqueeStrip, PublicTickerSegment } from "./marquee-strips";
 
@@ -44,6 +45,10 @@ export type PublicSite = {
   maintenanceMode: boolean;
   freeDeliveryThreshold: number;
   standardShippingFee: number;
+  /** Per-governorate delivery fee, resolved server-side for ALL 18 canonical
+   *  province codes (mirror of the API projection in
+   *  freezone-api/src/lib/site-public.ts). */
+  shippingFees: Record<ProvinceCode, number>;
   zainCashWallet: string;
   qiCardMerchantId: string;
   metaTitle?: string | null;
@@ -57,6 +62,13 @@ export type PublicSite = {
 const FB = "https://facebook.com";
 const IG = "https://www.instagram.com/fzone.iq/";
 const TT = "https://tiktok.com";
+
+/** Flat fallback fee map covering all 18 governorates (static/offline mode). */
+function flatShippingFees(fee: number): Record<ProvinceCode, number> {
+  const map = {} as Record<ProvinceCode, number>;
+  for (const p of IRAQ_PROVINCES) map[p.code] = fee;
+  return map;
+}
 
 export function staticPublicSite(locale: "en" | "ar"): PublicSite {
   const en = locale === "en";
@@ -93,6 +105,7 @@ export function staticPublicSite(locale: "en" | "ar"): PublicSite {
     maintenanceMode: false,
     freeDeliveryThreshold: 100000,
     standardShippingFee: 5000,
+    shippingFees: flatShippingFees(5000),
     zainCashWallet: "",
     qiCardMerchantId: "",
     metaTitle: null,
