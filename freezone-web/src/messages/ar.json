@@ -833,7 +833,9 @@
   "pdp": {
     "qtyLabel": "الكمية",
     "qtyDecrease": "إنقاص الكمية",
-    "qtyIncrease": "زيادة الكمية"
+    "qtyIncrease": "زيادة الكمية",
+    "galleryExpand": "عرض الصورة بملء الشاشة",
+    "galleryClose": "إغلاق"
   },
   "content": {
     "about": {

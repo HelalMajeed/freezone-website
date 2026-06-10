@@ -3,6 +3,7 @@
 import { Suspense, lazy, useState } from "react";
 import styles from "./ImageGallery.module.css";
 import { Maximize, Box } from "lucide-react";
+import { useTranslations } from "@/i18n/hooks";
 import { ResponsiveImage } from "./ResponsiveImage";
 
 const ModelViewer = lazy(() => import("./ModelViewer").then((m) => ({ default: m.ModelViewer })));
@@ -14,6 +15,7 @@ interface ImageGalleryProps {
 }
 
 export function ImageGallery({ images, model3d, alt }: ImageGalleryProps) {
+  const t = useTranslations("pdp");
   const allMedia = [...images];
   if (model3d) allMedia.push("model3d"); // special ID for 3D model
 
@@ -34,7 +36,7 @@ export function ImageGallery({ images, model3d, alt }: ImageGalleryProps) {
       <div className={`${styles.mainDisplay} ${isFullscreen ? styles.fullscreen : ""}`}>
         {isFullscreen && (
           <button className={styles.closeBtn} onClick={() => setIsFullscreen(false)}>
-            Close
+            {t("galleryClose")}
           </button>
         )}
         
@@ -55,7 +57,11 @@ export function ImageGallery({ images, model3d, alt }: ImageGalleryProps) {
         )}
 
         {!isFullscreen && (
-          <button className={styles.expandBtn} onClick={() => setIsFullscreen(true)}>
+          <button
+            className={styles.expandBtn}
+            aria-label={t("galleryExpand")}
+            onClick={() => setIsFullscreen(true)}
+          >
             <Maximize size={20} />
           </button>
         )}

@@ -833,7 +833,9 @@
   "pdp": {
     "qtyLabel": "Quantity",
     "qtyDecrease": "Decrease quantity",
-    "qtyIncrease": "Increase quantity"
+    "qtyIncrease": "Increase quantity",
+    "galleryExpand": "View image fullscreen",
+    "galleryClose": "Close"
   },
   "content": {
     "about": {
