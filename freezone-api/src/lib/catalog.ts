@@ -140,6 +140,7 @@ function mapDbToCategory(
     facetKeys: unknown;
     categoryAttributes?: CategoryAttributeRow[];
     backgroundImageUrl: string | null;
+    parentSlug?: string | null;
   },
   locale: LocaleCode,
 ): Category {
@@ -159,6 +160,7 @@ function mapDbToCategory(
     icon: row.icon,
     color: row.color,
     img,
+    ...(row.parentSlug ? { parent: row.parentSlug } : {}),
     ...(facetAttributes.length ? { facetAttributes, facetKeys } : {}),
   };
 }
@@ -236,11 +238,17 @@ export async function getCategoriesCatalog(locale: LocaleCode): Promise<Category
     try {
       rows = await prisma.category.findMany({
         orderBy: { sortOrder: "asc" },
-        include: { categoryAttributes: { orderBy: { sortOrder: "asc" } } },
+        include: {
+          categoryAttributes: { orderBy: { sortOrder: "asc" } },
+          parent: { select: { slug: true } },
+        },
       });
     } catch (e) {
       if (!catalogQueryMissingClassificationSupport(e)) throw e;
-      rows = await prisma.category.findMany({ orderBy: { sortOrder: "asc" } });
+      rows = await prisma.category.findMany({
+        orderBy: { sortOrder: "asc" },
+        include: { parent: { select: { slug: true } } },
+      });
     }
     return rows.map((r) =>
       mapDbToCategory(
@@ -253,6 +261,7 @@ export async function getCategoriesCatalog(locale: LocaleCode): Promise<Category
           facetKeys: r.facetKeys,
           categoryAttributes: "categoryAttributes" in r ? (r as { categoryAttributes: CategoryAttributeRow[] }).categoryAttributes : undefined,
           backgroundImageUrl: r.backgroundImageUrl,
+          parentSlug: r.parent?.slug ?? null,
         },
         locale,
       ),

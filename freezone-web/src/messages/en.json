@@ -788,7 +788,9 @@
     "productsCount": "{{count}} products",
     "openFilters": "Browse with filters",
     "noProducts": "No products in this section yet — check back soon.",
-    "viewAll": "View all products"
+    "viewAll": "View all products",
+    "subcategories": "Browse subcategories",
+    "backToParent": "All {{name}}"
   },
   "reviews": {
     "title": "Customer Reviews",

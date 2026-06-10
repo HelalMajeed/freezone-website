@@ -1,5 +1,16 @@
 import type { Product } from "@/lib/data";
-import { productBelongsToCategory } from "@/lib/productCategoryMembership";
+import { CATEGORIES } from "@/lib/data";
+import { productBelongsToCategoryTree } from "@/lib/productCategoryMembership";
+
+/**
+ * Home rails match categories tree-aware using the static taxonomy in
+ * `data.ts` (mirrored with the API seed): a parent slug also matches products
+ * homed on its seeded children. Admin-created child categories outside the
+ * seed list still match by their own slug only.
+ */
+function belongsTo(product: Product, slug: string): boolean {
+  return productBelongsToCategoryTree(product, slug, CATEGORIES);
+}
 
 /** How products are chosen for a tab or a featured-products block */
 export type ProductTabMode = "new" | "featured" | "gaming" | "components" | "cat" | "manual";
@@ -47,16 +58,16 @@ export function getProductsForTab(products: Product[], tab: TabbedProductTabConf
       return products.filter((p) => p.featured).slice(0, lim);
     case "gaming":
       return products
-        .filter((p) => ["gaming", "laptops", "computers"].some((slug) => productBelongsToCategory(p, slug)))
+        .filter((p) => ["gaming", "laptops", "computers"].some((slug) => belongsTo(p, slug)))
         .slice(0, lim);
     case "components":
       return products
-        .filter((p) => productBelongsToCategory(p, "components") || productBelongsToCategory(p, "storage"))
+        .filter((p) => belongsTo(p, "components") || belongsTo(p, "storage"))
         .slice(0, lim);
     case "cat": {
       const slug = (tab.catSlug ?? "").trim();
       if (!slug) return [];
-      return products.filter((p) => productBelongsToCategory(p, slug)).slice(0, lim);
+      return products.filter((p) => belongsTo(p, slug)).slice(0, lim);
     }
     default:
       return products.slice(0, lim);
@@ -189,8 +200,8 @@ export function resolveFeaturedProductList(
       .map((s) => s.trim())
       .filter(Boolean);
     if (slugs.length === 0) list = [];
-    else if (slugs.length === 1) list = products.filter((p) => productBelongsToCategory(p, slugs[0]!));
-    else list = products.filter((p) => slugs.some((slug) => productBelongsToCategory(p, slug)));
+    else if (slugs.length === 1) list = products.filter((p) => belongsTo(p, slugs[0]!));
+    else list = products.filter((p) => slugs.some((slug) => belongsTo(p, slug)));
   }
   return list.slice(0, lim);
 }

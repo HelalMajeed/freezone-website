@@ -191,7 +191,7 @@ export const DEFAULT_NAV_ITEMS: NavItemResolved[] = [
         highlight: true,
         items: [
           { label: "Printers & Supplies", href: "/products?cat=printers" },
-          { label: "Networking", href: "/products?cat=network" },
+          { label: "Networking", href: "/products?cat=networking" },
         ],
       },
     ],

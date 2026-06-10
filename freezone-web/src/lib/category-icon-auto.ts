@@ -58,14 +58,16 @@ export function inferCategoryIconKey(slug: string, nameEn: string, nameAr = ""):
   return "package";
 }
 
-/** Spotlight row for CategoryIconStrip — same catalog order as promo mega cards. */
+/** Spotlight row for CategoryIconStrip — same catalog order as promo mega cards.
+ *  Top-level categories only; children are reached from their parent's landing page. */
 export function buildCategorySpotlightsFromCatalog(
   categories: Category[],
   locale: "en" | "ar",
   max = CATEGORY_ICON_STRIP_MAX,
 ): PublicSpotlightItem[] {
-  const limit = Math.min(max, categories.length);
-  return categories.slice(0, limit).map((cat, i) => ({
+  const topLevel = categories.filter((c) => !c.parent);
+  const limit = Math.min(max, topLevel.length);
+  return topLevel.slice(0, limit).map((cat, i) => ({
     id: i + 1,
     label: locale === "ar" ? (cat.nameAr?.trim() || cat.name) : cat.name,
     href: `/products?cat=${encodeURIComponent(cat.id)}`,

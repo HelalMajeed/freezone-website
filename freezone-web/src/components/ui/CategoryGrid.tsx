@@ -16,7 +16,8 @@ const CHIPS = ["Best Sellers", "New Stock", "Top Picks", "Enterprise"];
 
 export function CategoryGrid() {
   const { catalog } = useStorefront();
-  const cats = catalog.categories.slice(0, 5);
+  /** Top-level categories only — child categories live on their parent's landing page. */
+  const cats = catalog.categories.filter((c) => !c.parent).slice(0, 5);
   if (cats.length === 0) return null;
 
   return (

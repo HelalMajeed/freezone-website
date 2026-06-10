@@ -43,7 +43,7 @@ export function promoMegaCardCount(payload: Record<string, unknown> | undefined)
  * otherwise first `count` categories by catalog order. Images prefer slot override,
  * then `category.img`, then stock fallbacks.
  */
-/** How many cards to render: all catalog categories (≤ max) unless custom `slots` are set. */
+/** How many cards to render: all TOP-LEVEL catalog categories (≤ max) unless custom `slots` are set. */
 export function resolvePromoMegaCardLimit(
   categories: Category[],
   payload: Record<string, unknown> | undefined,
@@ -52,8 +52,9 @@ export function resolvePromoMegaCardLimit(
   if (slots.length > 0) {
     return promoMegaCardCount(payload);
   }
-  if (categories.length === 0) return 0;
-  return Math.min(PROMO_MEGA_MAX_CARDS, categories.length);
+  const topLevel = categories.filter((c) => !c.parent);
+  if (topLevel.length === 0) return 0;
+  return Math.min(PROMO_MEGA_MAX_CARDS, topLevel.length);
 }
 
 export function resolvePromoMegaCards(
@@ -81,7 +82,8 @@ export function resolvePromoMegaCards(
     if (cards.length > 0) return cards;
   }
 
-  const list = categories.slice(0, count);
+  /** Default fill: top-level categories only (explicit slots above may still pick children). */
+  const list = categories.filter((c) => !c.parent).slice(0, count);
   return list.map((cat, i) => ({
     cat,
     imageUrl: cat.img?.trim() || stockImages[i % Math.max(1, stockImages.length)],

@@ -788,7 +788,9 @@
     "productsCount": "{{count}} منتج",
     "openFilters": "تصفّح مع الفلاتر",
     "noProducts": "لا توجد منتجات في هذا القسم حالياً — عُد قريباً.",
-    "viewAll": "عرض كل المنتجات"
+    "viewAll": "عرض كل المنتجات",
+    "subcategories": "تصفّح الأقسام الفرعية",
+    "backToParent": "كل {{name}}"
   },
   "reviews": {
     "title": "آراء العملاء",

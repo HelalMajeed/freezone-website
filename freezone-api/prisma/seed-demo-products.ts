@@ -135,7 +135,7 @@ const DEMO_PRODUCTS: DemoProduct[] = [
   },
   {
     slug: "hp-victus-15-rtx4050",
-    cat: "laptops",
+    cat: "gaming-laptops",
     brand: "HP",
     brandSlug: "hp",
     nameEn: "HP Victus 15 — i5-13420H / RTX 4050 / 16GB / 512GB",
@@ -244,7 +244,7 @@ const DEMO_PRODUCTS: DemoProduct[] = [
   },
   {
     slug: "msi-force-gc30-v2-controller",
-    cat: "gaming",
+    cat: "controllers",
     brand: "MSI",
     brandSlug: "msi",
     nameEn: "MSI Force GC30 V2 Wireless Controller",
@@ -269,7 +269,7 @@ const DEMO_PRODUCTS: DemoProduct[] = [
   // ── Computers ──────────────────────────────────────────────────────────────
   {
     slug: "freezone-creator-pc-i7-rtx4070",
-    cat: "computers",
+    cat: "desktops-builds",
     brand: "FreeZone Build",
     nameEn: "FreeZone Creator PC — i7-14700F / RTX 4070 Super / 32GB / 2TB",
     nameAr: "حاسوب FreeZone للمبدعين — معالج i7-14700F وكرت RTX 4070 Super ورام 32GB وتخزين 2TB",
@@ -453,7 +453,7 @@ const DEMO_PRODUCTS: DemoProduct[] = [
   },
   {
     slug: "hikvision-7208-dvr-kit-8ch",
-    cat: "cctv",
+    cat: "dvr-nvr",
     brand: "Hikvision",
     brandSlug: "hikvision",
     nameEn: "Hikvision 8-Channel DVR Kit — 4× 2MP Cameras + 1TB HDD",
@@ -480,7 +480,7 @@ const DEMO_PRODUCTS: DemoProduct[] = [
   // ── Security ───────────────────────────────────────────────────────────────
   {
     slug: "zkteco-f18-fingerprint-access",
-    cat: "security",
+    cat: "fingerprint-attendance",
     brand: "ZKTeco",
     nameEn: "ZKTeco F18 Fingerprint Access Control & Time Attendance",
     nameAr: "جهاز بصمة ZKTeco F18 للتحكم بالدخول وتسجيل الدوام",
@@ -504,7 +504,7 @@ const DEMO_PRODUCTS: DemoProduct[] = [
   // ── Networking ─────────────────────────────────────────────────────────────
   {
     slug: "tplink-archer-ax55-wifi6-router",
-    cat: "networking",
+    cat: "routers",
     brand: "TP-Link",
     brandSlug: "tp-link",
     nameEn: "TP-Link Archer AX55 — AX3000 Wi-Fi 6 Router",
@@ -533,7 +533,7 @@ const DEMO_PRODUCTS: DemoProduct[] = [
   },
   {
     slug: "tplink-ls1008g-8port-switch",
-    cat: "networking",
+    cat: "switches",
     brand: "TP-Link",
     brandSlug: "tp-link",
     nameEn: "TP-Link LS1008G 8-Port Gigabit Desktop Switch",
@@ -558,7 +558,7 @@ const DEMO_PRODUCTS: DemoProduct[] = [
   },
   {
     slug: "ubiquiti-unifi-ac-lite-ap",
-    cat: "networking",
+    cat: "access-points",
     brand: "Ubiquiti",
     nameEn: "Ubiquiti UniFi AC Lite Access Point",
     nameAr: "نقطة وصول يوبيكويتي UniFi AC Lite",
@@ -714,7 +714,7 @@ const DEMO_PRODUCTS: DemoProduct[] = [
   // ── Power solutions ────────────────────────────────────────────────────────
   {
     slug: "apc-bx950-ups",
-    cat: "power-solutions",
+    cat: "ups",
     brand: "APC",
     nameEn: "APC Back-UPS BX950 — 950VA / 480W",
     nameAr: "مجهز طاقة احتياطي APC Back-UPS BX950 — 950VA / 480W",
@@ -915,6 +915,8 @@ async function ensureCategory(slug: string): Promise<number> {
   if (existing) return existing.id;
   const def = CATEGORIES.find((c) => c.id === slug);
   if (!def) throw new Error(`Demo seed: unknown category slug "${slug}" (not in src/lib/data.ts)`);
+  /** Child categories link to their parent — create/find the parent first. */
+  const parentId = def.parent ? await ensureCategory(def.parent) : null;
   const max = await prisma.category.aggregate({ _max: { sortOrder: true } });
   const created = await prisma.category.create({
     data: {
@@ -923,6 +925,7 @@ async function ensureCategory(slug: string): Promise<number> {
       nameAr: def.nameAr ?? def.name,
       icon: def.icon,
       color: def.color,
+      parentId,
       sortOrder: (max._max.sortOrder ?? 0) + 1,
     },
     select: { id: true },
