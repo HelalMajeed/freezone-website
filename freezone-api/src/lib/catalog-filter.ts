@@ -127,6 +127,38 @@ function isCatalogSort(v: string): v is CatalogSort {
 }
 
 /**
+ * Map the requested sort to a SQL ORDER BY so ordering holds across the WHOLE
+ * result set — previously the DB path always fetched by featured/id and only
+ * re-sorted the fetched page in memory, so page 2 could contain items cheaper
+ * than page 1 under "price-asc". `relevant` (name A→Z) is pushed to SQL via the
+ * locale's name column (DB collation instead of localeCompare — acceptable for
+ * an alphabetical sort, and the only way to keep it correct across pages).
+ * Defaults mirror sortProducts(): `relevant` with a search query, else `featured`.
+ */
+export function buildCatalogOrderBy(
+  sort: CatalogSort | undefined,
+  hasQuery: boolean,
+  locale: LocaleCode,
+): Prisma.ProductOrderByWithRelationInput[] {
+  const s = sort ?? (hasQuery ? "relevant" : "featured");
+  switch (s) {
+    case "price-asc":
+      return [{ price: "asc" }, { id: "desc" }];
+    case "price-desc":
+      return [{ price: "desc" }, { id: "desc" }];
+    case "date-new":
+      return [{ id: "desc" }];
+    case "date-old":
+      return [{ id: "asc" }];
+    case "relevant":
+      return locale === "ar" ? [{ nameAr: "asc" }, { id: "desc" }] : [{ nameEn: "asc" }, { id: "desc" }];
+    case "featured":
+    default:
+      return [{ featured: "desc" }, { id: "desc" }];
+  }
+}
+
+/**
  * Category membership is tree-aware (one level — Category.parentId): a parent
  * category page lists its own products plus those homed on its children, via
  * primary or secondary category. Keep in sync with the storefront's
@@ -435,7 +467,7 @@ export async function queryCatalogProducts(input: CatalogFilterInput): Promise<C
           ...storefrontProductIncludeBase,
           secondaryCategories: { include: { category: { select: { slug: true } } } },
         },
-        orderBy: [{ featured: "desc" }, { id: "desc" }],
+        orderBy: buildCatalogOrderBy(input.sort, Boolean(input.q), input.locale),
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
@@ -448,7 +480,8 @@ export async function queryCatalogProducts(input: CatalogFilterInput): Promise<C
       products = products.filter((p) => productMatchesFacetsInMemory(p, facetDefs, input.facets!));
     }
 
-    products = sortProducts(products, input.sort, Boolean(input.q));
+    /** Order comes from SQL (buildCatalogOrderBy) — re-sorting the page in
+     *  memory would break the cross-page total order the query established. */
 
     const facetCounts = await queryCatalogFacetCounts(input, facetDefs, baseWhere);
 

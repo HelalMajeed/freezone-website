@@ -12,6 +12,8 @@ import { PaginationControls } from "@/components/ui/PaginationControls";
 import { Seo } from "@/components/seo/Seo";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import styles from "./landing.module.css";
+/** Same visible breadcrumb styling as the product page (single trail look sitewide). */
+import crumbStyles from "@/features/product-detail/productDetail.module.css";
 
 const LANDING_PAGE_SIZE = 24;
 
@@ -86,6 +88,24 @@ export default function CategoryLandingPage() {
           { name, path: `/${lc}/category/${category.id}` },
         ]}
       />
+
+      <div className={crumbStyles.breadcrumbBar}>
+        <nav className={`container ${crumbStyles.breadcrumb}`} aria-label={tSeo("breadcrumbAria")}>
+          <Link href="/" prefetch>
+            {tSeo("breadcrumbHome")}
+          </Link>
+          <span className={crumbStyles.separator}>/</span>
+          {parentCategory ? (
+            <>
+              <Link href={`/category/${encodeURIComponent(parentCategory.id)}`} prefetch>
+                {catName(parentCategory)}
+              </Link>
+              <span className={crumbStyles.separator}>/</span>
+            </>
+          ) : null}
+          <span className={crumbStyles.current}>{name}</span>
+        </nav>
+      </div>
 
       <header className={styles.hero}>
         {category.img ? <img src={category.img} alt="" className={styles.heroImage} aria-hidden /> : null}

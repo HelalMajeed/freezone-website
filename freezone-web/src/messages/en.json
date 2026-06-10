@@ -684,6 +684,8 @@
     "productsDesc": "Browse the full FreeZone catalog — CCTV, computers, laptops, monitors, gaming, smart home and more. Filter by category, brand, price and specs.",
     "productDesc": "Buy {{name}} from FreeZone Iraq — genuine products, fast delivery and warranty.",
     "breadcrumbHome": "Home",
+    "breadcrumbProducts": "Products",
+    "breadcrumbAria": "Breadcrumb",
     "cartTitle": "Shopping Cart",
     "checkoutTitle": "Checkout",
     "loginTitle": "Sign In",
@@ -834,7 +836,9 @@
   "pdp": {
     "qtyLabel": "Quantity",
     "qtyDecrease": "Decrease quantity",
-    "qtyIncrease": "Increase quantity"
+    "qtyIncrease": "Increase quantity",
+    "usdApprox": "≈ ${{amount}} USD",
+    "usdApproxAria": "Approximate price in US dollars"
   },
   "content": {
     "about": {
@@ -920,6 +924,14 @@
     "whatsappTitle": "Get offers on WhatsApp",
     "whatsappBody": "New arrivals, restocks and flash deals — straight to your WhatsApp.",
     "whatsappCta": "Subscribe on WhatsApp",
-    "whatsappPrefill": "Hello FreeZone! Please add me to your offers and new-arrivals list."
+    "whatsappPrefill": "Hello FreeZone! Please add me to your offers and new-arrivals list.",
+    "categoriesTitle": "Categories",
+    "paymentsTitle": "Payment methods",
+    "paymentsComingSoon": "Electronic payments coming soon — currently arranged via WhatsApp.",
+    "payCod": "Cash on Delivery",
+    "payZaincash": "ZainCash",
+    "payQicard": "Qi Card",
+    "payVisa": "Visa",
+    "payMaster": "Mastercard"
   }
 }

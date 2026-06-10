@@ -2,11 +2,11 @@
 
 import { Link } from "@/navigation";
 import styles from "./Footer.module.css";
-import { MapPin, Phone, MessageCircle } from "lucide-react";
-import { useTranslations } from "@/i18n/hooks";
+import { MapPin, Phone, MessageCircle, Banknote, Smartphone, WalletCards, CreditCard } from "lucide-react";
+import { useLocale, useTranslations } from "@/i18n/hooks";
 import { motion, useReducedMotion } from "framer-motion";
 import { EASE_OUT } from "@/lib/motion";
-import { usePublicSite } from "@/components/providers/StorefrontProvider";
+import { usePublicSite, useStorefront } from "@/components/providers/StorefrontProvider";
 import { FREEZONE_Z_LOGO } from "@/lib/brand-assets";
 import { SITE_BRAND_NAME } from "@/lib/siteConfig";
 
@@ -59,6 +59,10 @@ export function Footer() {
   /** Phase-2 content keys (lowercase namespace, conflict-free additions). */
   const tF = useTranslations("footer");
   const site = usePublicSite();
+  const locale = useLocale();
+  /** Top-level categories, same source as the home tiles/mega-nav (bootstrap catalog). */
+  const { catalog } = useStorefront();
+  const footerCategories = catalog.categories.filter((c) => !c.parent).slice(0, 6);
   const reduceMotion = useReducedMotion();
 
   const colV = reduceMotion ? footerColStatic : footerCol;
@@ -120,6 +124,24 @@ export function Footer() {
               })}
             </div>
           </motion.div>
+
+          {/* Categories */}
+          {footerCategories.length > 0 ? (
+            <motion.div variants={colV}>
+              <h4 className={styles.colTitle}>{tF("categoriesTitle")}</h4>
+              <div className={styles.linksList}>
+                {footerCategories.map((c) => (
+                  <Link
+                    key={c.id}
+                    href={`/category/${encodeURIComponent(c.id)}`}
+                    className={styles.linkItem}
+                  >
+                    {locale === "ar" ? c.nameAr || c.name : c.name}
+                  </Link>
+                ))}
+              </div>
+            </motion.div>
+          ) : null}
 
           {/* Quick Links */}
           <motion.div variants={colV}>
@@ -206,6 +228,34 @@ export function Footer() {
       </motion.div>
 
       <div className={styles.bottomStrip}>
+        {/* Payment methods — neutral badges; e-payments stay honest ("coming soon",
+            arranged on WhatsApp) consistent with checkout. No hotlinked brand images. */}
+        <div className={`${styles.inner} ${styles.paymentsRow}`}>
+          <span className={styles.paymentsTitle}>{tF("paymentsTitle")}</span>
+          <ul className={styles.paymentsList} aria-label={tF("paymentsTitle")}>
+            <li className={styles.paymentBadge}>
+              <Banknote size={14} aria-hidden />
+              {tF("payCod")}
+            </li>
+            <li className={styles.paymentBadge}>
+              <Smartphone size={14} aria-hidden />
+              {tF("payZaincash")}
+            </li>
+            <li className={styles.paymentBadge}>
+              <WalletCards size={14} aria-hidden />
+              {tF("payQicard")}
+            </li>
+            <li className={styles.paymentBadge}>
+              <CreditCard size={14} aria-hidden />
+              {tF("payVisa")}
+            </li>
+            <li className={styles.paymentBadge}>
+              <CreditCard size={14} aria-hidden />
+              {tF("payMaster")}
+            </li>
+          </ul>
+          <span className={styles.paymentsHint}>{tF("paymentsComingSoon")}</span>
+        </div>
         <div className={`${styles.inner} ${styles.bottomInner}`}>
           <p className={styles.copyright}>
             &copy; {new Date().getFullYear()} FreeZone. {t("copyright")}

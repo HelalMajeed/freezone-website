@@ -50,6 +50,7 @@ export function mapDbToProduct(
     descAr: string;
     price: number;
     oldPrice: number | null;
+    priceUsd?: number | null;
     storage: string;
     specs: unknown;
     attributeValues?: ProductAttributeValueRow[];
@@ -90,6 +91,7 @@ export function mapDbToProduct(
     desc: locale === "ar" ? row.descAr : row.descEn,
     price: row.price,
     oldPrice: row.oldPrice,
+    ...(row.priceUsd != null && row.priceUsd > 0 ? { priceUsd: row.priceUsd } : {}),
     originalPrice: (row as { originalPrice?: number | null }).originalPrice ?? null,
     warranty: (row as { warranty?: string }).warranty?.trim() || undefined,
     storage: row.storage,

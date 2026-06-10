@@ -161,6 +161,13 @@ export default function ProductDetailClient({
             ) : null}
           </div>
 
+          {/* Indicative USD line only — cart/checkout money math stays IQD. */}
+          {product.priceUsd != null && product.priceUsd > 0 ? (
+            <p className={styles.usdPrice} aria-label={tPdp("usdApproxAria")}>
+              {tPdp("usdApprox", { amount: formatMoney(product.priceUsd) })}
+            </p>
+          ) : null}
+
           {(skuDisplay || modelDisplay) && (
             <p className={styles.identityLine}>
               {skuDisplay ? (
