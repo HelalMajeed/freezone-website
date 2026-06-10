@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { isDatabaseConfigured } from "@/lib/prisma";
 import { clientIpFromRequest, clientUserAgentFromRequest, jsonError } from "@/lib/dashboard-guard";
 import { stripHtml } from "@/lib/html-sanitize";
@@ -14,6 +15,17 @@ import { logAdminAction } from "@/lib/admin-audit";
  * Rate limit 5/min/IP lives in server.ts. Response 201:
  * `{ ok: true, data: { id } }` (`id` = Notification id).
  */
+
+/** Each field is cleaned (HTML stripped, length-capped) before validation —
+ *  same behavior as the original manual checks, formalized with zod. */
+const ContactSchema = z.object({
+  name: z.preprocess((v) => clean(v, 120), z.string().min(1)),
+  phone: z.preprocess((v) => clean(v, 20), z.string().min(5)),
+  message: z.preprocess((v) => clean(v, 4000), z.string().min(5)),
+  email: z.preprocess((v) => clean(v, 254), z.string()),
+  subject: z.preprocess((v) => clean(v, 200), z.string()),
+});
+
 export async function POST(req: Request): Promise<Response> {
   if (!isDatabaseConfigured()) return jsonError(503, "NO_DATABASE");
 
@@ -22,17 +34,12 @@ export async function POST(req: Request): Promise<Response> {
     | null;
   if (!body) return jsonError(400, "VALIDATION");
 
-  const name = clean(body.name, 120);
-  const phone = clean(body.phone, 20);
-  const message = clean(body.message, 4000);
-  const email = clean(body.email, 254);
-  const subject = clean(body.subject, 200);
-
-  const errors: string[] = [];
-  if (name.length < 1) errors.push("name");
-  if (phone.length < 5 || phone.length > 20) errors.push("phone");
-  if (message.length < 5) errors.push("message");
-  if (errors.length) return jsonError(400, "VALIDATION", { fields: errors });
+  const parsed = ContactSchema.safeParse(body);
+  if (!parsed.success) {
+    const fields = [...new Set(parsed.error.issues.map((i) => String(i.path[0])))];
+    return jsonError(400, "VALIDATION", { fields });
+  }
+  const { name, phone, message, email, subject } = parsed.data;
 
   const excerpt = message.length > 200 ? `${message.slice(0, 200)}…` : message;
   const id = await createNotification({
