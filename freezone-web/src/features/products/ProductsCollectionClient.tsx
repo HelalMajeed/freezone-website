@@ -36,6 +36,20 @@ import { getFacetDisplayLabel } from "@/lib/catalog-facet-ui";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 export type SortOption = "featured" | "relevant" | "price-asc" | "price-desc" | "date-new" | "date-old";
 
+const SORT_OPTIONS: readonly SortOption[] = [
+  "featured",
+  "relevant",
+  "price-asc",
+  "price-desc",
+  "date-new",
+  "date-old",
+];
+
+/** Honor a shared ?sort= URL on mount (server applies it in SQL across pages). */
+function parseSortParam(raw: string | null): SortOption {
+  return raw && (SORT_OPTIONS as readonly string[]).includes(raw) ? (raw as SortOption) : "relevant";
+}
+
 /** Matches the server default in catalog-filter.ts — both paths page in lockstep. */
 const LISTING_PAGE_SIZE = 48;
 
@@ -185,7 +199,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
   }, {});
 
   const [query, setQuery] = useState(qParam);
-  const [sortBy, setSortBy] = useState<SortOption>("relevant");
+  const [sortBy, setSortBy] = useState<SortOption>(() => parseSortParam(searchParams.get("sort")));
 
   useEffect(() => {
     setQuery(qParam);
