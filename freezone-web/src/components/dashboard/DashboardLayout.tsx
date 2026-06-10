@@ -18,6 +18,7 @@ import {
   Percent,
   Settings,
   ShieldCheck,
+  Star,
   Truck,
   Upload,
   UserRound,
@@ -27,6 +28,7 @@ import {
 } from "lucide-react";
 import { FREEZONE_Z_LOGO } from "@/lib/brand-assets";
 import { useDashboardAuth } from "@/lib/dashboard/auth-store";
+import { reviewsModerationApi } from "@/lib/dashboard/api-extra";
 import type { LegacyRoleAlias } from "@/lib/dashboard/api";
 import { useDashboardLocale } from "@/lib/dashboard/i18n";
 import { Avatar, Badge, ConfirmProvider, ToastProvider } from "@/components/dashboard/ui";
@@ -46,6 +48,8 @@ type NavItemDef = {
   icon: LucideIcon;
   end?: boolean;
   minRole?: LegacyRoleAlias;
+  /** Live counter rendered as a badge next to the label. */
+  badge?: "pendingReviews";
 };
 
 /** Single source of truth for the sidebar navigation. */
@@ -53,43 +57,45 @@ const NAV: NavGroupDef[] = [
   {
     label: { en: "Overview", ar: "نظرة عامة" },
     items: [
-      { to: "/dashboard", end: true, label: { en: "Dashboard", ar: "اللوحة" }, icon: LayoutDashboard },
-      { to: "/dashboard/notifications", label: { en: "Notifications", ar: "الإشعارات" }, icon: Bell },
-      { to: "/dashboard/audit", label: { en: "Activity", ar: "السجل" }, icon: History },
+      { to: "/admin", end: true, label: { en: "Dashboard", ar: "اللوحة" }, icon: LayoutDashboard },
+      { to: "/admin/notifications", label: { en: "Notifications", ar: "الإشعارات" }, icon: Bell },
+      { to: "/admin/audit", label: { en: "Activity", ar: "السجل" }, icon: History },
     ],
   },
   {
     label: { en: "Catalog", ar: "الكتالوج" },
     items: [
-      { to: "/dashboard/products", label: { en: "Products", ar: "المنتجات" }, icon: Package },
-      { to: "/dashboard/products/review", label: { en: "Review queue", ar: "قائمة المراجعة" }, icon: ClipboardCheck, minRole: "admin" },
-      { to: "/dashboard/products/import", label: { en: "CSV import", ar: "استيراد CSV" }, icon: Upload, minRole: "editor" },
-      { to: "/dashboard/categories", label: { en: "Categories", ar: "الأقسام" }, icon: FolderTree },
-      { to: "/dashboard/brands", label: { en: "Brands", ar: "العلامات" }, icon: Award },
-      { to: "/dashboard/data-quality", label: { en: "Data quality", ar: "جودة البيانات" }, icon: ShieldCheck },
+      { to: "/admin/products", label: { en: "Products", ar: "المنتجات" }, icon: Package },
+      { to: "/admin/products/review", label: { en: "Review queue", ar: "قائمة المراجعة" }, icon: ClipboardCheck, minRole: "admin" },
+      { to: "/admin/products/import", label: { en: "CSV import", ar: "استيراد CSV" }, icon: Upload, minRole: "editor" },
+      { to: "/admin/categories", label: { en: "Categories", ar: "الأقسام" }, icon: FolderTree },
+      { to: "/admin/brands", label: { en: "Brands", ar: "العلامات" }, icon: Award },
+      { to: "/admin/data-quality", label: { en: "Data quality", ar: "جودة البيانات" }, icon: ShieldCheck },
     ],
   },
   {
     label: { en: "Commerce", ar: "المبيعات" },
     items: [
-      { to: "/dashboard/orders", label: { en: "Orders", ar: "الطلبات" }, icon: Truck, minRole: "admin" },
-      { to: "/dashboard/coupons", label: { en: "Coupons", ar: "الكوبونات" }, icon: Percent, minRole: "admin" },
+      { to: "/admin/orders", label: { en: "Orders", ar: "الطلبات" }, icon: Truck, minRole: "admin" },
+      { to: "/admin/customers", label: { en: "Customers", ar: "الزبائن" }, icon: UserRound, minRole: "admin" },
+      { to: "/admin/reviews", label: { en: "Customer reviews", ar: "تقييمات الزبائن" }, icon: Star, minRole: "admin", badge: "pendingReviews" },
+      { to: "/admin/coupons", label: { en: "Coupons", ar: "الكوبونات" }, icon: Percent, minRole: "admin" },
     ],
   },
   {
     label: { en: "Content", ar: "المحتوى" },
     items: [
-      { to: "/dashboard/cms", label: { en: "Pages", ar: "الصفحات" }, icon: LayoutTemplate },
-      { to: "/dashboard/media", label: { en: "Media library", ar: "الوسائط" }, icon: Image },
-      { to: "/dashboard/design", label: { en: "Design & theme", ar: "التصميم" }, icon: Palette },
+      { to: "/admin/cms", label: { en: "Pages", ar: "الصفحات" }, icon: LayoutTemplate },
+      { to: "/admin/media", label: { en: "Media library", ar: "الوسائط" }, icon: Image },
+      { to: "/admin/design", label: { en: "Design & theme", ar: "التصميم" }, icon: Palette },
     ],
   },
   {
     label: { en: "System", ar: "النظام" },
     minRole: "superadmin",
     items: [
-      { to: "/dashboard/users", label: { en: "Team & roles", ar: "الفريق والصلاحيات" }, icon: Users, minRole: "superadmin" },
-      { to: "/dashboard/settings", label: { en: "Site settings", ar: "إعدادات الموقع" }, icon: Settings, minRole: "admin" },
+      { to: "/admin/users", label: { en: "Team & roles", ar: "الفريق والصلاحيات" }, icon: Users, minRole: "superadmin" },
+      { to: "/admin/settings", label: { en: "Site settings", ar: "إعدادات الموقع" }, icon: Settings, minRole: "admin" },
     ],
   },
 ];
@@ -98,7 +104,7 @@ const NAV: NavGroupDef[] = [
 const CRUMB_LABELS: Record<string, { en: string; ar: string }> = Object.fromEntries(
   NAV.flatMap((g) => g.items.map((it) => [it.to, it.label])),
 );
-CRUMB_LABELS["/dashboard/profile"] = { en: "Profile & password", ar: "حسابي وكلمة السر" };
+CRUMB_LABELS["/admin/profile"] = { en: "Profile & password", ar: "حسابي وكلمة السر" };
 
 const SIDEBAR_PREF_KEY = "fz-dashboard-sidebar-collapsed";
 
@@ -131,6 +137,25 @@ export function DashboardLayout() {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const sidebarRef = useRef<HTMLElement | null>(null);
   const hamburgerRef = useRef<HTMLButtonElement | null>(null);
+
+  // Pending customer-review counter for the sidebar badge — best-effort,
+  // fetched once per shell mount (the moderation page itself is live).
+  const [pendingReviews, setPendingReviews] = useState(0);
+  useEffect(() => {
+    if (!hasRole("admin")) return;
+    let alive = true;
+    reviewsModerationApi
+      .list({ status: "pending", pageSize: 1 })
+      .then((res) => {
+        if (alive) setPendingReviews(res.pendingCount);
+      })
+      .catch(() => {
+        /* badge is decorative */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [hasRole]);
 
   useEffect(() => {
     // Apply dir to root element while dashboard is mounted
@@ -237,7 +262,7 @@ export function DashboardLayout() {
     await logout();
     // Passwordless direct entry: signing out lands on /dashboard/login, which
     // immediately re-enters when ADMIN_DIRECT_LOGIN is enabled on the API.
-    navigate("/dashboard/login", { replace: true });
+    navigate("/admin/login", { replace: true });
   };
 
   const onToggleLang = () => {
@@ -247,14 +272,14 @@ export function DashboardLayout() {
   // Breadcrumb trail derived from the current path + NAV labels.
   const crumbs = useMemo(() => {
     const items: { to: string; label: string }[] = [
-      { to: "/dashboard", label: t("shell.home") },
+      { to: "/admin", label: t("shell.home") },
     ];
-    const pathname = location.pathname.replace(/\/+$/, "") || "/dashboard";
-    if (pathname !== "/dashboard") {
+    const pathname = location.pathname.replace(/\/+$/, "") || "/admin";
+    if (pathname !== "/admin") {
       let acc = "";
       for (const seg of pathname.split("/").filter(Boolean)) {
         acc += `/${seg}`;
-        if (acc === "/dashboard") continue;
+        if (acc === "/admin") continue;
         const known = CRUMB_LABELS[acc];
         items.push({
           to: acc,
@@ -333,6 +358,9 @@ export function DashboardLayout() {
                               <Icon size={17} />
                             </span>
                             <span className={s.navLabel}>{pick(item.label)}</span>
+                            {item.badge === "pendingReviews" && pendingReviews > 0 && (
+                              <Badge tone="warning">{pendingReviews}</Badge>
+                            )}
                           </NavLink>
                         );
                       })}
@@ -443,7 +471,7 @@ export function DashboardLayout() {
                           className={s.userMenuItem}
                           onClick={() => {
                             setMenuOpen(false);
-                            navigate("/dashboard/profile");
+                            navigate("/admin/profile");
                           }}
                         >
                           <UserRound size={15} aria-hidden />

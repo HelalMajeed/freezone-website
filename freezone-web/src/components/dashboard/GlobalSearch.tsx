@@ -73,7 +73,7 @@ function buildEntries(
       group: "products",
       label: name(p.nameEn, p.nameAr),
       sub: p.sku || p.slug || `#${p.id}`,
-      to: `/dashboard/products?search=${encodeURIComponent(p.sku || p.nameEn)}`,
+      to: `/admin/products?search=${encodeURIComponent(p.sku || p.nameEn)}`,
     });
   }
   for (const c of data.categories.slice(0, limitPerGroup)) {
@@ -82,7 +82,7 @@ function buildEntries(
       group: "categories",
       label: name(c.nameEn, c.nameAr),
       sub: c.slug,
-      to: `/dashboard/categories?search=${encodeURIComponent(c.nameEn || c.slug)}`,
+      to: `/admin/categories?search=${encodeURIComponent(c.nameEn || c.slug)}`,
     });
   }
   for (const b of data.brands.slice(0, limitPerGroup)) {
@@ -91,7 +91,7 @@ function buildEntries(
       group: "brands",
       label: name(b.nameEn, b.nameAr),
       sub: b.slug,
-      to: `/dashboard/brands?search=${encodeURIComponent(b.nameEn || b.slug)}`,
+      to: `/admin/brands?search=${encodeURIComponent(b.nameEn || b.slug)}`,
     });
   }
   for (const u of data.users.slice(0, limitPerGroup)) {
@@ -100,7 +100,7 @@ function buildEntries(
       group: "users",
       label: u.name,
       sub: u.email,
-      to: `/dashboard/users?search=${encodeURIComponent(u.email)}`,
+      to: `/admin/users?search=${encodeURIComponent(u.email)}`,
     });
   }
   return entries;

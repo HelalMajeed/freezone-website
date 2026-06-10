@@ -46,3 +46,27 @@ export function paymentKey(method: string): DashboardMessageKey | null {
     ? (`payment.${method}` as DashboardMessageKey)
     : null;
 }
+
+/** Payment reconciliation vocabulary (API_CONTRACT §6). */
+export const PAYMENT_STATUSES = ["unpaid", "paid", "refunded"] as const;
+
+export type PaymentStatusValue = (typeof PAYMENT_STATUSES)[number];
+
+export const PAYMENT_STATUS_TONE: Record<
+  PaymentStatusValue,
+  "neutral" | "info" | "warning" | "success" | "danger"
+> = {
+  unpaid: "warning",
+  paid: "success",
+  refunded: "info",
+};
+
+/** Catalog key for a payment-status label. */
+export function paymentStatusKey(status: PaymentStatusValue): DashboardMessageKey {
+  return `paymentStatus.${status}` as DashboardMessageKey;
+}
+
+/** Tolerant parse — the field ships with Agent C's API change (Phase 3). */
+export function normalizePaymentStatus(value: unknown): PaymentStatusValue {
+  return value === "paid" || value === "refunded" ? value : "unpaid";
+}

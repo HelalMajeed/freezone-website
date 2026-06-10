@@ -301,7 +301,7 @@ export function DashboardCategoryAttributesPage() {
           <button
             type="button"
             className={s.backLink}
-            onClick={() => guardedNavigate("/dashboard/categories")}
+            onClick={() => guardedNavigate("/admin/categories")}
           >
             <ArrowLeft size={14} className={s.dirIcon} aria-hidden />
             {t("catAttrs.backToCategories")}

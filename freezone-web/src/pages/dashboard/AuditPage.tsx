@@ -40,29 +40,29 @@ const KNOWN_ENTITIES = [
 function recordLink(entity: string, entityId: string | null): string | null {
   switch (entity) {
     case "Order":
-      return entityId ? `/dashboard/orders/${entityId}` : "/dashboard/orders";
+      return entityId ? `/admin/orders/${entityId}` : "/admin/orders";
     case "Product":
       return entityId
-        ? `/dashboard/products?search=${encodeURIComponent(entityId)}`
-        : "/dashboard/products";
+        ? `/admin/products?search=${encodeURIComponent(entityId)}`
+        : "/admin/products";
     case "Category":
-      return "/dashboard/categories";
+      return "/admin/categories";
     case "Brand":
-      return "/dashboard/brands";
+      return "/admin/brands";
     case "Coupon":
-      return "/dashboard/coupons";
+      return "/admin/coupons";
     case "MediaAsset":
-      return "/dashboard/media";
+      return "/admin/media";
     case "AdminUser":
       return entityId
-        ? `/dashboard/users?search=${encodeURIComponent(entityId)}`
-        : "/dashboard/users";
+        ? `/admin/users?search=${encodeURIComponent(entityId)}`
+        : "/admin/users";
     case "SiteConfig":
-      return "/dashboard/settings";
+      return "/admin/settings";
     case "CmsPageSection":
     case "HeroSlide":
     case "PromoBanner":
-      return "/dashboard/cms";
+      return "/admin/cms";
     default:
       return null;
   }

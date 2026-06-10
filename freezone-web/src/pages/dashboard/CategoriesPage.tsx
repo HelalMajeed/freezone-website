@@ -261,7 +261,7 @@ export function DashboardCategoriesPage() {
                     <Button
                       size="sm"
                       variant="secondary"
-                      onClick={() => navigate(`/dashboard/categories/${c.id}/attributes`)}
+                      onClick={() => navigate(`/admin/categories/${c.id}/attributes`)}
                     >
                       <SlidersHorizontal size={13} aria-hidden /> {t("categories.attributes")}
                     </Button>

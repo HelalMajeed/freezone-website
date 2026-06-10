@@ -109,21 +109,21 @@ export function NotificationsBell() {
       rows.push({
         key: "pendingReview",
         label: t("notifications.pendingReview", { count: data.pendingReview }),
-        to: "/dashboard/products?catalogStatus=PENDING_REVIEW",
+        to: "/admin/products?catalogStatus=PENDING_REVIEW",
       });
     }
     if (data.newComments > 0) {
       rows.push({
         key: "newComments",
         label: t("notifications.newComments", { count: data.newComments }),
-        to: "/dashboard/products",
+        to: "/admin/products",
       });
     }
     if (data.categoriesNoAttrs > 0) {
       rows.push({
         key: "categoriesNoAttrs",
         label: t("notifications.categoriesNoAttrs", { count: data.categoriesNoAttrs }),
-        to: "/dashboard/categories",
+        to: "/admin/categories",
       });
     }
     return rows;

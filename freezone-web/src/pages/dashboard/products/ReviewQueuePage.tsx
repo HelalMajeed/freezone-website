@@ -130,7 +130,7 @@ export function DashboardReviewQueuePage() {
             icon={<ClipboardCheck size={26} aria-hidden />}
             title={t("review.empty")}
             action={
-              <Link to="/dashboard/products">
+              <Link to="/admin/products">
                 <Button variant="secondary">{t("editor.backToList")}</Button>
               </Link>
             }
@@ -163,7 +163,7 @@ export function DashboardReviewQueuePage() {
                 header: t("review.colProduct"),
                 cell: (r) => (
                   <div>
-                    <Link to={`/dashboard/products/${r.id}`} className={s.cellTitle}>
+                    <Link to={`/admin/products/${r.id}`} className={s.cellTitle}>
                       {itemName(r)}
                     </Link>
                     <div className={s.cellSub}>
@@ -219,7 +219,7 @@ export function DashboardReviewQueuePage() {
                     >
                       {t("review.requestChanges")}
                     </Button>
-                    <Link to={`/dashboard/products/${r.id}`}>
+                    <Link to={`/admin/products/${r.id}`}>
                       <Button size="sm" variant="ghost">
                         {t("review.openEditor")}
                       </Button>

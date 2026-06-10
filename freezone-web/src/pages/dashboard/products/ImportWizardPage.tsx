@@ -471,7 +471,7 @@ export function DashboardProductsImportPage() {
               <Button variant="secondary" type="button" onClick={reset}>
                 {t("import.startOver")}
               </Button>
-              <Link to="/dashboard/products">
+              <Link to="/admin/products">
                 <Button type="button">{t("import.goToProducts")}</Button>
               </Link>
             </div>

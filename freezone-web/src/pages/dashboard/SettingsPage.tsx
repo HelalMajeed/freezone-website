@@ -7,6 +7,8 @@ import {
   type SiteConfigPublic,
   type SiteConfigUpdatePayload,
 } from "@/lib/dashboard/api";
+import { useDashboardLocale } from "@/lib/dashboard/i18n";
+import { IRAQ_PROVINCES, type ProvinceCode } from "@/lib/iraq-provinces";
 import { freezoneApiUrl } from "@/lib/api-internal";
 import {
   Badge,
@@ -19,6 +21,11 @@ import {
 
 type Lang = "ar" | "en";
 
+/** Site config + per-governorate fee map (API_CONTRACT §7). */
+type SiteConfigWithFees = SiteConfigPublic & {
+  shippingFeesJson: Partial<Record<ProvinceCode, number>> | null;
+};
+
 function resolveImage(url: string | null | undefined): string | undefined {
   if (!url) return undefined;
   if (/^https?:\/\//i.test(url)) return url;
@@ -28,9 +35,10 @@ function resolveImage(url: string | null | undefined): string | undefined {
 export function DashboardSettingsPage() {
   const { i18n } = useTranslation();
   const lang = ((i18n.resolvedLanguage ?? "en").startsWith("ar") ? "ar" : "en") as Lang;
+  const { t } = useDashboardLocale();
 
-  const [config, setConfig] = useState<SiteConfigPublic | null>(null);
-  const [draft, setDraft] = useState<SiteConfigPublic | null>(null);
+  const [config, setConfig] = useState<SiteConfigWithFees | null>(null);
+  const [draft, setDraft] = useState<SiteConfigWithFees | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -41,7 +49,7 @@ export function DashboardSettingsPage() {
   const load = () => {
     setLoading(true);
     dashboardApi
-      .get<SiteConfigPublic>("/api/admin/site-config")
+      .get<SiteConfigWithFees>("/api/admin/site-config")
       .then((d) => {
         setConfig(d);
         setDraft(d);
@@ -63,8 +71,26 @@ export function DashboardSettingsPage() {
         (config as Record<string, unknown>)[k] !== (draft as Record<string, unknown>)[k],
     );
 
-  const update = <K extends keyof SiteConfigPublic>(k: K, v: SiteConfigPublic[K]) =>
+  const update = <K extends keyof SiteConfigWithFees>(k: K, v: SiteConfigWithFees[K]) =>
     setDraft((d) => (d ? { ...d, [k]: v } : d));
+
+  /**
+   * Per-governorate fee edit — empty input removes the key (falls back to the
+   * standard fee server-side); values clamp to the validated 0–100,000 range.
+   */
+  const updateFee = (code: ProvinceCode, raw: string) =>
+    setDraft((d) => {
+      if (!d) return d;
+      const fees: Partial<Record<ProvinceCode, number>> = { ...(d.shippingFeesJson ?? {}) };
+      if (raw.trim() === "") {
+        delete fees[code];
+      } else {
+        const n = Number(raw);
+        if (!Number.isFinite(n)) return d;
+        fees[code] = Math.max(0, Math.min(100000, Math.round(n)));
+      }
+      return { ...d, shippingFeesJson: fees };
+    });
 
   const onLogoUpload = async (file: File | undefined) => {
     if (!file) return;
@@ -94,13 +120,13 @@ export function DashboardSettingsPage() {
     try {
       // Send only the changed keys
       const payload: SiteConfigUpdatePayload = {};
-      (Object.keys(draft) as Array<keyof SiteConfigPublic>).forEach((k) => {
+      (Object.keys(draft) as Array<keyof SiteConfigWithFees>).forEach((k) => {
         if (k === "updatedAt") return;
         if (draft[k] !== config[k]) {
           (payload as Record<string, unknown>)[k] = draft[k];
         }
       });
-      const updated = await dashboardApi.patch<SiteConfigPublic>(
+      const updated = await dashboardApi.patch<SiteConfigWithFees>(
         "/api/admin/site-config",
         payload,
       );
@@ -379,6 +405,47 @@ export function DashboardSettingsPage() {
                     onChange={(e) => update("qiCardMerchantId", e.target.value)}
                   />
                 </Field>
+              </div>
+
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>
+                  {t("settings.shippingByProvince")}
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--fz-text-muted)",
+                    marginBottom: 12,
+                  }}
+                >
+                  {t("settings.shippingByProvinceHint")}
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+                    gap: 12,
+                  }}
+                >
+                  {IRAQ_PROVINCES.map((p) => {
+                    const value = draft.shippingFeesJson?.[p.code];
+                    return (
+                      <Field key={p.code} label={lang === "ar" ? p.ar : p.en}>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100000}
+                          step={250}
+                          inputMode="numeric"
+                          dir="ltr"
+                          value={typeof value === "number" ? String(value) : ""}
+                          placeholder={`${draft.standardShippingFee} (${t("settings.standardFeeFallback")})`}
+                          onChange={(e) => updateFee(p.code, e.target.value)}
+                        />
+                      </Field>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </Card>

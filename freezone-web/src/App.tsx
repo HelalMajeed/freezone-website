@@ -1,7 +1,6 @@
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { LocaleLayout } from "@/routes/LocaleLayout";
-import { freezoneDashboardRouteBranch } from "@/routes/dashboard-routes";
 import { ConfirmDialogHost } from "@/components/ui/ConfirmDialog";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import HomePage from "@/pages/HomePage";
@@ -26,8 +25,26 @@ const PolicyPageLazy = lazy(() =>
 );
 import PcBuilderPage from "@/app/locale/pc-builder/page";
 
+/**
+ * The entire admin panel (guard, layout, ui kit, auth store, dashboard i18n)
+ * behind ONE lazy boundary so the storefront bundle ships none of it.
+ */
+const AdminApp = lazy(() => import("@/routes/dashboard-routes"));
+
 function SuspensePage({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<div style={{ padding: 48, textAlign: "center" }}>…</div>}>{children}</Suspense>;
+}
+
+/**
+ * Path-preserving bridge for legacy `/dashboard/*` URLs — bookmarks and DB
+ * notification hrefs (`/dashboard/orders/1042`) keep working after the move
+ * to the canonical `/admin/*` prefix.
+ */
+function LegacyDashboardRedirect() {
+  const location = useLocation();
+  const target =
+    location.pathname.replace(/^\/dashboard(?=\/|$)/, "/admin") + location.search + location.hash;
+  return <Navigate to={target} replace />;
 }
 
 export default function App() {
@@ -174,11 +191,11 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 
-      {freezoneDashboardRouteBranch}
+      {/* Canonical admin panel — single lazy chunk (login at /admin/login). */}
+      <Route path="/admin/*" element={<SuspensePage><AdminApp /></SuspensePage>} />
 
-      {/* Legacy /admin paths now point at the official /dashboard panel. */}
-      <Route path="/admin" element={<Navigate to="/dashboard/login" replace />} />
-      <Route path="/admin/*" element={<Navigate to="/dashboard/login" replace />} />
+      {/* Legacy /dashboard/* deep links redirect path-preserving to /admin/*. */}
+      <Route path="/dashboard/*" element={<LegacyDashboardRedirect />} />
 
       {/* Non-locale unknown paths bounce to the default locale root. */}
       <Route path="*" element={<Navigate to="/en" replace />} />
