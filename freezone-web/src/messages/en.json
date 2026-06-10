@@ -921,6 +921,14 @@
     "whatsappTitle": "Get offers on WhatsApp",
     "whatsappBody": "New arrivals, restocks and flash deals — straight to your WhatsApp.",
     "whatsappCta": "Subscribe on WhatsApp",
-    "whatsappPrefill": "Hello FreeZone! Please add me to your offers and new-arrivals list."
+    "whatsappPrefill": "Hello FreeZone! Please add me to your offers and new-arrivals list.",
+    "categoriesTitle": "Categories",
+    "paymentsTitle": "Payment methods",
+    "paymentsComingSoon": "Electronic payments coming soon — currently arranged via WhatsApp.",
+    "payCod": "Cash on Delivery",
+    "payZaincash": "ZainCash",
+    "payQicard": "Qi Card",
+    "payVisa": "Visa",
+    "payMaster": "Mastercard"
   }
 }
