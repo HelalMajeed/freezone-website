@@ -726,5 +726,46 @@
     "openFilters": "Browse with filters",
     "noProducts": "No products in this section yet — check back soon.",
     "viewAll": "View all products"
+  },
+  "reviews": {
+    "title": "Customer Reviews",
+    "summaryAria": "Rated {{avg}} out of 5",
+    "reviewsCount": "{{count}} reviews",
+    "empty": "No reviews yet — be the first to review this product.",
+    "loading": "Loading reviews…",
+    "loadError": "Could not load reviews.",
+    "writeTitle": "Write a review",
+    "nameLabel": "Your name",
+    "phoneLabel": "Phone number",
+    "phonePlaceholder": "07XXXXXXXXX",
+    "phoneHint": "Used only for verification — never shown publicly.",
+    "ratingLabel": "Your rating",
+    "starAria": "Rate {{count}} out of 5",
+    "commentLabel": "Your review",
+    "commentPlaceholder": "Share your experience with this product…",
+    "submit": "Submit review",
+    "submitting": "Submitting…",
+    "successPending": "Thank you! Your review was received and will appear after moderation.",
+    "fieldNameError": "Name must be 2–60 characters.",
+    "fieldRatingError": "Please choose a rating.",
+    "fieldCommentError": "Comment must be at least 10 characters.",
+    "errorAlreadyReviewed": "You have already reviewed this product in the last 24 hours.",
+    "errorInvalidPhone": "Please enter a valid Iraqi mobile number (07XXXXXXXXX).",
+    "errorValidation": "Please check the form: name, valid phone, rating, and a comment of at least 10 characters.",
+    "errorRateLimited": "Too many attempts — please try again in a minute.",
+    "errorGeneric": "Could not submit your review. Please try again."
+  },
+  "listing": {
+    "pagination": "Pagination",
+    "prevPage": "Previous",
+    "nextPage": "Next",
+    "pageStatus": "Page {{page}} of {{total}}",
+    "pageAria": "Go to page {{page}}",
+    "currentPageAria": "Page {{page}}, current page"
+  },
+  "pdp": {
+    "qtyLabel": "Quantity",
+    "qtyDecrease": "Decrease quantity",
+    "qtyIncrease": "Increase quantity"
   }
 }

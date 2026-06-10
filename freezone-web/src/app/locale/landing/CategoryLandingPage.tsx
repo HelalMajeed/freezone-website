@@ -1,16 +1,19 @@
 "use client";
 
 import { useMemo } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams, useSearchParams } from "react-router-dom";
 import { SlidersHorizontal } from "lucide-react";
 import { Link } from "@/navigation";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { productBelongsToCategory } from "@/lib/productCategoryMembership";
 import { ProductCard } from "@/components/ui/ProductCard";
+import { PaginationControls } from "@/components/ui/PaginationControls";
 import { Seo } from "@/components/seo/Seo";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import styles from "./landing.module.css";
+
+const LANDING_PAGE_SIZE = 24;
 
 /** Category landing page — /:locale/category/:slug (docs/STOREFRONT_DESIGN.md). */
 export default function CategoryLandingPage() {
@@ -27,6 +30,29 @@ export default function CategoryLandingPage() {
     () => catalog.products.filter((p) => productBelongsToCategory(p, slug)),
     [catalog.products, slug],
   );
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const pageCount = Math.max(1, Math.ceil(products.length / LANDING_PAGE_SIZE));
+  /** Clamp a stale ?page from a shared URL instead of rendering an empty grid. */
+  const page = Math.min(
+    Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1),
+    pageCount,
+  );
+  const pageProducts = useMemo(
+    () => products.slice((page - 1) * LANDING_PAGE_SIZE, page * LANDING_PAGE_SIZE),
+    [products, page],
+  );
+
+  const goToPage = (p: number) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (p > 1) next.set("page", String(p));
+      else next.delete("page");
+      return next;
+    });
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+  };
 
   if (!category) {
     return <Navigate to={`/${lc}/products`} replace />;
@@ -74,10 +100,11 @@ export default function CategoryLandingPage() {
         ) : (
           <>
             <div className={styles.grid}>
-              {products.map((p) => (
+              {pageProducts.map((p) => (
                 <ProductCard key={p.id} product={p} categories={catalog.categories} />
               ))}
             </div>
+            <PaginationControls page={page} pageCount={pageCount} onPageChange={goToPage} />
             <div className={styles.footerCta}>
               <Link href={`/products?cat=${encodeURIComponent(category.id)}`} className="btn-outline">
                 {t("openFilters")}

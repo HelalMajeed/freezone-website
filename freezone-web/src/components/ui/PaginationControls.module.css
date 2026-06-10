@@ -1,0 +1,84 @@
+/* ── Listing pagination (RTL-aware: flex order follows document direction) ── */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 32px 0 8px;
+}
+
+.pageList {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pageBtn,
+.navBtn {
+  min-width: var(--fz-touch-min, 40px);
+  min-height: var(--fz-touch-min, 40px);
+  padding: 8px 12px;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-lg, 10px);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.pageBtn:hover:not(:disabled),
+.navBtn:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.pageBtn:focus-visible,
+.navBtn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.pageBtnActive {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+  cursor: default;
+}
+
+.pageBtnActive:hover {
+  color: #fff !important;
+}
+
+.navBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.gap {
+  padding: 0 4px;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.status {
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+@media (max-width: 480px) {
+  .pageBtn,
+  .navBtn {
+    padding: 8px 10px;
+    font-size: 0.82rem;
+  }
+}
