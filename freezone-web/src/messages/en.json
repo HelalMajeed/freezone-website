@@ -83,7 +83,11 @@
     "errPhoneTaken": "An account with this phone number already exists.",
     "errRateLimited": "Too many attempts — please wait a moment and try again.",
     "errNetwork": "Connection failed. Check your internet and try again.",
-    "errGeneric": "Something went wrong. Please try again."
+    "errGeneric": "Something went wrong. Please try again.",
+    "otpLabel": "Verification code",
+    "otpPlaceholder": "6-digit code",
+    "otpHint": "SMS OTP will be sent via otp.iq — wire-up pending.",
+    "loginPending": "Sign-in will be connected to otp.iq."
   },
   "Categories": {
     "laptops": "Laptops",
@@ -826,5 +830,91 @@
     "qtyLabel": "Quantity",
     "qtyDecrease": "Decrease quantity",
     "qtyIncrease": "Increase quantity"
+  },
+  "content": {
+    "about": {
+      "heroTitle": "About FreeZone",
+      "heroLead": "Iraq's electronics destination — CCTV & security systems, computers & laptops, gaming, networking, smart home and power solutions, backed by a 2-year warranty and delivery to every governorate.",
+      "cardGenuineTitle": "Genuine products, 2-year warranty",
+      "cardGenuineBody": "Everything we sell is 100% original from authorized supply chains, and most products carry our 2-year store warranty against manufacturing defects.",
+      "cardSupportTitle": "Real experts, real support",
+      "cardSupportBody": "From CCTV system design to custom PC builds and business networks, our technical team helps you choose right — in the showroom or on WhatsApp, before and after the sale.",
+      "cardDeliveryTitle": "Cash on delivery, all 18 governorates",
+      "cardDeliveryBody": "We deliver to every governorate in Iraq through trusted couriers. Pay cash when your order arrives, or pick it up yourself from our showroom.",
+      "storyTitle": "Our Story",
+      "storyP1": "FreeZone started with a simple idea: people in Iraq deserve genuine tech at fair prices with honest advice — from CCTV and security systems to computers, laptops, gaming gear, networking equipment, smart home and power solutions.",
+      "storyP2": "Today we serve individuals and businesses across all 18 governorates: shop online and pay cash on delivery, or visit our showroom to see products yourself, with direct WhatsApp support at every step of your order.",
+      "storyP3": "Every product we sell is backed by a 2-year warranty and a real service team — because our relationship with you starts after the purchase, it doesn't end there.",
+      "storyImageAlt": "Inside the FreeZone showroom"
+    },
+    "contact": {
+      "heroTitle": "Get in touch",
+      "heroLead": "Questions about a product, your order, a PC build or a business quote? Our team is happy to help.",
+      "locationLabel": "Our Location",
+      "phoneLabel": "Phone Support",
+      "phoneSales": "Sales: {{phone}}",
+      "phoneWhatsappNote": "WhatsApp available",
+      "whatsappLabel": "WhatsApp",
+      "whatsappCta": "Chat on WhatsApp",
+      "hoursLabel": "Working Hours",
+      "hoursDays": "Saturday – Thursday",
+      "hoursTime": "9:00 AM – 9:00 PM",
+      "formTitle": "Send us a message",
+      "nameLabel": "Full Name",
+      "namePlaceholder": "Your name",
+      "phoneFieldLabel": "Phone number",
+      "phonePlaceholder": "07XX XXX XXXX",
+      "messageLabel": "Message",
+      "messagePlaceholder": "How can we help you?",
+      "submit": "Send Message",
+      "submitting": "Sending…",
+      "successMsg": "Message sent — our team will get back to you soon.",
+      "errorValidation": "Please check your name, phone and message, then try again.",
+      "errorRateLimited": "Too many messages — please wait a minute and try again.",
+      "errorServer": "Could not send your message right now. Please try again, or reach us on WhatsApp."
+    },
+    "faq": {
+      "seoTitle": "Frequently Asked Questions",
+      "seoDesc": "Answers about ordering, cash on delivery, delivery times and fees, warranty claims, returns and payment methods at FreeZone Iraq.",
+      "title": "Frequently Asked Questions",
+      "intro": "Quick answers about ordering, delivery, warranty and payments. Can't find what you need? Our team is one message away."
+    },
+    "menu": {
+      "navigation": "Navigation",
+      "categories": "Categories",
+      "home": "Home",
+      "allProducts": "All Products",
+      "about": "About Us",
+      "contact": "Contact",
+      "warranty": "Warranty",
+      "faq": "FAQ",
+      "viewAll": "View all in {{label}}",
+      "pcBuilder": "PC Builder"
+    }
+  },
+  "cart": {
+    "drawerTitle": "Your Cart",
+    "close": "Close cart",
+    "itemsCount": "{{count}} items",
+    "empty": "Your cart is empty",
+    "emptyHint": "Add products you like and they will appear here.",
+    "browse": "Browse products",
+    "subtotal": "Subtotal",
+    "shippingNote": "Shipping and discounts are calculated at checkout.",
+    "viewCart": "View cart",
+    "checkout": "Checkout",
+    "remove": "Remove {{name}}",
+    "decreaseQty": "Decrease quantity of {{name}}",
+    "increaseQty": "Increase quantity of {{name}}",
+    "freeShipProgress": "Add {{amount}} IQD more for free delivery",
+    "freeShipUnlocked": "You've unlocked free delivery!"
+  },
+  "footer": {
+    "warranty": "Warranty",
+    "returns": "Returns & Exchange",
+    "whatsappTitle": "Get offers on WhatsApp",
+    "whatsappBody": "New arrivals, restocks and flash deals — straight to your WhatsApp.",
+    "whatsappCta": "Subscribe on WhatsApp",
+    "whatsappPrefill": "Hello FreeZone! Please add me to your offers and new-arrivals list."
   }
 }

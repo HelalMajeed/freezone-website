@@ -23,6 +23,8 @@ const BrandLandingPage = lazy(() => import("@/app/locale/landing/BrandLandingPag
 const PolicyPageLazy = lazy(() =>
   import("@/app/locale/policies/PolicyPage").then((m) => ({ default: m.PolicyPage })),
 );
+const WarrantyPage = lazy(() => import("@/app/locale/warranty/page"));
+const FaqPage = lazy(() => import("@/app/locale/faq/page"));
 import PcBuilderPage from "@/app/locale/pc-builder/page";
 
 /**
@@ -184,6 +186,22 @@ export default function App() {
           element={
             <SuspensePage>
               <PolicyPageLazy kind="terms" />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="warranty"
+          element={
+            <SuspensePage>
+              <WarrantyPage />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="faq"
+          element={
+            <SuspensePage>
+              <FaqPage />
             </SuspensePage>
           }
         />
