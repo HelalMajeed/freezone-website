@@ -126,6 +126,14 @@
   font-weight: 500;
 }
 
+/* Muted indicative USD line under the IQD price (display only). */
+.usdPrice {
+  margin: -12px 0 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-neutral-400);
+}
+
 .identityLine,
 .warrantyLine {
   margin: 0 0 12px;

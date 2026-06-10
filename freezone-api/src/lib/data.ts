@@ -50,6 +50,8 @@ export interface Product {
   desc: string;
   price: number;
   oldPrice: number | null;
+  /** Optional indicative USD price (PDP secondary display only — money math stays IQD). */
+  priceUsd?: number | null;
   originalPrice?: number | null;
   storage: string;
   inStock: boolean;

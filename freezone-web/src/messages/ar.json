@@ -835,7 +835,9 @@
   "pdp": {
     "qtyLabel": "الكمية",
     "qtyDecrease": "إنقاص الكمية",
-    "qtyIncrease": "زيادة الكمية"
+    "qtyIncrease": "زيادة الكمية",
+    "usdApprox": "≈ {{amount}}$ تقريباً",
+    "usdApproxAria": "السعر التقريبي بالدولار الأمريكي"
   },
   "content": {
     "about": {
