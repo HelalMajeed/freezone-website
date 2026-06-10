@@ -651,7 +651,11 @@
     "categoryTitle": "{{name}} — Shop by Category",
     "categoryDesc": "Discover {{name}} products at FreeZone Iraq — best prices in IQD, warranty and fast delivery.",
     "brandTitle": "{{name}} — Shop by Brand",
-    "brandDesc": "Shop genuine {{name}} products at FreeZone Iraq — warranty and fast delivery."
+    "brandDesc": "Shop genuine {{name}} products at FreeZone Iraq — warranty and fast delivery.",
+    "warrantyTitle": "Warranty Policy",
+    "warrantyDesc": "FreeZone warranty coverage in Iraq — what is covered, for how long, and how to claim.",
+    "faqTitle": "Frequently Asked Questions",
+    "faqDesc": "Answers to common questions about ordering, delivery, payment, warranty and returns at FreeZone."
   },
   "Wishlist": {
     "title": "My Wishlist",

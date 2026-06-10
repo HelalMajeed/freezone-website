@@ -1,4 +1,4 @@
-import { publicSiteBaseUrl } from "./Seo";
+import { canonicalSitePath, publicSiteBaseUrl } from "./Seo";
 import { safeJsonLd } from "./jsonLd";
 
 export type BreadcrumbItem = {
@@ -26,7 +26,7 @@ export function BreadcrumbJsonLd({ items }: { items: BreadcrumbItem[] }) {
       "@type": "ListItem",
       position: i + 1,
       name: it.name,
-      item: `${base}${it.path.startsWith("/") ? it.path : `/${it.path}`}`,
+      item: `${base}${canonicalSitePath(it.path)}`,
     })),
   };
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(data) }} />;

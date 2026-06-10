@@ -1,11 +1,11 @@
 import type { Product } from "@/lib/data";
-import { publicSiteBaseUrl } from "./Seo";
+import { canonicalSitePath, publicSiteBaseUrl } from "./Seo";
 import { safeJsonLd } from "./jsonLd";
 
 /** schema.org Product structured data for the product detail page. */
 export function ProductJsonLd({ product, locale }: { product: Product; locale: "en" | "ar" }) {
   const base = publicSiteBaseUrl();
-  const url = `${base}/${locale}/product/${product.id}`;
+  const url = `${base}${canonicalSitePath(`/${locale}/product/${product.id}`)}`;
   const images = (product.images ?? [])
     .filter(Boolean)
     .map((img) => (img.startsWith("http") ? img : `${base}${img.startsWith("/") ? img : `/${img}`}`));
