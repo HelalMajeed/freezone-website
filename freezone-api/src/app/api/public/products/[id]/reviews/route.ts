@@ -1,9 +1,9 @@
-import { createHash } from "node:crypto";
 import { z } from "zod";
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { jsonError } from "@/lib/dashboard-guard";
 import { stripHtml } from "@/lib/html-sanitize";
 import { normalizeIraqiPhone, isValidIraqiPhone } from "@/lib/phone";
+import { getCurrentCustomer } from "@/lib/customer-auth";
 
 /**
  * Public customer reviews for a product (API_CONTRACT §3).
@@ -124,7 +124,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   });
   if (duplicate) return jsonError(409, "ALREADY_REVIEWED");
 
-  const customer = await currentCustomerFromCookie(req);
+  /** Optional signed-in customer — any failure degrades to a guest submission. */
+  const customer = await getCurrentCustomer(req).catch(() => null);
   await prisma.review.create({
     data: {
       productId,
@@ -140,34 +141,3 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   return json(201, { ok: true, pending: true });
 }
 
-// ─── Optional customer session (guest submissions remain fully supported) ────
-
-const CUSTOMER_COOKIE = "fz_customer_session";
-
-/**
- * Best-effort resolution of the signed-in customer from the `fz_customer_session`
- * cookie — same opaque-token/SHA-256 pattern as the dashboard sessions. Any
- * failure (no cookie, expired, revoked, blocked, missing tables) degrades to a
- * guest submission rather than an error.
- */
-async function currentCustomerFromCookie(req: Request): Promise<{ id: number; name: string } | null> {
-  const cookie = req.headers.get("cookie") || "";
-  const m = cookie.match(new RegExp(`${CUSTOMER_COOKIE}=([^;]+)`));
-  if (!m) return null;
-  try {
-    const tokenHash = createHash("sha256").update(decodeURIComponent(m[1])).digest("hex");
-    const session = await prisma.customerSession.findUnique({
-      where: { tokenHash },
-      select: {
-        revokedAt: true,
-        expiresAt: true,
-        customer: { select: { id: true, name: true, isBlocked: true } },
-      },
-    });
-    if (!session || session.revokedAt || session.expiresAt <= new Date()) return null;
-    if (session.customer.isBlocked) return null;
-    return { id: session.customer.id, name: session.customer.name };
-  } catch {
-    return null;
-  }
-}

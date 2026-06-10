@@ -27,7 +27,7 @@ export type CreateNotificationInput = {
   titleAr: string;
   bodyEn?: string;
   bodyAr?: string;
-  /** Dashboard deep-link, e.g. /dashboard/orders/1042 */
+  /** Admin deep-link, e.g. /admin/orders/1042 (legacy /dashboard hrefs still redirect) */
   href?: string | null;
   entity?: string | null;
   entityId?: string | number | null;
@@ -84,7 +84,7 @@ export async function notifyOrderCreated(order: {
     titleAr: `طلب جديد ${order.orderNumber}`,
     bodyEn: `${order.customerName} — ${formatIqd(order.total)} IQD`,
     bodyAr: `${order.customerName} — ${formatIqd(order.total)} د.ع`,
-    href: `/dashboard/orders/${order.id}`,
+    href: `/admin/orders/${order.id}`,
     entity: "Order",
     entityId: order.id,
   });
@@ -113,7 +113,7 @@ export async function notifyStockEvent(input: {
     bodyAr: out
       ? `${input.nameAr} نفد من المخزون.`
       : `${input.nameAr} متبقٍ منه ${formatIqd(input.quantity)} في المخزون.`,
-    href: `/dashboard/products/${input.productId}`,
+    href: `/admin/products/${input.productId}`,
     entity: "Product",
     entityId: input.productId,
   });

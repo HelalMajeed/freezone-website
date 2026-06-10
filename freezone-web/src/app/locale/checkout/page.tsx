@@ -17,6 +17,7 @@ import { Seo } from "@/components/seo/Seo";
 import { rememberOrder } from "@/lib/order-tracking";
 import { IRAQ_PROVINCES, provinceLabel, type ProvinceCode } from "@/lib/iraq-provinces";
 import { normalizeIraqiPhone, isValidIraqiPhone } from "@/lib/phone";
+import { trackBeginCheckout, trackPurchase, type AnalyticsItem } from "@/lib/analytics";
 
 type Fulfillment = "delivery" | "pickup";
 
@@ -151,6 +152,18 @@ export default function CheckoutPage() {
     };
   }, []);
 
+  /** begin_checkout once per visit (no-op unless analytics ids are configured). */
+  const beganCheckoutRef = useRef(false);
+  useEffect(() => {
+    if (beganCheckoutRef.current || items.length === 0) return;
+    beganCheckoutRef.current = true;
+    trackBeginCheckout(
+      items.map((i): AnalyticsItem => ({
+        id: i.id, name: i.name, price: i.price, quantity: i.qty, brand: i.brand, category: i.cat,
+      })),
+    );
+  }, [items]);
+
   const isPickup = fulfillment === "pickup";
 
   /** Per-governorate delivery fee from the site payload (live on province change). */
@@ -280,6 +293,8 @@ export default function CheckoutPage() {
     try {
       const res = await fetch(freezoneApiUrl("/api/public/orders"), {
         method: "POST",
+        // Send fz_customer_session so signed-in customers get the order linked.
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fulfillment: isPickup ? "pickup" : "delivery",
@@ -385,6 +400,15 @@ export default function CheckoutPage() {
       /* Placeholder tab was blocked outright — best-effort fallback. */
       window.open(waUrl, "_blank");
     }
+
+    trackPurchase({
+      orderNumber,
+      total: grandTotal,
+      shipping,
+      items: items.map((i): AnalyticsItem => ({
+        id: i.id, name: i.name, price: i.price, quantity: i.qty, brand: i.brand, category: i.cat,
+      })),
+    });
 
     clearCart();
     setSubmitting(false);

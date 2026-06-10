@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { trackViewItem } from "@/lib/analytics";
 import type { LocaleCode } from "@/lib/layout-cms";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import ProductDetailClient from "@/features/product-detail/ProductDetailClient";
@@ -22,6 +24,19 @@ export default function ProductDetailPage() {
     queryFn: () => getProductDetail(num, lc),
     enabled: Number.isFinite(num),
   });
+
+  const viewed = detail?.product;
+  useEffect(() => {
+    if (viewed) {
+      trackViewItem({
+        id: viewed.id,
+        name: viewed.name,
+        price: viewed.price,
+        brand: viewed.brand,
+        category: viewed.cat,
+      });
+    }
+  }, [viewed]);
 
   if (Number.isNaN(num)) {
     return <Navigate to=".." replace />;

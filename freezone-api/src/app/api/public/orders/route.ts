@@ -6,6 +6,7 @@ import { notifyOrderCreated, notifyStockEvent } from "@/lib/notifications";
 import { normalizeIraqiPhone, isValidIraqiPhone } from "@/lib/phone";
 import { resolveShippingFee } from "@/lib/shipping-fees";
 import { isPaymentMethodKey, isMethodAvailable } from "@/lib/payments/registry";
+import { getCurrentCustomer } from "@/lib/customer-auth";
 
 type StockEvent = {
   type: "stock.low" | "stock.out";
@@ -113,6 +114,9 @@ export async function POST(req: Request) {
   const addressLine = (cust.address ?? "").trim() || "—";
   const city = (cust.city ?? "").trim() || "—";
 
+  /** Signed-in customers get the order linked to their account; guests stay null. */
+  const sessionCustomer = await getCurrentCustomer(req).catch(() => null);
+
   try {
     const result = await prisma.$transaction(async (tx) => {
       /**
@@ -218,16 +222,13 @@ export async function POST(req: Request) {
       }
 
       const tempKey = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-      // TODO(orchestrator): when a valid customer session cookie
-      // (fz_customer_session, Agent F — API_CONTRACT §2) accompanies this
-      // request, resolve it and set `customerId` on the created order so it
-      // links to the account. Guest checkout keeps customerId null.
       const order = await tx.order.create({
         data: {
           orderNumber: tempKey,
           status: "pending",
           fulfillment,
           paymentMethod,
+          customerId: sessionCustomer?.id ?? null,
           customerName: cust.name.trim(),
           customerPhone,
           customerEmail: null,
