@@ -30,7 +30,8 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
-    sourcemap: true,
+    /** Never publish production sourcemaps (no Sentry in web — nothing consumes them). */
+    sourcemap: false,
     /** Split heavy vendor libs so the main chunk is not one 700KB+ blob. */
     /** model-viewer min bundle is ~1MB; split from app entry already. */
     chunkSizeWarningLimit: 1100,

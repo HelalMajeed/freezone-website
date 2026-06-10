@@ -1,21 +1,71 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import styles from "../login/auth.module.css";
 import { Link } from "@/navigation";
 import { SiteLogo } from "@/components/layout/SiteLogo";
-import { Phone, Shield, UserPlus, User } from "lucide-react";
+import { AlertCircle, Loader2, Lock, Phone, User, UserPlus } from "lucide-react";
 import { motion } from "framer-motion";
-import toast from "react-hot-toast";
-import { useTranslations } from "@/i18n/hooks";
+import { useTranslations, useLocale } from "@/i18n/hooks";
+import { useStorefrontUser } from "@/lib/storefront-user";
+import { isValidIraqiPhone } from "@/lib/phone";
 import { Seo } from "@/components/seo/Seo";
+import { authErrorMessageKey } from "../login/auth-error";
 
 export default function RegisterPage() {
   const t = useTranslations("Auth");
   const tSeo = useTranslations("Seo");
+  const locale = useLocale();
+  const navigate = useNavigate();
+  const status = useStorefrontUser((s) => s.status);
+  const hydrate = useStorefrontUser((s) => s.hydrate);
+  const register = useStorefrontUser((s) => s.register);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [errorKey, setErrorKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    void hydrate();
+  }, [hydrate]);
+
+  if (status === "authenticated") {
+    return <Navigate to={`/${locale}/account`} replace />;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast(t("loginPending"));
+    if (busy) return;
+    if (name.trim().length < 2) {
+      setErrorKey("errNameRequired");
+      return;
+    }
+    if (!isValidIraqiPhone(phone)) {
+      setErrorKey("errInvalidPhone");
+      return;
+    }
+    if (password.length < 8) {
+      setErrorKey("errWeakPassword");
+      return;
+    }
+    if (password !== confirm) {
+      setErrorKey("errPasswordMismatch");
+      return;
+    }
+    setErrorKey(null);
+    setBusy(true);
+    try {
+      await register({ name: name.trim(), phone, password });
+      navigate(`/${locale}/account`, { replace: true });
+    } catch (err) {
+      setErrorKey(authErrorMessageKey(err));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -32,55 +82,107 @@ export default function RegisterPage() {
           <p className={styles.subtitle}>{t("registerWelcome")}</p>
         </div>
 
-        <form className={styles.form} onSubmit={handleSubmit}>
+        <form className={styles.form} onSubmit={handleSubmit} noValidate>
+          {errorKey ? (
+            <p className={styles.errorBox} role="alert">
+              <AlertCircle size={16} aria-hidden />
+              {t(errorKey)}
+            </p>
+          ) : null}
+
           <div className={styles.formGroup}>
-            <label className={styles.label}>{t("fullNameLabel")}</label>
+            <label className={styles.label} htmlFor="register-name">
+              {t("fullNameLabel")}
+            </label>
             <div className={styles.inputWrapper}>
               <User className={styles.inputIcon} />
-              <input type="text" required className={styles.input} placeholder="Ahmed Ali" autoComplete="name" />
+              <input
+                id="register-name"
+                type="text"
+                autoComplete="name"
+                required
+                className={styles.input}
+                placeholder={t("fullNamePlaceholder")}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
             </div>
           </div>
 
           <div className={styles.formGroup}>
-            <label className={styles.label}>{t("phoneLabel")}</label>
+            <label className={styles.label} htmlFor="register-phone">
+              {t("phoneLabel")}
+            </label>
             <div className={styles.inputWrapper}>
               <Phone className={styles.inputIcon} />
               <input
+                id="register-phone"
                 type="tel"
                 inputMode="tel"
                 autoComplete="tel"
+                dir="ltr"
                 required
                 className={styles.input}
                 placeholder={t("phonePlaceholder")}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
               />
             </div>
           </div>
 
           <div className={styles.formGroup}>
-            <label className={styles.label}>{t("otpLabel")}</label>
+            <label className={styles.label} htmlFor="register-password">
+              {t("passwordLabel")}
+            </label>
             <div className={styles.inputWrapper}>
-              <Shield className={styles.inputIcon} />
+              <Lock className={styles.inputIcon} />
               <input
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
+                id="register-password"
+                type="password"
+                autoComplete="new-password"
                 required
-                maxLength={8}
+                minLength={8}
                 className={styles.input}
-                placeholder={t("otpPlaceholder")}
+                placeholder={t("passwordPlaceholder")}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <p className={styles.hint}>{t("otpHint")}</p>
+            <p className={styles.hint}>{t("passwordHint")}</p>
           </div>
 
-          <button type="submit" className={`btn-primary ${styles.submitBtn}`}>
-            <UserPlus size={20} style={{ display: "inline", marginRight: 8, verticalAlign: "middle" }} />
-            {t("createAccount")}
+          <div className={styles.formGroup}>
+            <label className={styles.label} htmlFor="register-confirm">
+              {t("confirmPasswordLabel")}
+            </label>
+            <div className={styles.inputWrapper}>
+              <Lock className={styles.inputIcon} />
+              <input
+                id="register-confirm"
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={8}
+                className={styles.input}
+                placeholder={t("passwordPlaceholder")}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <button type="submit" className={`btn-primary ${styles.submitBtn}`} disabled={busy}>
+            {busy ? (
+              <Loader2 size={20} className={styles.btnIcon} aria-hidden />
+            ) : (
+              <UserPlus size={20} className={styles.btnIcon} aria-hidden />
+            )}
+            {busy ? t("creatingAccount") : t("createAccount")}
           </button>
         </form>
 
         <p className={styles.footer}>
-          Already have an account? <Link href="/login">Sign in</Link>
+          {t("haveAccount")} <Link href="/login">{t("signInLink")}</Link>
         </p>
       </motion.div>
     </div>
