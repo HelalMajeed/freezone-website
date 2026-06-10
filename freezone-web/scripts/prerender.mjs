@@ -316,12 +316,17 @@ async function main() {
         const cat = categoryById.get(slug);
         const name = cat?.name || humanizeSlug(slug);
         const routePath = `/${locale}/category/${slug}`;
+        /** Child categories (Category.parentId tree) carry their parent in the crumb. */
+        const parentCat = cat?.parent ? categoryById.get(cat.parent) : null;
         await writeRoute(template, locale, routePath, {
           title: fill(seo.categoryTitle, { name }),
           description: fill(seo.categoryDesc, { name }),
           image: cat?.img ?? null,
           jsonLd: breadcrumbJsonLd([
             { name: homeLabel, path: `/${locale}` },
+            ...(parentCat?.name
+              ? [{ name: parentCat.name, path: `/${locale}/category/${parentCat.id}` }]
+              : []),
             { name, path: routePath },
           ]),
         });

@@ -11,7 +11,7 @@ import { IRAQ_PROVINCES } from "../src/lib/iraq-provinces";
 import { CATEGORY_FACETS } from "../src/lib/productFacetConfig";
 import { defaultFacetNamesForKey } from "../src/lib/facet-attributes";
 import { syncCategoryAttributesFromFacetKeys } from "../src/lib/classification/sync";
-import { CLASSIFICATION_SEED_BY_SLUG } from "../src/lib/classification/seed-presets";
+import { CLASSIFICATION_SEED_BY_SLUG, resolveCategorySchemaSlug } from "../src/lib/classification/seed-presets";
 
 const prisma = new PrismaClient();
 
@@ -52,30 +52,45 @@ async function main() {
   await prisma.showroomMedia.deleteMany();
   await prisma.siteConfig.deleteMany();
 
-  for (let i = 0; i < CATEGORIES.length; i++) {
-    const c = CATEGORIES[i];
-    const presetAttrs = CLASSIFICATION_SEED_BY_SLUG[c.id];
-    const facetKeys = presetAttrs?.length
-      ? presetAttrs
-      : (CATEGORY_FACETS[c.id]?.map((f) => f.key) ?? []).map((key) => {
-          const { name_en, name_ar } = defaultFacetNamesForKey(key);
-          return { key, name_en, name_ar };
-        });
-    const created = await prisma.category.create({
-      data: {
-        slug: c.id,
-        nameEn: c.name,
-        nameAr: c.nameAr ?? c.name,
-        icon: c.icon,
-        color: c.color,
-        sortOrder: i,
-        facetKeys,
-      },
-    });
-    try {
-      await syncCategoryAttributesFromFacetKeys(prisma, created.id, facetKeys);
-    } catch {
-      /* classification tables not migrated yet */
+  /**
+   * Two passes keep parent linkage robust regardless of array order: every
+   * top-level category exists (with its id captured) before any child links
+   * to it via `parent` slug. `sortOrder` stays the CATEGORIES array index so
+   * the storefront catalog keeps listing top-level categories first.
+   */
+  const categoryIdBySlug = new Map<string, number>();
+  for (const pass of ["roots", "children"] as const) {
+    for (let i = 0; i < CATEGORIES.length; i++) {
+      const c = CATEGORIES[i];
+      if ((pass === "roots") !== !c.parent) continue;
+      /** Children without their own preset inherit the aliased schema (e.g. routers → networking). */
+      const presetAttrs =
+        CLASSIFICATION_SEED_BY_SLUG[c.id] ??
+        (c.parent ? CLASSIFICATION_SEED_BY_SLUG[resolveCategorySchemaSlug(c.id)] : undefined);
+      const facetKeys = presetAttrs?.length
+        ? presetAttrs
+        : (CATEGORY_FACETS[c.id]?.map((f) => f.key) ?? []).map((key) => {
+            const { name_en, name_ar } = defaultFacetNamesForKey(key);
+            return { key, name_en, name_ar };
+          });
+      const created = await prisma.category.create({
+        data: {
+          slug: c.id,
+          nameEn: c.name,
+          nameAr: c.nameAr ?? c.name,
+          icon: c.icon,
+          color: c.color,
+          parentId: c.parent ? (categoryIdBySlug.get(c.parent) ?? null) : null,
+          sortOrder: i,
+          facetKeys,
+        },
+      });
+      categoryIdBySlug.set(c.id, created.id);
+      try {
+        await syncCategoryAttributesFromFacetKeys(prisma, created.id, facetKeys);
+      } catch {
+        /* classification tables not migrated yet */
+      }
     }
   }
 

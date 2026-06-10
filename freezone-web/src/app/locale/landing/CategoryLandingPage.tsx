@@ -6,7 +6,7 @@ import { SlidersHorizontal } from "lucide-react";
 import { Link } from "@/navigation";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
-import { productBelongsToCategory } from "@/lib/productCategoryMembership";
+import { productBelongsToCategoryTree } from "@/lib/productCategoryMembership";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { PaginationControls } from "@/components/ui/PaginationControls";
 import { Seo } from "@/components/seo/Seo";
@@ -25,10 +25,18 @@ export default function CategoryLandingPage() {
   const { catalog } = useStorefront();
 
   const category = catalog.categories.find((c) => c.id === slug);
+  /** One-level category tree: children listed on the parent page, parent in the child breadcrumb. */
+  const childCategories = useMemo(
+    () => catalog.categories.filter((c) => c.parent === slug),
+    [catalog.categories, slug],
+  );
+  const parentCategory = category?.parent
+    ? catalog.categories.find((c) => c.id === category.parent)
+    : undefined;
 
   const products = useMemo(
-    () => catalog.products.filter((p) => productBelongsToCategory(p, slug)),
-    [catalog.products, slug],
+    () => catalog.products.filter((p) => productBelongsToCategoryTree(p, slug, catalog.categories)),
+    [catalog.products, catalog.categories, slug],
   );
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -59,6 +67,8 @@ export default function CategoryLandingPage() {
   }
 
   const name = locale === "ar" ? category.nameAr || category.name : category.name;
+  const catName = (c: { name: string; nameAr?: string }) =>
+    locale === "ar" ? c.nameAr || c.name : c.name;
 
   return (
     <div className={styles.wrapper}>
@@ -70,6 +80,9 @@ export default function CategoryLandingPage() {
       <BreadcrumbJsonLd
         items={[
           { name: tSeo("breadcrumbHome"), path: `/${lc}` },
+          ...(parentCategory
+            ? [{ name: catName(parentCategory), path: `/${lc}/category/${parentCategory.id}` }]
+            : []),
           { name, path: `/${lc}/category/${category.id}` },
         ]}
       />
@@ -85,7 +98,22 @@ export default function CategoryLandingPage() {
               <SlidersHorizontal size={15} aria-hidden />
               {t("openFilters")}
             </Link>
+            {parentCategory ? (
+              <Link href={`/category/${encodeURIComponent(parentCategory.id)}`} className={styles.filtersLink}>
+                {t("backToParent", { name: catName(parentCategory) })}
+              </Link>
+            ) : null}
           </div>
+          {childCategories.length > 0 ? (
+            <nav className={styles.subcats} aria-label={t("subcategories")}>
+              {childCategories.map((c) => (
+                <Link key={c.id} href={`/category/${encodeURIComponent(c.id)}`} className={styles.subcatChip}>
+                  {c.icon ? <span aria-hidden>{c.icon}</span> : null}
+                  {catName(c)}
+                </Link>
+              ))}
+            </nav>
+          ) : null}
         </div>
       </header>
 

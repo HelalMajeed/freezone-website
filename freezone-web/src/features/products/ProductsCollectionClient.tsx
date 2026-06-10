@@ -9,7 +9,7 @@ import { FilterSidebar, type FilterState } from "@/components/layout/FilterSideb
 import { ProductCard } from "@/components/ui/ProductCard";
 import { PaginationControls } from "@/components/ui/PaginationControls";
 import { facetDefinitionsForCategory, productMatchesFacetSelections } from "@/lib/productFacetConfig";
-import { productBelongsToCategory } from "@/lib/productCategoryMembership";
+import { productBelongsToCategoryTree } from "@/lib/productCategoryMembership";
 import {
   evaluateProductCatalogSearch,
   tokenizeSearchQueryDisplay,
@@ -357,7 +357,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
       });
     }
 
-    if (filters.cat) r = r.filter((p) => productBelongsToCategory(p, filters.cat));
+    if (filters.cat) r = r.filter((p) => productBelongsToCategoryTree(p, filters.cat, categories));
     if (filters.brands.length) r = r.filter((p) => filters.brands.includes(p.brand));
     if (filters.inStock) r = r.filter((p) => p.inStock);
     if (filters.listingAge === "new") r = r.filter((p) => p.isNew);

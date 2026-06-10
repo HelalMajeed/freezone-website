@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import type { Product, FacetAttributeDef } from "./data";
-import { PRODUCTS } from "./data";
+import { PRODUCTS, CATEGORIES } from "./data";
 import { CLASSIFICATION_SEED_BY_SLUG } from "./classification/seed-presets";
 import { ensureCategorySchemaComplete } from "./classification/ensure-category-schema";
 import { prisma, isDatabaseConfigured, isDbConnectionError } from "./prisma";
@@ -126,11 +126,19 @@ function isCatalogSort(v: string): v is CatalogSort {
   return ["featured", "relevant", "price-asc", "price-desc", "date-new", "date-old"].includes(v);
 }
 
+/**
+ * Category membership is tree-aware (one level — Category.parentId): a parent
+ * category page lists its own products plus those homed on its children, via
+ * primary or secondary category. Keep in sync with the storefront's
+ * `productBelongsToCategoryTree` (freezone-web/src/lib/productCategoryMembership.ts).
+ */
 function categoryMembershipWhere(slug: string): Prisma.ProductWhereInput {
   return {
     OR: [
       { category: { slug } },
+      { category: { parent: { slug } } },
       { secondaryCategories: { some: { category: { slug } } } },
+      { secondaryCategories: { some: { category: { parent: { slug } } } } },
     ],
   };
 }
@@ -368,7 +376,14 @@ export async function queryCatalogProducts(input: CatalogFilterInput): Promise<C
 
   if (!isDatabaseConfigured()) {
     let list = [...PRODUCTS];
-    if (input.cat) list = list.filter((p) => p.cat === input.cat || p.extraCats?.includes(input.cat!));
+    if (input.cat) {
+      /** Mirror categoryMembershipWhere: a parent slug also matches its children. */
+      const treeSlugs = new Set([
+        input.cat,
+        ...CATEGORIES.filter((c) => c.parent === input.cat).map((c) => c.id),
+      ]);
+      list = list.filter((p) => treeSlugs.has(p.cat) || p.extraCats?.some((s) => treeSlugs.has(s)));
+    }
     if (input.brands?.length) list = list.filter((p) => input.brands!.includes(p.brand));
     if (input.inStock) list = list.filter((p) => p.inStock);
     if (input.onSale) list = list.filter((p) => p.oldPrice != null);

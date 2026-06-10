@@ -31,6 +31,8 @@ export interface Category {
   icon: string;
   color: string;
   img: string | null;
+  /** Parent category slug (one-level tree). Top-level categories omit it. */
+  parent?: string;
   /** Parsed from DB: stable `key` for `product.specs` + display names per language. */
   facetAttributes?: FacetAttributeDef[];
   /** Spec keys only (same order as `facetAttributes` when present) — for legacy call sites. */
@@ -103,6 +105,47 @@ export const CATEGORIES: Category[] = [
     img: null,
   },
   { id: "power-solutions", name: "Power Solutions", nameAr: "حلول الطاقة", icon: "🔋", color: "#CA8A04", img: null },
+  /**
+   * Child categories (one-level tree via Category.parentId, linked by `parent`
+   * slug). Children are listed AFTER every top-level entry so seeding can
+   * resolve parents in one array pass and catalog order keeps the homepage
+   * tiles/strips on top-level categories. Existing top-level slugs (laptops,
+   * monitors, printers, components, cctv, …) intentionally stay top-level —
+   * re-parenting them would change live pages that already carry products.
+   */
+  // Security & Surveillance (parent: security; cctv stays a top-level sibling)
+  { id: "ip-cameras", name: "IP Cameras", nameAr: "كاميرات IP", icon: "📷", color: "#1D4ED8", img: null, parent: "security" },
+  { id: "dvr-nvr", name: "DVR/NVR Systems", nameAr: "أجهزة التسجيل DVR/NVR", icon: "📼", color: "#1D4ED8", img: null, parent: "security" },
+  { id: "wifi-cameras", name: "WiFi Cameras", nameAr: "كاميرات واي فاي", icon: "📶", color: "#1D4ED8", img: null, parent: "security" },
+  { id: "alarm-systems", name: "Alarm Systems", nameAr: "أنظمة الإنذار", icon: "🚨", color: "#1D4ED8", img: null, parent: "security" },
+  { id: "fingerprint-attendance", name: "Fingerprint & Attendance", nameAr: "أجهزة البصمة والدوام", icon: "🖐️", color: "#1D4ED8", img: null, parent: "security" },
+  { id: "smart-locks", name: "Smart Locks", nameAr: "الأقفال الذكية", icon: "🔒", color: "#1D4ED8", img: null, parent: "security" },
+  { id: "intercom", name: "Intercom", nameAr: "الإنتركم", icon: "📞", color: "#1D4ED8", img: null, parent: "security" },
+  // Computers (monitors/printers/components stay top-level — see note above)
+  { id: "business-laptops", name: "Business Laptops", nameAr: "لابتوبات الأعمال", icon: "💼", color: "#059669", img: null, parent: "computers" },
+  { id: "gaming-laptops", name: "Gaming Laptops", nameAr: "لابتوبات الألعاب", icon: "🎮", color: "#059669", img: null, parent: "computers" },
+  { id: "everyday-laptops", name: "Everyday Laptops", nameAr: "لابتوبات الاستخدام اليومي", icon: "💻", color: "#059669", img: null, parent: "computers" },
+  { id: "desktops-builds", name: "Desktops & Builds", nameAr: "حواسيب مكتبية وتجميعات", icon: "🖥️", color: "#059669", img: null, parent: "computers" },
+  // Gaming
+  { id: "consoles", name: "Consoles", nameAr: "منصات الألعاب", icon: "🕹️", color: "#DC2626", img: null, parent: "gaming" },
+  { id: "controllers", name: "Controllers", nameAr: "أذرع التحكم", icon: "🎮", color: "#DC2626", img: null, parent: "gaming" },
+  { id: "gaming-accessories", name: "Gaming Accessories", nameAr: "إكسسوارات الألعاب", icon: "🎧", color: "#DC2626", img: null, parent: "gaming" },
+  // Networking
+  { id: "routers", name: "Routers", nameAr: "الراوترات", icon: "📡", color: "#0E7490", img: null, parent: "networking" },
+  { id: "access-points", name: "Access Points", nameAr: "نقاط الوصول", icon: "📶", color: "#0E7490", img: null, parent: "networking" },
+  { id: "switches", name: "Switches", nameAr: "السويتشات", icon: "🔀", color: "#0E7490", img: null, parent: "networking" },
+  { id: "cables-tools", name: "Cables & Tools", nameAr: "الكوابل والأدوات", icon: "🔌", color: "#0E7490", img: null, parent: "networking" },
+  // Smart Home
+  { id: "smart-lighting", name: "Smart Lighting", nameAr: "الإضاءة الذكية", icon: "💡", color: "#14B8A6", img: null, parent: "smart-home" },
+  { id: "plugs-switches", name: "Plugs & Switches", nameAr: "المقابس والمفاتيح الذكية", icon: "🔌", color: "#14B8A6", img: null, parent: "smart-home" },
+  { id: "sensors", name: "Sensors", nameAr: "الحساسات", icon: "🌡️", color: "#14B8A6", img: null, parent: "smart-home" },
+  { id: "smart-hubs", name: "Hubs", nameAr: "وحدات التحكم الذكية", icon: "🏠", color: "#14B8A6", img: null, parent: "smart-home" },
+  // Power Solutions
+  { id: "ups", name: "UPS", nameAr: "أجهزة UPS", icon: "🔋", color: "#CA8A04", img: null, parent: "power-solutions" },
+  { id: "inverters", name: "Inverters", nameAr: "الانفرترات", icon: "⚡", color: "#CA8A04", img: null, parent: "power-solutions" },
+  { id: "lithium-batteries", name: "Lithium Batteries", nameAr: "بطاريات الليثيوم", icon: "🔋", color: "#CA8A04", img: null, parent: "power-solutions" },
+  { id: "solar-systems", name: "Solar Systems", nameAr: "منظومات الطاقة الشمسية", icon: "☀️", color: "#CA8A04", img: null, parent: "power-solutions" },
+  { id: "converters", name: "Converters", nameAr: "المحولات", icon: "🔌", color: "#CA8A04", img: null, parent: "power-solutions" },
 ];
 
 /** Local SVGs in /public/brands — colored wordmarks, no external CDN (reliable + brand colors). */
