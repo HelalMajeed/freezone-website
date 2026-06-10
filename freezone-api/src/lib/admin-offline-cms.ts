@@ -82,7 +82,7 @@ export function getOfflineCmsPayload() {
     { id: 4, labelEn: "Components", labelAr: "مكونات", href: "/products?cat=components", imageUrl: null, iconKey: "cpu", sortOrder: 3, active: true },
     { id: 5, labelEn: "Accessories", labelAr: "إكسسوارات", href: "/products?cat=accessories", imageUrl: null, iconKey: "headphones", sortOrder: 4, active: true },
     { id: 6, labelEn: "Printers", labelAr: "طابعات", href: "/products?cat=printers", imageUrl: null, iconKey: "printer", sortOrder: 5, active: true },
-    { id: 7, labelEn: "Network", labelAr: "شبكات", href: "/products?cat=network", imageUrl: null, iconKey: "shield-check", sortOrder: 6, active: true },
+    { id: 7, labelEn: "Network", labelAr: "شبكات", href: "/products?cat=networking", imageUrl: null, iconKey: "shield-check", sortOrder: 6, active: true },
     { id: 8, labelEn: "Cables", labelAr: "كوابل", href: "/products?cat=accessories", imageUrl: null, iconKey: "package", sortOrder: 7, active: true },
   ];
 

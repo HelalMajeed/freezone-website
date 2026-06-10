@@ -121,7 +121,7 @@ function staticHomeCms(locale: LocaleCode): HomeCmsPayload {
       { id: 4, label: en ? "Components" : "مكونات", href: "/products?cat=components", imageUrl: null, iconKey: "cpu" },
       { id: 5, label: en ? "Accessories" : "إكسسوارات", href: "/products?cat=accessories", imageUrl: null, iconKey: "headphones" },
       { id: 6, label: en ? "Printers" : "طابعات", href: "/products?cat=printers", imageUrl: null, iconKey: "printer" },
-      { id: 7, label: en ? "Network" : "شبكات", href: "/products?cat=network", imageUrl: null, iconKey: "shield-check" },
+      { id: 7, label: en ? "Network" : "شبكات", href: "/products?cat=networking", imageUrl: null, iconKey: "shield-check" },
       { id: 8, label: en ? "Cables" : "كوابل", href: "/products?cat=accessories", imageUrl: null, iconKey: "package" },
     ],
     showroom: [],
