@@ -1,3 +1,25 @@
+# Netlify headers — shipped inside the publish dir so the manual actions-netlify
+# deploy honors them (the root netlify.toml is dead config under that deploy path).
+# All matching rules apply, so /* security headers also cover the blocks below.
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=63072000
+
+# Vite emits content-hashed filenames under /assets — safe to cache forever.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Admin panel must never be indexed (also disallowed in robots.txt).
+/dashboard/*
+  X-Robots-Tag: noindex
+
+/admin/*
+  X-Robots-Tag: noindex
+
 /favicon.ico
   Cache-Control: public, max-age=0, must-revalidate
 

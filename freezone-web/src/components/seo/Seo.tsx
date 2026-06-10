@@ -23,6 +23,17 @@ export function publicSiteBaseUrl(): string {
   return window.location.origin;
 }
 
+/**
+ * Netlify pretty-URLs 301 the slash-less form of every prerendered route
+ * (`/en/product/194` → `/en/product/194/`), so the trailing-slash form is the
+ * one that serves 200. Canonicals, hreflang and JSON-LD urls all use it —
+ * kept in sync with scripts/prerender.mjs and the API sitemap route.
+ */
+export function canonicalSitePath(path: string): string {
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return p.endsWith("/") ? p : `${p}/`;
+}
+
 const MANAGED_ATTR = "data-fz-seo";
 
 function upsertMeta(kind: "name" | "property", key: string, content: string | null | undefined) {
@@ -79,7 +90,7 @@ export function Seo({ title, description, image, ogType = "website", noindex = f
   useEffect(() => {
     const base = publicSiteBaseUrl();
     const path = canonicalPath ?? pathname;
-    const canonical = `${base}${path}`;
+    const canonical = `${base}${canonicalSitePath(path)}`;
     const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
     const ogImage = image
       ? image.startsWith("http")
@@ -109,9 +120,9 @@ export function Seo({ title, description, image, ogType = "website", noindex = f
     const localePattern = /^\/(en|ar)(?=\/|$)/;
     for (const lc of locales) {
       const altPath = path.replace(localePattern, `/${lc}`);
-      upsertLink("alternate", `${base}${altPath}`, lc);
+      upsertLink("alternate", `${base}${canonicalSitePath(altPath)}`, lc);
     }
-    upsertLink("alternate", `${base}${path.replace(localePattern, "/en")}`, "x-default");
+    upsertLink("alternate", `${base}${canonicalSitePath(path.replace(localePattern, "/en"))}`, "x-default");
   }, [title, description, image, ogType, noindex, canonicalPath, locale, pathname]);
 
   return null;
