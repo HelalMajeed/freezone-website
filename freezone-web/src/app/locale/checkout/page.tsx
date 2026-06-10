@@ -615,12 +615,13 @@ export default function CheckoutPage() {
 
             <div className={`${styles.formGrid} ${styles.formGridSpaced}`}>
               <div className={styles.formGroup}>
-                <label className={styles.label}>{t("fullName")}</label>
-                <input required type="text" className={styles.input} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <label className={styles.label} htmlFor="checkout-name">{t("fullName")}</label>
+                <input id="checkout-name" required type="text" className={styles.input} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.label}>{t("phone")}</label>
+                <label className={styles.label} htmlFor="checkout-phone">{t("phone")}</label>
                 <input
+                  id="checkout-phone"
                   required
                   type="tel"
                   inputMode="tel"
@@ -642,8 +643,8 @@ export default function CheckoutPage() {
                 )}
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.label}>{t("city")}</label>
-                <select className={styles.input} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}>
+                <label className={styles.label} htmlFor="checkout-city">{t("city")}</label>
+                <select id="checkout-city" className={styles.input} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}>
                   {IRAQ_PROVINCES.map((p) => (
                     <option key={p.code} value={p.code}>
                       {provinceLabel(p)}
@@ -663,13 +664,13 @@ export default function CheckoutPage() {
               </div>
               {!isPickup && (
                 <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-                  <label className={styles.label}>{t("address")}</label>
-                  <input required type="text" className={styles.input} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+                  <label className={styles.label} htmlFor="checkout-address">{t("address")}</label>
+                  <input id="checkout-address" required type="text" className={styles.input} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
                 </div>
               )}
               <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-                <label className={styles.label}>{t("orderNotes")}</label>
-                <textarea className={styles.textarea} rows={3} value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} placeholder={t("orderNotesPlaceholder")} />
+                <label className={styles.label} htmlFor="checkout-notes">{t("orderNotes")}</label>
+                <textarea id="checkout-notes" className={styles.textarea} rows={3} value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} placeholder={t("orderNotesPlaceholder")} />
               </div>
             </div>
 

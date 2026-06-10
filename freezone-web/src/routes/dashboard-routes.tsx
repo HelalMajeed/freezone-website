@@ -122,7 +122,7 @@ export default function AdminApp() {
               </L>
             }
           />
-          <Route path="audit" element={<L><DashboardAuditPage /></L>} />
+          <Route path="audit" element={<RequireRole minRole="superadmin"><L><DashboardAuditPage /></L></RequireRole>} />
           <Route path="users" element={<RequireRole minRole="superadmin"><L><DashboardUsersPage /></L></RequireRole>} />
           <Route path="profile" element={<L><DashboardProfilePage /></L>} />
           <Route path="products" element={<L><DashboardProductsPage /></L>} />

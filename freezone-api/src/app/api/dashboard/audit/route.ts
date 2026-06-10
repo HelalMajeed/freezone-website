@@ -1,13 +1,16 @@
 import { prisma } from "@/lib/prisma";
-import { requireAdminRead } from "@/lib/admin-auth";
+import { requireSuperAdminRead } from "@/lib/admin-auth";
 import { jsonOk } from "@/lib/dashboard-guard";
 
 /**
  * GET /api/dashboard/audit?limit=50&cursor=...
  * Reverse chronological audit log entries.
+ *
+ * SUPER_ADMIN only (mission §4D): the audit log exposes every operator's
+ * actions, IPs and user agents — lower dashboard roles get 403.
  */
 export async function GET(req: Request): Promise<Response> {
-  const g = await requireAdminRead(req);
+  const g = await requireSuperAdminRead(req);
   if (!g.ok) return g.response;
 
   const url = new URL(req.url);

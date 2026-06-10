@@ -7,9 +7,12 @@ Covered flows: home rails (en/ar + RTL flip), category landing, PDP
 (gallery / quantity / cart drawer), guest COD checkout with per-province fees,
 inline Iraqi-phone validation, gateway "coming soon" honesty, order tracking,
 customer reviews (pending + duplicate guard), customer accounts
-(register/logout/wrong password), and the admin panel (login form at `/admin`
+(register/logout/wrong password), the admin panel (login form at `/admin`
 — guards the route-hijack regression —, email + phone login,
-`/dashboard/* → /admin/*` redirects, sign-out).
+`/dashboard/* → /admin/*` redirects, sign-out), and an axe-core accessibility
+pass (`a11y.spec.ts`: home, listing, PDP, cart, checkout step 1, contact,
+admin login, + Arabic RTL home/PDP — **critical** violations fail, **serious**
+ones are logged as follow-up).
 
 The suite is deliberately **separate** from vitest and the app build graph:
 
@@ -46,7 +49,8 @@ npx prisma db seed               # taxonomy/CMS/site config (wipe-and-reseed; pr
 npm run db:seed:demo             # 29 bilingual demo products (refuses production)
 
 # Superadmin used by admin.spec.ts (script env vars: DASHBOARD_SEED_EMAIL,
-# DASHBOARD_SEED_NAME, DASHBOARD_SEED_PASSWORD, ADMIN_PHONE):
+# DASHBOARD_SEED_NAME, DASHBOARD_SEED_PASSWORD, ADMIN_PHONE; ADMIN_PASSWORD
+# is honored as a fallback alias when DASHBOARD_SEED_PASSWORD is unset):
 $env:DASHBOARD_SEED_EMAIL    = 'qa-admin@freezone-iq.com'
 $env:DASHBOARD_SEED_NAME     = 'QA Admin'
 $env:DASHBOARD_SEED_PASSWORD = 'Qa!Freezone2026#Smoke'

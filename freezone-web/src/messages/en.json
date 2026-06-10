@@ -838,7 +838,9 @@
     "qtyDecrease": "Decrease quantity",
     "qtyIncrease": "Increase quantity",
     "usdApprox": "≈ ${{amount}} USD",
-    "usdApproxAria": "Approximate price in US dollars"
+    "usdApproxAria": "Approximate price in US dollars",
+    "galleryExpand": "View image fullscreen",
+    "galleryClose": "Close"
   },
   "content": {
     "about": {

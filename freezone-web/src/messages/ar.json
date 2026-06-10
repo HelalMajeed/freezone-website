@@ -838,7 +838,9 @@
     "qtyDecrease": "إنقاص الكمية",
     "qtyIncrease": "زيادة الكمية",
     "usdApprox": "≈ {{amount}}$ تقريباً",
-    "usdApproxAria": "السعر التقريبي بالدولار الأمريكي"
+    "usdApproxAria": "السعر التقريبي بالدولار الأمريكي",
+    "galleryExpand": "عرض الصورة بملء الشاشة",
+    "galleryClose": "إغلاق"
   },
   "content": {
     "about": {

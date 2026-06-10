@@ -1,5 +1,5 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { guardAdminRead } from "@/lib/admin-route-guard";
+import { requireSuperAdminRead } from "@/lib/admin-auth";
 import { jsonError, jsonOk } from "@/lib/dashboard-guard";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { parsePagination } from "@/lib/admin-orders-query";
@@ -9,12 +9,15 @@ import { mapAuditRow } from "@/lib/admin-audit-query";
  * GET /api/admin/audit-log/:entity/:entityId — per-entity history
  * (contract (g)). Same item shape as the list endpoint, ascending
  * `createdAt`, pageSize default 100 max 200.
+ *
+ * SUPER_ADMIN only (mission §4D) — drilled into exclusively from the
+ * superadmin-gated audit viewer page.
  */
 export async function GET(
   req: Request,
   ctx: { params: Promise<{ entity: string; entityId: string }> },
 ) {
-  const g = await guardAdminRead(req);
+  const g = await requireSuperAdminRead(req);
   if (!g.ok) return g.response;
 
   const { entity: rawEntity, entityId: rawEntityId } = await ctx.params;

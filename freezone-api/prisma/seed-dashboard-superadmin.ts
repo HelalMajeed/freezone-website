@@ -16,6 +16,12 @@
  * the phone login identifier and is updated on rerun. If no env vars are set,
  * sensible defaults are used — change them on first login and rotate
  * immediately for production.
+ *
+ * Password env precedence (mission §3.2 / runbook naming):
+ *   1. DASHBOARD_SEED_PASSWORD  — this script's original variable, always wins;
+ *   2. ADMIN_PASSWORD           — mission/runbook alias, used when (1) is unset;
+ *   3. built-in default         — non-production only; in production the script
+ *      refuses to run unless (1) or (2) is set explicitly.
  */
 import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "../src/lib/dashboard-auth";
@@ -26,16 +32,20 @@ const prisma = new PrismaClient();
 async function main() {
   const email = (process.env.DASHBOARD_SEED_EMAIL ?? "admin@freezone-iq.com").trim().toLowerCase();
   const name = process.env.DASHBOARD_SEED_NAME ?? "Site Owner";
-  const password = process.env.DASHBOARD_SEED_PASSWORD ?? "ChangeMe!2026";
+  /** DASHBOARD_SEED_PASSWORD wins; ADMIN_PASSWORD (mission/runbook naming) is
+   *  the fallback alias — precedence documented in the file header. */
+  const passwordFromEnv = process.env.DASHBOARD_SEED_PASSWORD ?? process.env.ADMIN_PASSWORD;
+  const password = passwordFromEnv ?? "ChangeMe!2026";
 
   /** Never provision/unlock a SUPER_ADMIN with the repo's built-in default
    *  password in production — that credential is committed in VCS and this seed
    *  also resets the password and re-activates an existing account on rerun.
-   *  Require an explicit DASHBOARD_SEED_PASSWORD when NODE_ENV=production. */
-  if (!process.env.DASHBOARD_SEED_PASSWORD && process.env.NODE_ENV === "production") {
+   *  Require an explicit DASHBOARD_SEED_PASSWORD (or its ADMIN_PASSWORD alias)
+   *  when NODE_ENV=production. */
+  if (passwordFromEnv === undefined && process.env.NODE_ENV === "production") {
     console.error(
       "Refusing to seed a superadmin with the built-in default password in production. " +
-        "Set DASHBOARD_SEED_PASSWORD (and ideally DASHBOARD_SEED_EMAIL) explicitly.",
+        "Set DASHBOARD_SEED_PASSWORD or ADMIN_PASSWORD (and ideally DASHBOARD_SEED_EMAIL) explicitly.",
     );
     process.exit(1);
   }

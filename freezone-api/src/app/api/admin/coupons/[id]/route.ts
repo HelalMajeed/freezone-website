@@ -2,6 +2,7 @@ import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { guardAdminMutate, auditContext } from "@/lib/admin-route-guard";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
+import { couponValidationError, couponWriteSchema } from "../route";
 
 function parseDate(v: string | null | undefined): Date | null {
   if (!v) return null;
@@ -18,19 +19,13 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const id = parseInt((await ctx.params).id, 10);
   if (!Number.isFinite(id)) return Response.json({ error: "bad id" }, { status: 400 });
 
-  const body = (await req.json().catch(() => null)) as {
-    code?: string;
-    labelAr?: string;
-    labelEn?: string;
-    discountType?: string;
-    discountValue?: number;
-    minSubtotal?: number;
-    active?: boolean;
-    startsAt?: string | null;
-    endsAt?: string | null;
-    usageLimit?: number | null;
-  } | null;
-  if (!body) return Response.json({ error: "body" }, { status: 400 });
+  const raw = await req.json().catch(() => null);
+  if (!raw) return Response.json({ error: "body" }, { status: 400 });
+  /** Zod-formalized (ship run, A-16) — same accepted shapes as the previous
+   *  manual checks; wrong-typed payloads get the standard VALIDATION error. */
+  const parsed = couponWriteSchema.safeParse(raw);
+  if (!parsed.success) return couponValidationError(parsed.error);
+  const body = parsed.data;
 
   try {
     await prisma.coupon.update({
