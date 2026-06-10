@@ -1,18 +1,31 @@
+import { z } from "zod";
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { auditContext, guardAdminMutate, guardAdminRead } from "@/lib/admin-route-guard";
 import { actorForAudit } from "@/lib/admin-auth";
 import { jsonError, jsonOk } from "@/lib/dashboard-guard";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
-import { isAllowedOrderTransition, isOrderStatus, type OrderStatus } from "@/lib/admin-orders-query";
+import { isAllowedOrderTransition, isOrderStatus, ORDER_STATUSES, type OrderStatus } from "@/lib/admin-orders-query";
 
 /** Payment reconciliation states (Order.paymentStatus — string enum, codebase convention). */
 const PAYMENT_STATUSES = ["unpaid", "paid", "refunded"] as const;
-type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
-function isPaymentStatus(value: unknown): value is PaymentStatus {
-  return typeof value === "string" && (PAYMENT_STATUSES as readonly string[]).includes(value);
-}
+/**
+ * Zod-formalized PATCH body (ship run, ASSUMPTIONS A-16) — a 1:1 encoding of
+ * the previous manual checks so valid callers are byte-identical:
+ * - `status` must be one of ORDER_STATUSES (the `cancelled` 409 and the
+ *   transition state machine stay as post-parse checks below, unchanged);
+ * - `shipping` keeps the historical `Number(...)` coercion (z.coerce) and the
+ *   integer-≥0 rule;
+ * - `paymentStatus` must be one of PAYMENT_STATUSES;
+ * - at least one of the three keys must be present.
+ * Every parse failure answers the same `400 VALIDATION` as before.
+ */
+const orderPatchSchema = z.object({
+  status: z.enum(ORDER_STATUSES).optional(),
+  shipping: z.coerce.number().int().min(0).optional(),
+  paymentStatus: z.enum(PAYMENT_STATUSES).optional(),
+});
 
 type EventRow = {
   id: number;
@@ -116,29 +129,20 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const id = parseInt((await ctx.params).id, 10);
   if (!Number.isFinite(id)) return jsonError(400, "VALIDATION");
 
-  const body = (await req.json().catch(() => null)) as
-    | { status?: unknown; shipping?: unknown; paymentStatus?: unknown }
-    | null;
+  const parsed = orderPatchSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return jsonError(400, "VALIDATION");
+  const body = parsed.data;
 
-  const wantsStatus = body?.status !== undefined;
-  const wantsShipping = body?.shipping !== undefined;
-  const wantsPaymentStatus = body?.paymentStatus !== undefined;
-  if (!body || (!wantsStatus && !wantsShipping && !wantsPaymentStatus)) {
-    return jsonError(400, "VALIDATION");
-  }
-  if (wantsStatus && !isOrderStatus(body.status)) {
+  const wantsStatus = body.status !== undefined;
+  const wantsShipping = body.shipping !== undefined;
+  const wantsPaymentStatus = body.paymentStatus !== undefined;
+  if (!wantsStatus && !wantsShipping && !wantsPaymentStatus) {
     return jsonError(400, "VALIDATION");
   }
   if (wantsStatus && body.status === "cancelled") {
     return jsonError(409, "USE_CANCEL_ENDPOINT");
   }
-  const shipping = wantsShipping ? Number(body.shipping) : null;
-  if (wantsShipping && (!Number.isInteger(shipping) || (shipping as number) < 0)) {
-    return jsonError(400, "VALIDATION");
-  }
-  if (wantsPaymentStatus && !isPaymentStatus(body.paymentStatus)) {
-    return jsonError(400, "VALIDATION");
-  }
+  const shipping = wantsShipping ? (body.shipping as number) : null;
 
   const audit = auditContext(g.actor, req);
   const actor = actorForAudit(g.actor);

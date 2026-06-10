@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { auditContext, guardAdminMutate } from "@/lib/admin-route-guard";
 import { actorForAudit } from "@/lib/admin-auth";
@@ -6,6 +7,16 @@ import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
 
 const MAX_NOTE_LENGTH = 2000;
+
+/** Zod-formalized (ship run, A-16): same rule as the previous manual check —
+ *  `text` must be a string that is non-empty after trim and ≤ 2000 chars;
+ *  every failure answers the same `400 VALIDATION`. */
+const notePostSchema = z.object({
+  text: z
+    .string()
+    .transform((t) => t.trim())
+    .refine((t) => t.length > 0 && t.length <= MAX_NOTE_LENGTH),
+});
 
 /**
  * POST /api/admin/orders/:id/notes — append an internal staff note to the order
@@ -20,11 +31,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const id = parseInt((await ctx.params).id, 10);
   if (!Number.isFinite(id)) return jsonError(400, "VALIDATION");
 
-  const body = (await req.json().catch(() => null)) as { text?: unknown } | null;
-  const text = typeof body?.text === "string" ? body.text.trim() : "";
-  if (!text || text.length > MAX_NOTE_LENGTH) {
-    return jsonError(400, "VALIDATION");
-  }
+  const parsed = notePostSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return jsonError(400, "VALIDATION");
+  const { text } = parsed.data;
 
   const audit = auditContext(g.actor, req);
   const actor = actorForAudit(g.actor);
