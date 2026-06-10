@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Product, Category } from "@/lib/data";
 import type { ProductDetailSpecGroup } from "@/lib/product-detail";
 import type { ProductVariantDto } from "@/lib/product-detail";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { ImageGallery } from "@/components/ui/ImageGallery";
+import { ProductReviews } from "./ProductReviews";
 import { useCart } from "@/lib/store";
-import { CreditCard, ShoppingCart } from "lucide-react";
+import { CreditCard, Minus, Plus, ShoppingCart } from "lucide-react";
 import styles from "./productDetail.module.css";
 import { Link, useRouter } from "@/navigation";
 import { useLocale, useTranslations } from "@/i18n/hooks";
@@ -57,9 +58,18 @@ export default function ProductDetailClient({
   variants?: ProductVariantDto[];
 }) {
   const t = useTranslations("ProductDetail");
+  const tPdp = useTranslations("pdp");
   const locale = useLocale();
   const router = useRouter();
   const { addItem } = useCart();
+
+  const MAX_QTY = 99;
+  const [qty, setQty] = useState(1);
+  /** Reset the selector when navigating between products (no remount). */
+  useEffect(() => {
+    setQty(1);
+  }, [product.id]);
+  const clampQty = (n: number) => Math.min(MAX_QTY, Math.max(1, Math.trunc(n) || 1));
 
   const category = categories.find((c) => c.id === product.cat);
   const facetAttrs = attributes.length ? attributes : category?.facetAttributes;
@@ -218,11 +228,48 @@ export default function ProductDetailClient({
             </section>
           ) : null}
 
+          <div className={styles.qtyRow}>
+            <span id="pdp-qty-label" className={styles.qtyLabel}>
+              {tPdp("qtyLabel")}
+            </span>
+            <div className={styles.qtyControl} role="group" aria-labelledby="pdp-qty-label">
+              <button
+                type="button"
+                className={styles.qtyBtn}
+                onClick={() => setQty((q) => clampQty(q - 1))}
+                disabled={!product.inStock || qty <= 1}
+                aria-label={tPdp("qtyDecrease")}
+              >
+                <Minus size={16} aria-hidden />
+              </button>
+              <input
+                type="number"
+                className={styles.qtyInput}
+                inputMode="numeric"
+                min={1}
+                max={MAX_QTY}
+                value={qty}
+                onChange={(e) => setQty(clampQty(Number(e.target.value)))}
+                disabled={!product.inStock}
+                aria-labelledby="pdp-qty-label"
+              />
+              <button
+                type="button"
+                className={styles.qtyBtn}
+                onClick={() => setQty((q) => clampQty(q + 1))}
+                disabled={!product.inStock || qty >= MAX_QTY}
+                aria-label={tPdp("qtyIncrease")}
+              >
+                <Plus size={16} aria-hidden />
+              </button>
+            </div>
+          </div>
+
           <div className={styles.actionStack}>
             <button
               type="button"
               className={`btn-primary ${styles.actionBtn}`}
-              onClick={() => addItem(product)}
+              onClick={() => addItem(product, qty)}
               disabled={!product.inStock}
             >
               <ShoppingCart size={20} aria-hidden />
@@ -235,7 +282,7 @@ export default function ProductDetailClient({
               aria-label={t("buyNowAria")}
               onClick={() => {
                 if (!product.inStock) return;
-                addItem(product, 1);
+                addItem(product, qty);
                 router.push("/checkout");
               }}
             >
@@ -276,6 +323,8 @@ export default function ProductDetailClient({
           </div>
         </section>
       ) : null}
+
+      <ProductReviews productId={product.id} />
 
       {relatedProducts.length > 0 ? (
         <MotionReveal direction="up" delay={0.05}>

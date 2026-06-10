@@ -781,5 +781,46 @@
     "openFilters": "تصفّح مع الفلاتر",
     "noProducts": "لا توجد منتجات في هذا القسم حالياً — عُد قريباً.",
     "viewAll": "عرض كل المنتجات"
+  },
+  "reviews": {
+    "title": "آراء العملاء",
+    "summaryAria": "التقييم {{avg}} من 5",
+    "reviewsCount": "{{count}} تقييم",
+    "empty": "لا توجد تقييمات بعد — كن أول من يقيّم هذا المنتج.",
+    "loading": "جارٍ تحميل التقييمات…",
+    "loadError": "تعذّر تحميل التقييمات.",
+    "writeTitle": "أضف تقييمك",
+    "nameLabel": "اسمك",
+    "phoneLabel": "رقم الهاتف",
+    "phonePlaceholder": "07XXXXXXXXX",
+    "phoneHint": "يُستخدم للتحقق فقط — لن يُعرض للعلن.",
+    "ratingLabel": "تقييمك",
+    "starAria": "قيّم {{count}} من 5",
+    "commentLabel": "نص التقييم",
+    "commentPlaceholder": "شاركنا تجربتك مع هذا المنتج…",
+    "submit": "إرسال التقييم",
+    "submitting": "جارٍ الإرسال…",
+    "successPending": "شكراً لك! تم استلام تقييمك وسيظهر بعد المراجعة.",
+    "fieldNameError": "يجب أن يكون الاسم بين 2 و60 حرفاً.",
+    "fieldRatingError": "يرجى اختيار تقييم.",
+    "fieldCommentError": "يجب ألا يقل التعليق عن 10 أحرف.",
+    "errorAlreadyReviewed": "لقد قيّمت هذا المنتج خلال الـ24 ساعة الماضية.",
+    "errorInvalidPhone": "يرجى إدخال رقم هاتف عراقي صحيح (07XXXXXXXXX).",
+    "errorValidation": "يرجى التحقق من الحقول: الاسم ورقم هاتف صحيح والتقييم وتعليق لا يقل عن 10 أحرف.",
+    "errorRateLimited": "محاولات كثيرة — يرجى المحاولة بعد دقيقة.",
+    "errorGeneric": "تعذّر إرسال تقييمك. حاول مرة أخرى."
+  },
+  "listing": {
+    "pagination": "التنقل بين الصفحات",
+    "prevPage": "السابق",
+    "nextPage": "التالي",
+    "pageStatus": "صفحة {{page}} من {{total}}",
+    "pageAria": "اذهب إلى الصفحة {{page}}",
+    "currentPageAria": "الصفحة {{page}} — الصفحة الحالية"
+  },
+  "pdp": {
+    "qtyLabel": "الكمية",
+    "qtyDecrease": "إنقاص الكمية",
+    "qtyIncrease": "زيادة الكمية"
   }
 }

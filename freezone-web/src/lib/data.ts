@@ -78,21 +78,22 @@ export interface Product {
 }
 
 export const CATEGORIES: Category[] = [
-  { id: "gaming", name: "Gaming", icon: "🎮", color: "#DC2626", img: null },
-  { id: "security", name: "Security Systems", icon: "🔐", color: "#1D4ED8", img: null },
-  { id: "cctv", name: "CCTV", icon: "📹", color: "#7C3AED", img: null },
-  { id: "computers", name: "Computers", icon: "💻", color: "#059669", img: null },
-  { id: "laptops", name: "Laptops", icon: "💻", color: "#0369A1", img: null },
-  { id: "monitors", name: "Monitors", icon: "🖥️", color: "#D97706", img: null },
-  { id: "printers", name: "Printers", icon: "🖨️", color: "#DB2777", img: null },
-  { id: "electric", name: "Electric Solutions", icon: "⚡", color: "#0891B2", img: null },
-  { id: "software", name: "Software", icon: "💿", color: "#65A30D", img: null },
-  { id: "hardware", name: "Hardware & Dev", icon: "🔧", color: "#F97316", img: null },
-  { id: "components", name: "PC Components", icon: "⚙️", color: "#4B5563", img: null },
-  { id: "accessories", name: "Accessories", icon: "🎧", color: "#8B5CF6", img: null },
-  { id: "all-in-one", name: "All-in-One", icon: "🖥️", color: "#0EA5E9", img: null },
-  { id: "smart-home", name: "Smart Home", icon: "🏠", color: "#14B8A6", img: null },
-  { id: "phones", name: "Phones", icon: "📱", color: "#6366F1", img: null },
+  { id: "gaming", name: "Gaming", nameAr: "الألعاب", icon: "🎮", color: "#DC2626", img: null },
+  { id: "security", name: "Security Systems", nameAr: "أنظمة الحماية", icon: "🔐", color: "#1D4ED8", img: null },
+  { id: "cctv", name: "CCTV", nameAr: "كاميرات المراقبة", icon: "📹", color: "#7C3AED", img: null },
+  { id: "computers", name: "Computers", nameAr: "الحواسيب", icon: "💻", color: "#059669", img: null },
+  { id: "laptops", name: "Laptops", nameAr: "اللابتوبات", icon: "💻", color: "#0369A1", img: null },
+  { id: "monitors", name: "Monitors", nameAr: "الشاشات", icon: "🖥️", color: "#D97706", img: null },
+  { id: "printers", name: "Printers", nameAr: "الطابعات", icon: "🖨️", color: "#DB2777", img: null },
+  { id: "electric", name: "Electric Solutions", nameAr: "الحلول الكهربائية", icon: "⚡", color: "#0891B2", img: null },
+  { id: "software", name: "Software", nameAr: "البرمجيات", icon: "💿", color: "#65A30D", img: null },
+  { id: "hardware", name: "Hardware & Dev", nameAr: "العتاد والتطوير", icon: "🔧", color: "#F97316", img: null },
+  { id: "networking", name: "Networking", nameAr: "الشبكات", icon: "🌐", color: "#0E7490", img: null },
+  { id: "components", name: "PC Components", nameAr: "مكوّنات الحاسوب", icon: "⚙️", color: "#4B5563", img: null },
+  { id: "accessories", name: "Accessories", nameAr: "الإكسسوارات", icon: "🎧", color: "#8B5CF6", img: null },
+  { id: "all-in-one", name: "All-in-One", nameAr: "أجهزة الكل في واحد", icon: "🖥️", color: "#0EA5E9", img: null },
+  { id: "smart-home", name: "Smart Home", nameAr: "المنزل الذكي", icon: "🏠", color: "#14B8A6", img: null },
+  { id: "phones", name: "Phones", nameAr: "الهواتف", icon: "📱", color: "#6366F1", img: null },
   {
     id: "tablets",
     name: "Tablets & iPad",
@@ -101,7 +102,7 @@ export const CATEGORIES: Category[] = [
     color: "#9333EA",
     img: null,
   },
-  { id: "power-solutions", name: "Power Solutions", icon: "🔋", color: "#CA8A04", img: null },
+  { id: "power-solutions", name: "Power Solutions", nameAr: "حلول الطاقة", icon: "🔋", color: "#CA8A04", img: null },
 ];
 
 /** Local SVGs in /public/brands — colored wordmarks, no external CDN (reliable + brand colors). */

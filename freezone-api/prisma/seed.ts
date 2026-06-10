@@ -7,6 +7,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import { CATEGORIES } from "../src/lib/data";
+import { IRAQ_PROVINCES } from "../src/lib/iraq-provinces";
 import { CATEGORY_FACETS } from "../src/lib/productFacetConfig";
 import { defaultFacetNamesForKey } from "../src/lib/facet-attributes";
 import { syncCategoryAttributesFromFacetKeys } from "../src/lib/classification/sync";
@@ -82,6 +83,11 @@ async function main() {
     data: {
       id: 1,
       headerLogoHeightPx: 48,
+      /** Per-governorate delivery fees (IQD), keyed by canonical province codes.
+       *  Baghdad is cheaper; every other governorate gets the standard long-haul fee. */
+      shippingFeesJson: Object.fromEntries(
+        IRAQ_PROVINCES.map((p) => [p.code, p.code === "baghdad" ? 5000 : 8000]),
+      ),
       storeNameEn: "Store",
       storeNameAr: "المتجر",
       taglineEn: "Iraq's trusted tech partner — CCTV, computers, gaming, smart solutions.",
@@ -146,7 +152,7 @@ async function main() {
       { labelEn: "Accessories", labelAr: "إكسسوارات", href: "/products?cat=accessories", iconKey: "headphones", sortOrder: 4, active: true },
       { labelEn: "Printers", labelAr: "طابعات", href: "/products?cat=printers", iconKey: "printer", sortOrder: 5, active: true },
       { labelEn: "Tablets & iPad", labelAr: "تابلت وأيباد", href: "/products?cat=tablets", iconKey: "tablet", sortOrder: 6, active: true },
-      { labelEn: "Network", labelAr: "شبكات", href: "/products?cat=network", iconKey: "shield-check", sortOrder: 7, active: true },
+      { labelEn: "Network", labelAr: "شبكات", href: "/products?cat=networking", iconKey: "shield-check", sortOrder: 7, active: true },
       { labelEn: "Cables", labelAr: "كوابل", href: "/products?cat=accessories", iconKey: "package", sortOrder: 8, active: true },
     ],
   });
