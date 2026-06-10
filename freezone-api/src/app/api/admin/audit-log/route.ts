@@ -1,5 +1,5 @@
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import { guardAdminRead } from "@/lib/admin-route-guard";
+import { requireSuperAdminRead } from "@/lib/admin-auth";
 import { jsonOk } from "@/lib/dashboard-guard";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { parsePagination } from "@/lib/admin-orders-query";
@@ -8,6 +8,10 @@ import { buildAuditWhere, mapAuditRow } from "@/lib/admin-audit-query";
 /**
  * GET /api/admin/audit-log — filterable audit log (contract (g)).
  *
+ * SUPER_ADMIN only (mission §4D): the viewer surfaces every operator's
+ * actions, IPs and user agents — lower dashboard roles get 403. The only
+ * frontend consumer is the audit viewer page, itself superadmin-gated.
+ *
  * Query: `page`, `pageSize` (default 50, max 200), `entity`, `entityId`,
  * `user` (userEmail contains case-insensitive, or exact userId when numeric),
  * `action` (exact), `from`/`to` (on createdAt). `rows` (alias of `items`) and
@@ -15,7 +19,7 @@ import { buildAuditWhere, mapAuditRow } from "@/lib/admin-audit-query";
  * `items` + pages.
  */
 export async function GET(req: Request) {
-  const g = await guardAdminRead(req);
+  const g = await requireSuperAdminRead(req);
   if (!g.ok) return g.response;
   if (!isDatabaseConfigured()) {
     return jsonOk({

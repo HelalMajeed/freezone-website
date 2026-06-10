@@ -59,7 +59,7 @@ const NAV: NavGroupDef[] = [
     items: [
       { to: "/admin", end: true, label: { en: "Dashboard", ar: "اللوحة" }, icon: LayoutDashboard },
       { to: "/admin/notifications", label: { en: "Notifications", ar: "الإشعارات" }, icon: Bell },
-      { to: "/admin/audit", label: { en: "Activity", ar: "السجل" }, icon: History },
+      { to: "/admin/audit", label: { en: "Activity", ar: "السجل" }, icon: History, minRole: "superadmin" },
     ],
   },
   {
