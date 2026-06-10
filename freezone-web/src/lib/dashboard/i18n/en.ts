@@ -763,6 +763,17 @@ export const dashboardEn = {
   "cms.deleteSocialTitle": "Delete the {platform} link?",
   "cms.deleteMessage": "It will be removed from the storefront immediately.",
   "cms.deletedToast": "Deleted.",
+
+  // ── Login ─────────────────────────────────────────────────────────────────
+  "login.opening": "Opening dashboard…",
+  "login.openingHint": "Just a moment.",
+  "login.title": "Sign in",
+  "login.subtitle": "Use your email or Iraqi phone number and your password.",
+  "login.identifier": "Email or phone",
+  "login.identifierPlaceholder": "name@example.com / 07XXXXXXXXX",
+  "login.password": "Password",
+  "login.submit": "Sign in",
+  "login.missingFields": "Enter your email or phone and your password.",
 } as const;
 
 export type DashboardMessageKey = keyof typeof dashboardEn;

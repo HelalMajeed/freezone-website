@@ -1,16 +1,18 @@
 import { prisma } from "@/lib/prisma";
 import { adminDirectLoginGate } from "@/lib/admin-direct-login";
 import { createSession, isRole, jsonWithDashboardCookie } from "@/lib/dashboard-auth";
-import { clientIpFromRequest, jsonError } from "@/lib/dashboard-guard";
+import { clientIpFromRequest, clientUserAgentFromRequest, jsonError } from "@/lib/dashboard-guard";
 import { signAdminSession } from "@/lib/admin-session";
 import { logAdminAction } from "@/lib/admin-audit";
 
 /**
  * POST /api/dashboard/auth/direct-login
  *
- * Passwordless direct entry. No body, no key. When ADMIN_DIRECT_LOGIN (or
- * ADMIN_SKIP_AUTH) is enabled, issues a SUPER_ADMIN dashboard session; otherwise
- * returns 403.
+ * Passwordless direct entry — NON-PRODUCTION ONLY. No body, no key. When
+ * ADMIN_DIRECT_LOGIN (or ADMIN_SKIP_AUTH) is enabled outside production,
+ * issues a SUPER_ADMIN dashboard session; otherwise returns 403
+ * (DIRECT_LOGIN_DISABLED, or DIRECT_LOGIN_DISABLED_IN_PRODUCTION when
+ * NODE_ENV=production — fails closed there regardless of env flags).
  */
 function noStore(res: Response): Response {
   res.headers.set("Cache-Control", "no-store");
@@ -57,6 +59,8 @@ export async function POST(req: Request): Promise<Response> {
     await logAdminAction("auth.direct-login", "AdminUser", {
       entityId: 0,
       payload: { mode: "legacy" },
+      ip: clientIpFromRequest(req),
+      userAgent: clientUserAgentFromRequest(req),
     });
     return new Response(
       JSON.stringify({
@@ -93,6 +97,8 @@ export async function POST(req: Request): Promise<Response> {
   await logAdminAction("auth.direct-login", "AdminUser", {
     entityId: user.id,
     payload: { mode: "dashboard", email: user.email },
+    ip: clientIpFromRequest(req),
+    userAgent: clientUserAgentFromRequest(req),
   });
 
   return noStore(res);

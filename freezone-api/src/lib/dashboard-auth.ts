@@ -49,11 +49,11 @@ export async function createSession(opts: {
   userId: number;
   userAgent?: string | null;
   ip?: string | null;
-}): Promise<{ token: string; expiresAt: Date }> {
+}): Promise<{ token: string; expiresAt: Date; sessionId: string }> {
   const token = randomBytes(32).toString("base64url");
   const tokenHash = sha256Hex(token);
   const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);
-  await prisma.adminSession.create({
+  const session = await prisma.adminSession.create({
     data: {
       userId: opts.userId,
       tokenHash,
@@ -62,7 +62,7 @@ export async function createSession(opts: {
       expiresAt,
     },
   });
-  return { token, expiresAt };
+  return { token, expiresAt, sessionId: session.id };
 }
 
 export type CurrentUser = {

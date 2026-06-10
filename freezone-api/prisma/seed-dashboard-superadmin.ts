@@ -8,14 +8,18 @@
  *   DASHBOARD_SEED_EMAIL=admin@freezone-iq.com \
  *   DASHBOARD_SEED_NAME="Site Owner" \
  *   DASHBOARD_SEED_PASSWORD="ChangeMe!2026" \
+ *   ADMIN_PHONE=07712345678 \
  *     npx tsx prisma/seed-dashboard-superadmin.ts
  *
  * Idempotent: if the email already exists, the user is upgraded to superadmin
- * and the password is reset. If no env vars are set, sensible defaults are used
- * — change them on first login and rotate immediately for production.
+ * and the password is reset. `ADMIN_PHONE` (optional, Iraqi 07XXXXXXXXX) sets
+ * the phone login identifier and is updated on rerun. If no env vars are set,
+ * sensible defaults are used — change them on first login and rotate
+ * immediately for production.
  */
 import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "../src/lib/dashboard-auth";
+import { isValidIraqiPhone, normalizeIraqiPhone } from "../src/lib/phone";
 
 const prisma = new PrismaClient();
 
@@ -41,6 +45,17 @@ async function main() {
     process.exit(1);
   }
 
+  /** Optional phone login identifier (alternative to email at /dashboard/login). */
+  const phoneRaw = process.env.ADMIN_PHONE?.trim();
+  let phone: string | undefined;
+  if (phoneRaw) {
+    if (!isValidIraqiPhone(phoneRaw)) {
+      console.error("ADMIN_PHONE must be a valid Iraqi mobile (07XXXXXXXXX).");
+      process.exit(1);
+    }
+    phone = normalizeIraqiPhone(phoneRaw);
+  }
+
   const passwordHash = await hashPassword(password);
 
   const existing = await prisma.adminUser.findUnique({ where: { email } });
@@ -54,6 +69,7 @@ async function main() {
         failedLogins: 0,
         lockedUntil: null,
         name,
+        ...(phone ? { phone } : {}),
       },
     });
     console.log(`✓ Upgraded existing user → superadmin: ${email}`);
@@ -65,6 +81,7 @@ async function main() {
         passwordHash,
         role: "SUPER_ADMIN",
         active: true,
+        ...(phone ? { phone } : {}),
       },
     });
     console.log(`✓ Created superadmin: ${email}`);
@@ -73,6 +90,7 @@ async function main() {
   console.log("");
   console.log("Login at:  /dashboard/login");
   console.log(`Email:     ${email}`);
+  if (phone) console.log(`Phone:     ${phone}`);
   console.log(`Password:  ${password === "ChangeMe!2026" ? "(default — CHANGE NOW)" : "(set via env)"}`);
 }
 

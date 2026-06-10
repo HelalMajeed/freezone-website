@@ -754,4 +754,15 @@ export const dashboardAr: Record<DashboardMessageKey, string> = {
   "cms.deleteSocialTitle": "حذف رابط {platform}؟",
   "cms.deleteMessage": "سيُزال من واجهة المتجر فورًا.",
   "cms.deletedToast": "تم الحذف.",
+
+  // ── Login ─────────────────────────────────────────────────────────────────
+  "login.opening": "جارٍ فتح لوحة التحكم…",
+  "login.openingHint": "لحظة من فضلك.",
+  "login.title": "تسجيل الدخول",
+  "login.subtitle": "استخدم بريدك الإلكتروني أو رقم هاتفك العراقي مع كلمة المرور.",
+  "login.identifier": "البريد الإلكتروني أو رقم الهاتف",
+  "login.identifierPlaceholder": "name@example.com / 07XXXXXXXXX",
+  "login.password": "كلمة المرور",
+  "login.submit": "دخول",
+  "login.missingFields": "أدخل البريد الإلكتروني أو رقم الهاتف وكلمة المرور.",
 };

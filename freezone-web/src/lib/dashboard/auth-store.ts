@@ -8,7 +8,8 @@ type AuthState = {
   status: AuthStatus;
   user: DashboardUser | null;
   refresh: () => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
+  /** Credentialed login — identifier is an email or Iraqi phone (07XXXXXXXXX). */
+  login: (identifier: string, password: string) => Promise<void>;
   /** Passwordless direct entry — succeeds when the API has ADMIN_DIRECT_LOGIN on. */
   directLogin: () => Promise<void>;
   logout: () => Promise<void>;
@@ -46,9 +47,9 @@ export const useDashboardAuth = create<AuthState>((set, get) => ({
     }
   },
 
-  async login(email, password) {
+  async login(identifier, password) {
     const user = await dashboardApi.post<DashboardUser>("/api/dashboard/auth/login", {
-      email,
+      identifier,
       password,
     });
     set({ status: "authenticated", user });
