@@ -385,6 +385,7 @@
   "ProductDetail": {
     "home": "Home",
     "products": "Products",
+    "loading": "Loading…",
     "notFound": "Product not found. Redirecting...",
     "reviews": "({{count}} reviews)",
     "sales": "🔥 {{count}} units sold",

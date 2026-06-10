@@ -10,7 +10,8 @@ import type { ReactNode } from "react";
 
 export const locales = ["en", "ar"] as const;
 export type AppLocale = (typeof locales)[number];
-export const defaultLocale: AppLocale = "en";
+/** Arabic-first storefront (MISSION §3.3 / ASSUMPTIONS A-18); explicit visitor choice wins via src/lib/preferred-locale.ts. */
+export const defaultLocale: AppLocale = "ar";
 
 function useLocalePrefix(): (path: string) => string {
   const { locale } = useParams<{ locale: string }>();
@@ -79,5 +80,5 @@ export function useRouter() {
 }
 
 export function redirectToDefaultLocale() {
-  return `/en`;
+  return `/${defaultLocale}`;
 }

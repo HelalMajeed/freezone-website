@@ -18,6 +18,7 @@ export default function ProductDetailPage() {
   const num = parseInt(id ?? "", 10);
   const { catalog } = useStorefront();
   const tSeo = useTranslations("Seo");
+  const tPdp = useTranslations("ProductDetail");
 
   const { data: detail, isLoading, isFetched } = useQuery({
     queryKey: ["product-detail", num, lc],
@@ -44,7 +45,7 @@ export default function ProductDetailPage() {
   if (isLoading) {
     return (
       <div className="container" style={{ padding: "80px 20px", textAlign: "center" }}>
-        جاري التحميل…
+        {tPdp("loading")}
       </div>
     );
   }

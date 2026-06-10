@@ -26,6 +26,7 @@ import { useStorefront, usePublicSite } from "@/components/providers/StorefrontP
 import { storedNavToResolved } from "@/lib/nav-from-json";
 import { DEFAULT_NAV_ITEMS } from "@/lib/default-mega-nav";
 import { useWishlist } from "@/lib/wishlist-store";
+import { persistPreferredLocale } from "@/lib/preferred-locale";
 import {
   fetchSearchSuggestions,
   filterSuggestions,
@@ -78,6 +79,8 @@ export function NavBar() {
 
   const toggleLanguage = () => {
     const nextLocale = locale === "ar" ? "en" : "ar";
+    /** Explicit visitor choice — persisted so "/" honors it on the next visit (A-18). */
+    persistPreferredLocale(nextLocale);
     /** Full path including locale — must not use `useRouter().replace`, which prepends the *current* locale and would turn `/ar` into `/en/ar`. */
     const suffix = pathname === "/" ? "" : pathname;
     navigate(`/${nextLocale}${suffix}`, { replace: true });
