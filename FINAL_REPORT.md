@@ -1,6 +1,6 @@
 # FINAL_REPORT — FreeZone Global-Launch Sprint
 
-Date: 2026-06-10 · Branch: **`feat/global-launch`** (NOT merged to main, NOT deployed)
+Date: 2026-06-10 (+ day-2 delta 2026-06-11) · Branch: **`feat/global-launch`** (NOT merged to main, NOT deployed)
 Companion docs: `GAP_REPORT.md` · `API_CONTRACT.md` · `ASSUMPTIONS.md` · `SEO_NOTES.md` ·
 `docs/ENV_VARS_GLOBAL_LAUNCH.md`
 
@@ -78,6 +78,29 @@ was fixed and re-verified 11/11.
 ### Schema (one additive migration: `20260610120000_global_launch_foundations`)
 `Customer`, `CustomerSession`, `Review`, `Order.paymentStatus` + `Order.customerId`,
 `AdminUser.phone`, `SiteConfig.shippingFeesJson`, drift-heal for a `db push`-era index.
+
+## Day-2 delta (2026-06-11)
+
+Three remaining mission gaps closed by a second parallel pass:
+
+- **Hierarchical category tree** — 27 bilingual child categories seeded under
+  security/computers/gaming/networking/smart-home/power-solutions
+  (`docs/CATEGORY_TREE.md`). Parent listing pages aggregate child products
+  (one level; API + storefront in lockstep), child pages get facet schemas via
+  slug aliases, sitemap + prerender include children automatically, parent-page
+  subcategory chips added. Existing top-level categories were deliberately NOT
+  re-parented (live-prod safety — see CATEGORY_TREE.md rollout note); production
+  gets children via the admin Categories form, not a re-seed.
+- **Committed Playwright e2e suite** — `freezone-web/e2e/` (6 spec files, 16
+  tests: storefront/checkout/tracking/reviews/admin/accounts incl. a permanent
+  regression guard for the /admin route-hijack). `npm run test:e2e` +
+  `e2e/README.md` setup guide. Proven **16/16 green twice** on fresh DBs —
+  once on its own branch, once on the final merged tip. Not wired into CI
+  (needs a DB+browser job — future work).
+- **Polish** — cart page now shows the honest per-governorate fee range hint;
+  MobileMenu slides from the correct side in RTL (verified live both dirs);
+  ADR-003 records Vite+prerender as the SEO path (supersedes ADR-002);
+  bundle-size + npm-audit data added below; PROGRESS.md log updated.
 
 ## Test & verification results
 
