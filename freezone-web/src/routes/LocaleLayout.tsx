@@ -21,7 +21,8 @@ import { LocaleRouteFallback } from "@/routes/LocaleRouteFallback";
 import { StorefrontErrorScreen, MaintenanceScreen } from "@/routes/LocaleShellScreens";
 import { StorefrontBottomDock } from "@/components/layout/StorefrontBottomDock";
 import { StorefrontWhatsAppFab } from "@/components/layout/StorefrontWhatsAppFab";
-import { locales, defaultLocale, type AppLocale } from "@/navigation";
+import { locales, type AppLocale } from "@/navigation";
+import { readPreferredLocale } from "@/lib/preferred-locale";
 
 const Footer = lazy(() => import("@/components/layout/Footer").then((m) => ({ default: m.Footer })));
 
@@ -81,11 +82,12 @@ export function LocaleLayout() {
 
   /**
    * Unknown first segment (typo or un-prefixed link like /cart) — bounce to the
-   * default locale keeping the path, so it resolves to a real localized route or
-   * the locale 404 instead of silently rendering the English homepage.
+   * visitor's preferred locale (persisted choice, Arabic default — A-18) keeping
+   * the path, so it resolves to a real localized route or the locale 404 instead
+   * of silently rendering the default-language homepage.
    */
   if (!isKnownLocale) {
-    return <Navigate to={`/${defaultLocale}${location.pathname}${location.search}`} replace />;
+    return <Navigate to={`/${readPreferredLocale()}${location.pathname}${location.search}`} replace />;
   }
 
   if (isError && !bundle) {

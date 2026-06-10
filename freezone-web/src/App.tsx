@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { readPreferredLocale } from "@/lib/preferred-locale";
 import { LocaleLayout } from "@/routes/LocaleLayout";
 import { ConfirmDialogHost } from "@/components/ui/ConfirmDialog";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
@@ -49,6 +50,17 @@ function LegacyDashboardRedirect() {
   return <Navigate to={target} replace />;
 }
 
+/**
+ * Bare "/" (and non-locale unknown paths) → the visitor's persisted language
+ * choice, Arabic by default (A-18). Read at redirect time — not module scope —
+ * so an explicit switch in the same tab is honored without a reload, and the
+ * SSR-less first paint stays a plain client-side <Navigate>.
+ */
+function RootLocaleRedirect() {
+  const location = useLocation();
+  return <Navigate to={`/${readPreferredLocale()}${location.search}`} replace />;
+}
+
 export default function App() {
   const { pathname } = useLocation();
 
@@ -78,7 +90,7 @@ export default function App() {
     <>
     <ErrorBoundary>
     <Routes>
-      <Route path="/" element={<Navigate to="/en" replace />} />
+      <Route path="/" element={<RootLocaleRedirect />} />
 
       <Route path="/:locale" element={<LocaleLayout />}>
         <Route index element={<HomePage />} />
@@ -235,8 +247,8 @@ export default function App() {
 
       {/* /admin and /dashboard are handled by the pathname branch above. */}
 
-      {/* Non-locale unknown paths bounce to the default locale root. */}
-      <Route path="*" element={<Navigate to="/en" replace />} />
+      {/* Non-locale unknown paths bounce to the preferred-locale root. */}
+      <Route path="*" element={<RootLocaleRedirect />} />
     </Routes>
     <ConfirmDialogHost />
     </ErrorBoundary>

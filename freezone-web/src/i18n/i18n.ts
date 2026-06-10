@@ -10,8 +10,14 @@ const resources = {
 
 void i18n.use(initReactI18next).init({
   resources,
-  lng: "en",
-  fallbackLng: "en",
+  /**
+   * Arabic-first (A-18). Only matters pre-hydration and on "/": the storefront
+   * LocaleLayout drives the language from the /:locale URL param, and the admin
+   * panel applies its own persisted preference (fz-dashboard-lang, already
+   * Arabic-first) via applyDashboardLangDefault() on mount.
+   */
+  lng: "ar",
+  fallbackLng: "ar",
   interpolation: { escapeValue: false },
 });
 

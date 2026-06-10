@@ -19,7 +19,18 @@ import { PUBLISHED_LIVE_WHERE } from "@/lib/admin-product-scope";
 
 const LOCALES = ["en", "ar"] as const;
 /** Locale-relative static paths ("" = the localized home page). */
-const STATIC_PATHS = ["", "/products", "/about", "/contact", "/warranty", "/faq"];
+const STATIC_PATHS = [
+  "",
+  "/products",
+  "/about",
+  "/contact",
+  "/warranty",
+  "/faq",
+  "/shipping",
+  "/returns",
+  "/privacy",
+  "/terms",
+];
 
 /** Hard cap so a single request never materializes the entire product table
  *  into memory. Also keeps the document under the 50k-URL sitemap limit; once

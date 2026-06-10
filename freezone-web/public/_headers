@@ -2,12 +2,25 @@
 # deploy honors them (the root netlify.toml is dead config under that deploy path).
 # All matching rules apply, so /* security headers also cover the blocks below.
 
+# CSP ships REPORT-ONLY deliberately: _headers cannot be exercised locally (the
+# Vite dev server ignores this file), so enforcement flips post-deploy per the
+# runbook after the violation reports come back clean. Every source below is
+# verified against the code: gtag.js + fbevents.js loaders (src/lib/analytics.ts),
+# GA4/Pixel beacon endpoints, the fly.dev API + uploads origin
+# (src/lib/api-internal.ts), simpleicons brand logos (src/lib/brand-logo-urls.ts),
+# unsplash fallback imagery (StoreGallery/CategoryGrid/PromoMegaBlocks/about),
+# data:/blob: for CSS svg data-URIs and object-URL previews. frame-src is 'none'
+# (no iframe is rendered anywhere; showroom video entries are filtered out).
+# frame-ancestors is omitted: it is ignored in Report-Only — clickjacking stays
+# covered by the X-Frame-Options: DENY header below until enforcement flips.
+
 /*
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Strict-Transport-Security: max-age=63072000
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' https://www.googletagmanager.com https://connect.facebook.net; connect-src 'self' https://freezone-website.fly.dev https://*.google-analytics.com https://www.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://www.facebook.com; img-src 'self' data: blob: https://freezone-website.fly.dev https://images.unsplash.com https://cdn.simpleicons.org https://www.facebook.com https://*.google-analytics.com https://*.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self' https://freezone-website.fly.dev; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'
 
 # Vite emits content-hashed filenames under /assets — safe to cache forever.
 /assets/*
