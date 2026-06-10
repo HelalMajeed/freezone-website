@@ -114,22 +114,36 @@ export function readCustomerCookieFromHeader(cookieHeader: string | null): strin
   }
 }
 
-/** HttpOnly + SameSite=Lax always; Secure added in production. */
+/** Default SameSite=Lax; override with CUSTOMER_COOKIE_SAMESITE=none when the
+ *  storefront and API live on different origins (mirrors the dashboard's
+ *  DASHBOARD_COOKIE_SAMESITE — browsers drop cross-site Lax cookies). */
+function sameSite(): "Lax" | "Strict" | "None" {
+  const raw = process.env.CUSTOMER_COOKIE_SAMESITE?.trim().toLowerCase();
+  if (raw === "none") return "None";
+  if (raw === "strict") return "Strict";
+  return "Lax";
+}
+
+/** HttpOnly always; Secure in production and whenever SameSite=None. */
 export function buildCustomerCookieHeader(token: string, maxAgeSec: number): string {
+  const ss = sameSite();
+  const secure = process.env.NODE_ENV === "production" || ss === "None";
   const parts = [
     `${CUSTOMER_COOKIE}=${encodeURIComponent(token)}`,
     "Path=/",
     "HttpOnly",
-    "SameSite=Lax",
+    `SameSite=${ss}`,
     `Max-Age=${maxAgeSec}`,
   ];
-  if (process.env.NODE_ENV === "production") parts.push("Secure");
+  if (secure) parts.push("Secure");
   return parts.join("; ");
 }
 
 export function clearCustomerCookieHeader(): string {
-  const parts = [`${CUSTOMER_COOKIE}=`, "Path=/", "HttpOnly", "SameSite=Lax", "Max-Age=0"];
-  if (process.env.NODE_ENV === "production") parts.push("Secure");
+  const ss = sameSite();
+  const secure = process.env.NODE_ENV === "production" || ss === "None";
+  const parts = [`${CUSTOMER_COOKIE}=`, "Path=/", "HttpOnly", `SameSite=${ss}`, "Max-Age=0"];
+  if (secure) parts.push("Secure");
   return parts.join("; ");
 }
 

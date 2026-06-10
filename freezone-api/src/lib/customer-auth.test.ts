@@ -9,10 +9,15 @@ import {
   readCustomerCookieFromHeader,
 } from "./customer-auth";
 
-const savedNodeEnv = process.env.NODE_ENV;
+const SAVED: Record<string, string | undefined> = {
+  NODE_ENV: process.env.NODE_ENV,
+  CUSTOMER_COOKIE_SAMESITE: process.env.CUSTOMER_COOKIE_SAMESITE,
+};
 afterEach(() => {
-  if (savedNodeEnv === undefined) delete process.env.NODE_ENV;
-  else process.env.NODE_ENV = savedNodeEnv;
+  for (const [k, v] of Object.entries(SAVED)) {
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
+  }
 });
 
 test("readCustomerCookieFromHeader extracts the token among other cookies", () => {
@@ -33,6 +38,7 @@ test("readCustomerCookieFromHeader decodes URI-encoded tokens", () => {
 
 test("cookie header is HttpOnly + SameSite=Lax with the requested Max-Age", () => {
   delete process.env.NODE_ENV;
+  delete process.env.CUSTOMER_COOKIE_SAMESITE;
   const header = buildCustomerCookieHeader("tok", 60);
   assert.ok(header.startsWith(`${CUSTOMER_COOKIE}=tok`));
   assert.ok(header.includes("HttpOnly"));
@@ -44,8 +50,18 @@ test("cookie header is HttpOnly + SameSite=Lax with the requested Max-Age", () =
 
 test("cookie header adds Secure in production", () => {
   process.env.NODE_ENV = "production";
+  delete process.env.CUSTOMER_COOKIE_SAMESITE;
   assert.ok(buildCustomerCookieHeader("tok", 60).includes("Secure"));
   assert.ok(clearCustomerCookieHeader().includes("Secure"));
+});
+
+test("CUSTOMER_COOKIE_SAMESITE=none forces SameSite=None + Secure (split-origin deploys)", () => {
+  delete process.env.NODE_ENV;
+  process.env.CUSTOMER_COOKIE_SAMESITE = "none";
+  const header = buildCustomerCookieHeader("tok", 60);
+  assert.ok(header.includes("SameSite=None"));
+  assert.ok(header.includes("Secure"), "SameSite=None requires Secure");
+  assert.ok(clearCustomerCookieHeader().includes("SameSite=None"));
 });
 
 test("clear header expires the cookie immediately", () => {
