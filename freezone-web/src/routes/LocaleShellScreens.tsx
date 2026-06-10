@@ -30,8 +30,8 @@ export function MaintenanceScreen({ locale }: { locale: "en" | "ar" }) {
         {ar
           ? "نعمل على تحسين تجربتكم. يمكن للمسؤولين الاستمرار في لوحة التحكم على "
           : "We’re improving your experience. Admins can keep working in the dashboard at "}
-        <Link to="/dashboard" className={styles.maintenanceLink}>
-          /dashboard
+        <Link to="/admin" className={styles.maintenanceLink}>
+          /admin
         </Link>
         .
       </p>

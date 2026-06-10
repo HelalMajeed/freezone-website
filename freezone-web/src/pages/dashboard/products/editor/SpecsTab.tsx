@@ -123,7 +123,7 @@ export function SpecsTab({ form, set, errors, attributes }: SpecsTabProps) {
             <div className={s.noticeBox}>
               <span>{t("editor.specsNoSchema")}</span>
               {form.categoryId && (
-                <Link to={`/dashboard/categories/${form.categoryId}/attributes`}>
+                <Link to={`/admin/categories/${form.categoryId}/attributes`}>
                   {t("editor.specsOpenBuilder")}
                 </Link>
               )}

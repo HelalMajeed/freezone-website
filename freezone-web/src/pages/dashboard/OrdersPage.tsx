@@ -292,7 +292,7 @@ export function DashboardOrdersPage() {
                 header: t("orders.colOrder"),
                 mono: true,
                 cell: (o) => (
-                  <Link to={`/dashboard/orders/${o.id}`} className={s.orderNumber}>
+                  <Link to={`/admin/orders/${o.id}`} className={s.orderNumber}>
                     {o.orderNumber}
                   </Link>
                 ),
@@ -347,7 +347,7 @@ export function DashboardOrdersPage() {
                 header: "",
                 align: "end",
                 cell: (o) => (
-                  <Link to={`/dashboard/orders/${o.id}`}>
+                  <Link to={`/admin/orders/${o.id}`}>
                     <Button size="sm" variant="secondary" tabIndex={-1}>
                       {t("common.view")}
                     </Button>

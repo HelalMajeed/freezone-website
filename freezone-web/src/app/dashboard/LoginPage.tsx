@@ -21,7 +21,7 @@ export function DashboardLoginPage() {
   const { lang, dir, t, pick, formatError } = useDashboardLocale();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const next = params.get("next") || "/dashboard";
+  const next = params.get("next") || "/admin";
 
   const status = useDashboardAuth((sel) => sel.status);
   const refresh = useDashboardAuth((sel) => sel.refresh);

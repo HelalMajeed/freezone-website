@@ -11,7 +11,8 @@ import { ACTIVE_PRODUCT_WHERE, mergeProductWhere, PUBLISHED_LIVE_WHERE } from "@
  *  - Orders status breakdown.
  *  - Low-stock products (quantity ≤ threshold).
  *  - Top 5 best-selling products (by `sales` counter).
- *  - Recent 8 orders.
+ *  - Latest 10 orders.
+ *  - Pending customer reviews count (moderation queue).
  *  - 14-day revenue + order count sparkline.
  */
 export async function GET(req: Request): Promise<Response> {
@@ -38,6 +39,7 @@ export async function GET(req: Request): Promise<Response> {
     recentOrders,
     couponsActive,
     sparkOrders,
+    pendingReviews,
   ] = await Promise.all([
     prisma.product.count({ where: ACTIVE_PRODUCT_WHERE }),
     prisma.category.count({ where: { active: true } }),
@@ -92,7 +94,7 @@ export async function GET(req: Request): Promise<Response> {
     }),
     prisma.order.findMany({
       orderBy: { createdAt: "desc" },
-      take: 8,
+      take: 10,
       select: {
         id: true,
         orderNumber: true,
@@ -113,6 +115,7 @@ export async function GET(req: Request): Promise<Response> {
       where: { createdAt: { gte: startSpark } },
       select: { createdAt: true, total: true },
     }),
+    prisma.review.count({ where: { isApproved: false } }),
   ]);
 
   // Build 14-day buckets (oldest → newest)
@@ -159,6 +162,7 @@ export async function GET(req: Request): Promise<Response> {
     lowStock,
     topProducts,
     recentOrders,
+    pendingReviews,
     sparkline,
   });
 }

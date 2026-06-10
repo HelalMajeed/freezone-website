@@ -242,7 +242,7 @@ export function DashboardProductsPage() {
     try {
       const res = await productEditorApi.duplicate(row.id);
       toast.success(t("products.duplicatedToast"));
-      navigate(`/dashboard/products/${res.id}`);
+      navigate(`/admin/products/${res.id}`);
     } catch (e) {
       toast.error(formatError(e));
     }
@@ -423,16 +423,16 @@ export function DashboardProductsPage() {
           <div className="dashboard-page-subtitle">{t("products.subtitle")}</div>
         </div>
         <div className={s.headerActions}>
-          <Button variant="secondary" onClick={() => navigate("/dashboard/products/review")}>
+          <Button variant="secondary" onClick={() => navigate("/admin/products/review")}>
             <ClipboardCheck size={15} aria-hidden /> {t("products.reviewQueue")}
           </Button>
-          <Button variant="secondary" onClick={() => navigate("/dashboard/products/import")}>
+          <Button variant="secondary" onClick={() => navigate("/admin/products/import")}>
             <Upload size={15} aria-hidden /> {t("products.import")}
           </Button>
           <Button variant="secondary" loading={exporting} onClick={() => void exportCsv()}>
             <Download size={15} aria-hidden /> {t("products.export")}
           </Button>
-          <Button onClick={() => navigate("/dashboard/products/new")}>
+          <Button onClick={() => navigate("/admin/products/new")}>
             <Plus size={15} aria-hidden /> {t("products.new")}
           </Button>
         </div>
@@ -573,7 +573,7 @@ export function DashboardProductsPage() {
                 sortKey: "name",
                 cell: (r) => (
                   <div>
-                    <Link to={`/dashboard/products/${r.id}`} className={s.cellTitle}>
+                    <Link to={`/admin/products/${r.id}`} className={s.cellTitle}>
                       {lang === "ar" ? r.nameAr || r.nameEn : r.nameEn}
                     </Link>
                     <div className={s.cellSub}>
@@ -646,7 +646,7 @@ export function DashboardProductsPage() {
                     <Button size="sm" variant="secondary" onClick={() => void togglePublished(r)}>
                       {r.published ? t("products.rowHide") : t("products.rowPublish")}
                     </Button>
-                    <Button size="sm" variant="secondary" onClick={() => navigate(`/dashboard/products/${r.id}`)}>
+                    <Button size="sm" variant="secondary" onClick={() => navigate(`/admin/products/${r.id}`)}>
                       {t("products.rowEdit")}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => void onDuplicate(r)}>

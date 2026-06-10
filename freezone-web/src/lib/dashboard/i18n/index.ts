@@ -18,6 +18,7 @@
  */
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import appI18n from "@/i18n/i18n";
 import { dashboardEn, type DashboardMessageKey } from "./en";
 import { dashboardAr } from "./ar";
 import { dashboardErrorByCode, DASHBOARD_ERROR_MESSAGES, type BilingualMessage } from "./errors";
@@ -31,6 +32,36 @@ const CATALOGS: Record<DashboardLang, Record<DashboardMessageKey, string>> = {
   en: dashboardEn,
   ar: dashboardAr,
 };
+
+/**
+ * Dashboard language preference — independent from the storefront (whose
+ * language is ruled by the /en | /ar URL prefix). The admin panel is
+ * Arabic-first: with no persisted choice it opens in Arabic; an explicit
+ * toggle through {@link useDashboardLocale}'s `setLang` always wins.
+ */
+const DASHBOARD_LANG_PREF_KEY = "fz-dashboard-lang";
+
+export function readDashboardLangPref(): DashboardLang | null {
+  try {
+    const v = window.localStorage.getItem(DASHBOARD_LANG_PREF_KEY);
+    return v === "ar" || v === "en" ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistDashboardLangPref(lang: DashboardLang): void {
+  try {
+    window.localStorage.setItem(DASHBOARD_LANG_PREF_KEY, lang);
+  } catch {
+    /* private mode — preference simply not persisted */
+  }
+}
+
+/** Apply the persisted dashboard language (default "ar") on admin-app mount. */
+export function applyDashboardLangDefault(): void {
+  void appI18n.changeLanguage(readDashboardLangPref() ?? "ar");
+}
 
 /** `{placeholder}` interpolation for catalog templates. */
 export function formatMessage(template: string, vars?: Record<string, string | number>): string {
@@ -90,6 +121,7 @@ export function useDashboardLocale(): DashboardLocale {
   const formatError = useCallback((err: unknown) => dashboardErrorMessage(err, lang), [lang]);
   const setLang = useCallback(
     (next: DashboardLang) => {
+      persistDashboardLangPref(next);
       void i18n.changeLanguage(next);
     },
     [i18n],

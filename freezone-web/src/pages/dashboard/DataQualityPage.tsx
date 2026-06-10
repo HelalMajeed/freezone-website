@@ -248,11 +248,11 @@ export function DashboardDataQualityPage() {
                     const target =
                       r.issue === "no_attributes"
                         ? categoryId != null
-                          ? `/dashboard/categories/${categoryId}/attributes`
-                          : "/dashboard/categories"
+                          ? `/admin/categories/${categoryId}/attributes`
+                          : "/admin/categories"
                         : r.productId > 0
-                          ? `/dashboard/products/${r.productId}`
-                          : "/dashboard/products";
+                          ? `/admin/products/${r.productId}`
+                          : "/admin/products";
                     return (
                       <div>
                         <Link
