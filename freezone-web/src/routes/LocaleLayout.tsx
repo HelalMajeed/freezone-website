@@ -16,6 +16,7 @@ import { ThemeApplier } from "@/components/providers/ThemeApplier";
 import { StoreJsonLd } from "@/components/seo/StoreJsonLd";
 import { StorefrontPrefetch } from "@/components/storefront/StorefrontPrefetch";
 import { setLocale } from "@/i18n/i18n";
+import { trackPageView } from "@/lib/analytics";
 import { LocaleRouteFallback } from "@/routes/LocaleRouteFallback";
 import { StorefrontErrorScreen, MaintenanceScreen } from "@/routes/LocaleShellScreens";
 import { StorefrontBottomDock } from "@/components/layout/StorefrontBottomDock";
@@ -70,6 +71,11 @@ export function LocaleLayout() {
   useLayoutEffect(() => {
     setLocale(lc);
   }, [lc]);
+
+  /** GA4/Pixel page_view per route change — no-op unless analytics IDs are configured. */
+  useEffect(() => {
+    trackPageView(location.pathname + location.search);
+  }, [location.pathname, location.search]);
 
   const baseUrl = import.meta.env.VITE_PUBLIC_SITE_URL || window.location.origin;
 
