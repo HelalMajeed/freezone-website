@@ -1,5 +1,20 @@
 # Freezone Data Entry System — Progress Log
 
+## 2026-06-10/11 — Global-Launch Sprint (latest)
+
+- **Branch:** `feat/global-launch` (+ `polish/final-bundle` delta pass on 2026-06-11)
+- **Authoritative summary:** `FINAL_REPORT.md` (companions: `GAP_REPORT.md`,
+  `ASSUMPTIONS.md`, `API_CONTRACT.md`, `SEO_NOTES.md`)
+- Highlights: credentialed `/admin` login (passwordless production entry closed),
+  customer accounts + product reviews, per-governorate shipping fees, payment-method
+  abstraction, category/brand prerender + Netlify `_redirects`/`_headers`, analytics
+  loaders, 29-product demo seed. Delta pass: cart shipping-fee honesty, RTL-aware
+  mobile menu, ADR-003 (Vite prerender is the SEO path; Next.js storefront abandoned).
+- Everything below this section (Batch 14 and earlier) predates the sprint and is
+  kept as history — it is **not** the latest state.
+
+---
+
 ## Status: Batch 14 Critical Fixes — DONE (local, uncommitted)
 ## Branch: `main`
 ## Last Update: 2026-05-25

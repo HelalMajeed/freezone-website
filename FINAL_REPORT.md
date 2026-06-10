@@ -93,6 +93,29 @@ Git-history note: merge commit `10e1cb7` briefly contained conflict markers in
 `freezone-api/package.json` (tooling race); fixed immediately in `993324f`. Build is
 green at branch tip; intermediate-commit builds were not re-verified.
 
+### Bundle size (web production build, 2026-06-11, `PRERENDER_SKIP=1`)
+
+Main chunks from `vite build` (raw / gzip):
+
+| Chunk | Raw | Gzip | Note |
+|---|---|---|---|
+| `index` (storefront entry) | 531.56 kB | 172.34 kB | + `index.css` 160.93 kB / 37.03 kB gzip |
+| `dashboard-routes` (admin, lazy) | 141.98 kB | 42.70 kB | loads only on `/admin` |
+| `vendor-model-viewer` (lazy) | 1,012.87 kB | 290.04 kB | 3D viewer; loads only on PDPs with a model |
+| `vendor-motion` | 125.84 kB | 41.31 kB | framer-motion |
+
+### npm audit (`npm audit --omit=dev`, 2026-06-11 — read-only, no `audit fix` run)
+
+- **freezone-api: 3 moderate** — all one root cause: `qs` 6.11.1–6.15.1 DoS
+  (GHSA-q8mj-m7cp-5q26) reached via `body-parser`/`express`; fix is a transitive bump.
+  Separately, **multer is still 1.x** (deprecated upstream — deprecation warning, not
+  an audit advisory); the 2.x upgrade remains P2.
+- **freezone-web: 2 high** — `react-router` 7.0.0–7.14.2: turbo-stream
+  deserialization RCE (GHSA-49rj-9fvp-4h2h) and `__manifest` DoS (GHSA-8x6r-g9mw-2r78).
+  Both target react-router **server runtimes** (RSC / framework-mode), which this
+  static SPA build does not exercise — still, bump
+  `react-router`/`react-router-dom` ≥ 7.14.2 at the next dependency pass.
+
 ## How to run locally (fresh clone)
 
 ```bash
@@ -142,10 +165,11 @@ Admin: `http://localhost:3000/admin` (direct entry works locally if `ADMIN_DIREC
 - Payment gateways are adapters only — **setting their env keys enables the method at
   checkout while settlement remains manual/WhatsApp**; don't set keys until a real
   flow is implemented.
-- Cart page still shows the flat-fee shipping estimate (checkout is authoritative
-  per-province) — minor polish item.
-- MobileMenu slides from the left in RTL (pre-existing); the new cart drawer is fully
-  RTL-aware.
+- ~~Cart page still shows the flat-fee shipping estimate~~ — fixed in the 2026-06-11
+  polish pass: the cart shows the flat fee as an estimate plus the real
+  per-governorate min–max range from `site.shippingFees`; checkout stays authoritative.
+- ~~MobileMenu slides from the left in RTL~~ — fixed in the 2026-06-11 polish pass
+  (dir-aware slide, same pattern as the cart drawer).
 - `catalogStatus=DRAFT` products are storefront-visible when `published=true`
   (pre-existing semantics — `published` is the gate; flagged for owner review).
 - Live-site image delivery depends on fly.dev CORP headers (works today; QA flagged it
