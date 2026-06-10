@@ -425,7 +425,9 @@
     "couponApplied": "Coupon applied",
     "couponFailed": "Coupon could not be validated",
     "couponDiscount": "Discount {{code}}",
-    "removeItem": "Remove item"
+    "removeItem": "Remove item",
+    "shippingVariesHint": "Delivery fee varies by governorate ({{min}}–{{max}} IQD) — the final fee is confirmed at checkout.",
+    "shippingConfirmedHint": "Final delivery fee depends on your governorate — confirmed at checkout."
   },
   "Checkout": {
     "title": "Checkout",

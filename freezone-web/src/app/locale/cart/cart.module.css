@@ -223,6 +223,14 @@
 }
 .summaryRow span:last-child { font-weight: 600; color: var(--text-primary); }
 
+/* Per-governorate delivery estimate note under the shipping row */
+.shippingHint {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: -8px 0 14px;
+}
+
 .summaryTotal {
   display: flex;
   justify-content: space-between;

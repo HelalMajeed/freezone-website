@@ -22,6 +22,11 @@ export default function CartPage() {
   const site = usePublicSite();
   const threshold = site.freeDeliveryThreshold ?? 100000;
   const shipFee = site.standardShippingFee ?? 5000;
+  // The flat fee is only an estimate — checkout charges the per-governorate fee
+  // (site.shippingFees). Surface the real range so the cart total is honest.
+  const feeValues = Object.values(site.shippingFees ?? {});
+  const minFee = feeValues.length > 0 ? Math.min(...feeValues) : shipFee;
+  const maxFee = feeValues.length > 0 ? Math.max(...feeValues) : shipFee;
   const { subtotal: lineSubtotal, shipping, grandTotal } = computeCartTotals(
     items,
     threshold,
@@ -249,6 +254,13 @@ export default function CartPage() {
                   {shipping === 0 ? t("free") : `${formatMoney(shipping)} IQD`}
                 </span>
               </div>
+              {shipping > 0 && (
+                <p className={styles.shippingHint}>
+                  {minFee !== maxFee
+                    ? t("shippingVariesHint", { min: formatMoney(minFee), max: formatMoney(maxFee) })
+                    : t("shippingConfirmedHint")}
+                </p>
+              )}
               <div className={styles.summaryRow}>
                 <span>{t("taxes")}</span>
                 <span>{t("included")}</span>
