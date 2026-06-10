@@ -18,7 +18,7 @@
   width: 88%;
   max-width: 340px;
   background: var(--color-card, #fff);
-  border-right: 1px solid var(--color-border, #e5e7eb);
+  border-inline-end: 1px solid var(--color-border, #e5e7eb);
   height: 100dvh;
   box-shadow: var(--shadow-lg);
   display: flex;
@@ -108,7 +108,7 @@
 .menuItem:hover {
   background: var(--color-surface, #f5f5f5);
   color: var(--color-text, #0a0a0a);
-  padding-left: 20px;
+  padding-inline-start: 20px;
 }
 .menuItem svg {
   color: var(--color-text-muted, #6b7280);

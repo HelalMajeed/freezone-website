@@ -29,6 +29,9 @@ export function MobileMenu({
   const tNav = useTranslations("Navigation");
   const [openGroup, setOpenGroup] = useState<string | null>(null);
 
+  /** Drawer sits at inline-start: offscreen is -100% in LTR (left), +100% in RTL (right). */
+  const offX = locale === "ar" ? "100%" : "-100%";
+
   const mainLinks = [
     { name: t("home"), href: "/" },
     { name: t("allProducts"), href: "/products" },
@@ -52,9 +55,9 @@ export function MobileMenu({
 
           <motion.div
             id="mobile-menu"
-            initial={{ x: "-100%" }}
+            initial={{ x: offX }}
             animate={{ x: 0 }}
-            exit={{ x: "-100%" }}
+            exit={{ x: offX }}
             transition={{ type: "spring", damping: 28, stiffness: 220 }}
             className={styles.drawer}
           >

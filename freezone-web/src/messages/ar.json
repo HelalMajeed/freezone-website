@@ -425,7 +425,9 @@
     "couponApplied": "تم تطبيق الكوبون",
     "couponFailed": "تعذّر التحقق من الكوبون",
     "couponDiscount": "خصم {{code}}",
-    "removeItem": "إزالة المنتج"
+    "removeItem": "إزالة المنتج",
+    "shippingVariesHint": "رسوم التوصيل تختلف حسب المحافظة ({{min}}–{{max}} د.ع) — تُؤكَّد الرسوم النهائية عند إتمام الطلب.",
+    "shippingConfirmedHint": "رسوم التوصيل النهائية تعتمد على محافظتك — تُؤكَّد عند إتمام الطلب."
   },
   "Checkout": {
     "title": "إتمام الطلب",
