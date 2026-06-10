@@ -683,6 +683,8 @@
     "productsDesc": "Browse the full FreeZone catalog — CCTV, computers, laptops, monitors, gaming, smart home and more. Filter by category, brand, price and specs.",
     "productDesc": "Buy {{name}} from FreeZone Iraq — genuine products, fast delivery and warranty.",
     "breadcrumbHome": "Home",
+    "breadcrumbProducts": "Products",
+    "breadcrumbAria": "Breadcrumb",
     "cartTitle": "Shopping Cart",
     "checkoutTitle": "Checkout",
     "loginTitle": "Sign In",
