@@ -1,5 +1,6 @@
 import { type PublicSite, DEFAULT_TOP_BAR_SOCIAL_COLOR } from "@/lib/site-public";
 import { buildMarqueeStrips } from "@/lib/marquee-strips";
+import { resolveShippingFeeMap } from "@/lib/shipping-fees";
 import {
   composeHomeCmsFromParts,
   type CmsHeroSlideRow,
@@ -154,6 +155,8 @@ export function draftToStorefrontValue(
     maintenanceMode: cfg.maintenanceMode,
     freeDeliveryThreshold: cfg.freeDeliveryThreshold,
     standardShippingFee: cfg.standardShippingFee,
+    /** Offline CMS drafts carry no per-province overrides — flat fallback map. */
+    shippingFees: resolveShippingFeeMap({ standardShippingFee: cfg.standardShippingFee }),
     zainCashWallet: cfg.zainCashWallet ?? "",
     qiCardMerchantId: cfg.qiCardMerchantId ?? "",
     metaTitle: en ? cfg.metaTitleEn : cfg.metaTitleAr,
