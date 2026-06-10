@@ -3,6 +3,36 @@ import { guardAdminRead, guardAdminMutate, auditContext } from "@/lib/admin-rout
 import { revalidateStorefrontData } from "@/lib/revalidate-storefront";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
+import { IRAQ_PROVINCES } from "@/lib/iraq-provinces";
+
+/**
+ * Validate the per-governorate delivery-fee map (API_CONTRACT §7): a plain
+ * object whose keys are canonical province codes (subset allowed — missing
+ * codes fall back to `standardShippingFee`) and whose values are integer IQD
+ * in 0–100000.
+ */
+function parseShippingFees(
+  raw: unknown,
+): { ok: true; value: Record<string, number> } | { ok: false; error: string } {
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+    return { ok: false, error: "shippingFeesJson must be an object map" };
+  }
+  const knownCodes = new Set<string>(IRAQ_PROVINCES.map((p) => p.code));
+  const value: Record<string, number> = {};
+  for (const [code, fee] of Object.entries(raw as Record<string, unknown>)) {
+    if (!knownCodes.has(code)) {
+      return { ok: false, error: `shippingFeesJson: unknown province code "${code}"` };
+    }
+    if (typeof fee !== "number" || !Number.isInteger(fee) || fee < 0 || fee > 100000) {
+      return {
+        ok: false,
+        error: `shippingFeesJson.${code} must be an integer IQD between 0 and 100000`,
+      };
+    }
+    value[code] = fee;
+  }
+  return { ok: true, value };
+}
 
 /**
  * Slim accessor for the top-level SiteConfig row.
@@ -29,6 +59,7 @@ const FIELDS = [
   "qiCardMerchantId",
   "freeDeliveryThreshold",
   "standardShippingFee",
+  "shippingFeesJson",
   "promoBarTextEn",
   "promoBarTextAr",
   "promoBarEnabled",
@@ -118,7 +149,15 @@ export async function PATCH(req: Request) {
 
   const boolFields: SiteConfigField[] = ["promoBarEnabled", "maintenanceMode"];
 
-  const data: Record<string, string | number | boolean | null> = {};
+  const data: Record<string, string | number | boolean | null | Record<string, number>> = {};
+
+  if ("shippingFeesJson" in body) {
+    const fees = parseShippingFees(body.shippingFeesJson);
+    if (!fees.ok) {
+      return Response.json({ error: fees.error }, { status: 400 });
+    }
+    data.shippingFeesJson = fees.value;
+  }
 
   for (const field of stringFields) {
     if (field in body) {
