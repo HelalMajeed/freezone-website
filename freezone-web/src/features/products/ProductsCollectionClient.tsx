@@ -462,7 +462,9 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
     }
     for (const b of filters.brands) {
       chips.push({
-        key: `brand-${b}`,
+        // "brand:" prefix — a category spec facet keyed "brand" would otherwise
+        // collide with this chip's key (`brand-X` === `${facetKey}-${token}`).
+        key: `brand:${b}`,
         label: b,
         remove: () => setFilters((p) => ({ ...p, brands: p.brands.filter((x) => x !== b) })),
       });
@@ -471,7 +473,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
       for (const v of vals) {
         const token = sanitizeFacetFilterToken(facetKey, v) ?? v;
         chips.push({
-          key: `${facetKey}-${token}`,
+          key: `spec:${facetKey}:${token}`,
           label: `${getFacetDisplayLabel(facetKey, locale)}: ${formatFacetFilterLabel(facetKey, token, undefined, locale)}`,
           remove: () =>
             setFilters((p) => {

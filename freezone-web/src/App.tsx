@@ -50,6 +50,30 @@ function LegacyDashboardRedirect() {
 }
 
 export default function App() {
+  const { pathname } = useLocation();
+
+  /**
+   * The admin branch is selected by PATHNAME, not by route ranking: React
+   * Router scores static children of `/:locale` (e.g. `/:locale/login`,
+   * `/:locale/products`) above the `/admin/*` splat, so `/admin/login` and
+   * `/admin/products` would mount the storefront with locale="admin" and
+   * dead-end on the locale 404. Branching here makes /admin un-hijackable
+   * no matter what storefront routes are added later.
+   */
+  if (/^\/admin(\/|$)/.test(pathname)) {
+    return (
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/admin/*" element={<SuspensePage><AdminApp /></SuspensePage>} />
+        </Routes>
+        <ConfirmDialogHost />
+      </ErrorBoundary>
+    );
+  }
+  if (/^\/dashboard(\/|$)/.test(pathname)) {
+    return <LegacyDashboardRedirect />;
+  }
+
   return (
     <>
     <ErrorBoundary>
@@ -209,11 +233,7 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 
-      {/* Canonical admin panel — single lazy chunk (login at /admin/login). */}
-      <Route path="/admin/*" element={<SuspensePage><AdminApp /></SuspensePage>} />
-
-      {/* Legacy /dashboard/* deep links redirect path-preserving to /admin/*. */}
-      <Route path="/dashboard/*" element={<LegacyDashboardRedirect />} />
+      {/* /admin and /dashboard are handled by the pathname branch above. */}
 
       {/* Non-locale unknown paths bounce to the default locale root. */}
       <Route path="*" element={<Navigate to="/en" replace />} />

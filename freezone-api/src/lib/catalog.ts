@@ -20,15 +20,22 @@ export type LocaleCode = "en" | "ar";
  * path, so the browser would render them broken. Rewriting to an absolute URL
  * on the API origin makes `<img>` load directly from where the files live.
  * Override via PUBLIC_UPLOADS_ORIGIN if the API ever moves.
+ *
+ * Outside production (local dev/QA) the default is RELATIVE: the Vite dev
+ * server proxies /uploads to the API, and hardcoding the Fly origin renders
+ * every local catalog image broken (and CORP-blocked) against prod.
  */
-const UPLOADS_ORIGIN = (process.env.PUBLIC_UPLOADS_ORIGIN || "https://freezone-website.fly.dev").replace(/\/$/, "");
+const UPLOADS_ORIGIN = (
+  process.env.PUBLIC_UPLOADS_ORIGIN ||
+  (process.env.NODE_ENV === "production" ? "https://freezone-website.fly.dev" : "")
+).replace(/\/$/, "");
 
 /** Make a stored image URL absolute. Leaves already-absolute (http) URLs and
  *  non-/uploads paths untouched. */
 export function absolutizeUploadUrl(url: string): string {
   if (!url) return url;
   if (/^https?:\/\//i.test(url)) return url;
-  if (url.startsWith("/uploads/")) return `${UPLOADS_ORIGIN}${url}`;
+  if (UPLOADS_ORIGIN && url.startsWith("/uploads/")) return `${UPLOADS_ORIGIN}${url}`;
   return url;
 }
 
