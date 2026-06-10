@@ -7,6 +7,7 @@ import { Link } from "@/navigation";
 import { SiteLogo } from "./SiteLogo";
 import { X, ChevronRight, User, LogIn, Cpu, ChevronDown } from "lucide-react";
 import { BrandMarkIcon } from "./BrandMarkIcon";
+import { useTranslations } from "@/i18n/hooks";
 import type { NavItemResolved } from "@/lib/nav-types";
 
 interface MobileMenuProps {
@@ -17,13 +18,6 @@ interface MobileMenuProps {
   locale?: "en" | "ar";
 }
 
-const MAIN_LINKS = [
-  { name: "Home", href: "/" },
-  { name: "All Products", href: "/products" },
-  { name: "About Us", href: "/about" },
-  { name: "Contact", href: "/contact" },
-];
-
 export function MobileMenu({
   isOpen,
   onClose,
@@ -31,7 +25,18 @@ export function MobileMenu({
   onToggleLocale,
   locale = "en",
 }: MobileMenuProps) {
+  const t = useTranslations("content.menu");
+  const tNav = useTranslations("Navigation");
   const [openGroup, setOpenGroup] = useState<string | null>(null);
+
+  const mainLinks = [
+    { name: t("home"), href: "/" },
+    { name: t("allProducts"), href: "/products" },
+    { name: t("about"), href: "/about" },
+    { name: t("contact"), href: "/contact" },
+    { name: t("warranty"), href: "/warranty" },
+    { name: t("faq"), href: "/faq" },
+  ];
 
   return (
     <AnimatePresence>
@@ -64,7 +69,7 @@ export function MobileMenu({
               <div className={styles.section}>
                 <Link href="/pc-builder" className={`${styles.menuItem} ${styles.menuItemHighlight}`} onClick={onClose}>
                   <span style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <Cpu size={16} /> PC Builder
+                    <Cpu size={16} /> {t("pcBuilder")}
                   </span>
                   <ChevronRight size={16} />
                 </Link>
@@ -73,10 +78,10 @@ export function MobileMenu({
               <div className={styles.divider} />
 
               <div className={styles.section}>
-                <h4 className={styles.sectionTitle}>Navigation</h4>
+                <h4 className={styles.sectionTitle}>{t("navigation")}</h4>
                 <div className={styles.menuList}>
-                  {MAIN_LINKS.map((link) => (
-                    <Link key={link.name} href={link.href} className={styles.menuItem} onClick={onClose}>
+                  {mainLinks.map((link) => (
+                    <Link key={link.href} href={link.href} className={styles.menuItem} onClick={onClose}>
                       {link.name} <ChevronRight size={16} />
                     </Link>
                   ))}
@@ -87,7 +92,7 @@ export function MobileMenu({
                 <>
                   <div className={styles.divider} />
                   <div className={styles.section}>
-                    <h4 className={styles.sectionTitle}>Categories</h4>
+                    <h4 className={styles.sectionTitle}>{t("categories")}</h4>
                     <div className={styles.accordion}>
                       {megaNavItems.map((item) => {
                         const open = openGroup === item.id;
@@ -127,7 +132,7 @@ export function MobileMenu({
                                     </div>
                                   ))}
                                   <Link href={item.href} className={styles.accordionViewAll} onClick={onClose}>
-                                    View all in {item.label}
+                                    {t("viewAll", { label: item.label })}
                                   </Link>
                                 </motion.div>
                               ) : null}
@@ -155,10 +160,10 @@ export function MobileMenu({
             <div className={styles.footer}>
               <div className={styles.authList}>
                 <Link href="/login" className={styles.authBtn} onClick={onClose}>
-                  <LogIn size={16} /> Sign In
+                  <LogIn size={16} /> {tNav("signIn")}
                 </Link>
                 <Link href="/register" className={styles.authBtn} onClick={onClose}>
-                  <User size={16} /> Create Account
+                  <User size={16} /> {tNav("createAccount")}
                 </Link>
               </div>
             </div>

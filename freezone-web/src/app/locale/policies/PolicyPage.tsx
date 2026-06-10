@@ -12,10 +12,13 @@ export function PolicyPage({ kind }: { kind: PolicyKind }) {
   const tSeo = useTranslations("Seo");
   const doc = POLICY_DOCS[kind];
   const ar = locale === "ar";
+  /** Original four docs map to `Seo.*` keys; newer docs carry bilingual SEO copy inline. */
+  const seoTitle = doc.seoKey ? tSeo(`${doc.seoKey}Title`) : ar ? doc.titleAr : doc.titleEn;
+  const seoDesc = doc.seoKey ? tSeo(`${doc.seoKey}Desc`) : (ar ? doc.seoDescAr : doc.seoDescEn) ?? "";
 
   return (
     <div className={styles.wrapper}>
-      <Seo title={tSeo(`${doc.seoKey}Title`)} description={tSeo(`${doc.seoKey}Desc`)} />
+      <Seo title={seoTitle} description={seoDesc} />
 
       <header className={styles.head}>
         <h1 className="fz-type-h1">{ar ? doc.titleAr : doc.titleEn}</h1>
