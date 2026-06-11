@@ -39,9 +39,10 @@ primary_region = "iad"
 
 [[vm]]
   # Match repo root fly.toml: guest RAM must stay within Fly limits (e.g. 2048 MiB cap).
+  # 2 GB to fit the full storefront catalog load (see Dockerfile --max-old-space-size).
   cpu_kind = "shared"
   cpus = 1
-  memory = "1024mb"
+  memory = "2048mb"
 
 # Same as repo root: persistent admin uploads (subdir deploys).
 [[mounts]]

@@ -35,9 +35,12 @@ primary_region = "iad"
 
 [[vm]]
   # Explicit guest RAM (must not exceed 2048 MiB on typical Fly org limits). Prefer cpu/memory over `size` to avoid bad merges with scaled machines.
+  # 2 GB: the full storefront catalog (1000+ products with relations) needs more
+  # than 1 GB to load without OOM/heap-abort. Paired with --max-old-space-size in
+  # the Dockerfile CMD and the in-process catalog cache.
   cpu_kind = "shared"
   cpus = 1
-  memory = "1024mb"
+  memory = "2048mb"
 
 # Admin uploads + static /uploads/* — persistent across deploys (seed from image on first boot).
 [[mounts]]

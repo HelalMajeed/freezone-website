@@ -34,4 +34,8 @@ COPY --from=builder /app/public/uploads.default /app/public/uploads.default
 RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 EXPOSE 4000
 ENTRYPOINT ["/bin/sh", "/docker-entrypoint.sh"]
-CMD ["node", "dist/server.js"]
+# Raise V8's old-space limit so the process can use the 2 GB guest RAM. The
+# storefront catalog load (1000+ products with images/variants/attribute values)
+# otherwise hit the default heap ceiling and aborted (exit 134) before the
+# in-process catalog cache could warm. Leaves headroom for buffers/native mem.
+CMD ["node", "--max-old-space-size=1536", "dist/server.js"]
