@@ -10,6 +10,7 @@ import {
   productAttributeValuesToFilterValues,
 } from "./classification/values";
 import type { CategoryAttributeRow, ProductAttributeValueRow } from "./classification/types";
+import { createTtlCache } from "./ttl-cache";
 
 export type LocaleCode = "en" | "ar";
 
@@ -190,7 +191,27 @@ function catalogQueryMissingClassificationSupport(e: unknown): boolean {
   return /CategoryAttribute|ProductAttributeValue|categoryAttributes|attributeValues/i.test(msg);
 }
 
-export async function getProductsCatalog(locale: LocaleCode): Promise<Product[]> {
+/** Short TTL: the catalog is read on every storefront-bootstrap; without this a
+ *  burst of concurrent requests each loaded the full ~1000-product object graph
+ *  and OOM-killed the 1 GB API machine. Single-flight + 60s TTL bounds it.
+ *  Admin mutations call `invalidateCatalogCaches()` so edits are not hidden. */
+const CATALOG_TTL_MS = 60_000;
+const productsCatalogCache = createTtlCache<Product[]>(CATALOG_TTL_MS);
+const categoriesCatalogCache = createTtlCache<Category[]>(CATALOG_TTL_MS);
+const brandsCatalogCache = createTtlCache<Brand[]>(CATALOG_TTL_MS);
+
+/** Drop every cached catalog slice (call after admin writes / imports). */
+export function invalidateCatalogCaches(): void {
+  productsCatalogCache.invalidate();
+  categoriesCatalogCache.invalidate();
+  brandsCatalogCache.invalidate();
+}
+
+export function getProductsCatalog(locale: LocaleCode): Promise<Product[]> {
+  return productsCatalogCache.get(locale, () => loadProductsCatalog(locale));
+}
+
+async function loadProductsCatalog(locale: LocaleCode): Promise<Product[]> {
   if (!isDatabaseConfigured()) {
     return PRODUCTS;
   }
@@ -231,7 +252,11 @@ export async function getProductsCatalog(locale: LocaleCode): Promise<Product[]>
   }
 }
 
-export async function getCategoriesCatalog(locale: LocaleCode): Promise<Category[]> {
+export function getCategoriesCatalog(locale: LocaleCode): Promise<Category[]> {
+  return categoriesCatalogCache.get(locale, () => loadCategoriesCatalog(locale));
+}
+
+async function loadCategoriesCatalog(locale: LocaleCode): Promise<Category[]> {
   if (!isDatabaseConfigured()) {
     return CATEGORIES;
   }
@@ -274,7 +299,11 @@ export async function getCategoriesCatalog(locale: LocaleCode): Promise<Category
   }
 }
 
-export async function getBrandsCatalog(locale: LocaleCode): Promise<Brand[]> {
+export function getBrandsCatalog(locale: LocaleCode): Promise<Brand[]> {
+  return brandsCatalogCache.get(locale, () => loadBrandsCatalog(locale));
+}
+
+async function loadBrandsCatalog(locale: LocaleCode): Promise<Brand[]> {
   if (!isDatabaseConfigured()) {
     return BRANDS;
   }
