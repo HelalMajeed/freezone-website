@@ -50,17 +50,30 @@ jobs:
         id: kickoff
         env:
           ADMIN_PASSWORD: ${{ secrets.FREEZONE_ADMIN_PASSWORD }}
+          ADMIN_EMAIL: ${{ vars.FREEZONE_ADMIN_EMAIL || 'admin@freezone-iq.com' }}
         run: |
           set -euo pipefail
           : "${ADMIN_PASSWORD:?FREEZONE_ADMIN_PASSWORD secret is not set}"
 
-          login=$(curl -sS -i -X POST \
+          # Dashboard (AdminUser) login. The legacy fz_admin_session cookie is
+          # read-only at best in production since the RBAC hardening, so batch
+          # mutations need a real dashboard session (guardAdminMutate). The
+          # SUPER_ADMIN must be seeded (Ops — Fly admin → prepare-launch).
+          jar=$(mktemp)
+          login_payload=$(jq -nc --arg id "$ADMIN_EMAIL" --arg pw "$ADMIN_PASSWORD" \
+            '{identifier:$id,password:$pw}')
+          code=$(curl -sS -o /tmp/login-body.json -w '%{http_code}' -c "$jar" -X POST \
             -H "Content-Type: application/json" \
-            -d "{\"password\":\"${ADMIN_PASSWORD}\"}" \
-            "${API_URL}/api/admin/login")
-          cookie=$(printf "%s\n" "$login" | grep -i '^set-cookie:' | grep -o 'fz_admin_session=[^;]*' | head -1)
+            -d "$login_payload" \
+            "${API_URL}/api/dashboard/auth/login")
+          if [ "$code" != "200" ]; then
+            echo "::error::dashboard login failed (HTTP $code) — is the SUPER_ADMIN seeded and FREEZONE_ADMIN_PASSWORD current?"
+            cat /tmp/login-body.json
+            exit 1
+          fi
+          cookie=$(awk '!/^#/ && NF>=7 {printf "%s%s=%s", sep, $6, $7; sep="; "}' "$jar")
           if [ -z "$cookie" ]; then
-            echo "::error::admin login did not return a session cookie"
+            echo "::error::dashboard login did not return session cookies"
             exit 1
           fi
 
