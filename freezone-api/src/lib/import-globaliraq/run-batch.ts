@@ -68,6 +68,25 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/** Wall-clock ceiling for processing one product (fetch + map + images +
+ *  variants + publish). Generous enough for a multi-image product on a slow
+ *  upstream, but bounded so a single hang can't freeze the batch forever. */
+const PER_PRODUCT_TIMEOUT_MS = 120_000;
+
+/** Race the per-product work against a hard deadline. The work may keep running
+ *  in the background after a timeout (fetch/dns cannot all be force-cancelled),
+ *  but the batch loop is unblocked and records the product as failed. */
+function withProductTimeout<T>(handle: string, fn: () => Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`PRODUCT_TIMEOUT after ${PER_PRODUCT_TIMEOUT_MS}ms: ${handle}`)),
+      PER_PRODUCT_TIMEOUT_MS,
+    );
+  });
+  return Promise.race([fn(), timeout]).finally(() => clearTimeout(timer)) as Promise<T>;
+}
+
 /** Hard sanity cap so a typo (`limit=10000`) can never write more than this in one go. */
 const MAX_LIMIT_PER_RUN = 100;
 
@@ -131,50 +150,62 @@ export async function runImportBatch(opts: RunBatchOptions): Promise<RunBatchRes
   try {
     for (const { handle, url } of pending) {
       try {
-        const shopify = (await fetchShopifyProduct(url)) as unknown as ShopifyProduct;
-        const mapped = shopifyToFreezone(shopify, {
-          baseUrl,
-          source: SOURCE,
-          importBatchId: batch.id,
+        /** Hard ceiling on a single product so no upstream hang (slow DNS, a
+         *  stalled image body, an unresponsive Shopify endpoint) can ever wedge
+         *  the whole batch. Anything over the limit is recorded as a failed
+         *  product and the loop moves on. */
+        const outcome = await withProductTimeout(handle, async () => {
+          const shopify = (await fetchShopifyProduct(url)) as unknown as ShopifyProduct;
+          const mapped = shopifyToFreezone(shopify, {
+            baseUrl,
+            source: SOURCE,
+            importBatchId: batch.id,
+          });
+
+          /** Second dedupe check inside the loop in case a parallel batch wrote the row. */
+          const dupe = await prisma.product.findFirst({
+            where: { sourceHandle: handle },
+            select: { id: true },
+          });
+          if (dupe) {
+            return { kind: "skipped" as const, productId: dupe.id };
+          }
+
+          /** Sprint 1 path: smart-match the target category from Shopify metadata,
+           *  then guarantee every spec key has a CategoryAttribute so the admin
+           *  POST validator accepts the payload. */
+          const { category, matchedSlug } = await resolveCategoryForImport(mapped.sourceMeta);
+          const specKeys = Object.keys(mapped.productPayload.specs ?? {});
+          await ensureCategoryAttributes(category.id, specKeys);
+
+          const { id: productId, droppedSpecKeys } = await createProductViaAdminRoute(mapped, category.id, batch.id);
+          const { imageCount, localByShopifyUrl } = await mirrorImages(productId, mapped);
+          const variantCount = await upsertVariants(productId, mapped.variants, localByShopifyUrl);
+
+          const publishStatus = await maybeAutoPublish(productId, opts.autoPublish === true, {
+            mapped,
+            imageCount,
+            categorySlug: category.slug,
+            matchedSlug,
+          });
+
+          return { kind: "ok" as const, productId, imageCount, variantCount, publishStatus, droppedSpecKeys };
         });
 
-        /** Second dedupe check inside the loop in case a parallel batch wrote the row. */
-        const dupe = await prisma.product.findFirst({
-          where: { sourceHandle: handle },
-          select: { id: true },
-        });
-        if (dupe) {
-          results.push({ handle, status: "skipped", productId: dupe.id });
+        if (outcome.kind === "skipped") {
+          results.push({ handle, status: "skipped", productId: outcome.productId });
           skipped += 1;
           continue;
         }
 
-        /** Sprint 1 path: smart-match the target category from Shopify metadata,
-         *  then guarantee every spec key has a CategoryAttribute so the admin
-         *  POST validator accepts the payload. */
-        const { category, matchedSlug } = await resolveCategoryForImport(mapped.sourceMeta);
-        const specKeys = Object.keys(mapped.productPayload.specs ?? {});
-        await ensureCategoryAttributes(category.id, specKeys);
-
-        const { id: productId, droppedSpecKeys } = await createProductViaAdminRoute(mapped, category.id, batch.id);
-        const { imageCount, localByShopifyUrl } = await mirrorImages(productId, mapped);
-        const variantCount = await upsertVariants(productId, mapped.variants, localByShopifyUrl);
-
-        const publishStatus = await maybeAutoPublish(productId, opts.autoPublish === true, {
-          mapped,
-          imageCount,
-          categorySlug: category.slug,
-          matchedSlug,
-        });
-
         results.push({
           handle,
           status: "ok",
-          productId,
-          imageCount,
-          variantCount,
-          publishStatus,
-          ...(droppedSpecKeys.length ? { droppedSpecKeys } : {}),
+          productId: outcome.productId,
+          imageCount: outcome.imageCount,
+          variantCount: outcome.variantCount,
+          publishStatus: outcome.publishStatus,
+          ...(outcome.droppedSpecKeys.length ? { droppedSpecKeys: outcome.droppedSpecKeys } : {}),
         });
         succeeded += 1;
         consecutiveFailures = 0;

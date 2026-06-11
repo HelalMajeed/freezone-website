@@ -57,6 +57,18 @@ function hostnameToIpLiteral(host: string): string {
   return host.replace(/^\[/, "").replace(/\]$/, "");
 }
 
+const DNS_TIMEOUT_MS = 10_000;
+
+/** Race a DNS lookup against a hard deadline. `dns.lookup` cannot be aborted, so
+ *  the underlying query may still settle later, but the caller is unblocked. */
+function withDnsTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("DNS_TIMEOUT")), ms);
+  });
+  return Promise.race([p, timeout]).finally(() => clearTimeout(timer)) as Promise<T>;
+}
+
 function isBlockedHostname(host: string): boolean {
   const h = host.toLowerCase().replace(/\.$/, "");
   if (h === "localhost" || h.endsWith(".localhost")) return true;
@@ -95,7 +107,10 @@ export async function resolveSafeExternalUrl(raw: string): Promise<SafeResolved>
 
   let records: { address: string; family: number }[];
   try {
-    records = await dns.lookup(url.hostname, { all: true });
+    // node:dns.lookup uses getaddrinfo and honors no AbortSignal/timeout, so a
+    // wedged resolver hangs the await forever (observed: an import batch stuck
+    // on its first product's image with no progress). Bound it explicitly.
+    records = await withDnsTimeout(dns.lookup(url.hostname, { all: true }), DNS_TIMEOUT_MS);
   } catch {
     throw new Error("DNS_FAILED");
   }
