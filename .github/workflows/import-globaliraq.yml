@@ -132,6 +132,10 @@ jobs:
           exit 1
 
       - name: Push the log to the import-logs branch
+        # Audit convenience only — never fail the run (and so never mask a
+        # successful import) if the orphan-branch push hits a permissions or
+        # race error.
+        continue-on-error: true
         env:
           BATCH_ID: ${{ steps.kickoff.outputs.batchId }}
         run: |
