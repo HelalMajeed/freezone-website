@@ -24,8 +24,17 @@ function pickFirst(xml: string, name: string): string | null {
   return m ? m[1].trim() : null;
 }
 
+/** Upstream Shopify can accept a connection and then never send a response
+ *  body; an un-timed `fetch` awaits that forever and wedges the whole import
+ *  batch (the promise never settles, so the batch row stays `running`). Every
+ *  outbound request therefore carries a hard abort deadline. */
+const FETCH_TIMEOUT_MS = 20000;
+
 async function fetchText(url: string): Promise<string> {
-  const res = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
+  const res = await fetch(url, {
+    headers: { "User-Agent": USER_AGENT },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
   if (!res.ok) throw new Error(`GET ${url} → ${res.status} ${res.statusText}`);
   return await res.text();
 }
@@ -91,15 +100,27 @@ export async function fetchShopifyProduct(productUrl: string): Promise<Record<st
   const backoffMs = [500, 1500, 4000];
   let lastErr = "";
   for (let attempt = 0; attempt <= backoffMs.length; attempt += 1) {
-    const res = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
-    if (res.ok) {
-      const body = (await res.json()) as { product?: Record<string, unknown> };
-      return body.product ?? (body as Record<string, unknown>);
-    }
-    lastErr = `${res.status} ${res.statusText}`;
-    const transient = res.status === 429 || res.status >= 500;
-    if (!transient || attempt === backoffMs.length) {
-      throw new Error(`GET ${url} → ${lastErr}`);
+    /** A hung/aborted connection is treated like a transient upstream blip:
+     *  retry with backoff, then fail this single product. It must never wedge
+     *  the batch (the original cause of the 53-minute batch-2 stall). */
+    try {
+      const res = await fetch(url, {
+        headers: { "User-Agent": USER_AGENT },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      if (res.ok) {
+        const body = (await res.json()) as { product?: Record<string, unknown> };
+        return body.product ?? (body as Record<string, unknown>);
+      }
+      lastErr = `${res.status} ${res.statusText}`;
+      const transient = res.status === 429 || res.status >= 500;
+      if (!transient || attempt === backoffMs.length) {
+        throw new Error(`GET ${url} → ${lastErr}`);
+      }
+    } catch (e) {
+      // AbortError (timeout) / network failure → retry unless out of attempts.
+      lastErr = e instanceof Error ? e.message : String(e);
+      if (attempt === backoffMs.length) throw new Error(`GET ${url} → ${lastErr}`);
     }
     await new Promise((r) => setTimeout(r, backoffMs[attempt]));
   }
