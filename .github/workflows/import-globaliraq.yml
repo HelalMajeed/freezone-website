@@ -74,7 +74,9 @@ jobs:
             cat /tmp/login-body.json
             exit 1
           fi
-          cookie=$(awk '!/^#/ && NF>=7 {printf "%s%s=%s", sep, $6, $7; sep="; "}' "$jar")
+          # Note: curl writes HttpOnly cookies as "#HttpOnly_<domain>..." lines,
+          # so strip that prefix before skipping comment lines.
+          cookie=$(awk '{sub(/^#HttpOnly_/,"")} !/^#/ && NF>=7 {printf "%s%s=%s", sep, $6, $7; sep="; "}' "$jar")
           if [ -z "$cookie" ]; then
             echo "::error::dashboard login did not return session cookies"
             exit 1
