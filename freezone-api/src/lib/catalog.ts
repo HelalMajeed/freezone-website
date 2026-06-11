@@ -216,35 +216,26 @@ async function loadProductsCatalog(locale: LocaleCode): Promise<Product[]> {
     return PRODUCTS;
   }
   try {
-    let rows;
-    try {
-      rows = await prisma.product.findMany({
-        where: { published: true, deletedAt: null },
-        include: {
-          ...storefrontProductIncludeBase,
-          secondaryCategories: { include: { category: { select: { slug: true } } } },
-        },
-        orderBy: { id: "asc" },
-      });
-    } catch (e) {
-      if (catalogQueryMissingClassificationSupport(e)) {
-        console.warn("[catalog] loading products without classification tables (run migrate).");
-        rows = await prisma.product.findMany({
-          where: { published: true, deletedAt: null },
-          include: { ...storefrontProductIncludeLegacy },
-          orderBy: { id: "asc" },
-        });
-      } else if (!productQueryMissingSecondarySupport(e)) {
-        throw e;
-      } else {
-        console.warn("[catalog] loading products without secondaryCategories.");
-        rows = await prisma.product.findMany({
-          where: { published: true, deletedAt: null },
-          include: { ...storefrontProductIncludeLegacy },
-          orderBy: { id: "asc" },
-        });
-      }
-    }
+    /**
+     * Bulk storefront catalog (every published product, consumed by the home
+     * rails / client lists). It deliberately uses the LEAN include — no
+     * per-product `attributeValues` (EAV) and no nested `category.categoryAttributes`.
+     *
+     * Why: with ~1100 products those deep includes made Prisma materialize
+     * ~15k attribute-value rows + repeated category-attribute trees, and the
+     * findMany object graph ballooned to >1.5 GB of V8 heap and OOM-aborted the
+     * API (exit 134) on the very first load. `specs` still comes from the
+     * product's own `specs` JSON column (see resolveProductSpecMaps fallback);
+     * only EAV-derived facet `filterValues` are omitted here — storefront
+     * listing/category facet filtering is served by the paginated
+     * `/api/ssr/catalog/products` endpoint, not this bulk array. The product
+     * detail page loads the rich EAV path via its own per-id query.
+     */
+    const rows = await prisma.product.findMany({
+      where: { published: true, deletedAt: null },
+      include: { ...storefrontProductIncludeLegacy },
+      orderBy: { id: "asc" },
+    });
     return rows.map((r) => mapDbToProduct(r, locale));
   } catch (e) {
     if (!isDbConnectionError(e)) console.error("[catalog] DB products fallback:", e);
