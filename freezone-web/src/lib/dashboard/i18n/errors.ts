@@ -71,6 +71,32 @@ export const DASHBOARD_ERROR_MESSAGES: Record<string, BilingualMessage> = {
     ar: "عدد الصفوف في ملف CSV كبير جدًا (الحد 500).",
   },
 
+  // ── Dashboard login (/api/dashboard/auth) ────────────────────────────────
+  MISSING_CREDENTIALS: {
+    en: "Enter your email or phone and your password.",
+    ar: "أدخل البريد الإلكتروني أو رقم الهاتف وكلمة المرور.",
+  },
+  INVALID_CREDENTIALS: {
+    en: "Wrong email/phone or password.",
+    ar: "البريد الإلكتروني/رقم الهاتف أو كلمة المرور غير صحيحة.",
+  },
+  ACCOUNT_DISABLED: {
+    en: "This account is disabled — contact an administrator.",
+    ar: "هذا الحساب معطّل — تواصل مع مدير النظام.",
+  },
+  ACCOUNT_LOCKED: {
+    en: "Too many failed attempts — the account is temporarily locked. Try again in a few minutes.",
+    ar: "محاولات فاشلة كثيرة — الحساب مقفل مؤقتًا. حاول مجددًا بعد دقائق.",
+  },
+  DIRECT_LOGIN_DISABLED: {
+    en: "Direct admin access is turned off on the server.",
+    ar: "الدخول المباشر للوحة التحكم مُطفأ على الخادم.",
+  },
+  DIRECT_LOGIN_DISABLED_IN_PRODUCTION: {
+    en: "Direct admin access is disabled in production — sign in with your credentials.",
+    ar: "الدخول المباشر معطّل في بيئة الإنتاج — سجّل الدخول ببياناتك.",
+  },
+
   // ── Team management (/api/dashboard/users) ───────────────────────────────
   EMAIL_TAKEN: {
     en: "This email is already in use.",

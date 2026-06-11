@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./checkout.module.css";
 import { useCart, computeCheckoutTotals } from "@/lib/store";
 import { usePublicSite } from "@/components/providers/StorefrontProvider";
 import { useSite, PaymentMethod } from "@/lib/siteStore";
-import { Check, Truck, CreditCard, ClipboardList, Banknote, Smartphone, WalletCards, Building2 } from "lucide-react";
+import { Check, Truck, CreditCard, ClipboardList, Banknote, Smartphone, WalletCards, Building2, AlertTriangle } from "lucide-react";
 import { Link } from "@/navigation";
 import { Navigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,18 +15,42 @@ import toast from "react-hot-toast";
 import clsx from "clsx";
 import { Seo } from "@/components/seo/Seo";
 import { rememberOrder } from "@/lib/order-tracking";
-import { IRAQ_PROVINCES, provinceLabel } from "@/lib/iraq-provinces";
+import { IRAQ_PROVINCES, provinceLabel, type ProvinceCode } from "@/lib/iraq-provinces";
+import { normalizeIraqiPhone, isValidIraqiPhone } from "@/lib/phone";
+import { trackBeginCheckout, trackPurchase, type AnalyticsItem } from "@/lib/analytics";
 
 type Fulfillment = "delivery" | "pickup";
 
 /** WhatsApp Business click-to-chat (short link). Order text is appended as `?text=`. */
 const WHATSAPP_ORDER_CHAT_URL = "https://wa.me/message/FWGAFHQGURU6H1" as const;
 
-/** ترتيب طرق الدفع: نقد عند التوصيل ← إلكتروني (زين كاش، كي كارد، فيزا، ماستر) */
-const PAYMENT_FOR_DELIVERY: PaymentMethod[] = ["cod", "zaincash", "qicard", "visa", "master"];
+const ALL_METHODS: readonly PaymentMethod[] = ["cod", "store_pickup", "zaincash", "qicard", "fib", "visa", "master"];
 
-/** استلام من المقر: نقد في الشركة ← ثم نفس خيارات الإلكتروني */
-const PAYMENT_FOR_PICKUP: PaymentMethod[] = ["store_pickup", "zaincash", "qicard", "visa", "master"];
+function isKnownMethod(key: string): key is PaymentMethod {
+  return (ALL_METHODS as readonly string[]).includes(key);
+}
+
+type MethodFlags = { enabled: boolean; comingSoon: boolean };
+
+/**
+ * Honest defaults until GET /api/public/payment-methods answers (and if it is
+ * unreachable): cash methods always work, gateway methods stay "coming soon" —
+ * never the other way around.
+ */
+const DEFAULT_METHOD_FLAGS: Record<PaymentMethod, MethodFlags> = {
+  cod: { enabled: true, comingSoon: false },
+  store_pickup: { enabled: true, comingSoon: false },
+  zaincash: { enabled: false, comingSoon: true },
+  qicard: { enabled: false, comingSoon: true },
+  fib: { enabled: false, comingSoon: true },
+  visa: { enabled: false, comingSoon: true },
+  master: { enabled: false, comingSoon: true },
+};
+
+const DEFAULT_ELECTRONIC_ORDER: PaymentMethod[] = ["zaincash", "qicard", "fib", "visa", "master"];
+
+/** Payment-method list as served by GET /api/public/payment-methods. */
+type ApiPaymentMethod = { key: string; enabled: boolean; comingSoon: boolean; labelEn: string; labelAr: string };
 
 function methodIcon(m: PaymentMethod) {
   switch (m) {
@@ -37,6 +61,7 @@ function methodIcon(m: PaymentMethod) {
     case "zaincash":
       return Smartphone;
     case "qicard":
+    case "fib":
       return WalletCards;
     case "visa":
     case "master":
@@ -56,6 +81,8 @@ function paymentWhatsAppLabel(m: PaymentMethod): string {
       return "ZainCash";
     case "qicard":
       return "Qi Card";
+    case "fib":
+      return "FIB (First Iraqi Bank)";
     case "visa":
       return "Visa";
     case "master":
@@ -90,16 +117,75 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
   const [orderNotes, setOrderNotes] = useState("");
   const [placedOrderNumber, setPlacedOrderNumber] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitFailed, setSubmitFailed] = useState(false);
+  /** Local draft is written at most once per checkout attempt series. */
+  const draftSavedRef = useRef(false);
+
+  /** Method availability comes from the server (gateway env config), never guessed. */
+  const [methodFlags, setMethodFlags] = useState<Record<PaymentMethod, MethodFlags>>(DEFAULT_METHOD_FLAGS);
+  const [electronicOrder, setElectronicOrder] = useState<PaymentMethod[]>(DEFAULT_ELECTRONIC_ORDER);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(freezoneApiUrl("/api/public/payment-methods"));
+        const data = (await res.json()) as { ok?: boolean; methods?: ApiPaymentMethod[] };
+        if (cancelled || !res.ok || !data.ok || !Array.isArray(data.methods)) return;
+        const flags = { ...DEFAULT_METHOD_FLAGS };
+        const electronic: PaymentMethod[] = [];
+        for (const m of data.methods) {
+          if (!isKnownMethod(m.key)) continue;
+          flags[m.key] = { enabled: Boolean(m.enabled), comingSoon: Boolean(m.comingSoon) };
+          if (m.key !== "cod" && m.key !== "store_pickup") electronic.push(m.key);
+        }
+        setMethodFlags(flags);
+        if (electronic.length > 0) setElectronicOrder(electronic);
+      } catch {
+        /* keep honest defaults: cash enabled, gateways coming soon */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /** begin_checkout once per visit (no-op unless analytics ids are configured). */
+  const beganCheckoutRef = useRef(false);
+  useEffect(() => {
+    if (beganCheckoutRef.current || items.length === 0) return;
+    beganCheckoutRef.current = true;
+    trackBeginCheckout(
+      items.map((i): AnalyticsItem => ({
+        id: i.id, name: i.name, price: i.price, quantity: i.qty, brand: i.brand, category: i.cat,
+      })),
+    );
+  }, [items]);
 
   const isPickup = fulfillment === "pickup";
+
+  /** Per-governorate delivery fee from the site payload (live on province change). */
+  const provinceFee = site.shippingFees?.[form.city as ProvinceCode] ?? shipFee;
+
   const { subtotal: lineSubtotal, shipping, grandTotal } = computeCheckoutTotals(items, {
     pickup: isPickup,
     threshold,
-    shipFee,
+    shipFee: provinceFee,
     couponDiscount,
   });
 
-  const allowedMethods = isPickup ? PAYMENT_FOR_PICKUP : PAYMENT_FOR_DELIVERY;
+  const allowedMethods: PaymentMethod[] = isPickup
+    ? ["store_pickup", ...electronicOrder]
+    : ["cod", ...electronicOrder];
+
+  /** If the selected method turns out to be unavailable (flags loaded), fall back to cash. */
+  useEffect(() => {
+    if (!methodFlags[paymentMethod]?.enabled) {
+      setPaymentMethod(isPickup ? "store_pickup" : "cod");
+    }
+  }, [methodFlags, paymentMethod, isPickup]);
 
   const resolveAddress = () => {
     if (isPickup) {
@@ -113,12 +199,19 @@ export default function CheckoutPage() {
       toast.error(t("fillError"));
       return;
     }
+    /** Iraqi mobile only (07XXXXXXXXX) — same rule the server enforces. */
+    if (!isValidIraqiPhone(form.phone)) {
+      setPhoneError(true);
+      toast.error(t("phoneInvalid"));
+      return;
+    }
     if (!isPickup && !form.address.trim()) {
       toast.error(t("fillAddressError"));
       return;
     }
-    const allowed = isPickup ? PAYMENT_FOR_PICKUP : PAYMENT_FOR_DELIVERY;
-    setPaymentMethod((pm) => (allowed.includes(pm) ? pm : isPickup ? "store_pickup" : "cod"));
+    setPaymentMethod((pm) =>
+      allowedMethods.includes(pm) && methodFlags[pm]?.enabled ? pm : isPickup ? "store_pickup" : "cod",
+    );
     window.scrollTo({ top: 0, behavior: "smooth" });
     setStep(2);
   };
@@ -137,19 +230,35 @@ export default function CheckoutPage() {
         return t("orderOutOfStock");
       case "UNKNOWN_PRODUCT":
         return t("orderUnknownProduct");
+      case "DELIVERY_RESTRICTED":
+        return t("orderDeliveryRestricted");
+      case "INVALID_PHONE":
+        return t("orderInvalidPhone");
+      case "INVALID_PAYMENT_METHOD":
+        return t("orderInvalidPayment");
+      case "PAYMENT_METHOD_UNAVAILABLE":
+        return t("orderPaymentUnavailable");
       default:
         return null;
     }
   };
 
   const submitOrder = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    setSubmitFailed(false);
+
     /**
      * Open the WhatsApp tab synchronously inside the click gesture. If we wait
      * until after the awaited POST below, transient activation has expired and
      * popup blockers (Safari/Firefox/Chrome) silently swallow the handoff tab.
-     * We point the placeholder tab at the final URL once the order resolves.
+     * We point the placeholder tab at the final URL once the order resolves —
+     * and CLOSE it on every failure path so the handoff only fires on genuine
+     * success.
      */
     const waWindow = window.open("", "_blank");
+
+    const phone = normalizeIraqiPhone(form.phone.trim());
 
     const orderItems = items.map((i) => ({
       productId: i.id,
@@ -167,7 +276,7 @@ export default function CheckoutPage() {
       addOrder({
         customer: {
           name: form.name.trim(),
-          phone: form.phone.trim(),
+          phone,
           address: addressLine,
           city: form.city,
         },
@@ -184,13 +293,15 @@ export default function CheckoutPage() {
     try {
       const res = await fetch(freezoneApiUrl("/api/public/orders"), {
         method: "POST",
+        // Send fz_customer_session so signed-in customers get the order linked.
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fulfillment: isPickup ? "pickup" : "delivery",
           paymentMethod,
           customer: {
             name: form.name.trim(),
-            phone: form.phone.trim(),
+            phone,
             address: addressLine,
             city: form.city,
           },
@@ -212,6 +323,7 @@ export default function CheckoutPage() {
       if (res.ok && data.orderNumber) {
         orderNumber = data.orderNumber;
       } else if (res.status === 503 && data.code === "NO_DATABASE") {
+        /** Dev-only fallback (no DATABASE_URL): saved locally with an explicit notice. */
         orderNumber = saveLocalOrder().orderNumber;
         toast.success(t("orderLocalFallback"));
       } else if (res.status === 400) {
@@ -219,14 +331,30 @@ export default function CheckoutPage() {
         // Map stable server codes to localized strings; the raw `error` is
         // Arabic-only, so never echo it to non-Arabic shoppers.
         toast.error(localizedOrderError(data.code) ?? t("orderValidationError"));
+        setSubmitting(false);
         return;
       } else {
         waWindow?.close();
         toast.error(localizedOrderError(data.code) ?? t("orderServerError"));
+        setSubmitting(false);
         return;
       }
     } catch {
-      orderNumber = saveLocalOrder().orderNumber;
+      /**
+       * HONESTY FIX: a network failure is NOT a placed order. Keep a local
+       * draft (once) so nothing the shopper typed is lost, but show a clear
+       * failure state with retry instead of the old fake success screen —
+       * and never open WhatsApp for an order the server never saw.
+       */
+      waWindow?.close();
+      if (!draftSavedRef.current) {
+        saveLocalOrder();
+        draftSavedRef.current = true;
+      }
+      setSubmitFailed(true);
+      setSubmitting(false);
+      toast.error(t("orderNetworkFailTitle"));
+      return;
     }
 
     const lines = [
@@ -235,7 +363,7 @@ export default function CheckoutPage() {
       `*Order #:* ${orderNumber}`,
       `*Fulfillment:* ${isPickup ? "Store pickup" : "Home delivery"}`,
       `*Customer:* ${form.name}`,
-      `*Phone:* ${form.phone}`,
+      `*Phone:* ${phone}`,
       `*City:* ${form.city}`,
       `*Address / pickup:* ${addressLine}`,
       ``,
@@ -259,7 +387,7 @@ export default function CheckoutPage() {
     /** Device-local order memory — feeds the account page + track-order deep link. */
     rememberOrder({
       orderNumber,
-      phone: form.phone.trim(),
+      phone,
       total: grandTotal,
       status: "pending",
       createdAt: new Date().toISOString(),
@@ -273,7 +401,17 @@ export default function CheckoutPage() {
       window.open(waUrl, "_blank");
     }
 
+    trackPurchase({
+      orderNumber,
+      total: grandTotal,
+      shipping,
+      items: items.map((i): AnalyticsItem => ({
+        id: i.id, name: i.name, price: i.price, quantity: i.qty, brand: i.brand, category: i.cat,
+      })),
+    });
+
     clearCart();
+    setSubmitting(false);
     setPlacedOrderNumber(orderNumber);
     setStep(4);
   };
@@ -288,6 +426,8 @@ export default function CheckoutPage() {
         return t("pm_zaincash");
       case "qicard":
         return t("pm_qicard");
+      case "fib":
+        return t("pm_fib");
       case "visa":
         return t("pm_visa");
       case "master":
@@ -305,11 +445,71 @@ export default function CheckoutPage() {
         return t("pm_zaincash_desc");
       case "qicard":
         return t("pm_qicard_desc");
+      case "fib":
+        return t("pm_fib_desc");
       case "visa":
         return t("pm_visa_desc");
       case "master":
         return t("pm_master_desc");
     }
+  };
+
+  /** Confirmation-screen note: how each (still unpaid) method actually settles. */
+  const methodSettlement = (m: PaymentMethod) => {
+    switch (m) {
+      case "cod":
+        return t("settle_cod");
+      case "store_pickup":
+        return t("settle_store_pickup");
+      case "zaincash":
+        return t("settle_zaincash");
+      case "qicard":
+        return t("settle_qicard");
+      case "fib":
+        return t("settle_fib");
+      case "visa":
+        return t("settle_visa");
+      case "master":
+        return t("settle_master");
+    }
+  };
+
+  /** One payment option row. Unconfigured methods stay visible but disabled
+   *  with a bilingual "coming soon" badge — no silently hidden options. */
+  const renderMethodOption = (m: PaymentMethod) => {
+    const Icon = methodIcon(m);
+    const flags = methodFlags[m] ?? { enabled: false, comingSoon: true };
+    const disabled = !flags.enabled;
+    const active = paymentMethod === m;
+    return (
+      <label
+        key={m}
+        className={clsx(
+          styles.paymentOption,
+          styles.fullWidth,
+          active && styles.activePayment,
+          disabled && styles.disabledPayment,
+        )}
+        aria-disabled={disabled}
+      >
+        <input
+          type="radio"
+          name="pay"
+          checked={active}
+          disabled={disabled}
+          onChange={() => setPaymentMethod(m)}
+          className={styles.radioInput}
+        />
+        <Icon size={22} className={styles.paymentOptionIcon} aria-hidden />
+        <div>
+          <h4 className={styles.optionTitle}>
+            {methodTitle(m)}
+            {flags.comingSoon && <span className={styles.comingSoonBadge}>{t("comingSoon")}</span>}
+          </h4>
+          <p className={styles.optionDesc}>{disabled ? t("comingSoonDesc") : methodDesc(m)}</p>
+        </div>
+      </label>
+    );
   };
 
   if (step === 4 && placedOrderNumber) {
@@ -320,10 +520,14 @@ export default function CheckoutPage() {
         </motion.div>
         <h1 className={`fz-type-h1 ${styles.successTitle}`}>{t("orderPlaced")}</h1>
         <p className={styles.successText}>{t("successMsg", { orderNumber: placedOrderNumber })}</p>
+        <p className={styles.successText}>
+          <strong>{t("paymentMethod")}:</strong> {methodTitle(paymentMethod)}
+        </p>
+        <p className={`fz-type-small ${styles.successText}`}>{methodSettlement(paymentMethod)}</p>
         <p className={`fz-type-small ${styles.successText}`}>{t("successFollowUp")}</p>
         <div className={styles.successActions}>
           <Link
-            href={`/track-order?order=${encodeURIComponent(placedOrderNumber)}&phone=${encodeURIComponent(form.phone.trim())}`}
+            href={`/track-order?order=${encodeURIComponent(placedOrderNumber)}&phone=${encodeURIComponent(normalizeIraqiPhone(form.phone.trim()))}`}
             className="btn-outline"
           >
             {t("trackYourOrder")}
@@ -411,32 +615,62 @@ export default function CheckoutPage() {
 
             <div className={`${styles.formGrid} ${styles.formGridSpaced}`}>
               <div className={styles.formGroup}>
-                <label className={styles.label}>{t("fullName")}</label>
-                <input required type="text" className={styles.input} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <label className={styles.label} htmlFor="checkout-name">{t("fullName")}</label>
+                <input id="checkout-name" required type="text" className={styles.input} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.label}>{t("phone")}</label>
-                <input required type="tel" inputMode="tel" autoComplete="tel" className={styles.input} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={t("phonePlaceholder")} />
+                <label className={styles.label} htmlFor="checkout-phone">{t("phone")}</label>
+                <input
+                  id="checkout-phone"
+                  required
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  className={clsx(styles.input, phoneError && styles.inputError)}
+                  value={form.phone}
+                  onChange={(e) => {
+                    setForm({ ...form, phone: e.target.value });
+                    if (phoneError) setPhoneError(false);
+                  }}
+                  onBlur={() => setPhoneError(form.phone.trim() !== "" && !isValidIraqiPhone(form.phone))}
+                  aria-invalid={phoneError}
+                  placeholder={t("phonePlaceholder")}
+                />
+                {phoneError && (
+                  <p className={styles.inlineError} role="alert">
+                    {t("phoneInvalid")}
+                  </p>
+                )}
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.label}>{t("city")}</label>
-                <select className={styles.input} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}>
+                <label className={styles.label} htmlFor="checkout-city">{t("city")}</label>
+                <select id="checkout-city" className={styles.input} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}>
                   {IRAQ_PROVINCES.map((p) => (
                     <option key={p.code} value={p.code}>
                       {provinceLabel(p)}
                     </option>
                   ))}
                 </select>
+                {!isPickup && (
+                  <p className={styles.feeHint}>
+                    {provinceFee === 0
+                      ? t("provinceFeeFree")
+                      : t("provinceFeeLine", { fee: new Intl.NumberFormat("en").format(provinceFee) })}
+                    {threshold > 0 && (
+                      <span> · {t("freeOverThreshold", { amount: new Intl.NumberFormat("en").format(threshold) })}</span>
+                    )}
+                  </p>
+                )}
               </div>
               {!isPickup && (
                 <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-                  <label className={styles.label}>{t("address")}</label>
-                  <input required type="text" className={styles.input} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+                  <label className={styles.label} htmlFor="checkout-address">{t("address")}</label>
+                  <input id="checkout-address" required type="text" className={styles.input} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
                 </div>
               )}
               <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-                <label className={styles.label}>{t("orderNotes")}</label>
-                <textarea className={styles.textarea} rows={3} value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} placeholder={t("orderNotesPlaceholder")} />
+                <label className={styles.label} htmlFor="checkout-notes">{t("orderNotes")}</label>
+                <textarea id="checkout-notes" className={styles.textarea} rows={3} value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} placeholder={t("orderNotesPlaceholder")} />
               </div>
             </div>
 
@@ -458,84 +692,21 @@ export default function CheckoutPage() {
               {!isPickup && (
                 <>
                   <div className={styles.paymentGroupTitle}>{t("groupCashOnDelivery")}</div>
-                  {allowedMethods
-                    .filter((m) => m === "cod")
-                    .map((m) => {
-                      const Icon = methodIcon(m);
-                      const active = paymentMethod === m;
-                      return (
-                        <label key={m} className={clsx(styles.paymentOption, styles.fullWidth, active && styles.activePayment)}>
-                          <input
-                            type="radio"
-                            name="pay"
-                            checked={active}
-                            onChange={() => setPaymentMethod(m)}
-                            className={styles.radioInput}
-                          />
-                          <Icon size={22} className={styles.paymentOptionIcon} aria-hidden />
-                          <div>
-                            <h4 className={styles.optionTitle}>{methodTitle(m)}</h4>
-                            <p className={styles.optionDesc}>{methodDesc(m)}</p>
-                          </div>
-                        </label>
-                      );
-                    })}
+                  {allowedMethods.filter((m) => m === "cod").map(renderMethodOption)}
                 </>
               )}
 
               {isPickup && (
                 <>
                   <div className={styles.paymentGroupTitle}>{t("groupCashAtStore")}</div>
-                  {allowedMethods
-                    .filter((m) => m === "store_pickup")
-                    .map((m) => {
-                      const Icon = methodIcon(m);
-                      const active = paymentMethod === m;
-                      return (
-                        <label key={m} className={clsx(styles.paymentOption, styles.fullWidth, active && styles.activePayment)}>
-                          <input
-                            type="radio"
-                            name="pay"
-                            checked={active}
-                            onChange={() => setPaymentMethod(m)}
-                            className={styles.radioInput}
-                          />
-                          <Icon size={22} className={styles.paymentOptionIcon} aria-hidden />
-                          <div>
-                            <h4 className={styles.optionTitle}>{methodTitle(m)}</h4>
-                            <p className={styles.optionDesc}>{methodDesc(m)}</p>
-                          </div>
-                        </label>
-                      );
-                    })}
+                  {allowedMethods.filter((m) => m === "store_pickup").map(renderMethodOption)}
                 </>
               )}
 
               <div className={styles.paymentGroupTitle}>{t("groupElectronic")}</div>
-              {allowedMethods
-                .filter((m) => m !== "cod" && m !== "store_pickup")
-                .map((m) => {
-                  const Icon = methodIcon(m);
-                  const active = paymentMethod === m;
-                  return (
-                    <label key={m} className={clsx(styles.paymentOption, styles.fullWidth, active && styles.activePayment)}>
-                      <input
-                        type="radio"
-                        name="pay"
-                        checked={active}
-                        onChange={() => setPaymentMethod(m)}
-                        className={styles.radioInput}
-                      />
-                      <Icon size={22} className={styles.paymentOptionIcon} aria-hidden />
-                      <div>
-                        <h4 className={styles.optionTitle}>{methodTitle(m)}</h4>
-                        <p className={styles.optionDesc}>{methodDesc(m)}</p>
-                      </div>
-                    </label>
-                  );
-                })}
+              {allowedMethods.filter((m) => m !== "cod" && m !== "store_pickup").map(renderMethodOption)}
 
-              {(paymentMethod === "zaincash" || paymentMethod === "qicard") && (
+              {(paymentMethod === "zaincash" || paymentMethod === "qicard" || paymentMethod === "fib") && (
                 <div className={styles.paymentHint}>
                   <strong>{t("electronicHintTitle")}</strong>
                   {paymentMethod === "zaincash" && (
@@ -577,7 +748,12 @@ export default function CheckoutPage() {
                 {form.name} • {form.phone}
               </p>
               <p className={styles.reviewLine}>{resolveAddress()}</p>
-              <p className={styles.reviewLine}>{form.city}</p>
+              <p className={styles.reviewLine}>
+                {(() => {
+                  const p = IRAQ_PROVINCES.find((x) => x.code === form.city);
+                  return p ? provinceLabel(p) : form.city;
+                })()}
+              </p>
               <p className={styles.reviewStrong}>
                 {t("fulfillmentShort")}: {isPickup ? t("fulfillmentPickup") : t("fulfillmentDelivery")}
               </p>
@@ -622,12 +798,27 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {submitFailed && (
+              <div className={styles.submitErrorBox} role="alert">
+                <AlertTriangle size={20} className={styles.submitErrorIcon} aria-hidden />
+                <div>
+                  <strong>{t("orderNetworkFailTitle")}</strong>
+                  <p>{t("orderNetworkFailBody")}</p>
+                </div>
+              </div>
+            )}
+
             <div className={styles.buttons}>
-              <button type="button" className={styles.btnBack} onClick={() => setStep(2)}>
+              <button type="button" className={styles.btnBack} onClick={() => setStep(2)} disabled={submitting}>
                 {t("btnBack")}
               </button>
-              <button type="button" className={`btn-red ${styles.placeOrderBtn}`} onClick={submitOrder}>
-                {t("placeOrder")}
+              <button
+                type="button"
+                className={`btn-red ${styles.placeOrderBtn}`}
+                onClick={submitOrder}
+                disabled={submitting}
+              >
+                {submitting ? t("placingOrder") : submitFailed ? t("retryOrder") : t("placeOrder")}
               </button>
             </div>
           </motion.div>

@@ -1,16 +1,21 @@
 "use client";
 
 import { useMemo } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams, useSearchParams } from "react-router-dom";
 import { SlidersHorizontal } from "lucide-react";
 import { Link } from "@/navigation";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
-import { productBelongsToCategory } from "@/lib/productCategoryMembership";
+import { productBelongsToCategoryTree } from "@/lib/productCategoryMembership";
 import { ProductCard } from "@/components/ui/ProductCard";
+import { PaginationControls } from "@/components/ui/PaginationControls";
 import { Seo } from "@/components/seo/Seo";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import styles from "./landing.module.css";
+/** Same visible breadcrumb styling as the product page (single trail look sitewide). */
+import crumbStyles from "@/features/product-detail/productDetail.module.css";
+
+const LANDING_PAGE_SIZE = 24;
 
 /** Category landing page — /:locale/category/:slug (docs/STOREFRONT_DESIGN.md). */
 export default function CategoryLandingPage() {
@@ -22,17 +27,50 @@ export default function CategoryLandingPage() {
   const { catalog } = useStorefront();
 
   const category = catalog.categories.find((c) => c.id === slug);
+  /** One-level category tree: children listed on the parent page, parent in the child breadcrumb. */
+  const childCategories = useMemo(
+    () => catalog.categories.filter((c) => c.parent === slug),
+    [catalog.categories, slug],
+  );
+  const parentCategory = category?.parent
+    ? catalog.categories.find((c) => c.id === category.parent)
+    : undefined;
 
   const products = useMemo(
-    () => catalog.products.filter((p) => productBelongsToCategory(p, slug)),
-    [catalog.products, slug],
+    () => catalog.products.filter((p) => productBelongsToCategoryTree(p, slug, catalog.categories)),
+    [catalog.products, catalog.categories, slug],
   );
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const pageCount = Math.max(1, Math.ceil(products.length / LANDING_PAGE_SIZE));
+  /** Clamp a stale ?page from a shared URL instead of rendering an empty grid. */
+  const page = Math.min(
+    Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1),
+    pageCount,
+  );
+  const pageProducts = useMemo(
+    () => products.slice((page - 1) * LANDING_PAGE_SIZE, page * LANDING_PAGE_SIZE),
+    [products, page],
+  );
+
+  const goToPage = (p: number) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (p > 1) next.set("page", String(p));
+      else next.delete("page");
+      return next;
+    });
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+  };
 
   if (!category) {
     return <Navigate to={`/${lc}/products`} replace />;
   }
 
   const name = locale === "ar" ? category.nameAr || category.name : category.name;
+  const catName = (c: { name: string; nameAr?: string }) =>
+    locale === "ar" ? c.nameAr || c.name : c.name;
 
   return (
     <div className={styles.wrapper}>
@@ -44,9 +82,30 @@ export default function CategoryLandingPage() {
       <BreadcrumbJsonLd
         items={[
           { name: tSeo("breadcrumbHome"), path: `/${lc}` },
+          ...(parentCategory
+            ? [{ name: catName(parentCategory), path: `/${lc}/category/${parentCategory.id}` }]
+            : []),
           { name, path: `/${lc}/category/${category.id}` },
         ]}
       />
+
+      <div className={crumbStyles.breadcrumbBar}>
+        <nav className={`container ${crumbStyles.breadcrumb}`} aria-label={tSeo("breadcrumbAria")}>
+          <Link href="/" prefetch>
+            {tSeo("breadcrumbHome")}
+          </Link>
+          <span className={crumbStyles.separator}>/</span>
+          {parentCategory ? (
+            <>
+              <Link href={`/category/${encodeURIComponent(parentCategory.id)}`} prefetch>
+                {catName(parentCategory)}
+              </Link>
+              <span className={crumbStyles.separator}>/</span>
+            </>
+          ) : null}
+          <span className={crumbStyles.current}>{name}</span>
+        </nav>
+      </div>
 
       <header className={styles.hero}>
         {category.img ? <img src={category.img} alt="" className={styles.heroImage} aria-hidden /> : null}
@@ -59,7 +118,22 @@ export default function CategoryLandingPage() {
               <SlidersHorizontal size={15} aria-hidden />
               {t("openFilters")}
             </Link>
+            {parentCategory ? (
+              <Link href={`/category/${encodeURIComponent(parentCategory.id)}`} className={styles.filtersLink}>
+                {t("backToParent", { name: catName(parentCategory) })}
+              </Link>
+            ) : null}
           </div>
+          {childCategories.length > 0 ? (
+            <nav className={styles.subcats} aria-label={t("subcategories")}>
+              {childCategories.map((c) => (
+                <Link key={c.id} href={`/category/${encodeURIComponent(c.id)}`} className={styles.subcatChip}>
+                  {c.icon ? <span aria-hidden>{c.icon}</span> : null}
+                  {catName(c)}
+                </Link>
+              ))}
+            </nav>
+          ) : null}
         </div>
       </header>
 
@@ -74,10 +148,11 @@ export default function CategoryLandingPage() {
         ) : (
           <>
             <div className={styles.grid}>
-              {products.map((p) => (
+              {pageProducts.map((p) => (
                 <ProductCard key={p.id} product={p} categories={catalog.categories} />
               ))}
             </div>
+            <PaginationControls page={page} pageCount={pageCount} onPageChange={goToPage} />
             <div className={styles.footerCta}>
               <Link href={`/products?cat=${encodeURIComponent(category.id)}`} className="btn-outline">
                 {t("openFilters")}

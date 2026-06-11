@@ -1,5 +1,6 @@
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import compression from "compression";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -8,6 +9,7 @@ import "express-async-errors";
 import multer from "multer";
 import helmet from "helmet";
 import { rateLimitCheck, ipKeyFromExpressReq } from "./lib/rate-limit";
+import { resolveRateLimitRule } from "./lib/rate-rules";
 import { discoverRoutes, HTTP_METHODS, type DiscoveredRoute, type HttpMethod } from "./lib/route-registry";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -118,38 +120,9 @@ function applySecurityHeaders(_req: express.Request, res: express.Response, next
   next();
 }
 
-interface RateLimitRule { limit: number; windowMs: number; scope: string; }
-const RATE_LIMITS: Record<string, RateLimitRule> = {
-  "POST /api/public/orders":              { scope: "public/orders",          limit: 5,  windowMs: 60_000 },
-  "POST /api/public/orders/track":        { scope: "public/order-track",     limit: 10, windowMs: 60_000 },
-  "POST /api/public/contact":             { scope: "public/contact",         limit: 5,  windowMs: 60_000 },
-  "POST /api/public/coupon/validate":     { scope: "public/coupon-validate", limit: 10, windowMs: 60_000 },
-  "POST /api/pc-build":                   { scope: "public/pc-build",        limit: 10, windowMs: 60_000 },
-  "POST /api/admin/login":                { scope: "admin/login",            limit: 5,  windowMs: 10 * 60_000 },
-  "POST /api/dashboard/auth/login":       { scope: "dashboard/login",        limit: 5,  windowMs: 10 * 60_000 },
-  "POST /api/dashboard/auth/direct-login":{ scope: "dashboard/direct-login", limit: 5,  windowMs: 10 * 60_000 },
-};
-
-/**
- * Normalize "METHOD /path" so the limit lookup cannot be bypassed by case
- * (`/API/...`) or a trailing slash (`/api/public/contact/`). Express routing is
- * case-insensitive and non-strict by default, so those variants still reach the
- * same handler — the rate-limit key must collapse them the same way.
- */
-function normalizeRateKey(method: string, path: string): string {
-  const cleanPath = path.replace(/\/+$/, "") || "/";
-  return `${method} ${cleanPath}`.toLowerCase();
-}
-
-const NORMALIZED_RATE_LIMITS = new Map<string, RateLimitRule>(
-  Object.entries(RATE_LIMITS).map(([k, v]) => {
-    const sep = k.indexOf(" ");
-    return [normalizeRateKey(k.slice(0, sep), k.slice(sep + 1)), v];
-  }),
-);
-
+/** Rule table + matching (exact / pattern / public-GET fallback) lives in lib/rate-rules.ts. */
 function rateLimitMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const rule = NORMALIZED_RATE_LIMITS.get(normalizeRateKey(req.method, req.path));
+  const rule = resolveRateLimitRule(req.method, req.path);
   if (!rule) return next();
   const decision = rateLimitCheck(rule.scope, ipKeyFromExpressReq(req), rule.limit, rule.windowMs);
   res.setHeader("X-RateLimit-Limit", String(rule.limit));
@@ -258,6 +231,10 @@ async function main() {
       credentials: true,
     }),
   );
+  /** gzip/brotli-negotiated compression — the full-catalog bootstrap JSON is
+   *  several hundred KB uncompressed; the default filter skips already-compressed
+   *  content types (images under /uploads). */
+  app.use(compression());
   app.use(cookieParser());
   /** 1 MB is enough for every JSON payload we actually accept; admin upload
    *  uses multipart so the limit there is set in `multer` separately. */

@@ -14,7 +14,7 @@ import {
   defaultViewAllHrefForTab,
   type TabbedProductTabConfig,
 } from "@/lib/home-section-products";
-import { productBelongsToCategory } from "@/lib/productCategoryMembership";
+import { productBelongsToCategoryTree } from "@/lib/productCategoryMembership";
 
 type LegacyTabId = "new" | "featured" | "gaming" | "components";
 
@@ -82,11 +82,15 @@ export function TabbedShowcase({ config }: Props) {
         return PRODUCTS.filter((p) => p.featured).slice(0, 24);
       case "gaming":
         return PRODUCTS.filter((p) =>
-          ["gaming", "laptops", "computers"].some((slug) => productBelongsToCategory(p, slug)),
+          ["gaming", "laptops", "computers"].some((slug) =>
+            productBelongsToCategoryTree(p, slug, catalog.categories),
+          ),
         ).slice(0, 24);
       case "components":
         return PRODUCTS.filter(
-          (p) => productBelongsToCategory(p, "components") || productBelongsToCategory(p, "storage"),
+          (p) =>
+            productBelongsToCategoryTree(p, "components", catalog.categories) ||
+            productBelongsToCategoryTree(p, "storage", catalog.categories),
         ).slice(0, 24);
       default:
         return PRODUCTS.slice(0, 24);

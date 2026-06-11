@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { auditContext, guardAdminMutate, guardAdminRead } from "@/lib/admin-route-guard";
 import { actorForAudit } from "@/lib/admin-auth";
@@ -103,6 +104,50 @@ export async function GET(req: Request) {
   }
 }
 
+/**
+ * Zod-formalized create payload (ship run, ASSUMPTIONS A-16) — the editor's
+ * minimal create flow and the Global Iraq importer (run-batch loop-back) both
+ * post here. Field types deliberately mirror what the previous inline TS cast
+ * + manual checks accepted, so valid callers are byte-identical; only
+ * wrong-typed payloads now get the standard VALIDATION error. The
+ * categoryId/nameEn/price "required" check, the specs-vs-category validation
+ * (whose exact error text the importer's retry loop parses), the external-URL
+ * image rejection and all defaulting stay in the handler, unchanged.
+ */
+const adminProductCreateSchema = z.object({
+  categoryId: z.number().optional(),
+  brand: z.string().optional(),
+  brandId: z.number().nullable().optional(),
+  sku: z.string().optional(),
+  model: z.string().optional(),
+  quantity: z.number().optional(),
+  nameEn: z.string().optional(),
+  nameAr: z.string().optional(),
+  descEn: z.string().optional(),
+  descAr: z.string().optional(),
+  price: z.number().optional(),
+  oldPrice: z.number().nullable().optional(),
+  storage: z.string().optional(),
+  model3d: z.string().nullable().optional(),
+  /** Warranty label shown on PDP + admin. Optional. */
+  warranty: z.string().nullable().optional(),
+  /** Nullable elements: the handler has always dropped falsy entries via filter(Boolean). */
+  images: z.array(z.string().nullable()).optional(),
+  /** Real validation happens against the category schema in the handler. */
+  specs: z.record(z.string(), z.unknown()).optional(),
+  secondaryCategoryIds: z.array(z.number()).optional(),
+  /** Caller can opt the row out of publishing (useful for imports — review first). */
+  published: z.boolean().optional(),
+  isNew: z.boolean().optional(),
+  featured: z.boolean().optional(),
+  /** Import provenance — set by the Global Iraq scraper, ignored otherwise. */
+  sourceUrl: z.string().nullable().optional(),
+  sourceHandle: z.string().nullable().optional(),
+  sourcePrice: z.number().nullable().optional(),
+  importedAt: z.string().nullable().optional(),
+  importBatchId: z.string().nullable().optional(),
+});
+
 export async function POST(req: Request) {
   const mutateGuard = await guardAdminMutate(req);
   if (!mutateGuard.ok) return mutateGuard.response;
@@ -111,39 +156,19 @@ export async function POST(req: Request) {
     return Response.json({ error: "No database" }, { status: 503 });
   }
 
-  const body = (await req.json().catch(() => null)) as {
-    categoryId?: number;
-    brand?: string;
-    brandId?: number | null;
-    sku?: string;
-    model?: string;
-    quantity?: number;
-    nameEn?: string;
-    nameAr?: string;
-    descEn?: string;
-    descAr?: string;
-    price?: number;
-    oldPrice?: number | null;
-    storage?: string;
-    model3d?: string | null;
-    /** Warranty label shown on PDP + admin. Optional. */
-    warranty?: string | null;
-    images?: string[];
-    specs?: Record<string, unknown>;
-    secondaryCategoryIds?: number[];
-    /** Caller can opt the row out of publishing (useful for imports — review first). */
-    published?: boolean;
-    isNew?: boolean;
-    featured?: boolean;
-    /** Import provenance — set by the Global Iraq scraper, ignored otherwise. */
-    sourceUrl?: string | null;
-    sourceHandle?: string | null;
-    sourcePrice?: number | null;
-    importedAt?: string | null;
-    importBatchId?: string | null;
-  } | null;
+  const raw = await req.json().catch(() => null);
+  /** `?? {}` routes an empty/missing body to the historical "required" answer below. */
+  const parsed = adminProductCreateSchema.safeParse(raw ?? {});
+  if (!parsed.success) {
+    const first = parsed.error.issues[0];
+    return Response.json(
+      { ok: false, error: first?.message ?? "بيانات غير صالحة", code: "VALIDATION" },
+      { status: 400 },
+    );
+  }
+  const body = parsed.data;
 
-  if (!body?.categoryId || !body.nameEn || typeof body.price !== "number") {
+  if (!body.categoryId || !body.nameEn || typeof body.price !== "number") {
     return Response.json({ error: "categoryId, nameEn, price required" }, { status: 400 });
   }
 
@@ -152,7 +177,7 @@ export async function POST(req: Request) {
     return Response.json({ error: specCheck.error }, { status: 400 });
   }
 
-  const images = Array.isArray(body.images) ? body.images.filter(Boolean) : [];
+  const images = (body.images ?? []).filter((u): u is string => Boolean(u));
   for (const url of images) {
     if (typeof url === "string" && /^https?:\/\//i.test(url.trim())) {
       return Response.json(

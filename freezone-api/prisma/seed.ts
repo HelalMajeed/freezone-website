@@ -7,10 +7,11 @@
  */
 import { PrismaClient } from "@prisma/client";
 import { CATEGORIES } from "../src/lib/data";
+import { IRAQ_PROVINCES } from "../src/lib/iraq-provinces";
 import { CATEGORY_FACETS } from "../src/lib/productFacetConfig";
 import { defaultFacetNamesForKey } from "../src/lib/facet-attributes";
 import { syncCategoryAttributesFromFacetKeys } from "../src/lib/classification/sync";
-import { CLASSIFICATION_SEED_BY_SLUG } from "../src/lib/classification/seed-presets";
+import { CLASSIFICATION_SEED_BY_SLUG, resolveCategorySchemaSlug } from "../src/lib/classification/seed-presets";
 
 const prisma = new PrismaClient();
 
@@ -51,30 +52,45 @@ async function main() {
   await prisma.showroomMedia.deleteMany();
   await prisma.siteConfig.deleteMany();
 
-  for (let i = 0; i < CATEGORIES.length; i++) {
-    const c = CATEGORIES[i];
-    const presetAttrs = CLASSIFICATION_SEED_BY_SLUG[c.id];
-    const facetKeys = presetAttrs?.length
-      ? presetAttrs
-      : (CATEGORY_FACETS[c.id]?.map((f) => f.key) ?? []).map((key) => {
-          const { name_en, name_ar } = defaultFacetNamesForKey(key);
-          return { key, name_en, name_ar };
-        });
-    const created = await prisma.category.create({
-      data: {
-        slug: c.id,
-        nameEn: c.name,
-        nameAr: c.nameAr ?? c.name,
-        icon: c.icon,
-        color: c.color,
-        sortOrder: i,
-        facetKeys,
-      },
-    });
-    try {
-      await syncCategoryAttributesFromFacetKeys(prisma, created.id, facetKeys);
-    } catch {
-      /* classification tables not migrated yet */
+  /**
+   * Two passes keep parent linkage robust regardless of array order: every
+   * top-level category exists (with its id captured) before any child links
+   * to it via `parent` slug. `sortOrder` stays the CATEGORIES array index so
+   * the storefront catalog keeps listing top-level categories first.
+   */
+  const categoryIdBySlug = new Map<string, number>();
+  for (const pass of ["roots", "children"] as const) {
+    for (let i = 0; i < CATEGORIES.length; i++) {
+      const c = CATEGORIES[i];
+      if ((pass === "roots") !== !c.parent) continue;
+      /** Children without their own preset inherit the aliased schema (e.g. routers → networking). */
+      const presetAttrs =
+        CLASSIFICATION_SEED_BY_SLUG[c.id] ??
+        (c.parent ? CLASSIFICATION_SEED_BY_SLUG[resolveCategorySchemaSlug(c.id)] : undefined);
+      const facetKeys = presetAttrs?.length
+        ? presetAttrs
+        : (CATEGORY_FACETS[c.id]?.map((f) => f.key) ?? []).map((key) => {
+            const { name_en, name_ar } = defaultFacetNamesForKey(key);
+            return { key, name_en, name_ar };
+          });
+      const created = await prisma.category.create({
+        data: {
+          slug: c.id,
+          nameEn: c.name,
+          nameAr: c.nameAr ?? c.name,
+          icon: c.icon,
+          color: c.color,
+          parentId: c.parent ? (categoryIdBySlug.get(c.parent) ?? null) : null,
+          sortOrder: i,
+          facetKeys,
+        },
+      });
+      categoryIdBySlug.set(c.id, created.id);
+      try {
+        await syncCategoryAttributesFromFacetKeys(prisma, created.id, facetKeys);
+      } catch {
+        /* classification tables not migrated yet */
+      }
     }
   }
 
@@ -82,6 +98,11 @@ async function main() {
     data: {
       id: 1,
       headerLogoHeightPx: 48,
+      /** Per-governorate delivery fees (IQD), keyed by canonical province codes.
+       *  Baghdad is cheaper; every other governorate gets the standard long-haul fee. */
+      shippingFeesJson: Object.fromEntries(
+        IRAQ_PROVINCES.map((p) => [p.code, p.code === "baghdad" ? 5000 : 8000]),
+      ),
       storeNameEn: "Store",
       storeNameAr: "المتجر",
       taglineEn: "Iraq's trusted tech partner — CCTV, computers, gaming, smart solutions.",
@@ -146,7 +167,7 @@ async function main() {
       { labelEn: "Accessories", labelAr: "إكسسوارات", href: "/products?cat=accessories", iconKey: "headphones", sortOrder: 4, active: true },
       { labelEn: "Printers", labelAr: "طابعات", href: "/products?cat=printers", iconKey: "printer", sortOrder: 5, active: true },
       { labelEn: "Tablets & iPad", labelAr: "تابلت وأيباد", href: "/products?cat=tablets", iconKey: "tablet", sortOrder: 6, active: true },
-      { labelEn: "Network", labelAr: "شبكات", href: "/products?cat=network", iconKey: "shield-check", sortOrder: 7, active: true },
+      { labelEn: "Network", labelAr: "شبكات", href: "/products?cat=networking", iconKey: "shield-check", sortOrder: 7, active: true },
       { labelEn: "Cables", labelAr: "كوابل", href: "/products?cat=accessories", iconKey: "package", sortOrder: 8, active: true },
     ],
   });

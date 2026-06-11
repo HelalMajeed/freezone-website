@@ -36,7 +36,34 @@ test("ADMIN_SKIP_AUTH=true also enables it", () => {
   assert.deepEqual(adminDirectLoginGate(), { ok: true });
 });
 
-test("works in production with the flag (no ack required)", () => {
-  set({ ADMIN_DIRECT_LOGIN: "true", NODE_ENV: "production" });
+test("non-production with the flag still works (explicit NODE_ENV)", () => {
+  set({ ADMIN_DIRECT_LOGIN: "true", NODE_ENV: "development" });
+  assert.equal(isAdminDirectLoginEnabled(), true);
   assert.deepEqual(adminDirectLoginGate(), { ok: true });
+});
+
+test("production fails closed even with ADMIN_DIRECT_LOGIN=true", () => {
+  set({ ADMIN_DIRECT_LOGIN: "true", NODE_ENV: "production" });
+  assert.equal(isAdminDirectLoginEnabled(), false);
+  assert.deepEqual(adminDirectLoginGate(), {
+    ok: false,
+    code: "DIRECT_LOGIN_DISABLED_IN_PRODUCTION",
+  });
+});
+
+test("production fails closed even with ADMIN_SKIP_AUTH=true", () => {
+  set({ ADMIN_SKIP_AUTH: "true", NODE_ENV: "production" });
+  assert.equal(isAdminDirectLoginEnabled(), false);
+  assert.deepEqual(adminDirectLoginGate(), {
+    ok: false,
+    code: "DIRECT_LOGIN_DISABLED_IN_PRODUCTION",
+  });
+});
+
+test("production without flags reports the production-specific code", () => {
+  set({ NODE_ENV: "production" });
+  assert.deepEqual(adminDirectLoginGate(), {
+    ok: false,
+    code: "DIRECT_LOGIN_DISABLED_IN_PRODUCTION",
+  });
 });

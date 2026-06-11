@@ -4,7 +4,7 @@
  * dashboard CMS can later replace it wholesale with a DB-backed version.
  */
 
-export type PolicyKind = "shipping" | "returns" | "privacy" | "terms";
+export type PolicyKind = "shipping" | "returns" | "privacy" | "terms" | "warranty";
 
 export type PolicySection = {
   titleEn: string;
@@ -15,8 +15,14 @@ export type PolicySection = {
 
 export type PolicyDoc = {
   kind: PolicyKind;
-  /** Seo namespace keys: `${seoKey}Title` / `${seoKey}Desc`. */
-  seoKey: PolicyKind;
+  /**
+   * Seo namespace keys: `${seoKey}Title` / `${seoKey}Desc`. Docs added after the
+   * original four omit it and carry their SEO copy inline (`seoDescEn`/`seoDescAr`,
+   * title = `titleEn`/`titleAr`) so new pages don't require new `Seo.*` message keys.
+   */
+  seoKey?: PolicyKind;
+  seoDescEn?: string;
+  seoDescAr?: string;
   titleEn: string;
   titleAr: string;
   updated: string;
@@ -164,6 +170,76 @@ export const POLICY_DOCS: Record<PolicyKind, PolicyDoc> = {
           "You can ask us to delete your order history and contact details at any time via the contact page.",
         ],
         bodyAr: ["يمكنك طلب حذف سجل طلباتك وبيانات الاتصال في أي وقت عبر صفحة الاتصال."],
+      },
+    ],
+  },
+  warranty: {
+    kind: "warranty",
+    seoDescEn:
+      "What FreeZone's 2-year warranty covers, what it excludes, and how to make a claim on WhatsApp or in store using your order number.",
+    seoDescAr:
+      "ما الذي يغطيه ضمان فري زون لمدة سنتين وما الذي يستثنيه، وكيفية تقديم مطالبة الضمان عبر واتساب أو في المعرض باستخدام رقم الطلب.",
+    titleEn: "Warranty Policy",
+    titleAr: "سياسة الضمان",
+    updated: "2026-06-10",
+    sections: [
+      {
+        titleEn: "What the warranty covers",
+        titleAr: "ما الذي يغطيه الضمان",
+        bodyEn: [
+          "Most products sold by FreeZone carry a 2-year store warranty unless a different period is stated on the product page or your invoice.",
+          "The warranty covers manufacturing defects and hardware faults that appear under normal use — for example a device that stops powering on, factory-defective ports or buttons, or storage that fails diagnostics.",
+          "Repairs and replacements performed under warranty are free of charge, including return shipping of the repaired or replaced item back to you.",
+        ],
+        bodyAr: [
+          "معظم المنتجات التي تبيعها فري زون مشمولة بضمان المتجر لمدة سنتين ما لم تُذكر مدة مختلفة في صفحة المنتج أو في فاتورتك.",
+          "يغطي الضمان عيوب التصنيع والأعطال التي تظهر مع الاستخدام الطبيعي — مثل جهاز يتوقف عن العمل، أو منافذ وأزرار معيبة من المصنع، أو وحدة تخزين تفشل في اختبارات الفحص.",
+          "الإصلاح والاستبدال ضمن الضمان مجانيان بالكامل، بما في ذلك إعادة شحن المنتج المُصلح أو البديل إليك.",
+        ],
+      },
+      {
+        titleEn: "What is not covered",
+        titleAr: "ما الذي لا يغطيه الضمان",
+        bodyEn: [
+          "Physical damage (drops, cracks, bent connectors), liquid damage, and electrical damage caused by unstable power sources or non-original chargers.",
+          "Opening, repairing or modifying the product outside our service points, including broken warranty seals.",
+          "Consumables and wear parts (batteries beyond their rated cycles, ink and toner, thermal paste), software issues, viruses and data loss — please keep a backup of your data before any service.",
+          "Use outside the manufacturer's specifications, such as damage from overclocking or sustained workloads the product is not rated for.",
+        ],
+        bodyAr: [
+          "الأضرار الفيزيائية (السقوط، الكسور، انحناء الموصلات) وأضرار السوائل والأضرار الكهربائية الناتجة عن مصادر طاقة غير مستقرة أو شواحن غير أصلية.",
+          "فتح المنتج أو إصلاحه أو تعديله خارج نقاط الصيانة المعتمدة لدينا، بما في ذلك كسر أختام الضمان.",
+          "المواد الاستهلاكية والقطع القابلة للتآكل (البطاريات بعد دوراتها المقررة، الأحبار، المعجون الحراري)، ومشاكل البرمجيات والفيروسات وفقدان البيانات — يرجى أخذ نسخة احتياطية من بياناتك قبل أي صيانة.",
+          "الاستخدام خارج مواصفات الشركة المصنّعة، مثل أضرار كسر السرعة أو أحمال التشغيل المستمرة التي لم يُصمم المنتج لها.",
+        ],
+      },
+      {
+        titleEn: "How to make a claim",
+        titleAr: "كيفية تقديم مطالبة الضمان",
+        bodyEn: [
+          "Have your order number (FZ-…) or purchase invoice ready — claims are much faster with it.",
+          "Contact us on WhatsApp with a description of the issue plus photos or a short video, or bring the product directly to our showroom.",
+          "Our team confirms the next step within 1–2 business days: courier pickup, drop-off, or an on-the-spot check in store.",
+        ],
+        bodyAr: [
+          "جهّز رقم طلبك (FZ-…) أو فاتورة الشراء — وجودهما يجعل المعالجة أسرع بكثير.",
+          "تواصل معنا عبر واتساب مع وصف للمشكلة وصور أو فيديو قصير، أو أحضر المنتج مباشرة إلى معرضنا.",
+          "يؤكد فريقنا الخطوة التالية خلال 1–2 يوم عمل: استلام بمندوب، أو تسليم في المعرض، أو فحص فوري في الموقع.",
+        ],
+      },
+      {
+        titleEn: "Repair & replacement timelines",
+        titleAr: "مدد الإصلاح والاستبدال",
+        bodyEn: [
+          "Inspection and diagnosis: usually 2–5 business days after the product reaches us.",
+          "Repair: typically 3–10 business days depending on part availability — we keep you updated on WhatsApp throughout.",
+          "If a covered product cannot be repaired within a reasonable time, we replace it with the same model or an equivalent agreed with you.",
+        ],
+        bodyAr: [
+          "الفحص والتشخيص: عادة 2–5 أيام عمل بعد وصول المنتج إلينا.",
+          "الإصلاح: عادة 3–10 أيام عمل حسب توفر القطع — ونبقيك على اطلاع عبر واتساب طوال الفترة.",
+          "إذا تعذّر إصلاح منتج مشمول بالضمان خلال مدة معقولة، نستبدله بنفس الموديل أو ببديل مكافئ بالاتفاق معك.",
+        ],
       },
     ],
   },

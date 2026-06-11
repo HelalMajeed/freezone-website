@@ -97,7 +97,7 @@
 
 .inputIcon {
   position: absolute;
-  left: 14px;
+  inset-inline-start: 14px;
   color: var(--color-neutral-400);
   width: 18px;
   height: 18px;
@@ -106,7 +106,8 @@
 
 .input {
   width: 100%;
-  padding: 13px 16px 13px 44px;
+  padding-block: 13px;
+  padding-inline: 44px 16px;
   border: 1.5px solid var(--border-light);
   border-radius: var(--radius-md);
   font-size: 0.95rem;
@@ -120,6 +121,37 @@
   background: white;
   border-color: var(--color-accent) !important;
   box-shadow: 0 0 0 3px rgba(11, 31, 59,0.1) !important;
+}
+
+/* LTR-forced inputs (phone) inside an RTL page: the page icon sits at the
+   page's inline-start (visually right), so swap the input's own padding —
+   resolved in its LTR context this puts the 44px under the icon. */
+:global([dir="rtl"]) .input[dir="ltr"] {
+  padding-inline: 16px 44px;
+}
+
+/* ── Error alert ──────────────────────────────── */
+.errorBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 11px 14px;
+  border: 1.5px solid #fca5a5;
+  border-radius: var(--radius-md);
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.errorBox svg { flex-shrink: 0; }
+
+/* ── Submit button icon (RTL-safe spacing via gap) ─ */
+.btnIcon {
+  display: inline-block;
+  vertical-align: middle;
+  margin-inline-end: 8px;
 }
 
 /* ── Options Row ──────────────────────────────── */
@@ -168,7 +200,7 @@
 .footer a {
   color: var(--color-accent);
   font-weight: 800;
-  margin-left: 6px;
+  margin-inline-start: 6px;
   transition: color 0.2s;
 }
 .footer a:hover { text-decoration: underline; }

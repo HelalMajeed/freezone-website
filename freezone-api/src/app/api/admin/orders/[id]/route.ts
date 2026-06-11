@@ -1,10 +1,31 @@
+import { z } from "zod";
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { auditContext, guardAdminMutate, guardAdminRead } from "@/lib/admin-route-guard";
 import { actorForAudit } from "@/lib/admin-auth";
 import { jsonError, jsonOk } from "@/lib/dashboard-guard";
 import { handleRouteDbError } from "@/lib/db-route-error";
 import { logAdminAction } from "@/lib/admin-audit";
-import { isAllowedOrderTransition, isOrderStatus, type OrderStatus } from "@/lib/admin-orders-query";
+import { isAllowedOrderTransition, isOrderStatus, ORDER_STATUSES, type OrderStatus } from "@/lib/admin-orders-query";
+
+/** Payment reconciliation states (Order.paymentStatus — string enum, codebase convention). */
+const PAYMENT_STATUSES = ["unpaid", "paid", "refunded"] as const;
+
+/**
+ * Zod-formalized PATCH body (ship run, ASSUMPTIONS A-16) — a 1:1 encoding of
+ * the previous manual checks so valid callers are byte-identical:
+ * - `status` must be one of ORDER_STATUSES (the `cancelled` 409 and the
+ *   transition state machine stay as post-parse checks below, unchanged);
+ * - `shipping` keeps the historical `Number(...)` coercion (z.coerce) and the
+ *   integer-≥0 rule;
+ * - `paymentStatus` must be one of PAYMENT_STATUSES;
+ * - at least one of the three keys must be present.
+ * Every parse failure answers the same `400 VALIDATION` as before.
+ */
+const orderPatchSchema = z.object({
+  status: z.enum(ORDER_STATUSES).optional(),
+  shipping: z.coerce.number().int().min(0).optional(),
+  paymentStatus: z.enum(PAYMENT_STATUSES).optional(),
+});
 
 type EventRow = {
   id: number;
@@ -59,6 +80,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
       status: order.status,
       fulfillment: order.fulfillment,
       paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
       customerName: order.customerName,
       customerPhone: order.customerPhone,
       customerEmail: order.customerEmail,
@@ -92,10 +114,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
 }
 
 /**
- * PATCH /api/admin/orders/:id — status transition (contract (b)) and/or manual
+ * PATCH /api/admin/orders/:id — status transition (contract (b)), manual
  * shipping-fee edit (additive: body `{ shipping }`, integer IQD ≥ 0; total is
- * recomputed server-side). Transition to "cancelled" is rejected — use
- * POST /api/admin/orders/:id/cancel so stock restore is explicit.
+ * recomputed server-side) and/or payment reconciliation (additive: body
+ * `{ paymentStatus: "unpaid"|"paid"|"refunded" }`, timeline-noted + audited).
+ * Transition to "cancelled" is rejected — use POST /api/admin/orders/:id/cancel
+ * so stock restore is explicit.
  */
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const g = await guardAdminMutate(req);
@@ -105,25 +129,20 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const id = parseInt((await ctx.params).id, 10);
   if (!Number.isFinite(id)) return jsonError(400, "VALIDATION");
 
-  const body = (await req.json().catch(() => null)) as
-    | { status?: unknown; shipping?: unknown }
-    | null;
+  const parsed = orderPatchSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return jsonError(400, "VALIDATION");
+  const body = parsed.data;
 
-  const wantsStatus = body?.status !== undefined;
-  const wantsShipping = body?.shipping !== undefined;
-  if (!body || (!wantsStatus && !wantsShipping)) {
-    return jsonError(400, "VALIDATION");
-  }
-  if (wantsStatus && !isOrderStatus(body.status)) {
+  const wantsStatus = body.status !== undefined;
+  const wantsShipping = body.shipping !== undefined;
+  const wantsPaymentStatus = body.paymentStatus !== undefined;
+  if (!wantsStatus && !wantsShipping && !wantsPaymentStatus) {
     return jsonError(400, "VALIDATION");
   }
   if (wantsStatus && body.status === "cancelled") {
     return jsonError(409, "USE_CANCEL_ENDPOINT");
   }
-  const shipping = wantsShipping ? Number(body.shipping) : null;
-  if (wantsShipping && (!Number.isInteger(shipping) || (shipping as number) < 0)) {
-    return jsonError(400, "VALIDATION");
-  }
+  const shipping = wantsShipping ? (body.shipping as number) : null;
 
   const audit = auditContext(g.actor, req);
   const actor = actorForAudit(g.actor);
@@ -144,7 +163,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
         return { kind: "invalid_transition" as const };
       }
 
-      const data: { status?: string; shipping?: number; total?: number } = {};
+      const data: { status?: string; shipping?: number; total?: number; paymentStatus?: string } = {};
 
       if (wantsStatus) {
         data.status = body.status as string;
@@ -174,6 +193,20 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
         });
       }
 
+      /** Payment reconciliation — timeline note records old → new (contract §6). */
+      if (wantsPaymentStatus && body.paymentStatus !== order.paymentStatus) {
+        data.paymentStatus = body.paymentStatus as string;
+        await tx.orderStatusEvent.create({
+          data: {
+            orderId: id,
+            kind: "note",
+            note: `Payment status changed: ${order.paymentStatus} → ${body.paymentStatus as string}`,
+            userId: actor.userId,
+            userEmail: actor.userEmail,
+          },
+        });
+      }
+
       const updated = Object.keys(data).length
         ? await tx.order.update({ where: { id }, data })
         : order;
@@ -190,6 +223,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
         ...(wantsShipping
           ? { shippingBefore: result.before.shipping, shippingAfter: result.after.shipping }
           : {}),
+        ...(wantsPaymentStatus
+          ? {
+              paymentStatusBefore: result.before.paymentStatus,
+              paymentStatusAfter: result.after.paymentStatus,
+            }
+          : {}),
       },
       ...audit,
     });
@@ -199,6 +238,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       status: result.after.status,
       shipping: result.after.shipping,
       total: result.after.total,
+      paymentStatus: result.after.paymentStatus,
     });
   } catch (e) {
     return handleRouteDbError(e);

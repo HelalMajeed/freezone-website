@@ -2,14 +2,13 @@
 
 import { Link } from "@/navigation";
 import styles from "./Footer.module.css";
-import { MapPin, Phone, MessageCircle, Send } from "lucide-react";
-import { useTranslations } from "@/i18n/hooks";
+import { MapPin, Phone, MessageCircle, Banknote, Smartphone, WalletCards, CreditCard } from "lucide-react";
+import { useLocale, useTranslations } from "@/i18n/hooks";
 import { motion, useReducedMotion } from "framer-motion";
 import { EASE_OUT } from "@/lib/motion";
-import { usePublicSite } from "@/components/providers/StorefrontProvider";
+import { usePublicSite, useStorefront } from "@/components/providers/StorefrontProvider";
 import { FREEZONE_Z_LOGO } from "@/lib/brand-assets";
 import { SITE_BRAND_NAME } from "@/lib/siteConfig";
-import toast from "react-hot-toast";
 
 const footerContainer = {
   hidden: {},
@@ -57,7 +56,13 @@ function TikTokIcon() {
 
 export function Footer() {
   const t = useTranslations("Footer");
+  /** Phase-2 content keys (lowercase namespace, conflict-free additions). */
+  const tF = useTranslations("footer");
   const site = usePublicSite();
+  const locale = useLocale();
+  /** Top-level categories, same source as the home tiles/mega-nav (bootstrap catalog). */
+  const { catalog } = useStorefront();
+  const footerCategories = catalog.categories.filter((c) => !c.parent).slice(0, 6);
   const reduceMotion = useReducedMotion();
 
   const colV = reduceMotion ? footerColStatic : footerCol;
@@ -120,6 +125,24 @@ export function Footer() {
             </div>
           </motion.div>
 
+          {/* Categories */}
+          {footerCategories.length > 0 ? (
+            <motion.div variants={colV}>
+              <h4 className={styles.colTitle}>{tF("categoriesTitle")}</h4>
+              <div className={styles.linksList}>
+                {footerCategories.map((c) => (
+                  <Link
+                    key={c.id}
+                    href={`/category/${encodeURIComponent(c.id)}`}
+                    className={styles.linkItem}
+                  >
+                    {locale === "ar" ? c.nameAr || c.name : c.name}
+                  </Link>
+                ))}
+              </div>
+            </motion.div>
+          ) : null}
+
           {/* Quick Links */}
           <motion.div variants={colV}>
             <h4 className={styles.colTitle}>{t("colQuickLinks")}</h4>
@@ -136,6 +159,9 @@ export function Footer() {
               <Link href="/track-order" className={styles.linkItem}>
                 {t("trackOrder")}
               </Link>
+              <Link href="/contact" className={styles.linkItem}>
+                {t("contactUs")}
+              </Link>
             </div>
           </motion.div>
 
@@ -146,8 +172,11 @@ export function Footer() {
               <Link href="/shipping" className={styles.linkItem}>
                 {t("shipping")}
               </Link>
+              <Link href="/warranty" className={styles.linkItem}>
+                {tF("warranty")}
+              </Link>
               <Link href="/returns" className={styles.linkItem}>
-                {t("warranty")}
+                {tF("returns")}
               </Link>
               <Link href="/privacy" className={styles.linkItem}>
                 {t("privacy")}
@@ -155,7 +184,7 @@ export function Footer() {
               <Link href="/terms" className={styles.linkItem}>
                 {t("terms")}
               </Link>
-              <Link href="/contact" className={styles.linkItem}>
+              <Link href="/faq" className={styles.linkItem}>
                 {t("faq")}
               </Link>
             </div>
@@ -179,34 +208,54 @@ export function Footer() {
               </a>
             </div>
 
+            {/* Honest WhatsApp subscribe CTA — replaces the old fake newsletter form
+                (it showed a success toast and discarded the input). */}
             <div className={styles.newsletter}>
-              <p className={styles.newsLabel}>{t("newsletterLabel")}</p>
-              <form
-                className={styles.inputGroup}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  toast.success(t("subscribed"));
-                  (e.currentTarget as HTMLFormElement).reset();
-                }}
+              <p className={styles.newsTitle}>{tF("whatsappTitle")}</p>
+              <p className={styles.newsLabel}>{tF("whatsappBody")}</p>
+              <a
+                href={`https://wa.me/${(site.whatsapp || site.phone || "9647742222377").replace(/\D/g, "")}?text=${encodeURIComponent(tF("whatsappPrefill"))}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.waCta}
               >
-                <input
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  placeholder={t("phonePlaceholder")}
-                  className={styles.input}
-                  required
-                />
-                <button type="submit" className={styles.submitBtn} aria-label={t("newsletterSubmit")}>
-                  <Send size={15} aria-hidden />
-                </button>
-              </form>
+                <MessageCircle size={15} aria-hidden />
+                {tF("whatsappCta")}
+              </a>
             </div>
           </motion.div>
         </div>
       </motion.div>
 
       <div className={styles.bottomStrip}>
+        {/* Payment methods — neutral badges; e-payments stay honest ("coming soon",
+            arranged on WhatsApp) consistent with checkout. No hotlinked brand images. */}
+        <div className={`${styles.inner} ${styles.paymentsRow}`}>
+          <span className={styles.paymentsTitle}>{tF("paymentsTitle")}</span>
+          <ul className={styles.paymentsList} aria-label={tF("paymentsTitle")}>
+            <li className={styles.paymentBadge}>
+              <Banknote size={14} aria-hidden />
+              {tF("payCod")}
+            </li>
+            <li className={styles.paymentBadge}>
+              <Smartphone size={14} aria-hidden />
+              {tF("payZaincash")}
+            </li>
+            <li className={styles.paymentBadge}>
+              <WalletCards size={14} aria-hidden />
+              {tF("payQicard")}
+            </li>
+            <li className={styles.paymentBadge}>
+              <CreditCard size={14} aria-hidden />
+              {tF("payVisa")}
+            </li>
+            <li className={styles.paymentBadge}>
+              <CreditCard size={14} aria-hidden />
+              {tF("payMaster")}
+            </li>
+          </ul>
+          <span className={styles.paymentsHint}>{tF("paymentsComingSoon")}</span>
+        </div>
         <div className={`${styles.inner} ${styles.bottomInner}`}>
           <p className={styles.copyright}>
             &copy; {new Date().getFullYear()} FreeZone. {t("copyright")}

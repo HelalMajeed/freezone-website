@@ -46,7 +46,8 @@
 
 @media (min-width: 561px) {
   .grid {
-    grid-template-columns: 1.6fr 1fr 1fr 1.4fr;
+    /* brand · categories · quick links · information · contact */
+    grid-template-columns: 1.6fr 1fr 1fr 1fr 1.4fr;
     gap: 32px;
     padding: 52px 0 28px;
   }
@@ -188,9 +189,16 @@
   margin-top: 1px;
 }
 
-/* ── Newsletter ── */
+/* ── Newsletter / WhatsApp subscribe ── */
 .newsletter {
   margin-top: 14px;
+}
+
+.newsTitle {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 4px;
 }
 
 .newsLabel {
@@ -198,6 +206,26 @@
   color: #6b7280;
   margin: 0 0 8px;
   line-height: 1.45;
+}
+
+.waCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  background: #e11414;
+  color: #ffffff;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: filter 0.2s ease;
+}
+
+.waCta:hover {
+  filter: brightness(1.08);
+  color: #ffffff;
 }
 
 .inputGroup {
@@ -254,6 +282,53 @@
   width: 100%;
   border-top: 1px solid #e5e7eb;
   background: #fafafa;
+}
+
+/* ── Payment methods row ── */
+.paymentsRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 14px 0 0;
+}
+
+.paymentsTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.paymentsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.paymentBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.paymentBadge svg {
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.paymentsHint {
+  font-size: 11.5px;
+  color: #9ca3af;
 }
 
 .bottomInner {

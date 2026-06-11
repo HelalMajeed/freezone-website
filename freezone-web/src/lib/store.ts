@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Product } from './data';
+import { trackAddToCart } from './analytics';
 
 export interface CartItem extends Product {
   qty: number;
@@ -61,6 +62,10 @@ export const useCart = create<CartStore>()(
           set({ items: [...items, { ...product, qty: quantity }] });
         }
         set({ isOpen: true });
+        trackAddToCart(
+          { id: product.id, name: product.name, price: product.price, brand: product.brand, category: product.cat },
+          quantity,
+        );
       },
       addMultipleItems: (products) => {
         const { items } = get();

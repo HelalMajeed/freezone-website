@@ -44,7 +44,7 @@ export function DashboardGuard() {
 
   if (status === "unauthenticated") {
     const next = encodeURIComponent(location.pathname + location.search);
-    return <Navigate to={`/dashboard/login?next=${next}`} replace />;
+    return <Navigate to={`/admin/login?next=${next}`} replace />;
   }
 
   return <Outlet />;

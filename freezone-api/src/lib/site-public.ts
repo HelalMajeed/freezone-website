@@ -1,5 +1,7 @@
 import { prisma, isDatabaseConfigured } from "./prisma";
 import { buildMarqueeStrips, type PublicMarqueeStrip } from "./marquee-strips";
+import { resolveShippingFeeMap } from "./shipping-fees";
+import type { ProvinceCode } from "./iraq-provinces";
 
 export type { PublicMarqueeStrip, PublicTickerSegment } from "./marquee-strips";
 
@@ -48,6 +50,9 @@ export type PublicSite = {
   maintenanceMode: boolean;
   freeDeliveryThreshold: number;
   standardShippingFee: number;
+  /** Resolved per-governorate delivery fee for ALL 18 canonical province codes
+   *  (SiteConfig.shippingFeesJson overrides, standardShippingFee fallback). */
+  shippingFees: Record<ProvinceCode, number>;
   zainCashWallet: string;
   qiCardMerchantId: string;
   metaTitle?: string | null;
@@ -96,6 +101,7 @@ function staticPublicSite(locale: "en" | "ar"): PublicSite {
     maintenanceMode: false,
     freeDeliveryThreshold: 100000,
     standardShippingFee: 5000,
+    shippingFees: resolveShippingFeeMap({ standardShippingFee: 5000 }),
     zainCashWallet: "",
     qiCardMerchantId: "",
     metaTitle: null,
@@ -155,6 +161,7 @@ export async function getPublicSite(locale: "en" | "ar"): Promise<PublicSite> {
         maintenanceMode: false,
         freeDeliveryThreshold: 100000,
         standardShippingFee: 5000,
+        shippingFees: resolveShippingFeeMap({ standardShippingFee: 5000 }),
         zainCashWallet: "",
         qiCardMerchantId: "",
         metaTitle: null,
@@ -208,6 +215,10 @@ export async function getPublicSite(locale: "en" | "ar"): Promise<PublicSite> {
       maintenanceMode: cfg.maintenanceMode,
       freeDeliveryThreshold: cfg.freeDeliveryThreshold,
       standardShippingFee: cfg.standardShippingFee,
+      shippingFees: resolveShippingFeeMap({
+        standardShippingFee: cfg.standardShippingFee,
+        shippingFeesJson: cfg.shippingFeesJson,
+      }),
       zainCashWallet: cfg.zainCashWallet ?? "",
       qiCardMerchantId: cfg.qiCardMerchantId ?? "",
       metaTitle: en ? cfg.metaTitleEn : cfg.metaTitleAr,

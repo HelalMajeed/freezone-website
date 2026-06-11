@@ -14,7 +14,6 @@ import "./theme/adaptive-density.css";
 import "./theme/mobile-layout.css";
 import "./theme/responsive-system.css";
 import "./globals.css";
-import "@/app/dashboard/dashboard-shell.css";
 import "@/i18n/i18n";
 import { FREEZONE_FAVICON } from "@/lib/brand-assets";
 

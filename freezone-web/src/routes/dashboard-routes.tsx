@@ -1,12 +1,13 @@
-import { lazy, Suspense, type ReactNode } from "react";
-import { Link, Route } from "react-router-dom";
+import { lazy, Suspense, useEffect, type ReactNode } from "react";
+import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { Lock } from "lucide-react";
 import { DashboardGuard } from "@/components/dashboard/DashboardGuard";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Button, EmptyState } from "@/components/dashboard/ui";
 import { useDashboardAuth } from "@/lib/dashboard/auth-store";
-import { useDashboardLocale } from "@/lib/dashboard/i18n";
+import { applyDashboardLangDefault, useDashboardLocale } from "@/lib/dashboard/i18n";
 import type { LegacyRoleAlias } from "@/lib/dashboard/api";
+import "@/app/dashboard/dashboard-shell.css";
 
 const DashboardLoginPage = lazy(() => import("@/app/dashboard/LoginPage"));
 const DashboardOverviewPage = lazy(() => import("@/pages/dashboard/OverviewPage"));
@@ -23,6 +24,10 @@ const DashboardSettingsPage = lazy(() => import("@/pages/dashboard/SettingsPage"
 const DashboardDesignPage = lazy(() => import("@/pages/dashboard/DesignPage"));
 const DashboardCmsPage = lazy(() => import("@/pages/dashboard/CmsPage"));
 const DashboardDataQualityPage = lazy(() => import("@/pages/dashboard/DataQualityPage"));
+const DashboardCustomersPage = lazy(() => import("@/pages/dashboard/CustomersPage"));
+const DashboardReviewsModerationPage = lazy(
+  () => import("@/pages/dashboard/ReviewsModerationPage"),
+);
 
 /* ws3-catalog routes — lazy imports */
 const DashboardProductEditorPage = lazy(
@@ -70,7 +75,7 @@ function RequireRole({ minRole, children }: { minRole: LegacyRoleAlias; children
       title={t("guard.notAuthorizedTitle")}
       description={t("guard.notAuthorizedBody")}
       action={
-        <Link to="/dashboard">
+        <Link to="/admin">
           <Button type="button">{t("guard.backToDashboard")}</Button>
         </Link>
       }
@@ -79,60 +84,74 @@ function RequireRole({ minRole, children }: { minRole: LegacyRoleAlias; children
 }
 
 /**
- * Mount in `<Routes>`:
+ * The whole admin panel behind ONE lazy boundary — App.tsx mounts it as
  *
- *   import { freezoneDashboardRouteBranch } from "@/routes/dashboard-routes";
+ *   const AdminApp = lazy(() => import("@/routes/dashboard-routes"));
  *   ...
- *   <Routes>
- *     {freezoneDashboardRouteBranch}
- *     ...
- *   </Routes>
+ *   <Route path="/admin/*" element={<Suspense ...><AdminApp /></Suspense>} />
+ *
+ * so the dashboard shell (guard, layout, ui kit, auth store, i18n catalogs,
+ * shell CSS) ships in its own chunk instead of the storefront bundle. All
+ * route paths below are relative to the canonical `/admin` prefix; legacy
+ * `/dashboard/*` URLs are redirected path-preserving in App.tsx.
  */
-export const freezoneDashboardRouteBranch = (
-  <Route path="/dashboard">
-    <Route
-      path="login"
-      element={
-        <L>
-          <DashboardLoginPage />
-        </L>
-      }
-    />
-    <Route element={<DashboardGuard />}>
-      <Route element={<DashboardLayout />}>
-        <Route
-          index
-          element={
-            <L>
-              <DashboardOverviewPage />
-            </L>
-          }
-        />
-        <Route path="audit" element={<L><DashboardAuditPage /></L>} />
-        <Route path="users" element={<RequireRole minRole="superadmin"><L><DashboardUsersPage /></L></RequireRole>} />
-        <Route path="profile" element={<L><DashboardProfilePage /></L>} />
-        <Route path="products" element={<L><DashboardProductsPage /></L>} />
-        <Route path="categories" element={<L><DashboardCategoriesPage /></L>} />
-        <Route path="brands" element={<L><DashboardBrandsPage /></L>} />
-        <Route path="orders" element={<RequireRole minRole="admin"><L><DashboardOrdersPage /></L></RequireRole>} />
-        <Route path="coupons" element={<RequireRole minRole="admin"><L><DashboardCouponsPage /></L></RequireRole>} />
-        <Route path="cms" element={<L><DashboardCmsPage /></L>} />
-        <Route path="media" element={<L><DashboardMediaPage /></L>} />
-        <Route path="design" element={<L><DashboardDesignPage /></L>} />
-        <Route path="settings" element={<RequireRole minRole="admin"><L><DashboardSettingsPage /></L></RequireRole>} />
-        <Route path="data-quality" element={<L><DashboardDataQualityPage /></L>} />
-        {/* ws3-catalog routes */}
-        <Route path="products/new" element={<L><DashboardProductEditorPage /></L>} />
-        <Route path="products/import" element={<L><DashboardProductsImportPage /></L>} />
-        <Route path="products/review" element={<RequireRole minRole="admin"><L><DashboardReviewQueuePage /></L></RequireRole>} />
-        <Route path="products/:id" element={<L><DashboardProductEditorPage /></L>} />
-        <Route path="categories/:id/attributes" element={<L><DashboardCategoryAttributesPage /></L>} />
-        {/* end ws3-catalog routes */}
-        {/* ws3-operations routes */}
-        <Route path="orders/:id" element={<RequireRole minRole="admin"><L><DashboardOrderDetailPage /></L></RequireRole>} />
-        <Route path="notifications" element={<L><DashboardNotificationsPage /></L>} />
-        {/* /ws3-operations routes */}
+export default function AdminApp() {
+  // Arabic-first: the dashboard opens in Arabic unless the admin chose a
+  // language before (their persisted toggle always wins).
+  useEffect(() => {
+    applyDashboardLangDefault();
+  }, []);
+
+  return (
+    <Routes>
+      <Route
+        path="login"
+        element={
+          <L>
+            <DashboardLoginPage />
+          </L>
+        }
+      />
+      <Route element={<DashboardGuard />}>
+        <Route element={<DashboardLayout />}>
+          <Route
+            index
+            element={
+              <L>
+                <DashboardOverviewPage />
+              </L>
+            }
+          />
+          <Route path="audit" element={<RequireRole minRole="superadmin"><L><DashboardAuditPage /></L></RequireRole>} />
+          <Route path="users" element={<RequireRole minRole="superadmin"><L><DashboardUsersPage /></L></RequireRole>} />
+          <Route path="profile" element={<L><DashboardProfilePage /></L>} />
+          <Route path="products" element={<L><DashboardProductsPage /></L>} />
+          <Route path="categories" element={<L><DashboardCategoriesPage /></L>} />
+          <Route path="brands" element={<L><DashboardBrandsPage /></L>} />
+          <Route path="orders" element={<RequireRole minRole="admin"><L><DashboardOrdersPage /></L></RequireRole>} />
+          <Route path="coupons" element={<RequireRole minRole="admin"><L><DashboardCouponsPage /></L></RequireRole>} />
+          <Route path="customers" element={<RequireRole minRole="admin"><L><DashboardCustomersPage /></L></RequireRole>} />
+          <Route path="reviews" element={<RequireRole minRole="admin"><L><DashboardReviewsModerationPage /></L></RequireRole>} />
+          <Route path="cms" element={<L><DashboardCmsPage /></L>} />
+          <Route path="media" element={<L><DashboardMediaPage /></L>} />
+          <Route path="design" element={<L><DashboardDesignPage /></L>} />
+          <Route path="settings" element={<RequireRole minRole="admin"><L><DashboardSettingsPage /></L></RequireRole>} />
+          <Route path="data-quality" element={<L><DashboardDataQualityPage /></L>} />
+          {/* ws3-catalog routes */}
+          <Route path="products/new" element={<L><DashboardProductEditorPage /></L>} />
+          <Route path="products/import" element={<L><DashboardProductsImportPage /></L>} />
+          <Route path="products/review" element={<RequireRole minRole="admin"><L><DashboardReviewQueuePage /></L></RequireRole>} />
+          <Route path="products/:id" element={<L><DashboardProductEditorPage /></L>} />
+          <Route path="categories/:id/attributes" element={<L><DashboardCategoryAttributesPage /></L>} />
+          {/* end ws3-catalog routes */}
+          {/* ws3-operations routes */}
+          <Route path="orders/:id" element={<RequireRole minRole="admin"><L><DashboardOrderDetailPage /></L></RequireRole>} />
+          <Route path="notifications" element={<L><DashboardNotificationsPage /></L>} />
+          {/* /ws3-operations routes */}
+          {/* Unknown /admin/* paths land on the dashboard home. */}
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Route>
       </Route>
-    </Route>
-  </Route>
-);
+    </Routes>
+  );
+}

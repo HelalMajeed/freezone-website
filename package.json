@@ -26,7 +26,7 @@
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f web api",
-    "ci:freezone": "npm run lint --prefix freezone-web && npm run test --prefix freezone-web && npm run build --prefix freezone-web && npm run build --prefix freezone-api && npm run build --prefix freezone-storefront",
+    "ci:freezone": "npm run lint --prefix freezone-web && npm run test --prefix freezone-web && npm run build --prefix freezone-web && npm run build --prefix freezone-api && npm run test --prefix freezone-api && npm run routes:check --prefix freezone-api && npm run build --prefix freezone-storefront",
     "ci": "npm run ci:freezone"
   },
   "devDependencies": {

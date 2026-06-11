@@ -15,6 +15,7 @@ import {
   PackageX,
   Percent,
   Settings,
+  Star,
   TrendingDown,
   TrendingUp,
   Truck,
@@ -23,23 +24,33 @@ import {
   analyticsApi,
   dashboardApi,
   type AnalyticsResponse,
+  type OrderStatus,
   type OverviewResponse,
 } from "@/lib/dashboard/api";
 import { useDashboardLocale, type DashboardMessageKey } from "@/lib/dashboard/i18n";
 import {
   daysAgoInputValue,
   formatDate,
+  formatDateTime,
   formatDeltaPct,
   formatInt,
   formatIQD,
   toDateInputValue,
 } from "@/lib/dashboard/format";
 import { Badge, Button, Card, ui } from "@/components/dashboard/ui";
+import { ORDER_STATUSES, statusKey, STATUS_TONE } from "./orders/order-shared";
 import s from "./Overview.module.css";
 
 type Preset = "today" | "7d" | "30d" | "custom";
 
 type LowStockRow = OverviewResponse["lowStock"][number] & { lowStockThreshold?: number };
+
+/** Additive overview fields (latest orders count bump + pending reviews). */
+type OverviewData = OverviewResponse & { pendingReviews?: number };
+
+function isOrderStatus(value: string): value is OrderStatus {
+  return (ORDER_STATUSES as string[]).includes(value);
+}
 
 const PRESET_KEYS: Array<{ value: Preset; key: DashboardMessageKey }> = [
   { value: "today", key: "overview.rangeToday" },
@@ -155,7 +166,7 @@ export function DashboardOverviewPage() {
   const [draftTo, setDraftTo] = useState(range.to);
 
   const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
-  const [overview, setOverview] = useState<OverviewResponse | null>(null);
+  const [overview, setOverview] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
@@ -183,7 +194,7 @@ export function DashboardOverviewPage() {
   useEffect(() => {
     let alive = true;
     dashboardApi
-      .get<OverviewResponse>("/api/dashboard/overview")
+      .get<OverviewData>("/api/dashboard/overview")
       .then((d) => {
         if (alive) setOverview(d);
       })
@@ -235,12 +246,12 @@ export function DashboardOverviewPage() {
   const lowStock: LowStockRow[] = (overview?.lowStock ?? []) as LowStockRow[];
 
   const quickActions: Array<{ to: string; key: DashboardMessageKey; icon: ReactNode }> = [
-    { to: "/dashboard/products", key: "overview.qaProducts", icon: <Package size={16} aria-hidden /> },
-    { to: "/dashboard/orders", key: "overview.qaOrders", icon: <Truck size={16} aria-hidden /> },
-    { to: "/dashboard/coupons", key: "overview.qaCoupons", icon: <Percent size={16} aria-hidden /> },
-    { to: "/dashboard/media", key: "overview.qaMedia", icon: <Image size={16} aria-hidden /> },
-    { to: "/dashboard/cms", key: "overview.qaCms", icon: <LayoutTemplate size={16} aria-hidden /> },
-    { to: "/dashboard/settings", key: "overview.qaSettings", icon: <Settings size={16} aria-hidden /> },
+    { to: "/admin/products", key: "overview.qaProducts", icon: <Package size={16} aria-hidden /> },
+    { to: "/admin/orders", key: "overview.qaOrders", icon: <Truck size={16} aria-hidden /> },
+    { to: "/admin/coupons", key: "overview.qaCoupons", icon: <Percent size={16} aria-hidden /> },
+    { to: "/admin/media", key: "overview.qaMedia", icon: <Image size={16} aria-hidden /> },
+    { to: "/admin/cms", key: "overview.qaCms", icon: <LayoutTemplate size={16} aria-hidden /> },
+    { to: "/admin/settings", key: "overview.qaSettings", icon: <Settings size={16} aria-hidden /> },
   ];
 
   return (
@@ -458,6 +469,44 @@ export function DashboardOverviewPage() {
                   </table>
                 )}
               </Card>
+
+              <Card
+                title={
+                  <span className={s.cardTitleRow}>
+                    {t("overview.latestOrders")}{" "}
+                    <Link to="/admin/orders" className={s.cardTitleLink}>
+                      {t("overview.viewAllOrders")}
+                    </Link>
+                  </span>
+                }
+              >
+                {!overview || overview.recentOrders.length === 0 ? (
+                  <div className={s.emptyNote}>{t("overview.latestOrdersEmpty")}</div>
+                ) : (
+                  overview.recentOrders.map((o) => (
+                    <div key={o.id} className={s.listRow}>
+                      <div className={s.listMain}>
+                        <div className={s.listName}>
+                          <Link to={`/admin/orders/${o.id}`}>{o.orderNumber}</Link>
+                        </div>
+                        <div className={s.listMeta}>
+                          {o.customerName} · {formatDateTime(o.createdAt, lang)}
+                        </div>
+                      </div>
+                      <div className={s.listEnd}>
+                        <span>{formatIQD(o.total, lang)}</span>
+                        <div>
+                          {isOrderStatus(o.status) ? (
+                            <Badge tone={STATUS_TONE[o.status]}>{t(statusKey(o.status))}</Badge>
+                          ) : (
+                            <Badge tone="neutral">{o.status}</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </Card>
             </div>
 
             {/* ── End rail ── */}
@@ -471,6 +520,44 @@ export function DashboardOverviewPage() {
                     </Link>
                   ))}
                 </div>
+              </Card>
+
+              <Card title={t("overview.pendingReviews")}>
+                <div className={s.sectionHint}>{t("overview.pendingReviewsHint")}</div>
+                <div className={s.listRow}>
+                  <div className={s.listMain}>
+                    <div className={s.listName}>
+                      <Star size={15} aria-hidden style={{ verticalAlign: "-2px" }} />{" "}
+                      {(overview?.pendingReviews ?? 0) > 0 ? (
+                        <Badge tone="warning">{formatInt(overview?.pendingReviews ?? 0, lang)}</Badge>
+                      ) : (
+                        <span className={s.listMeta}>{t("overview.pendingReviewsEmpty")}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className={s.listEnd}>
+                    <Link to="/admin/reviews">
+                      <Button size="sm" variant="secondary">
+                        {t("overview.moderateReviews")}
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </Card>
+
+              <Card title={t("overview.statusBreakdown")}>
+                {ORDER_STATUSES.map((st) => (
+                  <div key={st} className={s.listRow}>
+                    <div className={s.listMain}>
+                      <Badge tone={STATUS_TONE[st]}>{t(statusKey(st))}</Badge>
+                    </div>
+                    <div className={s.listEnd}>
+                      <Link to={`/admin/orders?status=${st}`}>
+                        {formatInt(overview?.statusCounts?.[st] ?? 0, lang)}
+                      </Link>
+                    </div>
+                  </div>
+                ))}
               </Card>
 
               <Card title={t("overview.salesByCity")}>

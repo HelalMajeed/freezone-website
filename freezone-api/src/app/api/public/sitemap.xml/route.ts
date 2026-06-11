@@ -6,14 +6,31 @@ import { PUBLISHED_LIVE_WHERE } from "@/lib/admin-product-scope";
  *
  * Emits the ACTUAL locale-prefixed storefront routes (the SPA serves every
  * public page under /:locale): home, listing, static pages, every published
- * non-deleted product (/:locale/product/:id), every active category
- * (/:locale/category/:slug) and brand (/:locale/brand/:slug). Both locales are
- * listed. Absolute URLs on https://freezone-iq.com (override via PUBLIC_SITE_ORIGIN).
+ * non-deleted product (/:locale/product/:id/), every active category
+ * (/:locale/category/:slug/) and brand (/:locale/brand/:slug/). Both locales
+ * are listed. Absolute URLs on https://freezone-iq.com (override via
+ * PUBLIC_SITE_ORIGIN).
+ *
+ * Trailing slash: Netlify pretty-URLs 301 the slash-less form of every
+ * prerendered route to `…/`, so the trailing-slash form is the canonical one
+ * that serves 200 — keep in sync with freezone-web/scripts/prerender.mjs and
+ * freezone-web/src/components/seo/Seo.tsx.
  */
 
 const LOCALES = ["en", "ar"] as const;
 /** Locale-relative static paths ("" = the localized home page). */
-const STATIC_PATHS = ["", "/products", "/about", "/contact"];
+const STATIC_PATHS = [
+  "",
+  "/products",
+  "/about",
+  "/contact",
+  "/warranty",
+  "/faq",
+  "/shipping",
+  "/returns",
+  "/privacy",
+  "/terms",
+];
 
 /** Hard cap so a single request never materializes the entire product table
  *  into memory. Also keeps the document under the 50k-URL sitemap limit; once
@@ -28,7 +45,7 @@ export async function GET(): Promise<Response> {
   const urls: Array<{ loc: string; lastmod?: string }> = [];
   for (const loc of LOCALES) {
     for (const p of STATIC_PATHS) {
-      urls.push({ loc: `${base}/${loc}${p}` });
+      urls.push({ loc: `${base}/${loc}${p}/` });
     }
   }
 
@@ -55,18 +72,18 @@ export async function GET(): Promise<Response> {
       for (const loc of LOCALES) {
         for (const p of products) {
           urls.push({
-            // Live route: /:locale/product/:id (the storefront resolves by id).
-            loc: `${base}/${loc}/product/${encodeURIComponent(String(p.id))}`,
+            // Live route: /:locale/product/:id/ (the storefront resolves by id).
+            loc: `${base}/${loc}/product/${encodeURIComponent(String(p.id))}/`,
             lastmod: p.updatedAt.toISOString(),
           });
         }
         for (const c of categories) {
           if (!c.slug?.trim()) continue;
-          urls.push({ loc: `${base}/${loc}/category/${encodeURIComponent(c.slug)}` });
+          urls.push({ loc: `${base}/${loc}/category/${encodeURIComponent(c.slug)}/` });
         }
         for (const b of brands) {
           if (!b.slug?.trim()) continue;
-          urls.push({ loc: `${base}/${loc}/brand/${encodeURIComponent(b.slug)}` });
+          urls.push({ loc: `${base}/${loc}/brand/${encodeURIComponent(b.slug)}/` });
         }
       }
     } catch (e) {

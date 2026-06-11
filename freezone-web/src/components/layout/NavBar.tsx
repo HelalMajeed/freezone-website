@@ -19,12 +19,14 @@ import { useState, useRef, useEffect, useLayoutEffect, type FormEvent, type Keyb
 import { motion, useReducedMotion } from "framer-motion";
 import { EASE_OUT } from "@/lib/motion";
 import { MobileMenu } from "./MobileMenu";
+import { CartDrawer } from "@/components/cart/CartDrawer";
 import { SiteLogo } from "./SiteLogo";
 import { TopBarSocialIcons } from "./TopBarSocialIcons";
 import { useStorefront, usePublicSite } from "@/components/providers/StorefrontProvider";
 import { storedNavToResolved } from "@/lib/nav-from-json";
 import { DEFAULT_NAV_ITEMS } from "@/lib/default-mega-nav";
 import { useWishlist } from "@/lib/wishlist-store";
+import { persistPreferredLocale } from "@/lib/preferred-locale";
 import {
   fetchSearchSuggestions,
   filterSuggestions,
@@ -77,12 +79,14 @@ export function NavBar() {
 
   const toggleLanguage = () => {
     const nextLocale = locale === "ar" ? "en" : "ar";
+    /** Explicit visitor choice — persisted so "/" honors it on the next visit (A-18). */
+    persistPreferredLocale(nextLocale);
     /** Full path including locale — must not use `useRouter().replace`, which prepends the *current* locale and would turn `/ar` into `/en/ar`. */
     const suffix = pathname === "/" ? "" : pathname;
     navigate(`/${nextLocale}${suffix}`, { replace: true });
   };
 
-  const { items } = useCart();
+  const { items, toggleCart } = useCart();
   const wishlistIds = useWishlist((s) => s.ids);
   const wishCount = wishlistIds.length;
   const isLoggedIn = useStorefrontUser((s) => s.isLoggedIn);
@@ -688,11 +692,18 @@ export function NavBar() {
               <span className={styles.actionLabel}>{locale === "ar" ? "عربي" : "EN"}</span>
             </button>
 
-            <Link href="/cart" className={styles.actionIcon} title={t("cart")}>
+            <button
+              type="button"
+              className={styles.actionIcon}
+              onClick={() => toggleCart(true)}
+              title={t("cart")}
+              aria-label={t("cart")}
+              aria-haspopup="dialog"
+            >
               <ShoppingCart size={22} />
               <span className={styles.actionLabel}>{t("cart")}</span>
               {count > 0 ? <span className={styles.cartBadge}>{count}</span> : null}
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -704,6 +715,8 @@ export function NavBar() {
         onToggleLocale={toggleLanguage}
         locale={locale}
       />
+
+      <CartDrawer />
     </motion.div>
   );
 }

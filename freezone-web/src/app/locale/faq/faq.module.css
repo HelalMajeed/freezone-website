@@ -1,0 +1,118 @@
+/* FAQ page — mirrors the policies page rhythm with an accessible accordion. */
+
+.wrapper {
+  max-width: 820px;
+  margin-inline: auto;
+  padding-block: var(--rhythm-section);
+  padding-inline: var(--space-4);
+}
+
+.head {
+  margin-block-end: var(--rhythm-block);
+}
+
+.intro {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.item {
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-lg);
+  background: var(--color-card, #fff);
+  overflow: hidden;
+}
+
+.itemOpen {
+  border-color: color-mix(in srgb, var(--color-accent, #c90000) 30%, var(--color-border, #e5e7eb));
+}
+
+.questionBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: start;
+  font: inherit;
+  font-weight: 700;
+  color: var(--color-text, #0a0a0a);
+}
+
+.questionBtn:focus-visible {
+  outline: 2px solid var(--color-accent, #c90000);
+  outline-offset: -2px;
+}
+
+.chev {
+  flex-shrink: 0;
+  color: var(--color-text-muted, #6b7280);
+  transition: transform 0.2s var(--ease-smooth);
+}
+
+.itemOpen .chev {
+  transform: rotate(180deg);
+  color: var(--color-accent, #c90000);
+}
+
+.answerWrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s var(--ease-smooth);
+}
+
+.itemOpen .answerWrap {
+  grid-template-rows: 1fr;
+}
+
+.answerInner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.answer {
+  margin: 0;
+  padding: 0 var(--space-4) var(--space-4);
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chev,
+  .answerWrap {
+    transition: none;
+  }
+}
+
+/* Contact card — same pattern as the policy pages. */
+.contactCard {
+  margin-block-start: var(--rhythm-block);
+  padding: var(--space-6);
+  background: var(--color-bg-muted);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.contactTitle {
+  margin: 0 0 var(--space-1);
+}
+
+.contactBody {
+  margin: 0;
+  color: var(--color-text-secondary);
+}

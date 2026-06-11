@@ -1,50 +1,40 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useDashboardAuth } from "@/lib/dashboard/auth-store";
 import { DashboardApiError } from "@/lib/dashboard/api";
-import { Button } from "@/components/dashboard/ui";
+import { DASHBOARD_ERROR_MESSAGES, useDashboardLocale } from "@/lib/dashboard/i18n";
+import { Button, Field, Input } from "@/components/dashboard/ui";
 import { FREEZONE_Z_LOGO } from "@/lib/brand-assets";
 import s from "./login.module.css";
 
 /**
- * Dashboard entry is PASSWORDLESS and DIRECT. Opening /dashboard or
- * /dashboard/login immediately creates an admin session (when the API has
- * ADMIN_DIRECT_LOGIN enabled) and lands the user on /dashboard. There is no
- * username/password form and no secret key.
+ * Dashboard login.
+ *
+ * On mount the page attempts passwordless direct entry ONCE — a local/staging
+ * convenience the API enables via ADMIN_DIRECT_LOGIN outside production. When
+ * the server refuses (production always does: direct login fails closed
+ * there), it renders the credentialed form: email OR Iraqi phone
+ * (07XXXXXXXXX) + password against POST /api/dashboard/auth/login.
  */
 
-const ERROR_MESSAGES: Record<string, { en: string; ar: string }> = {
-  DIRECT_LOGIN_DISABLED: {
-    en: "Direct admin access is turned off on the server.",
-    ar: "الدخول المباشر للوحة التحكم مُطفأ على الخادم.",
-  },
-  NETWORK: { en: "Can't reach the server. Check your connection.", ar: "تعذّر الاتصال بالخادم." },
-};
-
 export function DashboardLoginPage() {
-  const { i18n } = useTranslation();
+  const { lang, dir, t, pick, formatError } = useDashboardLocale();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const next = params.get("next") || "/dashboard";
+  const next = params.get("next") || "/admin";
 
   const status = useDashboardAuth((sel) => sel.status);
   const refresh = useDashboardAuth((sel) => sel.refresh);
   const directLogin = useDashboardAuth((sel) => sel.directLogin);
+  const login = useDashboardAuth((sel) => sel.login);
 
-  const [errorCode, setErrorCode] = useState<string | null>(null);
+  /** "auto" = trying direct entry; "form" = credential form. */
+  const [phase, setPhase] = useState<"auto" | "form">("auto");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const tried = useRef(false);
-
-  const lang = (i18n.resolvedLanguage ?? "en").startsWith("ar") ? "ar" : "en";
-
-  const enter = () => {
-    setErrorCode(null);
-    directLogin()
-      .then(() => navigate(next, { replace: true }))
-      .catch((err) => {
-        setErrorCode(err instanceof DashboardApiError ? err.code : "NETWORK");
-      });
-  };
 
   useEffect(() => {
     if (status === "idle") {
@@ -56,20 +46,44 @@ export function DashboardLoginPage() {
       navigate(next, { replace: true });
       return;
     }
-    // Unauthenticated → auto direct entry once.
+    // Unauthenticated → attempt direct entry once, then fall back to the form.
     if (!tried.current) {
       tried.current = true;
-      enter();
+      directLogin()
+        .then(() => navigate(next, { replace: true }))
+        .catch(() => setPhase("form"));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, refresh, navigate, next, directLogin]);
 
-  const errMsg = errorCode
-    ? (ERROR_MESSAGES[errorCode] ?? ERROR_MESSAGES.NETWORK)[lang]
-    : null;
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (submitting) return;
+    const id = identifier.trim();
+    if (!id || !password) {
+      setError(t("login.missingFields"));
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    login(id, password)
+      .then(() => navigate(next, { replace: true }))
+      .catch((err) => {
+        // The global rate limiter answers 429 with a non-catalog code string.
+        if (
+          err instanceof DashboardApiError &&
+          err.status === 429 &&
+          !(err.code in DASHBOARD_ERROR_MESSAGES)
+        ) {
+          setError(DASHBOARD_ERROR_MESSAGES.RATE_LIMITED[lang]);
+        } else {
+          setError(formatError(err));
+        }
+      })
+      .finally(() => setSubmitting(false));
+  };
 
   return (
-    <div className={s.wrap} dir={lang === "ar" ? "rtl" : "ltr"}>
+    <div className={s.wrap} dir={dir}>
       <aside className={s.brandPanel}>
         <div className={s.brandTop}>
           <span className={s.brandTopMark}>
@@ -77,39 +91,70 @@ export function DashboardLoginPage() {
           </span>
           <div>
             <div className={s.brandTopName}>Freezone</div>
-            <div className={s.brandTopSub}>{lang === "ar" ? "لوحة التحكم" : "Control Center"}</div>
+            <div className={s.brandTopSub}>{pick({ en: "Control Center", ar: "لوحة التحكم" })}</div>
           </div>
         </div>
         <div className={s.brandHero}>
           <h1 className={s.brandHeroTitle}>
-            {lang === "ar"
-              ? "إدارة موقعك من مكان واحد."
-              : "Manage your entire storefront from one place."}
+            {pick({
+              en: "Manage your entire storefront from one place.",
+              ar: "إدارة موقعك من مكان واحد.",
+            })}
           </h1>
         </div>
         <div className={s.brandFooter}>
           <span>© Freezone</span>
           <span>•</span>
-          <span>{lang === "ar" ? "آمن وسريع" : "Secure & fast"}</span>
+          <span>{pick({ en: "Secure & fast", ar: "آمن وسريع" })}</span>
         </div>
       </aside>
 
       <section className={s.formPanel}>
         <div className={s.form}>
-          {!errMsg ? (
+          {phase === "auto" ? (
             <>
-              <h2 className={s.formTitle}>{lang === "ar" ? "جارٍ فتح لوحة التحكم…" : "Opening dashboard…"}</h2>
-              <p className={s.formSubtitle}>{lang === "ar" ? "لحظة من فضلك." : "Just a moment."}</p>
-              <div className="dashboard-loader" aria-label="Loading" style={{ marginTop: 16 }} />
+              <h2 className={s.formTitle}>{t("login.opening")}</h2>
+              <p className={s.formSubtitle}>{t("login.openingHint")}</p>
+              <div className="dashboard-loader" aria-label={t("common.loading")} style={{ marginTop: 16 }} />
             </>
           ) : (
-            <>
-              <h2 className={s.formTitle}>{lang === "ar" ? "تعذّر الدخول" : "Couldn't enter"}</h2>
-              <div className={s.errorBanner}>{errMsg}</div>
-              <Button type="button" size="md" style={{ marginTop: 16 }} onClick={enter}>
-                {lang === "ar" ? "إعادة المحاولة" : "Try again"}
+            <form onSubmit={onSubmit} noValidate>
+              <h2 className={s.formTitle}>{t("login.title")}</h2>
+              <p className={s.formSubtitle}>{t("login.subtitle")}</p>
+              {error && (
+                <div className={s.errorBanner} role="alert">
+                  {error}
+                </div>
+              )}
+              <div className={s.formFields}>
+                <Field label={t("login.identifier")} required>
+                  <Input
+                    name="identifier"
+                    type="text"
+                    inputMode="email"
+                    autoComplete="username"
+                    dir="ltr"
+                    placeholder={t("login.identifierPlaceholder")}
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    autoFocus
+                  />
+                </Field>
+                <Field label={t("login.password")} required>
+                  <Input
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    dir="ltr"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </Field>
+              </div>
+              <Button type="submit" size="md" className={s.fullBtn} loading={submitting}>
+                {t("login.submit")}
               </Button>
-            </>
+            </form>
           )}
         </div>
       </section>

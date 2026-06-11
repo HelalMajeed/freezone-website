@@ -424,6 +424,77 @@
   padding: 16px 32px;
 }
 
+/* ── Validation + availability states ─────────── */
+.inputError {
+  border-color: #dc2626 !important;
+}
+
+.inlineError {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #b91c1c;
+}
+
+.feeHint {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.disabledPayment {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.disabledPayment:hover {
+  border-color: var(--border-light);
+}
+
+.comingSoonBadge {
+  display: inline-block;
+  margin-inline-start: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+/* ── Honest submit-failure state ──────────────── */
+.submitErrorBox {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 20px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(220, 38, 38, 0.07);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.submitErrorBox strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #b91c1c;
+}
+.submitErrorBox p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.submitErrorIcon {
+  flex-shrink: 0;
+  color: #dc2626;
+  margin-top: 2px;
+}
+
 /* ── Success Screen ───────────────────────────── */
 .successScreen {
   text-align: center;

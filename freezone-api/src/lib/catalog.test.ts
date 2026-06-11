@@ -2,12 +2,16 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { absolutizeUploadUrl } from "./catalog";
 
-const ORIGIN = "https://freezone-website.fly.dev";
-
-test("relative /uploads path becomes absolute on the API origin", () => {
+/**
+ * Outside production with no PUBLIC_UPLOADS_ORIGIN, /uploads paths stay
+ * RELATIVE (the Vite dev proxy serves them); in production the default origin
+ * is https://freezone-website.fly.dev. The origin is resolved at module load,
+ * so this test asserts the non-production (test-runner) behavior.
+ */
+test("relative /uploads path stays relative outside production", () => {
   assert.equal(
     absolutizeUploadUrl("/uploads/products/2026/05/x.webp"),
-    `${ORIGIN}/uploads/products/2026/05/x.webp`,
+    "/uploads/products/2026/05/x.webp",
   );
 });
 

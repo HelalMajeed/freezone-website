@@ -227,6 +227,7 @@ model Product {
   attributeValues     ProductAttributeValue[]
   comments            ProductComment[]
   stockMovements      StockMovement[]
+  customerReviews     Review[]
 
   /// Original list price as scraped, BEFORE the FreeZone markup multiplier is applied to `price`.
   sourcePrice   Int?
@@ -330,6 +331,11 @@ model Order {
   /// delivery | pickup
   fulfillment   String          @default("delivery")
   paymentMethod String
+  /// unpaid | paid | refunded — payment reconciliation, settable by admin
+  paymentStatus String          @default("unpaid")
+  /// Optional link to a registered customer account (guest checkout keeps this null)
+  customerId    Int?
+  customer      Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
   customerName  String
   customerPhone String
   customerEmail String?
@@ -349,6 +355,7 @@ model Order {
   stockMovements StockMovement[]
 
   @@index([createdAt(sort: Desc)])
+  @@index([customerId])
 }
 
 /// Append-only order timeline: status transitions AND internal staff notes.
@@ -503,6 +510,10 @@ model SiteConfig {
   qiCardMerchantId       String   @default("")
   freeDeliveryThreshold  Int      @default(100000)
   standardShippingFee    Int      @default(5000)
+  /// Per-governorate delivery fees: { "<provinceCode>": feeIQD, ... } keyed by
+  /// the canonical codes in src/lib/iraq-provinces.ts. Missing key / null map
+  /// falls back to standardShippingFee. freeDeliveryThreshold still applies.
+  shippingFeesJson       Json?
   promoBarTextEn         String   @default("")
   promoBarTextAr         String   @default("")
   promoBarEnabled        Boolean  @default(true)
@@ -711,6 +722,8 @@ model CmsPageSection {
 model AdminUser {
   id           Int            @id @default(autoincrement())
   email        String         @unique
+  /// Iraqi mobile (07XXXXXXXXX) — alternative login identifier alongside email
+  phone        String?        @unique
   passwordHash String
   name         String
   role         AdminRole      @default(CATALOG_EDITOR)
@@ -741,6 +754,68 @@ model ProductComment {
 
   @@index([productId, createdAt])
   @@index([userId])
+}
+
+/// Storefront customer account. Phone (07XXXXXXXXX) is the primary identifier;
+/// email is optional. Guest checkout remains fully supported — orders link here
+/// only when the customer is signed in at checkout.
+model Customer {
+  id           Int               @id @default(autoincrement())
+  name         String
+  phone        String            @unique
+  email        String?
+  passwordHash String
+  /// Blocked customers cannot sign in or place authenticated orders
+  isBlocked    Boolean           @default(false)
+  lastLoginAt  DateTime?
+  failedLogins Int               @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  orders       Order[]
+  sessions     CustomerSession[]
+  reviews      Review[]
+
+  @@index([isBlocked])
+}
+
+/// Server-side customer session — same revocable opaque-token pattern as AdminSession.
+model CustomerSession {
+  id         String    @id @default(cuid())
+  customerId Int
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  userAgent  String?
+  ip         String?
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  lastSeenAt DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+
+  @@index([customerId])
+  @@index([expiresAt])
+}
+
+/// Customer product review. Hidden from the storefront until an admin approves it.
+/// Distinct from ProductComment (internal operator thread).
+model Review {
+  id           Int       @id @default(autoincrement())
+  productId    Int
+  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// Set when the reviewer was signed in; guests submit with name + phone only
+  customerId   Int?
+  customer     Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName String
+  /// Reviewer phone (07XXXXXXXXX) — used for moderation dedup, never shown publicly
+  phone        String?
+  /// 1–5 (validated in application code)
+  rating       Int
+  comment      String    @db.Text
+  isApproved   Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  @@index([productId, isApproved, createdAt(sort: Desc)])
+  @@index([isApproved, createdAt(sort: Desc)])
 }
 
 /// Server-side session — revocable, lookup by tokenHash from cookie.

@@ -340,10 +340,125 @@ export type OrderShippingUpdateResult = {
   total: number;
 };
 
+/** Payment reconciliation states (API_CONTRACT §6). */
+export type PaymentStatus = "unpaid" | "paid" | "refunded";
+
 export const ordersExtraApi = {
   /** PATCH /api/admin/orders/:id `{ shipping }` — total recomputed server-side. */
   updateShipping: (id: number, shipping: number) =>
     dashboardApi.patch<OrderShippingUpdateResult>(`/api/admin/orders/${id}`, { shipping }),
+
+  /**
+   * PATCH /api/admin/orders/:id `{ paymentStatus }` (API_CONTRACT §6) —
+   * records an OrderStatusEvent note server-side.
+   */
+  updatePaymentStatus: (id: number, paymentStatus: PaymentStatus) =>
+    dashboardApi.patch<{ id: number; paymentStatus: PaymentStatus }>(
+      `/api/admin/orders/${id}`,
+      { paymentStatus },
+    ),
+};
+
+// ─── Customers admin (API_CONTRACT §5) ───────────────────────────────────────
+
+export type CustomerListRow = {
+  id: number;
+  name: string;
+  phone: string;
+  email: string | null;
+  isBlocked: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
+  orderCount: number;
+  /** Integer IQD — excludes cancelled orders. */
+  totalSpent: number;
+};
+
+export type CustomerDetail = Omit<CustomerListRow, "orderCount" | "totalSpent"> & {
+  updatedAt: string;
+};
+
+/** Order rows on the customer detail (by customerId OR phone match). */
+export type CustomerOrderRow = {
+  id: number;
+  orderNumber: string;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus | string;
+  fulfillment: string;
+  paymentMethod: string;
+  city: string;
+  total: number;
+  itemCount: number;
+  createdAt: string;
+};
+
+export type CustomersListQuery = {
+  search?: string;
+  blocked?: "true" | "false";
+  page?: number;
+  pageSize?: number;
+};
+
+export const customersAdminApi = {
+  /** GET /api/admin/customers — paginated, searchable, blocked filter. */
+  list: (query: CustomersListQuery = {}) =>
+    dashboardApi.get<{ customers: CustomerListRow[]; total: number }>(
+      `/api/admin/customers${buildDashboardQuery(query)}`,
+    ),
+
+  /** GET /api/admin/customers/:id — detail + attributable orders. */
+  detail: (id: number) =>
+    dashboardApi.get<{ customer: CustomerDetail; orders: CustomerOrderRow[] }>(
+      `/api/admin/customers/${id}`,
+    ),
+
+  /** PATCH /api/admin/customers/:id — SUPER_ADMIN only; blocking revokes sessions. */
+  setBlocked: (id: number, isBlocked: boolean) =>
+    dashboardApi.patch<{ customer: CustomerDetail }>(`/api/admin/customers/${id}`, { isBlocked }),
+};
+
+// ─── Customer-review moderation (API_CONTRACT §4) ────────────────────────────
+
+export type ModerationReview = {
+  id: number;
+  productId: number;
+  customerId: number | null;
+  customerName: string;
+  /** Moderation-only — never shown on the storefront. */
+  phone: string | null;
+  rating: number;
+  comment: string;
+  isApproved: boolean;
+  createdAt: string;
+  product: { id: number; slug: string | null; nameEn: string; nameAr: string } | null;
+};
+
+export type ModerationReviewsQuery = {
+  status?: "pending" | "approved" | "all";
+  search?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type ModerationReviewsResponse = {
+  reviews: ModerationReview[];
+  total: number;
+  pendingCount: number;
+};
+
+export const reviewsModerationApi = {
+  /** GET /api/admin/reviews — customer reviews (NOT the product review queue). */
+  list: (query: ModerationReviewsQuery = {}) =>
+    dashboardApi.get<ModerationReviewsResponse>(
+      `/api/admin/reviews${buildDashboardQuery(query)}`,
+    ),
+
+  /** PATCH /api/admin/reviews/:id — approve / move back to pending. */
+  setApproved: (id: number, isApproved: boolean) =>
+    dashboardApi.patch<{ review: ModerationReview }>(`/api/admin/reviews/${id}`, { isApproved }),
+
+  /** DELETE /api/admin/reviews/:id — permanent; product rating recomputed. */
+  remove: (id: number) => dashboardApi.delete<{ ok: true }>(`/api/admin/reviews/${id}`),
 };
 
 // ─── Media library ───────────────────────────────────────────────────────────

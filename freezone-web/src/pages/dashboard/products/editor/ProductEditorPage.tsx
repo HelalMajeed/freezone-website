@@ -280,7 +280,7 @@ export function DashboardProductEditorPage() {
       if (routeId == null && id != null) {
         baselineRef.current = formSnapshot(form); // clean — the guard lets this through
         toast.success(t("editor.created"));
-        navigate(`/dashboard/products/${id}`, { replace: true });
+        navigate(`/admin/products/${id}`, { replace: true });
         return;
       }
 
@@ -308,7 +308,7 @@ export function DashboardProductEditorPage() {
     const isDeadEnd = badId || notFound;
     return (
       <div className={s.page}>
-        <Link className={s.backLink} to="/dashboard/products">
+        <Link className={s.backLink} to="/admin/products">
           <ArrowLeft size={14} className={s.dirIcon} aria-hidden />
           {t("editor.backToList")}
         </Link>
@@ -355,7 +355,7 @@ export function DashboardProductEditorPage() {
           <button
             type="button"
             className={s.backLink}
-            onClick={() => guardedNavigate("/dashboard/products")}
+            onClick={() => guardedNavigate("/admin/products")}
           >
             <ArrowLeft size={14} className={s.dirIcon} aria-hidden />
             {t("editor.backToList")}

@@ -1,7 +1,12 @@
+import { z } from "zod";
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import { validateCouponRecord } from "@/lib/coupon-service";
 import { isProvinceExcluded } from "@/lib/iraq-provinces";
 import { notifyOrderCreated, notifyStockEvent } from "@/lib/notifications";
+import { normalizeIraqiPhone, isValidIraqiPhone } from "@/lib/phone";
+import { resolveShippingFee } from "@/lib/shipping-fees";
+import { isPaymentMethodKey, isMethodAvailable } from "@/lib/payments/registry";
+import { getCurrentCustomer } from "@/lib/customer-auth";
 
 type StockEvent = {
   type: "stock.low" | "stock.out";
@@ -11,54 +16,85 @@ type StockEvent = {
   quantity: number;
 };
 
-type OrderItemIn = {
-  productId: number;
-  name?: string;
-  price?: number;
-  qty: number;
-  image?: string;
-};
-
 /** Cap per-line quantity to keep accidental/malicious 1e9-style payloads out of the DB and stock math. */
 const MAX_QTY_PER_LINE = 999;
+
+/**
+ * Structural validation of the checkout body. Item `productId`/`qty` stay
+ * `unknown` on purpose: their integer/range refinements below return the
+ * historical `INVALID_ITEMS` / `INVALID_QTY` codes, which a strict number
+ * type would collapse into the generic payload error.
+ */
+const checkoutItemSchema = z.looseObject({
+  productId: z.unknown(),
+  qty: z.unknown(),
+});
+
+const checkoutBodySchema = z.object({
+  fulfillment: z.string().optional(),
+  paymentMethod: z.string(),
+  customer: z.object({
+    name: z.string(),
+    phone: z.string(),
+    address: z.string().optional(),
+    city: z.string().optional(),
+  }),
+  items: z.array(checkoutItemSchema).min(1),
+  subtotal: z.number().optional(),
+  discountTotal: z.number().optional(),
+  couponCode: z.string().optional(),
+  shipping: z.number(),
+  total: z.number(),
+  notes: z.string().optional(),
+});
 
 export async function POST(req: Request) {
   if (!isDatabaseConfigured()) {
     return Response.json({ error: "NO_DATABASE", code: "NO_DATABASE" }, { status: 503 });
   }
 
-  const body = (await req.json().catch(() => null)) as {
-    fulfillment?: string;
-    paymentMethod?: string;
-    customer?: { name?: string; phone?: string; address?: string; city?: string };
-    items?: OrderItemIn[];
-    subtotal?: number;
-    discountTotal?: number;
-    couponCode?: string;
-    shipping?: number;
-    total?: number;
-    notes?: string;
-  } | null;
-
-  const cust = body?.customer;
-  const items = body?.items;
-  if (
-    !body ||
-    !cust?.name?.trim() ||
-    !cust?.phone?.trim() ||
-    !Array.isArray(items) ||
-    items.length === 0 ||
-    typeof body.shipping !== "number" ||
-    typeof body.total !== "number" ||
-    !body.paymentMethod?.trim()
-  ) {
+  const raw = await req.json().catch(() => null);
+  const parsed = checkoutBodySchema.safeParse(raw);
+  if (!parsed.success) {
     return Response.json({ error: "Invalid order payload" }, { status: 400 });
+  }
+  const body = parsed.data;
+
+  const cust = body.customer;
+  const items = body.items;
+  if (!cust.name.trim() || !cust.phone.trim() || !body.paymentMethod.trim()) {
+    return Response.json({ error: "Invalid order payload" }, { status: 400 });
+  }
+
+  /** Allowlisted payment methods only (API_CONTRACT §6) — never store a free-form string. */
+  const paymentMethod = body.paymentMethod.trim();
+  if (!isPaymentMethodKey(paymentMethod)) {
+    return Response.json(
+      { error: "طريقة الدفع غير صالحة", code: "INVALID_PAYMENT_METHOD" },
+      { status: 400 },
+    );
+  }
+  /** Unconfigured gateway methods are rejected outright — no silent fallback to COD. */
+  if (!isMethodAvailable(paymentMethod)) {
+    return Response.json(
+      { error: "طريقة الدفع غير متاحة حالياً، اختر طريقة دفع أخرى", code: "PAYMENT_METHOD_UNAVAILABLE" },
+      { status: 400 },
+    );
+  }
+
+  /** Iraqi mobile required (07XXXXXXXXX) — normalized (Arabic digits, +964) before storing. */
+  const customerPhone = normalizeIraqiPhone(cust.phone.trim());
+  if (!isValidIraqiPhone(customerPhone)) {
+    return Response.json(
+      { error: "رقم الهاتف غير صالح — الصيغة المطلوبة 07XXXXXXXXX", code: "INVALID_PHONE" },
+      { status: 400 },
+    );
   }
 
   /** Reject ad-hoc lines: every line must reference a real product so the server controls the price. */
   const normalizedItems = items.map((i) => ({
-    productId: Number.isFinite(i.productId) ? Math.trunc(i.productId) : NaN,
-    qty: Number.isFinite(i.qty) ? Math.trunc(i.qty) : NaN,
+    productId: Number.isFinite(i.productId) ? Math.trunc(i.productId as number) : NaN,
+    qty: Number.isFinite(i.qty) ? Math.trunc(i.qty as number) : NaN,
   }));
   if (normalizedItems.some((i) => !Number.isInteger(i.productId) || i.productId <= 0)) {
     return Response.json({ error: "INVALID_ITEMS" }, { status: 400 });
@@ -77,6 +113,9 @@ export async function POST(req: Request) {
   const fulfillment = body.fulfillment === "pickup" ? "pickup" : "delivery";
   const addressLine = (cust.address ?? "").trim() || "—";
   const city = (cust.city ?? "").trim() || "—";
+
+  /** Signed-in customers get the order linked to their account; guests stay null. */
+  const sessionCustomer = await getCurrentCustomer(req).catch(() => null);
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -156,18 +195,25 @@ export async function POST(req: Request) {
        * Recompute the shipping fee server-side from SiteConfig — the client
        * `shipping` value is never trusted (a tampered client could otherwise
        * submit shipping=0 with a matching total on an under-threshold order).
-       * Mirrors the storefront formula in freezone-web/src/lib/store.ts:
-       *   pickup → free; else free over the threshold, otherwise the flat fee.
-       * Defaults match the storefront fallbacks (100000 / 5000).
+       * Per-governorate fees from `shippingFeesJson` (fallback to the flat
+       * `standardShippingFee`), pickup is free, and `freeDeliveryThreshold`
+       * still applies — see src/lib/shipping-fees.ts. Defaults match the
+       * storefront fallbacks (100000 / 5000).
        */
       const site = await tx.siteConfig.findUnique({
         where: { id: 1 },
-        select: { freeDeliveryThreshold: true, standardShippingFee: true },
+        select: { freeDeliveryThreshold: true, standardShippingFee: true, shippingFeesJson: true },
       });
-      const freeThreshold = site?.freeDeliveryThreshold ?? 100000;
-      const shipFee = site?.standardShippingFee ?? 5000;
-      const shipping =
-        fulfillment === "pickup" ? 0 : afterDiscount >= freeThreshold ? 0 : shipFee;
+      const shipping = resolveShippingFee(
+        city,
+        afterDiscount,
+        {
+          standardShippingFee: site?.standardShippingFee,
+          freeDeliveryThreshold: site?.freeDeliveryThreshold,
+          shippingFeesJson: site?.shippingFeesJson,
+        },
+        { pickup: fulfillment === "pickup" },
+      );
 
       const expectedTotal = afterDiscount + shipping;
       /** Client total is accepted only as a sanity guard against the server figure. */
@@ -181,9 +227,10 @@ export async function POST(req: Request) {
           orderNumber: tempKey,
           status: "pending",
           fulfillment,
-          paymentMethod: body.paymentMethod!.trim(),
-          customerName: cust.name!.trim(),
-          customerPhone: cust.phone!.trim(),
+          paymentMethod,
+          customerId: sessionCustomer?.id ?? null,
+          customerName: cust.name.trim(),
+          customerPhone,
           customerEmail: null,
           addressLine,
           city,

@@ -31,9 +31,20 @@ import {
   Modal,
   Select,
   Textarea,
+  useConfirm,
   useToast,
 } from "@/components/dashboard/ui";
-import { ORDER_STATUSES, paymentKey, statusKey, STATUS_TONE } from "./order-shared";
+import {
+  normalizePaymentStatus,
+  ORDER_STATUSES,
+  PAYMENT_STATUS_TONE,
+  PAYMENT_STATUSES,
+  paymentKey,
+  paymentStatusKey,
+  statusKey,
+  STATUS_TONE,
+  type PaymentStatusValue,
+} from "./order-shared";
 import s from "./OrderDetail.module.css";
 
 function resolveImage(url: string | null | undefined): string | undefined {
@@ -51,6 +62,7 @@ export function DashboardOrderDetailPage() {
   const orderId = Number(idParam);
   const { lang, t, formatError } = useDashboardLocale();
   const toast = useToast();
+  const confirm = useConfirm();
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,6 +72,9 @@ export function DashboardOrderDetailPage() {
 
   const [nextStatus, setNextStatus] = useState<Exclude<OrderStatus, "cancelled"> | "">("");
   const [savingStatus, setSavingStatus] = useState(false);
+
+  const [nextPaymentStatus, setNextPaymentStatus] = useState<PaymentStatusValue | "">("");
+  const [savingPayment, setSavingPayment] = useState(false);
 
   const [noteText, setNoteText] = useState("");
   const [savingNote, setSavingNote] = useState(false);
@@ -149,6 +164,37 @@ export function DashboardOrderDetailPage() {
     }
   };
 
+  const onUpdatePaymentStatus = async () => {
+    if (!order || !nextPaymentStatus) return;
+    const current = normalizePaymentStatus(
+      (order as OrderDetail & { paymentStatus?: string }).paymentStatus,
+    );
+    if (nextPaymentStatus === current) return;
+    const label = t(paymentStatusKey(nextPaymentStatus));
+    const sure = await confirm({
+      title: t("orderDetail.paymentStatusConfirmTitle"),
+      message: t("orderDetail.paymentStatusConfirmMessage", {
+        number: order.orderNumber,
+        status: label,
+      }),
+      confirmLabel: t("orderDetail.updatePaymentStatus"),
+    });
+    if (!sure) return;
+    setSavingPayment(true);
+    try {
+      // PATCH { paymentStatus } per API_CONTRACT §6 (server change ships with
+      // the payments stream); the server records a timeline note.
+      await ordersExtraApi.updatePaymentStatus(order.id, nextPaymentStatus);
+      toast.success(t("orderDetail.paymentStatusUpdated", { status: label }));
+      setNextPaymentStatus("");
+      await load();
+    } catch (e) {
+      toast.error(formatError(e));
+    } finally {
+      setSavingPayment(false);
+    }
+  };
+
   const onAddNote = async () => {
     if (!order || !noteText.trim()) return;
     setSavingNote(true);
@@ -214,7 +260,7 @@ export function DashboardOrderDetailPage() {
           icon={<Package size={26} />}
           title={err ?? t("orderDetail.notFound")}
           action={
-            <Link to="/dashboard/orders">
+            <Link to="/admin/orders">
               <Button variant="secondary">{t("orderDetail.backToOrders")}</Button>
             </Link>
           }
@@ -225,13 +271,16 @@ export function DashboardOrderDetailPage() {
 
   const cancellable = order.status !== "cancelled" && order.status !== "delivered";
   const payKey = paymentKey(order.paymentMethod);
+  const paymentStatus = normalizePaymentStatus(
+    (order as OrderDetail & { paymentStatus?: string }).paymentStatus,
+  );
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
 
   return (
     <>
       <div className="dashboard-page-header">
         <div>
-          <Link to="/dashboard/orders" className={s.backLink}>
+          <Link to="/admin/orders" className={s.backLink}>
             <BackIcon size={14} aria-hidden /> {t("orderDetail.backToOrders")}
           </Link>
           <div className={s.titleRow}>
@@ -239,6 +288,9 @@ export function DashboardOrderDetailPage() {
               {t("orderDetail.title", { number: order.orderNumber })}
             </h1>
             <Badge tone={STATUS_TONE[order.status]}>{t(statusKey(order.status))}</Badge>
+            <Badge tone={PAYMENT_STATUS_TONE[paymentStatus]}>
+              {t(paymentStatusKey(paymentStatus))}
+            </Badge>
           </div>
           <div className="dashboard-page-subtitle">{formatDateTime(order.createdAt, lang)}</div>
         </div>
@@ -266,7 +318,7 @@ export function DashboardOrderDetailPage() {
                   <div className={s.itemName}>
                     {item.product ? (
                       <Link
-                        to={`/dashboard/products?search=${encodeURIComponent(
+                        to={`/admin/products?search=${encodeURIComponent(
                           item.product.nameEn || item.nameSnapshot,
                         )}`}
                       >
@@ -442,7 +494,7 @@ export function DashboardOrderDetailPage() {
               history.map((row) => (
                 <div key={row.id} className={s.historyRow}>
                   <div>
-                    <Link to={`/dashboard/orders/${row.id}`} className={s.historyLink}>
+                    <Link to={`/admin/orders/${row.id}`} className={s.historyLink}>
                       {row.orderNumber}
                     </Link>
                     <div className={s.historyMeta}>{formatDateTime(row.createdAt, lang)}</div>
@@ -493,6 +545,33 @@ export function DashboardOrderDetailPage() {
                   </Button>
                 </div>
               )}
+            </div>
+          </Card>
+
+          <Card title={t("orderDetail.paymentStatus")}>
+            <div className={s.statusControl}>
+              <div className={s.statusRow}>
+                <Select
+                  value={nextPaymentStatus || paymentStatus}
+                  onChange={(e) =>
+                    setNextPaymentStatus(
+                      (e.target as HTMLSelectElement).value as PaymentStatusValue,
+                    )
+                  }
+                  options={PAYMENT_STATUSES.map((ps) => ({
+                    value: ps,
+                    label: t(paymentStatusKey(ps)),
+                  }))}
+                  aria-label={t("orderDetail.paymentStatus")}
+                />
+                <Button
+                  onClick={() => void onUpdatePaymentStatus()}
+                  loading={savingPayment}
+                  disabled={!nextPaymentStatus || nextPaymentStatus === paymentStatus}
+                >
+                  {t("orderDetail.updatePaymentStatus")}
+                </Button>
+              </div>
             </div>
           </Card>
 

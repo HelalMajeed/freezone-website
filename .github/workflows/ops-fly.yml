@@ -1,0 +1,99 @@
+name: Ops — Fly admin
+
+# Operational helper for the launch runbook (FINAL_REPORT.md deploy checklist).
+# Uses the repo FLY_API_TOKEN secret. No secret VALUES are ever printed:
+# `flyctl secrets list` shows names + digests only, and the seed script prints
+# "(set via env)" instead of the password.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Operation to run"
+        required: true
+        type: choice
+        default: "secrets-list"
+        options:
+          - secrets-list
+          - prepare-launch
+          - seed-admin
+          - classification-repair
+          - pg-snapshots
+
+concurrency:
+  group: ops-fly
+  cancel-in-progress: false
+
+jobs:
+  ops:
+    name: ${{ inputs.action }}
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      APP: freezone-website
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: List Fly secret names (no values)
+        if: inputs.action == 'secrets-list'
+        run: flyctl secrets list -a "$APP"
+
+      - name: Set launch secrets (boot-assertion prerequisites)
+        if: inputs.action == 'prepare-launch'
+        env:
+          ADMIN_PASSWORD: ${{ secrets.FREEZONE_ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          : "${ADMIN_PASSWORD:?FREEZONE_ADMIN_PASSWORD secret is not set}"
+          if [ "${#ADMIN_PASSWORD}" -lt 12 ]; then
+            echo "::error::FREEZONE_ADMIN_PASSWORD is shorter than 12 chars — the API boot assertion requires >=12. Rotate the GitHub secret to a stronger value, then re-run."
+            exit 1
+          fi
+          SESSION_SECRET="$(openssl rand -hex 32)"
+          # ADMIN_PASSWORD is intentionally the same value as the GitHub secret
+          # FREEZONE_ADMIN_PASSWORD so the import workflow and the seeded
+          # SUPER_ADMIN keep a single owner-known credential.
+          flyctl secrets set -a "$APP" \
+            ADMIN_SESSION_SECRET="$SESSION_SECRET" \
+            ADMIN_REQUIRE_PASSWORD=true \
+            ADMIN_PASSWORD="$ADMIN_PASSWORD" \
+            ADMIN_SESSION_SAMESITE=none \
+            DASHBOARD_COOKIE_SAMESITE=none \
+            CUSTOMER_COOKIE_SAMESITE=none
+          echo "Secrets staged; waiting for the app to come back healthy..."
+          ok=false
+          for i in $(seq 1 36); do
+            sleep 5
+            if curl -fsS --max-time 10 "https://freezone-website.fly.dev/health" | grep -q '"ok":true'; then
+              ok=true
+              break
+            fi
+          done
+          if [ "$ok" != "true" ]; then
+            echo "::error::API did not come back healthy after secrets set"
+            exit 1
+          fi
+
+      - name: Seed dashboard SUPER_ADMIN (idempotent)
+        # Runs as part of prepare-launch, or standalone via the seed-admin action.
+        # The seed script reads ADMIN_PASSWORD from the machine env (Fly secret),
+        # so prepare-launch must have run at least once before this.
+        # tsx is a devDependency (pruned from the runner image) — npx fetches it.
+        if: inputs.action == 'prepare-launch' || inputs.action == 'seed-admin'
+        run: |
+          set -euo pipefail
+          flyctl ssh console -a "$APP" -C "sh -c 'cd /app && npx -y tsx prisma/seed-dashboard-superadmin.ts'"
+
+      - name: Classification repair (run after catalog imports)
+        if: inputs.action == 'classification-repair'
+        run: |
+          set -euo pipefail
+          flyctl ssh console -a "$APP" -C "sh -c 'cd /app && npx -y tsx scripts/seed-classification-only.ts && npx -y tsx scripts/sync-legacy-product-specs.ts'"
+
+      - name: Postgres volume snapshots (disaster-recovery evidence)
+        if: inputs.action == 'pg-snapshots'
+        run: |
+          set -euo pipefail
+          flyctl volumes list -a freezone-website-pg
+          VOL="$(flyctl volumes list -a freezone-website-pg --json | jq -r '.[0].id')"
+          flyctl volumes snapshots list "$VOL"

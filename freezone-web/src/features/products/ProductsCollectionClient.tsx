@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { Trans } from "react-i18next";
 import type { Product, Category } from "@/lib/data";
 import { FilterSidebar, type FilterState } from "@/components/layout/FilterSidebar";
 import { ProductCard } from "@/components/ui/ProductCard";
+import { PaginationControls } from "@/components/ui/PaginationControls";
 import { facetDefinitionsForCategory, productMatchesFacetSelections } from "@/lib/productFacetConfig";
-import { productBelongsToCategory } from "@/lib/productCategoryMembership";
+import { productBelongsToCategoryTree } from "@/lib/productCategoryMembership";
 import {
   evaluateProductCatalogSearch,
   tokenizeSearchQueryDisplay,
@@ -34,6 +35,35 @@ import { sanitizeFacetFilterToken, formatFacetFilterLabel } from "@/lib/classifi
 import { getFacetDisplayLabel } from "@/lib/catalog-facet-ui";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 export type SortOption = "featured" | "relevant" | "price-asc" | "price-desc" | "date-new" | "date-old";
+
+const SORT_OPTIONS: readonly SortOption[] = [
+  "featured",
+  "relevant",
+  "price-asc",
+  "price-desc",
+  "date-new",
+  "date-old",
+];
+
+/** Honor a shared ?sort= URL on mount (server applies it in SQL across pages). */
+function parseSortParam(raw: string | null): SortOption {
+  return raw && (SORT_OPTIONS as readonly string[]).includes(raw) ? (raw as SortOption) : "relevant";
+}
+
+/** Matches the server default in catalog-filter.ts — both paths page in lockstep. */
+const LISTING_PAGE_SIZE = 48;
+
+function parsePageParam(raw: string | null): number {
+  return Math.max(1, parseInt(raw ?? "1", 10) || 1);
+}
+
+/** Stringify the params without `page` — used to reset paging on filter change. */
+function withoutPage(sp: URLSearchParams): string {
+  const copy = new URLSearchParams(sp);
+  copy.delete("page");
+  copy.sort();
+  return copy.toString();
+}
 
 function parseCsvValues(values: string[]): string[] {
   const out: string[] = [];
@@ -150,6 +180,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
   const isNewParam = searchParams.get("isNew") === "true";
   const listingAgeParam = (searchParams.get("listingAge") as FilterState["listingAge"] | null) ?? (isNewParam ? "new" : "all");
   const qParam = searchParams.get("q") ?? "";
+  const pageParam = parsePageParam(searchParams.get("page"));
   const { pMin: pMinParam, pMax: pMaxParam } = parsePriceParam(searchParams.get("price"));
 
   const categoryMeta = categories.find((c) => c.id === catParam);
@@ -168,7 +199,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
   }, {});
 
   const [query, setQuery] = useState(qParam);
-  const [sortBy, setSortBy] = useState<SortOption>("relevant");
+  const [sortBy, setSortBy] = useState<SortOption>(() => parseSortParam(searchParams.get("sort")));
 
   useEffect(() => {
     setQuery(qParam);
@@ -235,6 +266,8 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
           }
 
           if (next.toString() === prev.toString()) return prev;
+          /** Any filter/search/sort change restarts paging from page 1. */
+          if (withoutPage(next) !== withoutPage(prev)) next.delete("page");
           return next;
         },
         { replace: true },
@@ -280,9 +313,10 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
       listingAge: filters.listingAge,
       q: query.trim() || undefined,
       sort: sortBy,
+      page: pageParam,
       facets: filters.specSelections,
     }),
-    [locale, filters, query, sortBy],
+    [locale, filters, query, sortBy, pageParam],
   );
 
   const useServerCatalog = catalogUsesFilteredApi(catalogQuery) || Boolean(filters.cat);
@@ -296,7 +330,12 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
   });
 
   const facetPoolQuery = useMemo(
-    () => ({ ...catalogQuery, facets: undefined as Record<string, string[]> | undefined }),
+    () => ({
+      ...catalogQuery,
+      facets: undefined as Record<string, string[]> | undefined,
+      /** Facet pools are page-independent — keep the query key stable across pages. */
+      page: undefined as number | undefined,
+    }),
     [catalogQuery],
   );
 
@@ -332,7 +371,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
       });
     }
 
-    if (filters.cat) r = r.filter((p) => productBelongsToCategory(p, filters.cat));
+    if (filters.cat) r = r.filter((p) => productBelongsToCategoryTree(p, filters.cat, categories));
     if (filters.brands.length) r = r.filter((p) => filters.brands.includes(p.brand));
     if (filters.inStock) r = r.filter((p) => p.inStock);
     if (filters.listingAge === "new") r = r.filter((p) => p.isNew);
@@ -367,6 +406,36 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
   const serverFacets = serverCatalog.data?.facets;
   const serverFacetFilters = serverFacetDefs.data?.filters;
   const catalogLoading = useServerCatalog && serverCatalog.isFetching && !serverCatalog.data;
+
+  /** Server mode: `filtered` is already the requested page. Client mode: slice locally. */
+  const pageSize =
+    useServerCatalog && serverCatalog.data ? serverCatalog.data.pageSize : LISTING_PAGE_SIZE;
+  const pageCount = Math.max(1, Math.ceil(displayCount / pageSize));
+  const pagedProducts = useServerCatalog
+    ? filtered
+    : filtered.slice((pageParam - 1) * LISTING_PAGE_SIZE, pageParam * LISTING_PAGE_SIZE);
+
+  const goToPage = useCallback(
+    (p: number) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (p > 1) next.set("page", String(p));
+        else next.delete("page");
+        if (next.toString() === prev.toString()) return prev;
+        return next;
+      });
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    },
+    [setSearchParams],
+  );
+
+  /** A stale ?page beyond the last page (e.g. shared URL) folds back to the last page. */
+  useEffect(() => {
+    if (pageParam > pageCount && !(useServerCatalog && serverCatalog.isFetching)) {
+      goToPage(pageCount);
+    }
+  }, [pageParam, pageCount, useServerCatalog, serverCatalog.isFetching, goToPage]);
 
   const queryChips = useMemo(() => tokenizeSearchQueryDisplay(query), [query]);
 
@@ -407,7 +476,9 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
     }
     for (const b of filters.brands) {
       chips.push({
-        key: `brand-${b}`,
+        // "brand:" prefix — a category spec facet keyed "brand" would otherwise
+        // collide with this chip's key (`brand-X` === `${facetKey}-${token}`).
+        key: `brand:${b}`,
         label: b,
         remove: () => setFilters((p) => ({ ...p, brands: p.brands.filter((x) => x !== b) })),
       });
@@ -416,7 +487,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
       for (const v of vals) {
         const token = sanitizeFacetFilterToken(facetKey, v) ?? v;
         chips.push({
-          key: `${facetKey}-${token}`,
+          key: `spec:${facetKey}:${token}`,
           label: `${getFacetDisplayLabel(facetKey, locale)}: ${formatFacetFilterLabel(facetKey, token, undefined, locale)}`,
           remove: () =>
             setFilters((p) => {
@@ -572,7 +643,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
                 <p>{t("loadingResults", { defaultValue: "Loading…" })}</p>
               </div>
             ) : null}
-            {!catalogLoading && filtered.length === 0 ? (
+            {!catalogLoading && displayCount === 0 ? (
               <div className={productsStyles.noResults}>
                 <span className={productsStyles.noResultsEmoji} aria-hidden>
                   🔍
@@ -589,15 +660,18 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
                 </button>
               </div>
             ) : (
-              <div className={productsStyles.grid}>
-                {filtered.map((p, i) => {
-                  const ev = searchMatchById.get(p.id);
-                  const specSearchLines = ev ? cardSearchLines(ev, locale, t) : undefined;
-                  return (
-                    <ProductCard key={p.id} product={p} categories={categories} delay={i * 25} specSearchLines={specSearchLines} />
-                  );
-                })}
-              </div>
+              <>
+                <div className={productsStyles.grid}>
+                  {pagedProducts.map((p, i) => {
+                    const ev = searchMatchById.get(p.id);
+                    const specSearchLines = ev ? cardSearchLines(ev, locale, t) : undefined;
+                    return (
+                      <ProductCard key={p.id} product={p} categories={categories} delay={i * 25} specSearchLines={specSearchLines} />
+                    );
+                  })}
+                </div>
+                <PaginationControls page={pageParam} pageCount={pageCount} onPageChange={goToPage} />
+              </>
             )}
           </div>
         </div>

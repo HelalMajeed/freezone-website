@@ -1,0 +1,125 @@
+name: Import — Global Iraq (full run)
+
+# One self-contained run that imports the whole globaliraq catalog by looping
+# run-batch until the live sitemap is exhausted. Long-running work belongs in
+# Actions (per .claude-state.md), and GitHub's per-workflow concurrency group
+# only keeps a single dispatch pending, so dispatching ~13 single batches by
+# hand is not viable — this loops server-side instead.
+
+on:
+  workflow_dispatch:
+    inputs:
+      batchSize:
+        description: "Products per batch (1..100)"
+        required: true
+        default: "100"
+      autoPublish:
+        description: "Auto-publish products that pass the quality gate"
+        required: true
+        type: choice
+        default: "true"
+        options:
+          - "true"
+          - "false"
+      maxBatches:
+        description: "Safety cap on batch count"
+        required: true
+        default: "20"
+
+concurrency:
+  group: import-globaliraq
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  full-import:
+    name: full-import (batchSize=${{ inputs.batchSize }} autoPublish=${{ inputs.autoPublish }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      API_URL: https://freezone-website.fly.dev
+      ADMIN_PASSWORD: ${{ secrets.FREEZONE_ADMIN_PASSWORD }}
+      ADMIN_EMAIL: ${{ vars.FREEZONE_ADMIN_EMAIL || 'admin@freezone-iq.com' }}
+    steps:
+      - name: Validate inputs
+        id: cfg
+        run: |
+          set -euo pipefail
+          bs="${{ inputs.batchSize }}"; mb="${{ inputs.maxBatches }}"
+          for v in "$bs" "$mb"; do
+            [[ "$v" =~ ^[0-9]+$ ]] || { echo "::error::numeric inputs only"; exit 2; }
+          done
+          { [ "$bs" -ge 1 ] && [ "$bs" -le 100 ]; } || { echo "::error::batchSize 1..100"; exit 2; }
+          echo "batchSize=$bs" >> "$GITHUB_OUTPUT"
+          echo "maxBatches=$mb" >> "$GITHUB_OUTPUT"
+          echo "auto=${{ inputs.autoPublish == 'true' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Login + loop batches until exhausted
+        run: |
+          set -euo pipefail
+          : "${ADMIN_PASSWORD:?FREEZONE_ADMIN_PASSWORD secret is not set}"
+
+          jar=$(mktemp)
+          login_payload=$(jq -nc --arg id "$ADMIN_EMAIL" --arg pw "$ADMIN_PASSWORD" \
+            '{identifier:$id,email:$id,password:$pw}')
+          code=$(curl -sS -o /tmp/login.json -w '%{http_code}' -c "$jar" -X POST \
+            -H "Content-Type: application/json" -d "$login_payload" \
+            "${API_URL}/api/dashboard/auth/login")
+          if [ "$code" != "200" ]; then
+            echo "::error::dashboard login failed (HTTP $code)"; cat /tmp/login.json; exit 1
+          fi
+          cookie=$(awk '{sub(/^#HttpOnly_/,"")} !/^#/ && NF>=7 {printf "%s%s=%s", sep, $6, $7; sep="; "}' "$jar")
+          [ -n "$cookie" ] || { echo "::error::no session cookie"; exit 1; }
+
+          bs="${{ steps.cfg.outputs.batchSize }}"
+          mb="${{ steps.cfg.outputs.maxBatches }}"
+          auto="${{ steps.cfg.outputs.auto }}"
+          total_succeeded=0; total_failed=0; total_skipped=0; total_processed=0
+
+          for i in $(seq 1 "$mb"); do
+            payload=$(jq -nc --argjson limit "$bs" --argjson a "$auto" '{limit:$limit,autoPublish:$a}')
+            resp=$(curl -sS -X POST -H "Content-Type: application/json" -H "Cookie: $cookie" \
+              -d "$payload" "${API_URL}/api/admin/import/globaliraq/run-batch")
+            batch_id=$(printf "%s" "$resp" | jq -r '.batchId // empty')
+            if [ -z "$batch_id" ]; then
+              echo "::error::run-batch returned no batchId (batch $i): $resp"; exit 1
+            fi
+            echo "── batch $i/$mb → $batch_id"
+
+            status="running"; body=""
+            for attempt in $(seq 1 720); do
+              sleep 10
+              body=$(curl -sS -H "Cookie: $cookie" "${API_URL}/api/admin/import/globaliraq/batches/${batch_id}")
+              status=$(printf "%s" "$body" | jq -r '.batch.status // empty')
+              [ -n "$status" ] && [ "$status" != "running" ] && break
+            done
+
+            total=$(printf "%s" "$body" | jq -r '.batch.total // 0')
+            ok=$(printf "%s" "$body" | jq -r '.batch.succeeded // 0')
+            failed=$(printf "%s" "$body" | jq -r '.batch.failed // 0')
+            skipped=$(printf "%s" "$body" | jq -r '.batch.skipped // 0')
+            total_succeeded=$((total_succeeded + ok))
+            total_failed=$((total_failed + failed))
+            total_skipped=$((total_skipped + skipped))
+            total_processed=$((total_processed + total))
+            echo "   status=$status total=$total succeeded=$ok failed=$failed skipped=$skipped"
+
+            case "$status" in
+              completed|completed_with_errors) : ;;
+              *) echo "::warning::batch $i ended $status — stopping loop"; break ;;
+            esac
+
+            # Exhausted: no new handles were available for this batch.
+            if [ "$total" = "0" ]; then
+              echo "   no pending handles — catalog exhausted"; break
+            fi
+          done
+
+          echo "## Full import summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "- processed: $total_processed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- succeeded: $total_succeeded" >> "$GITHUB_STEP_SUMMARY"
+          echo "- failed: $total_failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- skipped: $total_skipped" >> "$GITHUB_STEP_SUMMARY"
+          echo "Imported succeeded=$total_succeeded failed=$total_failed skipped=$total_skipped over processed=$total_processed handles"

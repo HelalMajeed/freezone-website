@@ -21,8 +21,10 @@ jobs:
           BACKUP_GPG_PASSPHRASE: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
         run: |
           if [ -z "$DATABASE_URL" ]; then
-            echo "DATABASE_URL_PROD secret not set — skip backup"
-            exit 0
+            # Failing loudly is the point: a silent exit-0 here made the daily
+            # backup look green for weeks while producing zero artifacts.
+            echo "::error::DATABASE_URL_PROD secret not set — no backup was taken. Configure it (see docs/SECRETS_CHECKLIST.md); Fly volume snapshots of freezone-website-pg are the only fallback."
+            exit 1
           fi
           # The dump contains customer/order PII. GitHub Actions artifacts are
           # downloadable by anyone with repo Actions read access, so we never

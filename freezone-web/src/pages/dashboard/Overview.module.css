@@ -177,6 +177,25 @@
   background: var(--fz-chart-2);
 }
 
+/* ── Card title with an inline end-side action link ── */
+.cardTitleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardTitleLink {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fz-brand);
+  text-decoration: none;
+}
+
+.cardTitleLink:hover {
+  text-decoration: underline;
+}
+
 /* ── Simple lists (city / top products / low stock) ── */
 .listRow {
   display: flex;

@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { trackViewItem } from "@/lib/analytics";
 import type { LocaleCode } from "@/lib/layout-cms";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import ProductDetailClient from "@/features/product-detail/ProductDetailClient";
@@ -16,6 +18,7 @@ export default function ProductDetailPage() {
   const num = parseInt(id ?? "", 10);
   const { catalog } = useStorefront();
   const tSeo = useTranslations("Seo");
+  const tPdp = useTranslations("ProductDetail");
 
   const { data: detail, isLoading, isFetched } = useQuery({
     queryKey: ["product-detail", num, lc],
@@ -23,13 +26,26 @@ export default function ProductDetailPage() {
     enabled: Number.isFinite(num),
   });
 
+  const viewed = detail?.product;
+  useEffect(() => {
+    if (viewed) {
+      trackViewItem({
+        id: viewed.id,
+        name: viewed.name,
+        price: viewed.price,
+        brand: viewed.brand,
+        category: viewed.cat,
+      });
+    }
+  }, [viewed]);
+
   if (Number.isNaN(num)) {
     return <Navigate to=".." replace />;
   }
   if (isLoading) {
     return (
       <div className="container" style={{ padding: "80px 20px", textAlign: "center" }}>
-        جاري التحميل…
+        {tPdp("loading")}
       </div>
     );
   }

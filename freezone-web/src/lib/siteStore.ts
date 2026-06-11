@@ -14,6 +14,7 @@ export type PaymentMethod =
   | "store_pickup"
   | "zaincash"
   | "qicard"
+  | "fib"
   | "visa"
   | "master";
 
