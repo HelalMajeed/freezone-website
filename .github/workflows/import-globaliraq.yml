@@ -60,8 +60,11 @@ jobs:
           # mutations need a real dashboard session (guardAdminMutate). The
           # SUPER_ADMIN must be seeded (Ops — Fly admin → prepare-launch).
           jar=$(mktemp)
+          # Send both keys: current prod expects {email}, the global-launch
+          # login accepts {identifier} (email or Iraqi phone) with legacy
+          # {email} still honored.
           login_payload=$(jq -nc --arg id "$ADMIN_EMAIL" --arg pw "$ADMIN_PASSWORD" \
-            '{identifier:$id,password:$pw}')
+            '{identifier:$id,email:$id,password:$pw}')
           code=$(curl -sS -o /tmp/login-body.json -w '%{http_code}' -c "$jar" -X POST \
             -H "Content-Type: application/json" \
             -d "$login_payload" \
