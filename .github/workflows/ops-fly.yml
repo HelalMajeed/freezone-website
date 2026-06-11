@@ -19,6 +19,11 @@ on:
           - seed-admin
           - classification-repair
           - pg-snapshots
+          - cancel-test-order
+      orderId:
+        description: "Order id for cancel-test-order"
+        required: false
+        default: "6"
 
 concurrency:
   group: ops-fly
@@ -89,6 +94,28 @@ jobs:
         run: |
           set -euo pipefail
           flyctl ssh console -a "$APP" -C "sh -c 'cd /app && npx -y tsx scripts/seed-classification-only.ts && npx -y tsx scripts/sync-legacy-product-specs.ts'"
+
+      - name: Cancel a test order via the admin route (audit + stock restore)
+        if: inputs.action == 'cancel-test-order'
+        env:
+          ADMIN_PASSWORD: ${{ secrets.FREEZONE_ADMIN_PASSWORD }}
+          ADMIN_EMAIL: ${{ vars.FREEZONE_ADMIN_EMAIL || 'admin@freezone-iq.com' }}
+          API_URL: https://freezone-website.fly.dev
+          ORDER_ID: ${{ inputs.orderId }}
+        run: |
+          set -euo pipefail
+          : "${ADMIN_PASSWORD:?FREEZONE_ADMIN_PASSWORD secret is not set}"
+          jar=$(mktemp)
+          login=$(jq -nc --arg id "$ADMIN_EMAIL" --arg pw "$ADMIN_PASSWORD" '{identifier:$id,email:$id,password:$pw}')
+          code=$(curl -sS -o /tmp/l.json -w '%{http_code}' -c "$jar" -X POST \
+            -H "Content-Type: application/json" -d "$login" "${API_URL}/api/dashboard/auth/login")
+          [ "$code" = "200" ] || { echo "::error::admin login failed ($code)"; cat /tmp/l.json; exit 1; }
+          cookie=$(awk '{sub(/^#HttpOnly_/,"")} !/^#/ && NF>=7 {printf "%s%s=%s", sep, $6, $7; sep="; "}' "$jar")
+          resp=$(curl -sS -X POST -H "Content-Type: application/json" -H "Cookie: $cookie" \
+            -d '{"reason":"launch verification test order","restoreStock":true}' \
+            "${API_URL}/api/admin/orders/${ORDER_ID}/cancel")
+          echo "cancel response: $resp"
+          echo "$resp" | grep -q '"status":"cancelled"' || { echo "::error::cancel did not confirm"; exit 1; }
 
       - name: Postgres volume snapshots (disaster-recovery evidence)
         if: inputs.action == 'pg-snapshots'
