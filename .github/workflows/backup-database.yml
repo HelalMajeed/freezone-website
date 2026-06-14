@@ -44,7 +44,7 @@ jobs:
       DATABASE_URL: ${{ secrets.DATABASE_URL_PROD }}
       BACKUP_GPG_PASSPHRASE: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install PostgreSQL client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Create encrypted backup (skips cleanly if secrets absent)
