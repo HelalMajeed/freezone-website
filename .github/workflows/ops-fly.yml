@@ -104,6 +104,17 @@ jobs:
         if: inputs.action == 'create-imported-brands'
         run: |
           set -euo pipefail
+          # Fly auto-stops idle VMs and `flyctl ssh` will not start them
+          # ("app has no started VMs"). Wake the machine via the public health
+          # endpoint (auto-start) and wait until it serves before ssh-ing in.
+          ok=false
+          for i in $(seq 1 24); do
+            if curl -fsS --max-time 10 "https://freezone-website.fly.dev/health" | grep -q '"ok":true'; then
+              ok=true; break
+            fi
+            sleep 5
+          done
+          [ "$ok" = "true" ] || { echo "::error::API did not wake to healthy"; exit 1; }
           flyctl ssh console -a "$APP" -C "sh -c 'cd /app && node scripts/create-imported-brands.mjs --confirm'"
 
       - name: Cancel a test order via the admin route (audit + stock restore)
