@@ -1,6 +1,9 @@
-# Manual + daily production DB backup (requires DATABASE_URL_PROD secret).
-# Runs daily at 03:00 UTC to honor the documented RPO <= 24h
-# (see docs/DISASTER_RECOVERY.md). Artifacts are retained for 7 days.
+# Production DB backup. PRIMARY path = Fly Postgres volume snapshot (needs only
+# the existing FLY_API_TOKEN — no owner secret), so the daily job produces real
+# disaster-recovery state instead of the old silent no-op (issue #44). The
+# portable encrypted pg_dump is kept as an OPTIONAL second path that activates
+# only when DATABASE_URL_PROD + BACKUP_GPG_PASSPHRASE are configured.
+# Runs daily at 03:00 UTC (RPO <= 24h, see docs/DISASTER_RECOVERY.md).
 name: Backup production database
 
 on:
@@ -8,33 +11,55 @@ on:
   schedule:
     - cron: "0 3 * * *"
 
+concurrency:
+  group: backup-database
+  cancel-in-progress: false
+
 jobs:
-  pg-dump:
+  fly-volume-snapshot:
+    name: Fly volume snapshot (primary DR, no owner secret)
     runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      PG_APP: freezone-website-pg
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Create + list volume snapshot
+        run: |
+          set -euo pipefail
+          VOL="$(flyctl volumes list -a "$PG_APP" --json | jq -r '.[0].id')"
+          if [ -z "$VOL" ] || [ "$VOL" = "null" ]; then
+            echo "::error::could not resolve a volume id for $PG_APP"
+            exit 1
+          fi
+          echo "Creating snapshot for volume $VOL ..."
+          flyctl volumes snapshots create "$VOL"
+          echo "Recent snapshots:"
+          flyctl volumes snapshots list "$VOL"
+
+  pg-dump:
+    name: Encrypted pg_dump (optional — needs DATABASE_URL_PROD + passphrase)
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL_PROD }}
+      BACKUP_GPG_PASSPHRASE: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
     steps:
       - uses: actions/checkout@v4
       - name: Install PostgreSQL client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
-      - name: Create encrypted backup
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL_PROD }}
-          BACKUP_GPG_PASSPHRASE: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
+      - name: Create encrypted backup (skips cleanly if secrets absent)
         run: |
-          if [ -z "$DATABASE_URL" ]; then
-            # Failing loudly is the point: a silent exit-0 here made the daily
-            # backup look green for weeks while producing zero artifacts.
-            echo "::error::DATABASE_URL_PROD secret not set — no backup was taken. Configure it (see docs/SECRETS_CHECKLIST.md); Fly volume snapshots of freezone-website-pg are the only fallback."
-            exit 1
+          set -euo pipefail
+          if [ -z "${DATABASE_URL:-}" ] || [ -z "${BACKUP_GPG_PASSPHRASE:-}" ]; then
+            # Not a failure: the volume-snapshot job above is the active DR path.
+            # This portable dump is a bonus that switches on once the owner sets
+            # DATABASE_URL_PROD + BACKUP_GPG_PASSPHRASE (see docs/SECRETS_CHECKLIST.md).
+            echo "::notice::DATABASE_URL_PROD/BACKUP_GPG_PASSPHRASE not set — skipping portable pg_dump (Fly volume snapshot already taken)."
+            exit 0
           fi
-          # The dump contains customer/order PII. GitHub Actions artifacts are
-          # downloadable by anyone with repo Actions read access, so we never
-          # upload a plaintext dump — encrypt it (AES-256) first and refuse to
-          # run if no passphrase is configured. Decrypt with:
+          # The dump contains customer/order PII; artifacts are downloadable by
+          # anyone with Actions read access, so encrypt (AES-256) before upload.
           #   gpg --batch --passphrase "$BACKUP_GPG_PASSPHRASE" -d file.dump.gpg > file.dump
-          if [ -z "$BACKUP_GPG_PASSPHRASE" ]; then
-            echo "::error::BACKUP_GPG_PASSPHRASE secret not set — refusing to produce an unencrypted dump"
-            exit 1
-          fi
           mkdir -p backups
           stamp="$(date -u +%Y%m%dT%H%M%SZ)"
           pg_dump "$DATABASE_URL" -Fc -f "backups/freezone-prod-${stamp}.dump"
@@ -43,7 +68,9 @@ jobs:
             -o "backups/freezone-prod-${stamp}.dump.gpg" \
             "backups/freezone-prod-${stamp}.dump"
           rm -f "backups/freezone-prod-${stamp}.dump"
-      - uses: actions/upload-artifact@v4
+      - name: Upload encrypted dump (only if produced)
+        if: hashFiles('backups/*.dump.gpg') != ''
+        uses: actions/upload-artifact@v4
         with:
           name: freezone-db-backup
           path: backups/*.dump.gpg

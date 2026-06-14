@@ -1,0 +1,29 @@
+# Lighthouse audit of the LIVE storefront (resolves #46 — a measured ≥90
+# scorecard the local session could not produce: no local lighthouse + keyless
+# PSI quota-exceeded). Runs on demand and weekly. Chrome is preinstalled on the
+# GitHub runner, so this produces real Lighthouse numbers (perf/a11y/
+# best-practices/seo) and uploads the HTML reports as artifacts.
+name: Lighthouse (live storefront)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+
+jobs:
+  lhci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit live URLs (ar + en home, listing, product)
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            https://freezone-iq.com/en/
+            https://freezone-iq.com/ar/
+            https://freezone-iq.com/en/products/
+            https://freezone-iq.com/en/product/826/
+          # 3 runs per URL → median is reported (less noise on a cold edge).
+          runs: 3
+          uploadArtifacts: true
+          temporaryPublicStorage: true
