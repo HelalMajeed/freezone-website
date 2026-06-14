@@ -22,7 +22,7 @@
 
 | Area | Status | DEPLOYED? | Evidence (verified 2026-06-14) |
 |---|---|---|---|
-| **A — Catalog & import** | **VERIFIED-DONE** w/ 1 PARTIAL | YES | Live catalog **1506 published / 19 categories**; sample products serve **local webp** `…/uploads/products/2026/06/product-2142-*.webp` (no source CDN). `catalog/products?total=1506`. **PARTIAL:** only **14 Brand rows** (curated legacy); imported vendors live only as free-text `Product.brand` → not in brand listing. Fix script `create-imported-brands.mjs` exists, **not yet run on prod**. ~3 products still draft (1509 total). |
+| **A — Catalog & import** | **VERIFIED-DONE** | YES | Live catalog **1506 published / 19 categories / 129 brands** (was 14 — fixed this run); sample products serve **local webp** `…/uploads/products/2026/06/product-2142-*.webp` (no source CDN). `catalog/products?total=1506`. Brand rows for imported vendors created (ops run 27509566996, +115). ~3 products still draft (1509 total) — minor, noted. |
 | **B — Storefront completion** | **VERIFIED-DONE** | YES | Full route + flow inventory (Explore audit): home, products/category grid + filters(brand/price/in-stock)+sort+pagination (`ProductsCollectionClient`, `FilterSidebar`), debounced search w/ suggestions + Arabic (`NavBar.tsx:101`), cart drawer+page persisted to localStorage (`lib/store.ts`), **guest COD checkout** w/ Iraqi-phone validation + 18-governorate (`checkout/page.tsx` → `POST /api/public/orders`), inline order confirmation w/ orderNumber, tracking page (order#+phone, no auth), full PDP (gallery/specs/warranty/qty/related/reviews), all 8 CMS pages, wishlist + compare, i18n ar-default+en+RTL, custom 404. |
 | **C — SEO / a11y / perf** | **SEO VERIFIED-DONE**; perf scorecard PENDING | YES | Live product page (`/en/product/826/`) carries `Product`+`Brand`+`Offer`+`BreadcrumbList` JSON-LD; `sitemap.xml` = real XML (proxied), `robots.txt` disallows /admin /dashboard /api + Sitemap line; hreflang present (report); security headers (CSP-RO, HSTS, X-Frame DENY, nosniff) live. **PENDING:** no measured Lighthouse ≥90 scorecard on record — to be measured this run via Google PSI (lighthouse not installable locally; no Lighthouse CI workflow exists). |
 | **D — Admin verification & hardening** | **VERIFIED-DONE** | YES | `/admin` → 200 with `X-Robots-Tag: noindex`; full security header set; report documents COD round-trip on prod (FZ-00006 placed→tracked→cancelled, stock restored, audited). RBAC server-side per `requireRole`. |
@@ -65,14 +65,12 @@ fan-out fleet is warranted. This is the honest gap: prior sessions genuinely fin
 
 ## Phase D — fix-forward results (2026-06-14)
 
-- **A — Brand rows:** plumbing shipped — `ci(ops): add create-imported-brands action`
-  (`33997fa`, pushed to main; does NOT trigger deploy, path-filtered out). The action
-  runs the existing idempotent INSERT-only `create-imported-brands.mjs` in the live Fly
-  machine. **Dispatch BLOCKED at the harness permission layer:** executing it is a
-  remote-shell WRITE to the production DB, which the auto-mode classifier requires the
-  owner to authorize explicitly. Awaiting owner go-ahead to run
-  `gh workflow run ops-fly.yml -f action=create-imported-brands`. Until then, live brand
-  listing stays at 14 (imported brands reachable by direct URL, not in the brand list).
+- **A — Brand rows: ✅ DONE (owner-authorized, executed on prod).** Action added
+  (`33997fa`) + a wake-the-Fly-machine fix (`46e8883`, the first dispatch failed with
+  "no started VMs" because Fly auto-stops idle VMs). Owner authorized the prod DB write;
+  ops-fly run `27509566996` succeeded: script reported `existing brands: 14 | new to
+  create: 115` → `✓ created 115 brand rows`. **Verified live:** bootstrap brand count
+  **14 → 129**. Imported vendors now appear in the brand listing (INSERT-only, idempotent).
 - **F — Backups #44:** unchanged — owner-blocked (needs `DATABASE_URL_PROD` secret).
 - **Net result of this run:** confirmed (code + live) the launch is genuinely complete;
   staged the one safe remaining improvement (brand rows) for one-click owner dispatch;
