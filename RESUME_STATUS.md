@@ -24,9 +24,9 @@
 |---|---|---|---|
 | **A — Catalog & import** | **VERIFIED-DONE** | YES | Live catalog **1506 published / 19 categories / 129 brands** (was 14 — fixed this run); sample products serve **local webp** `…/uploads/products/2026/06/product-2142-*.webp` (no source CDN). `catalog/products?total=1506`. Brand rows for imported vendors created (ops run 27509566996, +115). ~3 products still draft (1509 total) — minor, noted. |
 | **B — Storefront completion** | **VERIFIED-DONE** | YES | Full route + flow inventory (Explore audit): home, products/category grid + filters(brand/price/in-stock)+sort+pagination (`ProductsCollectionClient`, `FilterSidebar`), debounced search w/ suggestions + Arabic (`NavBar.tsx:101`), cart drawer+page persisted to localStorage (`lib/store.ts`), **guest COD checkout** w/ Iraqi-phone validation + 18-governorate (`checkout/page.tsx` → `POST /api/public/orders`), inline order confirmation w/ orderNumber, tracking page (order#+phone, no auth), full PDP (gallery/specs/warranty/qty/related/reviews), all 8 CMS pages, wishlist + compare, i18n ar-default+en+RTL, custom 404. |
-| **C — SEO / a11y / perf** | **SEO VERIFIED-DONE**; perf scorecard PENDING | YES | Live product page (`/en/product/826/`) carries `Product`+`Brand`+`Offer`+`BreadcrumbList` JSON-LD; `sitemap.xml` = real XML (proxied), `robots.txt` disallows /admin /dashboard /api + Sitemap line; hreflang present (report); security headers (CSP-RO, HSTS, X-Frame DENY, nosniff) live. **PENDING:** no measured Lighthouse ≥90 scorecard on record — to be measured this run via Google PSI (lighthouse not installable locally; no Lighthouse CI workflow exists). |
-| **D — Admin verification & hardening** | **VERIFIED-DONE** | YES | `/admin` → 200 with `X-Robots-Tag: noindex`; full security header set; report documents COD round-trip on prod (FZ-00006 placed→tracked→cancelled, stock restored, audited). RBAC server-side per `requireRole`. |
-| **E — Tests & CI** | **VERIFIED-DONE** | YES | `deploy-production` green on live SHA (4 jobs: verify API, verify web, Fly migrate, Netlify). Report: 238 API tests + 32 web tests passing. No gate weakened this run. |
+| **C — SEO / a11y / perf** | **PARTIAL** (prerendered SEO done; soft-404 + long-tail + perf score open) | YES | **Re-verified live 2026-06-15:** prerendered product `/en/product/826/` carries full injected meta (`data-fz-seo="1"`): title, description, canonical (trailing-slash), og:title, hreflang `ar/en/x-default`, JSON-LD `Product`+`Brand`+`Offer`+`BreadcrumbList`; `sitemap.xml` real XML w/ **3328 URLs**; `robots.txt` disallows /admin /dashboard /api. **GAPS FOUND (trust-code-not-claims):** (1) **soft-404** — unknown slug `/en/product/99999999/` and `/en/zzz-nope/` return **HTTP 200** (SPA shell, generic `<title>Freezone</title>`, no noindex) instead of the spec's required server 404; API itself correctly 404s. (2) **Long-tail no SSR meta** — only top-500 products/locale are prerendered; a valid non-prerendered product (`/en/product/2142/`) serves the bare 1741-byte shell (0 `data-fz-seo`), relying on client JS for meta. (3) **Lighthouse ≥90 still NOT measured** — keyless Google PSI quota-exceeded again on 2026-06-15; lighthouse not installable locally. → issues #46 (perf) + new SEO-status issue. |
+| **D — Admin verification & hardening** | **VERIFIED-DONE (round-trip re-run 2026-06-15)** | YES | **Re-verified live 2026-06-15:** `/admin` → 200 + `X-Robots-Tag: noindex`; `GET /api/admin/orders` **without auth → 401 `UNAUTHENTICATED`** (RBAC server-side). **Fresh COD round-trip (owner-authorized) executed:** placed **FZ-00007** via `POST /api/public/orders` (Gigabyte B860, 378,000 IQD, COD, free shipping) → tracked `pending` (correct item + local webp) → **cancelled via admin route** (ops run 27513795761: admin login 200 ⇒ prod admin auth proven; `{"status":"cancelled","stockRestored":[{"productId":2142,"qty":1}]}`) → re-tracked `cancelled`, timeline `[pending, cancelled]`. No fake order left. |
+| **E — Tests & CI** | **VERIFIED-DONE (re-run 2026-06-15)** | YES | **Re-verified by RUNNING locally 2026-06-15:** API `routes:check` PASS + `test` **238/238** PASS + `build` (tsc clean, esbuild 166 files) PASS; web `lint` PASS + `test` **32/32** PASS + `build` PASS (prerender wrote 1506 products/19 cats/**129 brands** per locale — confirms brand fix in the build too). `deploy-production` green on live SHA. No gate weakened. |
 | **F — Ops & launch readiness** | **PARTIAL (owner-blocked)** | n/a | **BLOCKER #44 (open):** prod backups are a no-op — `DATABASE_URL_PROD` secret unset; Fly volume snapshots are the only DR path. Cannot fix without owner-created secret → stays issue #44. Netlify Actions deploy job = harmless no-op (real deploy via Netlify Git integration). Repo secrets present: `FLY_API_TOKEN`, `FREEZONE_ADMIN_PASSWORD`. |
 
 ## Remaining-work plan (only non-DONE areas)
@@ -63,6 +63,24 @@ fan-out fleet is warranted. This is the honest gap: prior sessions genuinely fin
   JSON-LD + meta). Recommendation: add a Lighthouse-CI workflow or run PSI with an
   API key. Tracked as a follow-up (not a launch blocker — SEO crawlability is live).
 
+## Phase 2 re-verification log (2026-06-15, by running — not from report)
+
+| Check | Method | Result |
+|---|---|---|
+| Catalog published count vs ~1231 target | live `catalog/products?total` | **1506** published (exceeds target) |
+| Brand rows live | live bootstrap | **129** (incl. imported: Lenovo, UGREEN, TP-Link…) |
+| Product images local (no source CDN) | live sample | `…/uploads/products/2026/06/*.webp` ✓ |
+| Product SEO (prerendered) | `curl` raw HTML `/en/product/826/` | title+desc+canonical+og+hreflang(ar/en/x-default)+JSON-LD(Product/Brand/Offer/Breadcrumb) ✓ |
+| sitemap.xml / robots.txt | live `curl` | XML 3328 URLs ✓ / disallows admin,dashboard,api ✓ |
+| Admin guard | live `curl` `/api/admin/orders` no auth | **401 UNAUTHENTICATED** ✓ |
+| /admin noindex | live headers | `X-Robots-Tag: noindex` ✓ |
+| API build + 238 tests | ran locally | PASS |
+| Web build + 32 tests + lint | ran locally | PASS |
+| **Unknown-slug HTTP status** | live `curl` bad ids | **200 (soft-404)** ✗ — spec wants 404 → issue |
+| **Long-tail product SSR meta** | live `curl` `/en/product/2142/` | bare shell, 0 `data-fz-seo` ✗ — client-only meta beyond top-500 prerender → issue |
+| **Lighthouse ≥90 scorecard** | PSI (keyless) | quota-exceeded again ✗ — not measured (#46) |
+| COD round-trip (fresh) | placed→tracked→cancelled on prod (owner-auth) | **FZ-00007** pending→cancelled, stock restored ✓ |
+
 ## Phase D — fix-forward results (2026-06-14)
 
 - **A — Brand rows: ✅ DONE (owner-authorized, executed on prod).** Action added
@@ -72,6 +90,21 @@ fan-out fleet is warranted. This is the honest gap: prior sessions genuinely fin
   create: 115` → `✓ created 115 brand rows`. **Verified live:** bootstrap brand count
   **14 → 129**. Imported vendors now appear in the brand listing (INSERT-only, idempotent).
 - **F — Backups #44:** unchanged — owner-blocked (needs `DATABASE_URL_PROD` secret).
-- **Net result of this run:** confirmed (code + live) the launch is genuinely complete;
-  staged the one safe remaining improvement (brand rows) for one-click owner dispatch;
+- **Net result (2026-06-14):** confirmed (code + live) the launch is genuinely complete;
+  staged + executed the one safe remaining improvement (brand rows);
   measured what could be measured without fabricating the rest.
+
+## Phase D — fresh live verification (2026-06-15, owner-authorized)
+
+- **COD round-trip on prod:** FZ-00007 placed → tracked `pending` → cancelled via admin
+  route (ops run 27513795761, stock restored, admin login proven) → re-tracked `cancelled`.
+  No fake order remains. **D now VERIFIED-DONE by this session, not the prior report.**
+- **Build gates re-run locally:** API 238/238 + build PASS; web 32/32 + lint + build PASS.
+- **Open after this run (issues):**
+  - **#48** [bug][seo] unknown slugs return HTTP 200 (soft-404) + long-tail products lack
+    server-rendered meta (only top-500/locale prerendered). Risky to fix on live → owner decision.
+  - **#46** [follow-up] Lighthouse ≥90 scorecard still unmeasured (keyless PSI quota-exceeded
+    2026-06-15; no local lighthouse). No number fabricated.
+  - **#44** [blocker] prod backups no-op — owner secret `DATABASE_URL_PROD` required.
+- **No deploy needed:** no app code changed this session (brand rows = DB only; docs/ops = outside
+  deploy path filter). Live app remains on `c18e395`, `deploy-production` green.
