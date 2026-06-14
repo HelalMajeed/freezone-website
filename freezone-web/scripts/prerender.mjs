@@ -26,7 +26,10 @@
  * - PRERENDER_ALLOW_EMPTY=1     — degrade failures to warnings (empty/dev API).
  * - VITE_API_URL                — API origin for the catalog + sitemap.
  * - VITE_PUBLIC_SITE_URL        — canonical site origin (default freezone-iq.com).
- * - PRERENDER_MAX_PRODUCTS      — cap on product pages per locale (default 500).
+ * - PRERENDER_MAX_PRODUCTS      — cap on product pages per locale (default: all).
+ *                                 Prerendering every product gives the long tail
+ *                                 server-rendered meta/JSON-LD (not just the top N),
+ *                                 so non-JS crawlers see real metadata for each PDP.
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -39,7 +42,7 @@ const DIST = path.join(ROOT, "dist");
 
 const SITE_ORIGIN = (process.env.VITE_PUBLIC_SITE_URL || "https://freezone-iq.com").replace(/\/$/, "");
 const API_ORIGIN = (process.env.VITE_API_URL || "https://freezone-website.fly.dev").replace(/\/$/, "");
-const MAX_PRODUCTS = Number(process.env.PRERENDER_MAX_PRODUCTS) > 0 ? Number(process.env.PRERENDER_MAX_PRODUCTS) : 500;
+const MAX_PRODUCTS = Number(process.env.PRERENDER_MAX_PRODUCTS) > 0 ? Number(process.env.PRERENDER_MAX_PRODUCTS) : Infinity;
 const ALLOW_EMPTY = process.env.PRERENDER_ALLOW_EMPTY === "1";
 const SITE_NAME = "FreeZone";
 const LOCALES = ["en", "ar"];
