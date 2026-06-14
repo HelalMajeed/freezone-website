@@ -18,6 +18,7 @@ on:
           - prepare-launch
           - seed-admin
           - classification-repair
+          - create-imported-brands
           - pg-snapshots
           - cancel-test-order
       orderId:
@@ -94,6 +95,16 @@ jobs:
         run: |
           set -euo pipefail
           flyctl ssh console -a "$APP" -C "sh -c 'cd /app && npx -y tsx scripts/seed-classification-only.ts && npx -y tsx scripts/sync-legacy-product-specs.ts'"
+
+      - name: Create Brand rows for imported vendors (INSERT-only, idempotent)
+        # Imported products carry vendor as free-text Product.brand with brandId
+        # null, so they never appear in the brand listing. This creates a Brand
+        # row per distinct vendor name (script is safe to re-run). Script ships in
+        # the deployed image (Dockerfile COPY scripts ./scripts).
+        if: inputs.action == 'create-imported-brands'
+        run: |
+          set -euo pipefail
+          flyctl ssh console -a "$APP" -C "sh -c 'cd /app && node scripts/create-imported-brands.mjs --confirm'"
 
       - name: Cancel a test order via the admin route (audit + stock restore)
         if: inputs.action == 'cancel-test-order'
