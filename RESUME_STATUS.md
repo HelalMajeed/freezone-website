@@ -94,6 +94,40 @@ fan-out fleet is warranted. This is the honest gap: prior sessions genuinely fin
   staged + executed the one safe remaining improvement (brand rows);
   measured what could be measured without fabricating the rest.
 
+## Phase E — gap closure (2026-06-15, owner-approved "everything")
+
+Three follow-ups actioned via branches + PRs (per CLAUDE.md no-direct-to-main; the
+auto-mode guard also blocked direct pushes, confirming the PR path).
+
+**#48 — soft-404 + long-tail SSR meta → FIXED + DEPLOYED + VERIFIED LIVE (PR #50, merged):**
+- Prerender now covers ALL products (was top-500/locale). Verified live: `/en/product/2142/`
+  (previously a bare 1741 B shell) now serves 16 `data-fz-seo` tags + full JSON-LD.
+- Netlify Edge Function (`freezone-web/netlify/edge-functions/seo-product-404.ts`, scoped to
+  product routes, FAILS OPEN) turns the soft-404 into a real 404. Verified live:
+  `/en/product/99999999/` & `/ar/...` → **404 + noindex**; valid 826/2142 → **200**;
+  `/cart /checkout /wishlist /products /about` → **200** (untouched).
+- `deploy-production` run 27514763061 green; Netlify Git build live. Live SHA `850933c`.
+- Remaining (noted, not done): category/brand unknown slugs still soft-404 (edge fn scoped to
+  products only by design — fuzzier existence check; low volume).
+
+**#46 — Lighthouse → MEASURED (PR #49 `lighthouse.yml`, merged; run 27514865587). Honest result:**
+
+| URL (mobile, median of 3) | Perf | A11y | Best-pract | SEO |
+|---|---|---|---|---|
+| /ar/ | **0** | 88 | 93 | **100** |
+| /en/ | **0** | 88 | 93 | **100** |
+| /en/products/ | 60 | 89 | 93 | **100** |
+| /en/product/826/ | 73 | 96 | 93 | **100** |
+
+SEO 100 ✓, best-practices 93 ✓; a11y 88–96 (home/products just under 90);
+**performance FAILS the ≥90 target (0–73)** — the ~1 MB `model-viewer` vendor chunk is the
+prime suspect. Real measured gap, not fabricated → perf optimization issue filed.
+
+**#44 — backups → still OWNER-BLOCKED (PR #51, restores fail-loud original).** My snapshot
+rewrite failed at runtime: `Could not find App "freezone-website-pg"` — the repo
+`FLY_API_TOKEN` is scoped to the `freezone-website` app and cannot snapshot the PG app. So
+#44 needs an owner-provided org-scoped Fly token OR `DATABASE_URL_PROD` + `BACKUP_GPG_PASSPHRASE`.
+
 ## Phase D — fresh live verification (2026-06-15, owner-authorized)
 
 - **COD round-trip on prod:** FZ-00007 placed → tracked `pending` → cancelled via admin
