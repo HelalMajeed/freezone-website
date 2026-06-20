@@ -1,0 +1,80 @@
+{
+  "note": "DRY-RUN AUDIT — derived from the feed; no database queried/modified.",
+  "source": "data/import/samples/example-products.json",
+  "totals": {
+    "products": 6,
+    "ready": 3,
+    "needsReview": 2,
+    "withErrors": 0
+  },
+  "images": {
+    "missingMain": 2,
+    "competitor": 1,
+    "invalid": 0,
+    "unsupported": 0,
+    "galleryTotal": 0
+  },
+  "filters": {
+    "productsWithFacets": 6,
+    "productsWithoutFacets": 0,
+    "irrelevantFacetReports": 0,
+    "coverageByCategory": {
+      "cctv": {
+        "total": 1,
+        "withFacets": 1
+      },
+      "laptops": {
+        "total": 1,
+        "withFacets": 1
+      },
+      "monitors": {
+        "total": 1,
+        "withFacets": 1
+      },
+      "networking": {
+        "total": 1,
+        "withFacets": 1
+      },
+      "smart-home": {
+        "total": 1,
+        "withFacets": 1
+      },
+      "accessories": {
+        "total": 1,
+        "withFacets": 1
+      }
+    }
+  },
+  "pricing": {
+    "missingCost": 1,
+    "missingPrice": 1,
+    "marginOutOfRange": 1,
+    "explicitPriced": 2,
+    "markupPriced": 3
+  },
+  "reviewQueue": [
+    {
+      "sku": "FZ-MON-EX-03",
+      "category": "monitors",
+      "reasons": [
+        "price could not be computed (missing base cost / price)",
+        "missing or unusable main image"
+      ]
+    },
+    {
+      "sku": "FZ-NET-EX-04",
+      "category": "networking",
+      "reasons": [
+        "missing or unusable main image",
+        "main image from competitor host needs approval"
+      ]
+    },
+    {
+      "sku": "FZ-ACC-EX-06",
+      "category": "accessories",
+      "reasons": [
+        "margin outside 15–30% range"
+      ]
+    }
+  ]
+}

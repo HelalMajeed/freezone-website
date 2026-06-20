@@ -1,0 +1,328 @@
+{
+  "note": "DRY-RUN PLAN — no database was modified. Review before --apply.",
+  "source": "data/import/samples/example-products.json",
+  "summary": {
+    "total": 6,
+    "ready": 3,
+    "needsReview": 2,
+    "withErrors": 0,
+    "byCategory": {
+      "cctv": 1,
+      "laptops": 1,
+      "monitors": 1,
+      "networking": 1,
+      "smart-home": 1,
+      "accessories": 1
+    },
+    "byBrand": {
+      "Hikvision": 1,
+      "ASUS": 1,
+      "LG": 1,
+      "TP-Link": 1,
+      "Tuya": 1,
+      "Generic": 1
+    },
+    "missingCost": 1,
+    "missingMainImage": 2,
+    "missingSpecs": 0,
+    "competitorImages": 1,
+    "marginOutOfRange": 1,
+    "unknownCategory": 0,
+    "duplicates": []
+  },
+  "items": [
+    {
+      "rowNumber": 1,
+      "sku": "FZ-CCTV-EX-01",
+      "sourceHandle": "import:fz-cctv-ex-01",
+      "titleEn": "Hikvision 4MP IP Dome Camera",
+      "titleAr": "كاميرا هيكفجن قبة IP بدقة 4 ميجابكسل",
+      "brand": "Hikvision",
+      "categorySlug": "cctv",
+      "knownCategory": true,
+      "pricing": {
+        "costIqd": 60000,
+        "markupPercent": 25,
+        "priceIqd": 75000,
+        "oldPriceIqd": null,
+        "marginPercent": 25,
+        "source": "markup",
+        "notes": []
+      },
+      "filterFacets": {
+        "resolution": "4MP",
+        "camera_type": "dome",
+        "indoor_outdoor": "indoor",
+        "night_vision": "yes",
+        "poe": "yes"
+      },
+      "displaySpecs": {
+        "resolution": "4MP",
+        "camera_type": "dome",
+        "indoor_outdoor": "indoor",
+        "night_vision": "yes",
+        "poe": "yes"
+      },
+      "mainImage": {
+        "url": "/uploads/example-cctv.webp",
+        "verdict": "same_origin_upload",
+        "host": null
+      },
+      "galleryImages": [],
+      "warranty": "ضمان سنة وكالة",
+      "catalogStatus": "PUBLISHED",
+      "active": true,
+      "reviewRequired": false,
+      "reviewReasons": [],
+      "issues": []
+    },
+    {
+      "rowNumber": 2,
+      "sku": "FZ-LAP-EX-02",
+      "sourceHandle": "import:fz-lap-ex-02",
+      "titleEn": "ASUS Vivobook 15 (Core i5, 16GB, 512GB SSD)",
+      "titleAr": "لابتوب أسوس فيفوبوك 15 (كور i5، 16 جيجا، 512 SSD)",
+      "brand": "ASUS",
+      "categorySlug": "laptops",
+      "knownCategory": true,
+      "pricing": {
+        "costIqd": 1000000,
+        "markupPercent": null,
+        "priceIqd": 1180000,
+        "oldPriceIqd": null,
+        "marginPercent": 18,
+        "source": "explicit_price",
+        "notes": []
+      },
+      "filterFacets": {
+        "cpu": "Intel Core i5",
+        "ram": "16GB",
+        "ssd": "512GB",
+        "screen_size": "15.6",
+        "refresh_rate": "60Hz"
+      },
+      "displaySpecs": {
+        "cpu": "Intel Core i5",
+        "ram": "16GB",
+        "ssd": "512GB",
+        "screen_size": "15.6",
+        "refresh_rate": "60Hz",
+        "weight": "1.7kg"
+      },
+      "mainImage": {
+        "url": "https://www.asus.com/media/example-vivobook.jpg",
+        "verdict": "ok",
+        "host": "www.asus.com"
+      },
+      "galleryImages": [],
+      "warranty": "ضمان سنة",
+      "catalogStatus": "PUBLISHED",
+      "active": true,
+      "reviewRequired": false,
+      "reviewReasons": [],
+      "issues": []
+    },
+    {
+      "rowNumber": 3,
+      "sku": "FZ-MON-EX-03",
+      "sourceHandle": "import:fz-mon-ex-03",
+      "titleEn": "Generic 27-inch Office Monitor",
+      "titleAr": "شاشة مكتبية 27 بوصة",
+      "brand": "LG",
+      "categorySlug": "monitors",
+      "knownCategory": true,
+      "pricing": {
+        "costIqd": null,
+        "markupPercent": null,
+        "priceIqd": null,
+        "oldPriceIqd": null,
+        "marginPercent": null,
+        "source": "none",
+        "notes": [
+          "no base cost and no explicit price — price cannot be computed (review required, not activated)"
+        ]
+      },
+      "filterFacets": {
+        "size": "27",
+        "panel_type": "IPS",
+        "resolution": "1080p"
+      },
+      "displaySpecs": {
+        "size": "27",
+        "panel_type": "IPS",
+        "resolution": "1080p"
+      },
+      "mainImage": null,
+      "galleryImages": [],
+      "warranty": "",
+      "catalogStatus": "DRAFT",
+      "active": false,
+      "reviewRequired": true,
+      "reviewReasons": [
+        "price could not be computed (missing base cost / price)",
+        "missing or unusable main image"
+      ],
+      "issues": [
+        {
+          "level": "info",
+          "code": "PRICING",
+          "field": "price",
+          "message": "no base cost and no explicit price — price cannot be computed (review required, not activated)"
+        }
+      ]
+    },
+    {
+      "rowNumber": 4,
+      "sku": "FZ-NET-EX-04",
+      "sourceHandle": "import:fz-net-ex-04",
+      "titleEn": "TP-Link AX1500 WiFi 6 Router",
+      "titleAr": "راوتر تي بي لينك AX1500 واي فاي 6",
+      "brand": "TP-Link",
+      "categorySlug": "networking",
+      "knownCategory": true,
+      "pricing": {
+        "costIqd": 45000,
+        "markupPercent": 20,
+        "priceIqd": 54000,
+        "oldPriceIqd": null,
+        "marginPercent": 20,
+        "source": "markup",
+        "notes": []
+      },
+      "filterFacets": {
+        "device_type": "router",
+        "wifi_standard": "WiFi 6",
+        "speed": "1500Mbps",
+        "ports": "4"
+      },
+      "displaySpecs": {
+        "device_type": "router",
+        "wifi_standard": "WiFi 6",
+        "speed": "1500Mbps",
+        "ports": "4"
+      },
+      "mainImage": {
+        "url": "https://globaliraq.iq/images/example-router.jpg",
+        "verdict": "needs_approval_competitor",
+        "host": "globaliraq.iq"
+      },
+      "galleryImages": [],
+      "warranty": "ضمان سنة",
+      "catalogStatus": "PENDING_REVIEW",
+      "active": false,
+      "reviewRequired": true,
+      "reviewReasons": [
+        "missing or unusable main image",
+        "main image from competitor host needs approval"
+      ],
+      "issues": [
+        {
+          "level": "warning",
+          "code": "COMPETITOR_IMAGE",
+          "field": "main_image_url",
+          "message": "image host globaliraq.iq requires usage approval"
+        }
+      ]
+    },
+    {
+      "rowNumber": 5,
+      "sku": "FZ-SMART-EX-05",
+      "sourceHandle": "import:fz-smart-ex-05",
+      "titleEn": "Tuya Smart WiFi Bulb (RGB)",
+      "titleAr": "لمبة ذكية تويا واي فاي (RGB)",
+      "brand": "Tuya",
+      "categorySlug": "smart-home",
+      "knownCategory": true,
+      "pricing": {
+        "costIqd": 8000,
+        "markupPercent": 30,
+        "priceIqd": 10500,
+        "oldPriceIqd": null,
+        "marginPercent": 30,
+        "source": "markup",
+        "notes": [
+          "markup 40% clamped to allowed range 15–30% (30%)"
+        ]
+      },
+      "filterFacets": {
+        "device_type": "bulb",
+        "protocol": "WiFi",
+        "app_support": "yes"
+      },
+      "displaySpecs": {
+        "device_type": "bulb",
+        "protocol": "WiFi",
+        "app_support": "yes"
+      },
+      "mainImage": {
+        "url": "/uploads/example-bulb.webp",
+        "verdict": "same_origin_upload",
+        "host": null
+      },
+      "galleryImages": [],
+      "warranty": "ضمان 6 أشهر",
+      "catalogStatus": "PUBLISHED",
+      "active": true,
+      "reviewRequired": false,
+      "reviewReasons": [],
+      "issues": [
+        {
+          "level": "info",
+          "code": "PRICING",
+          "field": "price",
+          "message": "markup 40% clamped to allowed range 15–30% (30%)"
+        }
+      ]
+    },
+    {
+      "rowNumber": 6,
+      "sku": "FZ-ACC-EX-06",
+      "sourceHandle": "import:fz-acc-ex-06",
+      "titleEn": "USB-C to HDMI Cable 2m",
+      "titleAr": "كابل USB-C إلى HDMI بطول 2 متر",
+      "brand": "Generic",
+      "categorySlug": "accessories",
+      "knownCategory": true,
+      "pricing": {
+        "costIqd": 10000,
+        "markupPercent": null,
+        "priceIqd": 20000,
+        "oldPriceIqd": null,
+        "marginPercent": 100,
+        "source": "explicit_price",
+        "notes": [
+          "implied margin 100% is above the 30% ceiling"
+        ]
+      },
+      "filterFacets": {
+        "type": "cable",
+        "compatibility": "USB-C"
+      },
+      "displaySpecs": {
+        "type": "cable",
+        "compatibility": "USB-C"
+      },
+      "mainImage": {
+        "url": "/uploads/example-cable.webp",
+        "verdict": "same_origin_upload",
+        "host": null
+      },
+      "galleryImages": [],
+      "warranty": "",
+      "catalogStatus": "PENDING_REVIEW",
+      "active": false,
+      "reviewRequired": true,
+      "reviewReasons": [
+        "margin outside 15–30% range"
+      ],
+      "issues": [
+        {
+          "level": "info",
+          "code": "PRICING",
+          "field": "price",
+          "message": "implied margin 100% is above the 30% ceiling"
+        }
+      ]
+    }
+  ]
+}
