@@ -1,0 +1,34 @@
+{
+  "_note": "FreeZone product feed template. Fill products[]. base_cost_iqd drives markup pricing (per-category default markup, clamped 15-30%). Leave price_iqd_optional empty to auto-price. specs_json holds full display specs; filter_facets_json (optional) holds buyer-useful filter values — leave empty to derive from specs. Products without a base cost OR explicit price are imported as review-required drafts and are NOT auto-activated. Use only approved/lawful images (manufacturer/official/CDN or /uploads/...); competitor images require approval.",
+  "products": [
+    {
+      "sku": "FZ-EXAMPLE-0001",
+      "title_en": "Example 4MP IP Dome Camera",
+      "title_ar": "كاميرا قبة IP مثال 4 ميجابكسل",
+      "brand": "Hikvision",
+      "category": "cctv",
+      "subcategory": "ip-cameras",
+      "base_cost_iqd": 60000,
+      "price_iqd_optional": null,
+      "markup_percent_optional": null,
+      "old_price_iqd_optional": null,
+      "stock_status": "in_stock",
+      "main_image_url": "/uploads/example-cctv.webp",
+      "gallery_image_urls": [],
+      "source_url": "https://www.hikvision.com/",
+      "warranty": "ضمان سنة وكالة",
+      "short_description_en": "4MP indoor IP dome camera with night vision and PoE.",
+      "short_description_ar": "كاميرا قبة IP داخلية 4 ميجا برؤية ليلية ودعم PoE.",
+      "specs_json": {
+        "resolution": "4MP",
+        "camera_type": "dome",
+        "indoor_outdoor": "indoor",
+        "night_vision": "yes",
+        "poe": "yes"
+      },
+      "filter_facets_json": {},
+      "active": true,
+      "review_required": false
+    }
+  ]
+}

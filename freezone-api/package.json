@@ -43,7 +43,13 @@
     "import:globaliraq:discover": "node scripts/import-globaliraq/discover.mjs",
     "import:globaliraq:scrape": "node scripts/import-globaliraq/scrape-product.mjs",
     "import:globaliraq:sample": "node scripts/import-globaliraq/import-sample.mjs",
-    "import:globaliraq:dry-delete": "node scripts/import-globaliraq/dry-run-delete.mjs"
+    "import:globaliraq:dry-delete": "node scripts/import-globaliraq/dry-run-delete.mjs",
+    "catalog:import": "tsx scripts/catalog/import.ts",
+    "catalog:audit": "tsx scripts/catalog/audit.ts",
+    "catalog:images:audit": "tsx scripts/catalog/audit.ts --only=images",
+    "catalog:filters:audit": "tsx scripts/catalog/audit.ts --only=filters",
+    "catalog:pricing:audit": "tsx scripts/catalog/audit.ts --only=pricing",
+    "catalog:demo": "tsx scripts/catalog/import.ts --source data/import/samples/example-products.json --dry-run && tsx scripts/catalog/audit.ts --source data/import/samples/example-products.json"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
