@@ -10,6 +10,7 @@ import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { useLocale } from "@/i18n/hooks";
 import type { PublicHeroSlide } from "@/lib/layout-cms";
 import type { HeroFreeformLayer } from "@/lib/cms-types";
+import { sanitizeHeroSlides } from "@/lib/hero-content";
 
 function isAbsoluteOrProtocolHref(href: string): boolean {
   const t = href.trim();
@@ -135,9 +136,15 @@ export function HeroSlider({ previewHero }: { previewHero?: PreviewHero }) {
     typeof heroBlock.scrimOpacity === "number" && Number.isFinite(heroBlock.scrimOpacity)
       ? Math.min(1, Math.max(0, heroBlock.scrimOpacity))
       : 0.25;
-  const slidesIn = heroBlock.slides.filter((s) => s.active).length > 0
-    ? heroBlock.slides.filter((s) => s.active)
-    : heroBlock.slides;
+  // Public storefront: drop placeholder/empty slides and fall back to premium
+  // FreeZone content when the CMS payload is weak. The admin live preview
+  // (previewHero) is shown exactly as entered so editors can see their data.
+  const activeSlides = heroBlock.slides.filter((s) => s.active);
+  const slidesIn = previewHero
+    ? activeSlides.length > 0
+      ? activeSlides
+      : heroBlock.slides
+    : sanitizeHeroSlides(heroBlock.slides, locale);
 
   const [current, setCurrent] = useState(0);
 
@@ -230,7 +237,7 @@ export function HeroSlider({ previewHero }: { previewHero?: PreviewHero }) {
               >
                 <CtaLink href={slide.primaryHref} className={styles.primaryBtn} prefetch>
                   {slide.primaryLabel}
-                  <ArrowRight size={16} />
+                  <ArrowRight size={16} style={locale === "ar" ? { transform: "scaleX(-1)" } : undefined} />
                 </CtaLink>
                 <CtaLink href={slide.secondaryHref} className={styles.secondaryBtn} prefetch>
                   {slide.secondaryLabel}

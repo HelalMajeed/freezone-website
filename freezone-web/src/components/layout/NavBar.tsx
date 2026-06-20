@@ -19,12 +19,13 @@ import { useState, useRef, useEffect, useLayoutEffect, type FormEvent, type Keyb
 import { motion, useReducedMotion } from "framer-motion";
 import { EASE_OUT } from "@/lib/motion";
 import { MobileMenu } from "./MobileMenu";
+import { DesktopCategoryBar } from "./DesktopCategoryBar";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { SiteLogo } from "./SiteLogo";
 import { TopBarSocialIcons } from "./TopBarSocialIcons";
 import { useStorefront, usePublicSite } from "@/components/providers/StorefrontProvider";
 import { storedNavToResolved } from "@/lib/nav-from-json";
-import { DEFAULT_NAV_ITEMS } from "@/lib/default-mega-nav";
+import { buildDefaultNavItems } from "@/lib/default-mega-nav";
 import { useWishlist } from "@/lib/wishlist-store";
 import { persistPreferredLocale } from "@/lib/preferred-locale";
 import {
@@ -56,7 +57,7 @@ export function NavBar() {
   const navItems =
     home.navItems && home.navItems.length > 0
       ? storedNavToResolved(home.navItems, locale)
-      : DEFAULT_NAV_ITEMS;
+      : buildDefaultNavItems(locale);
 
   const submitHeaderSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -431,7 +432,7 @@ export function NavBar() {
                 />
               </label>
               <button type="submit" className={styles.searchBtnInside}>
-                <Search size={18} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "7px" }} aria-hidden />
+                <Search size={18} style={{ display: "inline-block", verticalAlign: "middle", marginInlineEnd: "7px" }} aria-hidden />
                 {t("searchBtn")}
               </button>
             </form>
@@ -707,6 +708,9 @@ export function NavBar() {
           </div>
         </div>
       </div>
+
+      {/* ── Tier 3: Desktop category bar + mega menus (>=1024px) ── */}
+      <DesktopCategoryBar items={navItems} locale={locale} />
 
       <MobileMenu
         isOpen={isMobileMenuOpen}

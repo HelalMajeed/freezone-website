@@ -231,7 +231,7 @@
   align-items: center;
   gap: 5px;
   max-width: 100%;
-  background: var(--color-card);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
@@ -280,6 +280,14 @@
 .currency {
   font-size: 0.8rem;
   font-weight: 700;
+}
+
+/* Absolute savings cue (stronger value signal than % alone) */
+.savings {
+  margin-top: 2px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--color-success, #16a34a);
 }
 
 /* Hover Add Overlay for Desktop */
@@ -421,5 +429,25 @@
   .imageWrapper {
     aspect-ratio: 1;
     padding: 10px;
+  }
+}
+
+/* ── Accessibility: visible keyboard focus + reduced-motion ── */
+.card:focus-visible,
+.cornerBtn:focus-visible,
+.addToCartBtn:focus-visible,
+.buyNowBtn:focus-visible {
+  outline: 2px solid var(--color-accent, #c90000);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cardMotion,
+  .cardMotion:hover,
+  .image,
+  .card:hover .image,
+  .hoverAdd {
+    transition: none;
+    transform: none;
   }
 }

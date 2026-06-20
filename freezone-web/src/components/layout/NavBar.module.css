@@ -254,6 +254,10 @@
   transition: background 0.2s, transform 0.15s ease;
   flex-shrink: 0;
 }
+.searchBtnInside:focus-visible {
+  outline: 2px solid var(--color-accent, #c90000);
+  outline-offset: 2px;
+}
 .searchBtnInside:hover {
   background: var(--color-accent-hover, #e11d2e);
 }

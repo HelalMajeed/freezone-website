@@ -6,11 +6,13 @@
 
 .stripGrid {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  /* Auto-fit so any number of spotlights spreads evenly across the row instead
+     of bunching into a fixed 12-col track; wraps cleanly on narrow screens. */
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  justify-content: center;
   align-items: start;
   gap: clamp(6px, 1.2vw, 20px);
   width: 100%;
-  overflow: hidden;
 }
 
 .itemOuter {
@@ -100,7 +102,7 @@
   }
 
   .label {
-    font-size: 0.58rem;
+    font-size: 0.7rem;
     -webkit-line-clamp: 2;
   }
 }

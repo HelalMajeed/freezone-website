@@ -8,6 +8,7 @@ import {
 } from "./cms-types";
 import { parseHomePageCopy, type HomePageCopy } from "./home-page-copy";
 import { parseHeroLinkTarget, resolveHeroLinkTargetToHref } from "./hero-link-target";
+import { premiumHeroSlides } from "./hero-content";
 
 export type LocaleCode = "en" | "ar";
 
@@ -134,30 +135,7 @@ export function staticHomeCms(locale: LocaleCode): HomeCmsPayload {
       scrimOpacity: 0.25,
       navArrowColor: "rgba(255, 255, 255, 0.8)",
       navBoxBackground: "rgba(255, 255, 255, 0.08)",
-      slides: [
-        {
-          id: 1,
-          layoutMode: "structured",
-          freeformLayers: null,
-          image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920",
-          active: true,
-          badge: en ? "NEW ARRIVAL" : "وصل حديثاً",
-          titleLine1: en ? "PREDATOR " : "بريداتور ",
-          titleLine2: en ? "UNLEASHED" : "مُطلَق",
-          desc: en
-            ? "Dominate the battlefield with unrivaled power — 240Hz displays and revolutionary cooling."
-            : "سيطر بأداء لا مثيل له — شاشات 240Hz وتبريد متطور.",
-          primaryLabel: en ? "VIEW DETAILS" : "التفاصيل",
-          primaryHref: "/products?cat=gaming",
-          secondaryLabel: en ? "ALL GAMING" : "كل الألعاب",
-          secondaryHref: "/products?cat=gaming",
-          stats: [
-            { id: "a", value: "240Hz", label: en ? "DISPLAY" : "شاشة" },
-            { id: "b", value: "RTX", label: en ? "GRAPHICS" : "جرافيك" },
-            { id: "c", value: "<1ms", label: en ? "RESPONSE" : "استجابة" },
-          ],
-        },
-      ],
+      slides: premiumHeroSlides(locale),
     },
     navItems: null,
     pageCopy: null,

@@ -66,16 +66,16 @@ export function StoreGallery() {
 
         <div className={styles.bentoGrid}>
           <div className={`${styles.bentoItem} ${styles.itemLarge}`}>
-            <img src={tiles[0]?.url} alt={tiles[0]?.title ?? ""} className={styles.image} />
+            <img src={tiles[0]?.url} alt={tiles[0]?.title ?? ""} className={styles.image} loading="lazy" decoding="async" />
           </div>
           <div className={`${styles.bentoItem} ${styles.itemSmall1}`}>
-            <img src={tiles[1]?.url} alt={tiles[1]?.title ?? ""} className={styles.image} />
+            <img src={tiles[1]?.url} alt={tiles[1]?.title ?? ""} className={styles.image} loading="lazy" decoding="async" />
           </div>
           <div className={`${styles.bentoItem} ${styles.itemSmall2}`}>
-            <img src={tiles[2]?.url} alt={tiles[2]?.title ?? ""} className={styles.image} />
+            <img src={tiles[2]?.url} alt={tiles[2]?.title ?? ""} className={styles.image} loading="lazy" decoding="async" />
           </div>
           <div className={`${styles.bentoItem} ${styles.itemWide}`}>
-            <img src={tiles[3]?.url} alt={tiles[3]?.title ?? ""} className={styles.image} />
+            <img src={tiles[3]?.url} alt={tiles[3]?.title ?? ""} className={styles.image} loading="lazy" decoding="async" />
           </div>
         </div>
       </div>

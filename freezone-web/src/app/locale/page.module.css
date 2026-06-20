@@ -31,6 +31,9 @@
   .featuresGrid {
     grid-template-columns: repeat(4, 1fr);
   }
+  /* 4-col rows: restore dividers between columns, drop only at each row end. */
+  .feature:nth-child(even) { border-inline-end: 1px solid rgba(255,255,255,0.06); }
+  .feature:nth-child(4n) { border-inline-end: none; }
 }
 
 .feature {
@@ -43,10 +46,12 @@
   letter-spacing: 0.2px;
   /* Tighter vertical padding — icon size + font-size unchanged */
   padding: 10px 16px;
-  border-right: 1px solid rgba(255,255,255,0.06);
+  border-inline-end: 1px solid rgba(255,255,255,0.06);
   transition: background 0.2s;
 }
-.feature:last-child { border-right: none; }
+.feature:last-child { border-inline-end: none; }
+/* Mobile 2-col grid: drop the divider at each row end (even items). */
+.feature:nth-child(even) { border-inline-end: none; }
 .feature:hover { background: rgba(255,255,255,0.04); }
 
 .featureIcon {

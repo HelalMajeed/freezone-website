@@ -77,3 +77,17 @@ html[dir="rtl"] .card:hover .labelArrow {
 html[dir="rtl"] .labelArrow {
   transform: scaleX(-1);
 }
+
+/* ── Accessibility: visible keyboard focus + reduced-motion ── */
+.card:focus-visible {
+  outline: 2px solid var(--color-accent, #c90000);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image,
+  .card:hover .image {
+    transition: none;
+    transform: none;
+  }
+}
