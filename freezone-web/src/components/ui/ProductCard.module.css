@@ -423,3 +423,23 @@
     padding: 10px;
   }
 }
+
+/* ── Accessibility: visible keyboard focus + reduced-motion ── */
+.card:focus-visible,
+.cornerBtn:focus-visible,
+.addToCartBtn:focus-visible,
+.buyNowBtn:focus-visible {
+  outline: 2px solid var(--color-accent, #c90000);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cardMotion,
+  .cardMotion:hover,
+  .image,
+  .card:hover .image,
+  .hoverAdd {
+    transition: none;
+    transform: none;
+  }
+}
