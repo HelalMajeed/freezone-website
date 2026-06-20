@@ -74,7 +74,7 @@ export function MobileMenu({
                   <span style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <Cpu size={16} /> {t("pcBuilder")}
                   </span>
-                  <ChevronRight size={16} />
+                  <ChevronRight size={16} className={styles.dirChev} />
                 </Link>
               </div>
 
@@ -85,7 +85,7 @@ export function MobileMenu({
                 <div className={styles.menuList}>
                   {mainLinks.map((link) => (
                     <Link key={link.href} href={link.href} className={styles.menuItem} onClick={onClose}>
-                      {link.name} <ChevronRight size={16} />
+                      {link.name} <ChevronRight size={16} className={styles.dirChev} />
                     </Link>
                   ))}
                 </div>
@@ -155,7 +155,7 @@ export function MobileMenu({
                   <span style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <BrandMarkIcon size={16} /> {locale === "ar" ? "العربية / English" : "English / العربية"}
                   </span>
-                  <ChevronRight size={16} />
+                  <ChevronRight size={16} className={styles.dirChev} />
                 </button>
               </div>
             </div>

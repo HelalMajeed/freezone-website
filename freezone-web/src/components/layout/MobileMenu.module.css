@@ -117,6 +117,11 @@
   color: var(--color-accent, #c90000);
 }
 
+/* Directional trailing chevrons must point toward the inline-start in RTL. */
+html[dir="rtl"] .dirChev {
+  transform: scaleX(-1);
+}
+
 /* PC Builder highlight */
 .menuItemHighlight {
   color: var(--color-accent, #c90000) !important;
