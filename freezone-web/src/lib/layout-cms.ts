@@ -139,22 +139,26 @@ export function staticHomeCms(locale: LocaleCode): HomeCmsPayload {
           id: 1,
           layoutMode: "structured",
           freeformLayers: null,
-          image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920",
+          // No external/hotlinked art: empty src degrades to the branded
+          // token gradient (see HeroSlideBackground). Real campaign slides are
+          // managed in /admin CMS (HeroSlide rows); this is only the fallback
+          // shown before any slide is configured.
+          image: "",
           active: true,
-          badge: en ? "NEW ARRIVAL" : "وصل حديثاً",
-          titleLine1: en ? "PREDATOR " : "بريداتور ",
-          titleLine2: en ? "UNLEASHED" : "مُطلَق",
+          badge: en ? "FREEZONE OFFICIAL STORE" : "متجر فري زون الرسمي",
+          titleLine1: en ? "EVERYTHING TECH," : "كل ما تحتاجه من تقنية،",
+          titleLine2: en ? "ONE TRUSTED STORE" : "بمكان واحد موثوق",
           desc: en
-            ? "Dominate the battlefield with unrivaled power — 240Hz displays and revolutionary cooling."
-            : "سيطر بأداء لا مثيل له — شاشات 240Hz وتبريد متطور.",
-          primaryLabel: en ? "VIEW DETAILS" : "التفاصيل",
-          primaryHref: "/products?cat=gaming",
-          secondaryLabel: en ? "ALL GAMING" : "كل الألعاب",
-          secondaryHref: "/products?cat=gaming",
+            ? "CCTV & security, computers, gaming, networking and smart home — genuine products with warranty, delivered across Iraq."
+            : "كاميرات مراقبة وأنظمة حماية، حاسبات، ألعاب، شبكات ومنزل ذكي — منتجات أصلية بضمان وتوصيل لكل العراق.",
+          primaryLabel: en ? "SHOP NOW" : "تسوّق الآن",
+          primaryHref: "/products",
+          secondaryLabel: en ? "BROWSE CATEGORIES" : "تصفّح الأقسام",
+          secondaryHref: "/products",
           stats: [
-            { id: "a", value: "240Hz", label: en ? "DISPLAY" : "شاشة" },
-            { id: "b", value: "RTX", label: en ? "GRAPHICS" : "جرافيك" },
-            { id: "c", value: "<1ms", label: en ? "RESPONSE" : "استجابة" },
+            { id: "a", value: "100%", label: en ? "GENUINE" : "أصلي" },
+            { id: "b", value: "18", label: en ? "PROVINCES" : "محافظة" },
+            { id: "c", value: en ? "FAST" : "سريع", label: en ? "DELIVERY" : "توصيل" },
           ],
         },
       ],

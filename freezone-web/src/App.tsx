@@ -26,7 +26,9 @@ const PolicyPageLazy = lazy(() =>
 );
 const WarrantyPage = lazy(() => import("@/app/locale/warranty/page"));
 const FaqPage = lazy(() => import("@/app/locale/faq/page"));
-import PcBuilderPage from "@/app/locale/pc-builder/page";
+// Lazy so the heavy @google/model-viewer dependency (~1 MB) is not pulled into
+// the main storefront bundle — it now loads only when /pc-builder is visited.
+const PcBuilderPage = lazy(() => import("@/app/locale/pc-builder/page"));
 
 /**
  * The entire admin panel (guard, layout, ui kit, auth store, dashboard i18n)
@@ -152,7 +154,14 @@ export default function App() {
             </SuspensePage>
           }
         />
-        <Route path="pc-builder" element={<PcBuilderPage />} />
+        <Route
+          path="pc-builder"
+          element={
+            <SuspensePage>
+              <PcBuilderPage />
+            </SuspensePage>
+          }
+        />
         <Route
           path="wishlist"
           element={

@@ -431,7 +431,7 @@ export function NavBar() {
                 />
               </label>
               <button type="submit" className={styles.searchBtnInside}>
-                <Search size={18} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "7px" }} aria-hidden />
+                <Search size={18} style={{ display: "inline-block", verticalAlign: "middle", marginInlineEnd: "7px" }} aria-hidden />
                 {t("searchBtn")}
               </button>
             </form>

@@ -87,9 +87,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: color-mix(in srgb, var(--fz-primary, #0b1f3b) 18%, transparent);
-  color: var(--fz-primary, #0b1f3b);
-  border: 1px solid color-mix(in srgb, var(--fz-primary, #0b1f3b) 38%, transparent);
+  background: color-mix(in srgb, var(--fz-primary, var(--color-primary, #0a0a0a)) 18%, transparent);
+  color: var(--fz-primary, var(--color-primary, #0a0a0a));
+  border: 1px solid color-mix(in srgb, var(--fz-primary, var(--color-primary, #0a0a0a)) 38%, transparent);
   padding: 5px 14px;
   border-radius: var(--radius-full);
   font-weight: 700;
@@ -131,7 +131,7 @@
 }
 
 .titleAccent {
-  color: var(--fz-primary, #0b1f3b);
+  color: var(--fz-primary, var(--color-primary, #0a0a0a));
   display: block;
   margin-top: 0.06em;
 }
@@ -162,7 +162,7 @@
 }
 
 .primaryBtn {
-  background: var(--fz-primary, #0b1f3b);
+  background: var(--fz-primary, var(--color-primary, #0a0a0a));
   color: white;
   padding: 10px 22px;
   font-size: clamp(0.8rem, 1.2vw, 0.92rem);
@@ -181,7 +181,7 @@
 }
 .primaryBtn:hover {
   background: white;
-  color: var(--fz-primary, #0b1f3b);
+  color: var(--fz-primary, var(--color-primary, #0a0a0a));
   transform: translateY(-3px);
   box-shadow: 0 14px 36px rgba(176, 0, 0, 0.28);
 }
@@ -269,7 +269,7 @@
 .controls {
   position: absolute;
   bottom: 14px;
-  right: clamp(12px, 4%, 48px);
+  inset-inline-end: clamp(12px, 4%, 48px);
   display: flex;
   gap: 8px;
   z-index: 20;
@@ -291,8 +291,8 @@
   transition: all 0.25s var(--ease-smooth);
 }
 .controlBtn:hover {
-  background: var(--fz-primary, #0b1f3b);
-  border-color: var(--fz-primary, #0b1f3b);
+  background: var(--fz-primary, var(--color-primary, #0a0a0a));
+  border-color: var(--fz-primary, var(--color-primary, #0a0a0a));
   color: white;
   transform: scale(1.08);
 }
@@ -331,7 +331,7 @@
 
 .activeDotFill {
   height: 100%;
-  background: var(--fz-primary, #0b1f3b);
+  background: var(--fz-primary, var(--color-primary, #0a0a0a));
   border-radius: var(--radius-full);
   animation: grow 7s linear forwards;
 }
@@ -345,7 +345,7 @@
 .slideCounter {
   position: absolute;
   top: 50%;
-  right: clamp(12px, 4%, 48px);
+  inset-inline-end: clamp(12px, 4%, 48px);
   transform: translateY(-50%);
   z-index: 20;
   display: flex;
@@ -381,7 +381,7 @@
 
   .controls {
     bottom: 12px;
-    right: 12px;
+    inset-inline-end: 12px;
   }
 
   .indicators {
@@ -439,7 +439,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--fz-primary, #0b1f3b) 65%, transparent);
+  background: color-mix(in srgb, var(--fz-primary, var(--color-primary, #0a0a0a)) 65%, transparent);
   flex-shrink: 0;
 }
 

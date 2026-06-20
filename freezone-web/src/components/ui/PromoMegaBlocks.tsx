@@ -79,7 +79,7 @@ export function PromoMegaBlocks(props: { payload?: Record<string, unknown> } = {
                 </h2>
               </div>
               <div className={styles.imageWrapper}>
-                <img src={imageUrl} alt="" className={styles.image} />
+                <img src={imageUrl} alt="" className={styles.image} loading="lazy" decoding="async" />
               </div>
 
               <div className={styles.hoverOverlay}>

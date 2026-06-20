@@ -230,7 +230,7 @@ export function HeroSlider({ previewHero }: { previewHero?: PreviewHero }) {
               >
                 <CtaLink href={slide.primaryHref} className={styles.primaryBtn} prefetch>
                   {slide.primaryLabel}
-                  <ArrowRight size={16} />
+                  <ArrowRight size={16} style={locale === "ar" ? { transform: "scaleX(-1)" } : undefined} />
                 </CtaLink>
                 <CtaLink href={slide.secondaryHref} className={styles.secondaryBtn} prefetch>
                   {slide.secondaryLabel}
