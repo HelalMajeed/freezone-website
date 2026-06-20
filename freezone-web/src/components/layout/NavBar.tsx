@@ -25,7 +25,7 @@ import { SiteLogo } from "./SiteLogo";
 import { TopBarSocialIcons } from "./TopBarSocialIcons";
 import { useStorefront, usePublicSite } from "@/components/providers/StorefrontProvider";
 import { storedNavToResolved } from "@/lib/nav-from-json";
-import { DEFAULT_NAV_ITEMS } from "@/lib/default-mega-nav";
+import { buildDefaultNavItems } from "@/lib/default-mega-nav";
 import { useWishlist } from "@/lib/wishlist-store";
 import { persistPreferredLocale } from "@/lib/preferred-locale";
 import {
@@ -57,7 +57,7 @@ export function NavBar() {
   const navItems =
     home.navItems && home.navItems.length > 0
       ? storedNavToResolved(home.navItems, locale)
-      : DEFAULT_NAV_ITEMS;
+      : buildDefaultNavItems(locale);
 
   const submitHeaderSearch = (e: FormEvent) => {
     e.preventDefault();
