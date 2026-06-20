@@ -153,6 +153,11 @@ export function ProductCard({
               <span className={styles.price}>
                 {formatMoney(product.price)} <span className={styles.currency}>IQD</span>
               </span>
+              {product.oldPrice && product.oldPrice > product.price ? (
+                <span className={styles.savings}>
+                  {locale === "ar" ? "وفّر" : "Save"} {formatMoney(product.oldPrice - product.price)} IQD
+                </span>
+              ) : null}
             </div>
           </div>
         </div>

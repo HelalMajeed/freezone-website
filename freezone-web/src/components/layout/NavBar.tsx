@@ -19,6 +19,7 @@ import { useState, useRef, useEffect, useLayoutEffect, type FormEvent, type Keyb
 import { motion, useReducedMotion } from "framer-motion";
 import { EASE_OUT } from "@/lib/motion";
 import { MobileMenu } from "./MobileMenu";
+import { DesktopCategoryBar } from "./DesktopCategoryBar";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { SiteLogo } from "./SiteLogo";
 import { TopBarSocialIcons } from "./TopBarSocialIcons";
@@ -707,6 +708,9 @@ export function NavBar() {
           </div>
         </div>
       </div>
+
+      {/* ── Tier 3: Desktop category bar + mega menus (>=1024px) ── */}
+      <DesktopCategoryBar items={navItems} locale={locale} />
 
       <MobileMenu
         isOpen={isMobileMenuOpen}

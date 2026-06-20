@@ -35,7 +35,8 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /^السطر/,
 ];
 
-function looksPlaceholder(text: string): boolean {
+/** True when hero copy is empty or looks like scaffold/placeholder text (also used by the admin CMS warning). */
+export function looksPlaceholderHeroText(text: string): boolean {
   const t = (text ?? "").trim();
   if (!t) return true;
   return PLACEHOLDER_PATTERNS.some((re) => re.test(t));
@@ -48,7 +49,7 @@ export function isPlaceholderHeroSlide(s: PublicHeroSlide): boolean {
     return !(s.freeformLayers && s.freeformLayers.length > 0);
   }
   const title = `${s.titleLine1 ?? ""} ${s.titleLine2 ?? ""}`.trim();
-  if (looksPlaceholder(title)) return true;
+  if (looksPlaceholderHeroText(title)) return true;
   // Empty title AND empty description → nothing meaningful to show.
   if (!title && !(s.desc ?? "").trim()) return true;
   return false;

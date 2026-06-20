@@ -1,0 +1,198 @@
+/* Desktop category bar + mega menus — visible only >=1024px (mobile uses MobileMenu). */
+.bar {
+  display: none;
+  background: var(--color-card, #fff);
+  border-block-end: 1px solid var(--color-border);
+}
+@media (min-width: 1024px) {
+  .bar {
+    display: block;
+  }
+}
+
+.inner {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.allLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  font-weight: 800;
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
+  color: #fff;
+  background: var(--color-primary, #0a0a0a);
+  padding: 0 18px;
+  text-decoration: none;
+  transition: background 0.15s var(--ease-smooth);
+}
+.allLink:hover {
+  background: var(--color-accent, #c90000);
+}
+
+.list {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.item {
+  position: relative;
+  display: flex;
+}
+
+.topLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 13px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+  white-space: nowrap;
+  border-block-end: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.item:hover .topLink,
+.item:focus-within .topLink {
+  color: var(--color-accent, #c90000);
+  border-block-end-color: var(--color-accent, #c90000);
+  background: var(--color-surface, #f8fafc);
+}
+.topLink:focus-visible {
+  outline: 2px solid var(--color-accent, #c90000);
+  outline-offset: -2px;
+}
+
+.topIcon {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+.item:hover .topIcon,
+.item:focus-within .topIcon {
+  color: var(--color-accent, #c90000);
+}
+
+.caret {
+  color: var(--color-text-muted);
+  transition: transform 0.15s var(--ease-smooth);
+}
+.item:hover .caret,
+.item:focus-within .caret {
+  transform: rotate(180deg);
+  color: var(--color-accent, #c90000);
+}
+
+/* ── Mega panel ── */
+.panel {
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline-start: 0;
+  min-width: 480px;
+  max-width: min(720px, calc(100vw - 32px));
+  background: var(--color-card, #fff);
+  border: 1px solid var(--color-border);
+  border-block-start: 2px solid var(--color-accent, #c90000);
+  border-radius: 0 0 var(--radius-lg, 12px) var(--radius-lg, 12px);
+  box-shadow: var(--shadow-lg);
+  padding: 18px 20px;
+  z-index: 60;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: opacity 0.16s var(--ease-smooth), transform 0.16s var(--ease-smooth),
+    visibility 0.16s;
+  pointer-events: none;
+}
+.item:hover .panel,
+.item:focus-within .panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+/* Last items: align panel to the trailing edge so wide panels stay on-screen. */
+.item:last-child .panel,
+.item:nth-last-child(2) .panel {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+}
+
+.panelGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 16px 22px;
+}
+
+.col {
+  min-width: 0;
+}
+.colHighlight {
+  background: color-mix(in srgb, var(--color-accent) 5%, transparent);
+  border-radius: var(--radius-md, 10px);
+  padding: 10px 12px;
+}
+
+.colTitle {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+.colHighlight .colTitle {
+  color: var(--color-accent, #c90000);
+}
+
+.colList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.colLink {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text);
+  text-decoration: none;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm, 6px);
+  transition: background 0.15s, color 0.15s;
+}
+.colLink:hover {
+  background: var(--color-surface, #f8fafc);
+  color: var(--color-accent, #c90000);
+}
+.colLink:focus-visible {
+  outline: 2px solid var(--color-accent, #c90000);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    transition: opacity 0.12s linear, visibility 0.12s linear;
+    transform: none;
+  }
+  .item:hover .panel,
+  .item:focus-within .panel {
+    transform: none;
+  }
+  .caret {
+    transition: none;
+  }
+}

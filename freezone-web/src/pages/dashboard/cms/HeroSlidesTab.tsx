@@ -18,6 +18,7 @@ import {
   useToast,
 } from "@/components/dashboard/ui";
 import { useDashboardLocale } from "@/lib/dashboard/i18n";
+import { looksPlaceholderHeroText } from "@/lib/hero-content";
 
 type Lang = "ar" | "en";
 
@@ -105,6 +106,12 @@ export function HeroSlidesTab({ lang }: { lang: Lang }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const editing = form.id != null;
+
+  // CMS safety: warn when the slide title is empty/placeholder — the public
+  // storefront sanitizer will replace such slides with premium FreeZone content.
+  const heroCopyWarning =
+    looksPlaceholderHeroText(`${form.titleLine1En} ${form.titleLine2En}`.trim()) ||
+    looksPlaceholderHeroText(`${form.titleLine1Ar} ${form.titleLine2Ar}`.trim());
 
   const load = () => {
     setLoading(true);
@@ -237,7 +244,11 @@ export function HeroSlidesTab({ lang }: { lang: Lang }) {
         <Table
           rowKey={(r) => r.id}
           rows={rows}
-          empty={lang === "ar" ? "لا شرائح بعد." : "No slides yet."}
+          empty={
+            lang === "ar"
+              ? "لا شرائح بعد — تعرض الصفحة الرئيسية محتوى FreeZone الاحترافي تلقائياً حتى تضيف شرائح حقيقية."
+              : "No slides yet — the homepage shows premium FreeZone content automatically until you add real slides."
+          }
           columns={[
             {
               header: "",
@@ -339,6 +350,22 @@ export function HeroSlidesTab({ lang }: { lang: Lang }) {
               }}
             >
               {err}
+            </div>
+          )}
+          {heroCopyWarning && (
+            <div
+              style={{
+                background: "var(--fz-warning-bg, #fff7ed)",
+                color: "var(--fz-warning, #b45309)",
+                border: "1px solid var(--fz-warning, #f59e0b)",
+                padding: "10px 14px",
+                borderRadius: "var(--fz-radius)",
+                fontSize: 13,
+              }}
+            >
+              {lang === "ar"
+                ? "العنوان فارغ أو يبدو نصاً مؤقتاً (مثل TITLE / LINE 2). سيستبدله المتجر العام تلقائياً بمحتوى FreeZone الاحترافي — أضِف عنواناً حقيقياً بالعربية والإنجليزية للتحكّم بما يظهر للزوّار."
+                : "The title is empty or looks like placeholder text (e.g. TITLE / LINE 2). The public storefront will automatically replace it with premium FreeZone content — add real EN + AR copy to control what visitors see."}
             </div>
           )}
           <Field label={lang === "ar" ? "صورة الـ Hero" : "Hero image"}>
