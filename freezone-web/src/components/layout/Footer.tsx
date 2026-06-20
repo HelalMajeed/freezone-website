@@ -153,6 +153,12 @@ export function Footer() {
               <Link href="/products" className={styles.linkItem}>
                 {t("allProducts")}
               </Link>
+              <Link href="/products?featured=true" className={styles.linkItem}>
+                {locale === "ar" ? "الأكثر مبيعاً" : "Best Sellers"}
+              </Link>
+              <Link href="/products?isNew=true" className={styles.linkItem}>
+                {locale === "ar" ? "وصل حديثاً" : "New Arrivals"}
+              </Link>
               <Link href="/pc-builder" className={styles.linkItem}>
                 {t("pcBuilder")}
               </Link>

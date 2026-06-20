@@ -1,0 +1,133 @@
+.section {
+  padding-block: clamp(40px, 6vw, 72px);
+}
+
+.head {
+  text-align: center;
+  margin-block-end: clamp(20px, 3vw, 32px);
+}
+
+.title {
+  font-family: var(--fz-font-display);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0 0 8px;
+  line-height: 1.15;
+}
+
+.sub {
+  color: var(--color-text-muted);
+  font-size: clamp(0.85rem, 1.4vw, 1rem);
+  margin: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: clamp(12px, 1.6vw, 18px);
+}
+
+.card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--color-card, #fff);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 14px);
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s var(--ease-smooth), box-shadow 0.2s, border-color 0.2s;
+  overflow: hidden;
+}
+/* Brand-color accent rail on the inline-start edge (logical → RTL-safe). */
+.card::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 4px;
+  background: var(--dept-accent, var(--color-accent));
+  opacity: 0.85;
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--dept-accent, var(--color-accent)) 40%, var(--color-border));
+}
+.card:focus-visible {
+  outline: 2px solid var(--color-accent, #c90000);
+  outline-offset: 2px;
+}
+
+.iconWrap {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md, 12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dept-accent, var(--color-accent));
+  background: color-mix(in srgb, var(--dept-accent, var(--color-accent)) 10%, var(--color-card));
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.cardName {
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.cardSub {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+
+.cardArrow {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: transform 0.2s var(--ease-smooth), color 0.2s;
+}
+.card:hover .cardArrow {
+  color: var(--dept-accent, var(--color-accent));
+  transform: translateX(3px);
+}
+html[dir="rtl"] .cardArrow {
+  transform: scaleX(-1);
+}
+html[dir="rtl"] .card:hover .cardArrow {
+  transform: translateX(-3px) scaleX(-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card:hover {
+    transform: none;
+  }
+  .cardArrow,
+  .card:hover .cardArrow {
+    transition: color 0.2s;
+    transform: none;
+  }
+  html[dir="rtl"] .cardArrow,
+  html[dir="rtl"] .card:hover .cardArrow {
+    transform: scaleX(-1);
+  }
+}

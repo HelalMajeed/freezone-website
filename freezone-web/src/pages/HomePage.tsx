@@ -3,6 +3,7 @@ import { DynamicHomeSections } from "@/components/storefront/DynamicHomeSections
 import { HomeLegacyContent } from "@/components/storefront/HomeLegacyContent";
 import { Seo } from "@/components/seo/Seo";
 import { useTranslations } from "@/i18n/hooks";
+import { SolutionsDepartments } from "@/components/storefront/SolutionsDepartments";
 
 export default function HomePage() {
   const { homeSections, site } = useStorefront();
@@ -18,6 +19,7 @@ export default function HomePage() {
       <>
         {seo}
         <DynamicHomeSections sections={homeSections} />
+        <SolutionsDepartments />
       </>
     );
   }
@@ -25,6 +27,7 @@ export default function HomePage() {
     <>
       {seo}
       <HomeLegacyContent />
+      <SolutionsDepartments />
     </>
   );
 }
