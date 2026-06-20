@@ -8,6 +8,7 @@ import {
 } from "./cms-types";
 import { parseHomePageCopy, type HomePageCopy } from "./home-page-copy";
 import { parseHeroLinkTarget, resolveHeroLinkTargetToHref } from "./hero-link-target";
+import { premiumHeroSlides } from "./hero-content";
 
 export type LocaleCode = "en" | "ar";
 
@@ -134,34 +135,7 @@ export function staticHomeCms(locale: LocaleCode): HomeCmsPayload {
       scrimOpacity: 0.25,
       navArrowColor: "rgba(255, 255, 255, 0.8)",
       navBoxBackground: "rgba(255, 255, 255, 0.08)",
-      slides: [
-        {
-          id: 1,
-          layoutMode: "structured",
-          freeformLayers: null,
-          // No external/hotlinked art: empty src degrades to the branded
-          // token gradient (see HeroSlideBackground). Real campaign slides are
-          // managed in /admin CMS (HeroSlide rows); this is only the fallback
-          // shown before any slide is configured.
-          image: "",
-          active: true,
-          badge: en ? "FREEZONE OFFICIAL STORE" : "متجر فري زون الرسمي",
-          titleLine1: en ? "EVERYTHING TECH," : "كل ما تحتاجه من تقنية،",
-          titleLine2: en ? "ONE TRUSTED STORE" : "بمكان واحد موثوق",
-          desc: en
-            ? "CCTV & security, computers, gaming, networking and smart home — genuine products with warranty, delivered across Iraq."
-            : "كاميرات مراقبة وأنظمة حماية، حاسبات، ألعاب، شبكات ومنزل ذكي — منتجات أصلية بضمان وتوصيل لكل العراق.",
-          primaryLabel: en ? "SHOP NOW" : "تسوّق الآن",
-          primaryHref: "/products",
-          secondaryLabel: en ? "BROWSE CATEGORIES" : "تصفّح الأقسام",
-          secondaryHref: "/products",
-          stats: [
-            { id: "a", value: "100%", label: en ? "GENUINE" : "أصلي" },
-            { id: "b", value: "18", label: en ? "PROVINCES" : "محافظة" },
-            { id: "c", value: en ? "FAST" : "سريع", label: en ? "DELIVERY" : "توصيل" },
-          ],
-        },
-      ],
+      slides: premiumHeroSlides(locale),
     },
     navItems: null,
     pageCopy: null,
