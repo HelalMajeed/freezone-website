@@ -22,6 +22,8 @@ export type CatalogHealthSummary = {
   productsInvalidFilters: number;
   productsLegacySpecsOnly: number;
   productsMissingBrand: number;
+  productsMissingPrice: number;
+  productsDuplicate: number;
   categoriesWithoutAttributes: number;
 };
 
@@ -41,6 +43,12 @@ export type DataQualityIssue = {
 function suggestedFixForIssue(issue: string, detail?: string): string {
   if (issue === "missing_image") return "أضف صورة رئيسية من تبويب الوسائط في محرر المنتج.";
   if (issue === "missing_brand") return "حدّد العلامة التجارية في بيانات المنتج الأساسية.";
+  if (issue === "missing_price") {
+    return "أدخل التكلفة الأساسية ليُحتسب السعر تلقائيًا، أو حدّد السعر يدويًا قبل النشر.";
+  }
+  if (issue === "duplicate") {
+    return "راجع المنتجات المكرّرة (نفس SKU أو الاسم) وادمجها أو احذف النسخة الزائدة.";
+  }
   if (issue === "legacy_specs_only") {
     return "أعد إدخال المواصفات من «المواصفات والفلاتر» (Smart Specs) أو استخدم أدوات التصنيف.";
   }
@@ -158,11 +166,23 @@ export async function computeCatalogHealthSummary(prisma: PrismaClient): Promise
   let productsInvalidFilters = 0;
   let productsLegacySpecsOnly = 0;
   let productsMissingBrand = 0;
+  let productsMissingPrice = 0;
+
+  /** Duplicate detection: count by trimmed SKU (ignoring blanks / "—") and by
+   *  exact nameEn over the already-loaded active set — no extra queries. */
+  const skuCount = new Map<string, number>();
+  const nameCount = new Map<string, number>();
 
   for (const p of products) {
     const q = toQualityInput(p);
     if (!q.brand?.trim() && q.brandId == null) productsMissingBrand++;
     if (hasLegacySpecsOnly(q)) productsLegacySpecsOnly++;
+    if (p.price <= 0) productsMissingPrice++;
+
+    const sku = p.sku?.trim();
+    if (sku && sku !== "—") skuCount.set(sku, (skuCount.get(sku) ?? 0) + 1);
+    const name = p.nameEn?.trim();
+    if (name) nameCount.set(name, (nameCount.get(name) ?? 0) + 1);
 
     const schema = schemaByCategory.get(p.categoryId) ?? [];
     if (schema.length > 0) {
@@ -171,12 +191,23 @@ export async function computeCatalogHealthSummary(prisma: PrismaClient): Promise
     }
   }
 
+  let productsDuplicate = 0;
+  for (const p of products) {
+    const sku = p.sku?.trim();
+    const name = p.nameEn?.trim();
+    const dupBySku = !!sku && sku !== "—" && (skuCount.get(sku) ?? 0) > 1;
+    const dupByName = !!name && (nameCount.get(name) ?? 0) > 1;
+    if (dupBySku || dupByName) productsDuplicate++;
+  }
+
   return {
     productsMissingSpecs,
     productsMissingImages,
     productsInvalidFilters,
     productsLegacySpecsOnly,
     productsMissingBrand,
+    productsMissingPrice,
+    productsDuplicate,
     categoriesWithoutAttributes,
   };
 }
@@ -188,6 +219,48 @@ export async function listDataQualityIssues(
   limit: number,
 ): Promise<{ items: DataQualityIssue[]; total: number }> {
   const skip = (page - 1) * limit;
+
+  /** Price + duplicate tabs don't need the per-category attribute schema, so
+   *  short-circuit before the (expensive) schema load below. */
+  if (tab === "missing_prices") {
+    const where = mergeProductWhere(ACTIVE_PRODUCT_WHERE, { price: { lte: 0 } });
+    const [total, rows] = await Promise.all([
+      prisma.product.count({ where }),
+      prisma.product.findMany({
+        where,
+        select: {
+          id: true,
+          nameEn: true,
+          nameAr: true,
+          price: true,
+          published: true,
+          category: { select: { slug: true, nameEn: true } },
+        },
+        orderBy: { updatedAt: "desc" },
+        skip,
+        take: limit,
+      }),
+    ]);
+    return {
+      total,
+      items: rows.map((p) => ({
+        productId: p.id,
+        nameEn: p.nameEn,
+        nameAr: p.nameAr,
+        categorySlug: p.category.slug,
+        categoryName: p.category.nameEn,
+        published: p.published,
+        issue: "missing_price",
+        detail: `price = ${p.price} IQD`,
+        suggestedFix: suggestedFixForIssue("missing_price"),
+      })),
+    };
+  }
+
+  if (tab === "duplicates") {
+    return listDuplicateIssues(prisma, skip, limit);
+  }
+
   const categories = await prisma.category.findMany({
     select: { id: true, slug: true, nameEn: true },
   });
@@ -382,6 +455,60 @@ export async function listDataQualityIssues(
     total: all.length,
     items: all.slice(skip, skip + limit),
   };
+}
+
+/** Active products that share a non-blank SKU or an identical nameEn with at
+ *  least one other product. Read-only; "duplicate" here means detection, not
+ *  the clone endpoint (POST /products/[id]/duplicate). */
+async function listDuplicateIssues(
+  prisma: PrismaClient,
+  skip: number,
+  limit: number,
+): Promise<{ items: DataQualityIssue[]; total: number }> {
+  const rows = await prisma.product.findMany({
+    where: ACTIVE_PRODUCT_WHERE,
+    select: {
+      id: true,
+      nameEn: true,
+      nameAr: true,
+      sku: true,
+      published: true,
+      category: { select: { slug: true, nameEn: true } },
+    },
+    orderBy: [{ nameEn: "asc" }, { id: "asc" }],
+  });
+
+  const skuCount = new Map<string, number>();
+  const nameCount = new Map<string, number>();
+  for (const p of rows) {
+    const sku = p.sku?.trim();
+    if (sku && sku !== "—") skuCount.set(sku, (skuCount.get(sku) ?? 0) + 1);
+    const name = p.nameEn?.trim();
+    if (name) nameCount.set(name, (nameCount.get(name) ?? 0) + 1);
+  }
+
+  const dups: DataQualityIssue[] = [];
+  for (const p of rows) {
+    const sku = p.sku?.trim();
+    const name = p.nameEn?.trim();
+    const reasons: string[] = [];
+    if (sku && sku !== "—" && (skuCount.get(sku) ?? 0) > 1) reasons.push(`SKU ${sku}`);
+    if (name && (nameCount.get(name) ?? 0) > 1) reasons.push("same name");
+    if (!reasons.length) continue;
+    dups.push({
+      productId: p.id,
+      nameEn: p.nameEn,
+      nameAr: p.nameAr,
+      categorySlug: p.category.slug,
+      categoryName: p.category.nameEn,
+      published: p.published,
+      issue: "duplicate",
+      detail: `Duplicate: ${reasons.join(" + ")}`,
+      suggestedFix: suggestedFixForIssue("duplicate"),
+    });
+  }
+
+  return { total: dups.length, items: dups.slice(skip, skip + limit) };
 }
 
 export async function getCategoryHealthRows(prisma: PrismaClient) {

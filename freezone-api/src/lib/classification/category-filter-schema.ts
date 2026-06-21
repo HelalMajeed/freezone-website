@@ -347,6 +347,26 @@ function buildCamerasSchema(): FacetAttributeDef[] {
   ];
 }
 
+/** CCTV / surveillance facets layered on the shared cameras schema, so the
+ *  consumer `cameras` category stays clean while the `cctv` slug gains
+ *  PoE / channel-count / recorder facets. Keys mirror the importer allowlist in
+ *  lib/catalog-import/facets.ts (poe, channels, recorder_type) so the two
+ *  facet systems agree. */
+const CCTV_EXTRA_FACETS: FacetAttributeDef[] = [
+  flt({ key: "poe", name_en: "PoE", name_ar: "PoE", type: "BOOLEAN", displayGroup: "connectivity" }),
+  flt({ key: "channels", name_en: "Channels", name_ar: "عدد القنوات", type: "SELECT", displayGroup: "camera", options: ["4", "8", "16", "32", "64"] }),
+  flt({ key: "recorder_type", name_en: "Recorder (NVR/DVR)", name_ar: "المسجل (NVR/DVR)", type: "SELECT", displayGroup: "camera", options: ["NVR", "DVR", "None"] }),
+];
+
+function buildCctvSchema(): FacetAttributeDef[] {
+  const base = buildCamerasSchema();
+  /** Insert the CCTV facets before the first display-only (ext) entry so filter
+   *  ordering stays grouped ahead of the *_full display specs. */
+  const firstExt = base.findIndex((a) => !a.filterable);
+  const at = firstExt === -1 ? base.length : firstExt;
+  return [...base.slice(0, at), ...CCTV_EXTRA_FACETS, ...base.slice(at)];
+}
+
 function buildComponentPartSchema(
   _partSlug: string,
   partNameEn: string,
@@ -406,6 +426,7 @@ function buildNetworkingSchema(): FacetAttributeDef[] {
     }),
     flt({ key: "ports", name_en: "Ports", name_ar: "المنافذ", type: "RANGE", ...PORTS_FULL }),
     flt({ key: "mesh_support", name_en: "Mesh", name_ar: "Mesh", type: "BOOLEAN", ...WIRELESS_FULL }),
+    flt({ key: "poe", name_en: "PoE", name_ar: "PoE", type: "BOOLEAN", displayGroup: "connectivity" }),
     ext({ key: "wireless_full", name_en: "Wireless", name_ar: "اللاسلكي (نص كامل)", type: "TEXT", displayGroup: "connectivity" }),
     ext({ key: "ports_full", name_en: "Ports", name_ar: "المنافذ (نص كامل)", type: "TEXT", displayGroup: "connectivity" }),
     ext({ key: "network_full", name_en: "Network (full)", name_ar: "الشبكة (نص كامل)", type: "TEXT", displayGroup: "connectivity" }),
@@ -608,6 +629,8 @@ export const CLASSIFICATION_SEED_BY_SLUG: Record<string, FacetAttributeDef[]> = 
     flt({ key: "ram_size", name_en: "RAM", name_ar: "الرام", type: "MULTI_SELECT", unit: "GB", options: ["8", "16", "32", "64"], displaySpecKey: "ram_display", linkDisplaySpec: true }),
     flt({ key: "storage_size", name_en: "Storage", name_ar: "التخزين", type: "RANGE", unit: "GB", displaySpecKey: "storage_display", linkDisplaySpec: true }),
     flt({ key: "gpu_model", name_en: "GPU", name_ar: "كرت الشاشة", type: "SELECT", displaySpecKey: "gpu_full", linkDisplaySpec: true }),
+    flt({ key: "case_type", name_en: "Case type", name_ar: "نوع الكيس", type: "SELECT", options: ["Tower", "Mini", "All-in-One", "SFF"] }),
+    flt({ key: "use_case", name_en: "Use case", name_ar: "الاستخدام", type: "SELECT", options: ["Gaming", "Office", "Workstation", "Home"] }),
     ext({ key: "processor_full", name_en: "Processor", name_ar: "المعالج (نص كامل)", type: "TEXT", displayGroup: "performance" }),
     ext({ key: "gpu_full", name_en: "GPU", name_ar: "كرت الشاشة (نص كامل)", type: "TEXT", displayGroup: "performance" }),
     ext({ key: "ram_display", name_en: "RAM", name_ar: "الرام (نص كامل)", type: "TEXT", displayGroup: "performance" }),
@@ -716,7 +739,7 @@ export const CLASSIFICATION_SEED_BY_SLUG: Record<string, FacetAttributeDef[]> = 
     ext({ key: "display_full", name_en: "Display", name_ar: "الشاشة (نص كامل)", type: "TEXT", displayGroup: "display" }),
     ext({ key: "model", name_en: "Model", name_ar: "الموديل", type: "TEXT", displayGroup: "identity" }),
   ],
-  cctv: buildCamerasSchema(),
+  cctv: buildCctvSchema(),
   security: buildSecuritySchema(),
   "smart-home": buildSmartHomeSchema(),
   software: [

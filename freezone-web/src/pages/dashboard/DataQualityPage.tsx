@@ -19,8 +19,10 @@ const PAGE_SIZE = 25;
 const TAB_LABELS: Record<DataQualityTab, { en: string; ar: string }> = {
   missing_image: { en: "Missing image", ar: "بدون صورة" },
   missing_brand: { en: "Missing brand", ar: "بدون علامة" },
+  missing_prices: { en: "Missing price", ar: "بدون سعر" },
   missing_specs: { en: "Missing specs", ar: "مواصفات ناقصة" },
   invalid_filters: { en: "Invalid filter values", ar: "فلاتر غير صالحة" },
+  duplicates: { en: "Duplicate products", ar: "منتجات مكرّرة" },
   legacy_specs_only: { en: "Legacy specs only", ar: "مواصفات قديمة فقط" },
   no_attributes: { en: "Categories w/o attributes", ar: "أقسام بدون سمات" },
 };
@@ -28,8 +30,10 @@ const TAB_LABELS: Record<DataQualityTab, { en: string; ar: string }> = {
 const TAB_ORDER: DataQualityTab[] = [
   "missing_image",
   "missing_brand",
+  "missing_prices",
   "missing_specs",
   "invalid_filters",
+  "duplicates",
   "legacy_specs_only",
   "no_attributes",
 ];
@@ -53,6 +57,20 @@ const SUMMARY_KEYS: Array<{
     tab: "missing_brand",
     enLabel: "Products without a brand",
     arLabel: "منتجات بدون علامة",
+    tone: "warning",
+  },
+  {
+    key: "productsMissingPrice",
+    tab: "missing_prices",
+    enLabel: "Products without a price",
+    arLabel: "منتجات بدون سعر",
+    tone: "danger",
+  },
+  {
+    key: "productsDuplicate",
+    tab: "duplicates",
+    enLabel: "Duplicate products",
+    arLabel: "منتجات مكرّرة",
     tone: "warning",
   },
   {
