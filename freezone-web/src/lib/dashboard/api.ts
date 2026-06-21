@@ -671,12 +671,12 @@ export type TickerItemPayload = {
 export type DataQualityTab =
   | "invalid_filters"
   | "missing_specs"
-  | "missing_image"
+  | "missing_images"
   | "missing_brand"
   | "missing_prices"
   | "duplicates"
-  | "legacy_specs_only"
-  | "no_attributes";
+  | "legacy_specs"
+  | "categories_without_attributes";
 
 export type DataQualitySummary = {
   productsMissingSpecs: number;
