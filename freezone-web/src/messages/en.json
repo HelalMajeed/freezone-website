@@ -151,6 +151,7 @@
     "noResultsSub": "Try adjusting your search or removing some filters.",
     "clearFilters": "Clear All Filters",
     "loading": "Loading catalog...",
+    "loadingResults": "Loading…",
     "filterTitle": "FILTER PRODUCTS",
     "filterSpecsHint": "Choose a department from the menu (Gaming, Monitors, Computers…) to unlock filters like CPU, GPU, screen size, refresh rate, and more.",
     "listingAge": "Listing",
