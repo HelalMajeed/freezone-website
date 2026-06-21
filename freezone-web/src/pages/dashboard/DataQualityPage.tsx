@@ -17,25 +17,25 @@ type Lang = "ar" | "en";
 const PAGE_SIZE = 25;
 
 const TAB_LABELS: Record<DataQualityTab, { en: string; ar: string }> = {
-  missing_image: { en: "Missing image", ar: "بدون صورة" },
+  missing_images: { en: "Missing image", ar: "بدون صورة" },
   missing_brand: { en: "Missing brand", ar: "بدون علامة" },
   missing_prices: { en: "Missing price", ar: "بدون سعر" },
   missing_specs: { en: "Missing specs", ar: "مواصفات ناقصة" },
   invalid_filters: { en: "Invalid filter values", ar: "فلاتر غير صالحة" },
   duplicates: { en: "Duplicate products", ar: "منتجات مكرّرة" },
-  legacy_specs_only: { en: "Legacy specs only", ar: "مواصفات قديمة فقط" },
-  no_attributes: { en: "Categories w/o attributes", ar: "أقسام بدون سمات" },
+  legacy_specs: { en: "Legacy specs only", ar: "مواصفات قديمة فقط" },
+  categories_without_attributes: { en: "Categories w/o attributes", ar: "أقسام بدون سمات" },
 };
 
 const TAB_ORDER: DataQualityTab[] = [
-  "missing_image",
+  "missing_images",
   "missing_brand",
   "missing_prices",
   "missing_specs",
   "invalid_filters",
   "duplicates",
-  "legacy_specs_only",
-  "no_attributes",
+  "legacy_specs",
+  "categories_without_attributes",
 ];
 
 const SUMMARY_KEYS: Array<{
@@ -47,7 +47,7 @@ const SUMMARY_KEYS: Array<{
 }> = [
   {
     key: "productsMissingImages",
-    tab: "missing_image",
+    tab: "missing_images",
     enLabel: "Products without an image",
     arLabel: "منتجات بدون صورة",
     tone: "danger",
@@ -89,14 +89,14 @@ const SUMMARY_KEYS: Array<{
   },
   {
     key: "productsLegacySpecsOnly",
-    tab: "legacy_specs_only",
+    tab: "legacy_specs",
     enLabel: "Products on legacy specs",
     arLabel: "منتجات بمواصفات قديمة فقط",
     tone: "info",
   },
   {
     key: "categoriesWithoutAttributes",
-    tab: "no_attributes",
+    tab: "categories_without_attributes",
     enLabel: "Categories without attributes",
     arLabel: "أقسام بدون سمات",
     tone: "warning",
@@ -116,7 +116,7 @@ export function DashboardDataQualityPage() {
   }, []);
   const categoryIdBySlug = new Map(categories.map((c) => [c.slug, c.id]));
 
-  const [tab, setTab] = useState<DataQualityTab>("missing_image");
+  const [tab, setTab] = useState<DataQualityTab>("missing_images");
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<DataQualityIssue[]>([]);
   const [total, setTotal] = useState(0);
