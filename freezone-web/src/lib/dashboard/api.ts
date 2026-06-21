@@ -673,6 +673,8 @@ export type DataQualityTab =
   | "missing_specs"
   | "missing_image"
   | "missing_brand"
+  | "missing_prices"
+  | "duplicates"
   | "legacy_specs_only"
   | "no_attributes";
 
@@ -682,6 +684,8 @@ export type DataQualitySummary = {
   productsInvalidFilters: number;
   productsLegacySpecsOnly: number;
   productsMissingBrand: number;
+  productsMissingPrice: number;
+  productsDuplicate: number;
   categoriesWithoutAttributes: number;
 };
 
