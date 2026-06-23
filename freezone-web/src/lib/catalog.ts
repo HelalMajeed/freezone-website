@@ -6,13 +6,6 @@ import { fetchStorefrontBootstrap } from "./storefront-bootstrap";
 
 export type LocaleCode = "en" | "ar";
 
-export async function getProductsCatalog(locale: LocaleCode): Promise<Product[]> {
-  if (!isDatabaseConfigured()) {
-    return PRODUCTS;
-  }
-  return (await fetchStorefrontBootstrap(locale)).catalog.products;
-}
-
 export async function getCategoriesCatalog(locale: LocaleCode): Promise<Category[]> {
   if (!isDatabaseConfigured()) {
     return CATEGORIES;

@@ -95,6 +95,21 @@ export async function fetchProductsByIds(ids: number[], locale: "en" | "ar"): Pr
   return data.products;
 }
 
+/**
+ * PC-builder catalog — TEMPORARY EXCEPTION. Fetches the (server-cached, lean)
+ * full catalog ONLY when the PC-builder wizard mounts on /pc-build, so the part
+ * → storefront-product mapping and the accessory pickers keep working without
+ * shipping the whole catalog to every storefront visitor via bootstrap.
+ */
+export async function fetchPcBuildCatalog(locale: "en" | "ar"): Promise<Product[]> {
+  const res = await fetch(freezoneApiUrl(`/api/ssr/pc-build-catalog?locale=${locale}`), {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(`pc-build catalog ${res.status}`);
+  const data = (await res.json()) as { products: Product[] };
+  return data.products;
+}
+
 export type FacetFilterOption = { label: string; value: string; count: number };
 
 export type FacetFilterDefinition = {

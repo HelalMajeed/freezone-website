@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { useTranslations } from "@/i18n/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { useTranslations, useLocale } from "@/i18n/hooks";
 import { useRouter } from "@/navigation";
 import { useCart } from "@/lib/store";
 import type { Product } from "@/lib/data";
-import { useStorefront } from "@/components/providers/StorefrontProvider";
+import { fetchPcBuildCatalog } from "@/lib/catalog-products-api";
 import styles from "@/app/locale/pc-builder/pcBuilder.module.css";
 import {
   X,
@@ -162,8 +163,16 @@ export function PcBuilderWizard() {
   const tCart = useTranslations("Cart");
   const router = useRouter();
   const { addMultipleItems } = useCart();
-  const { catalog } = useStorefront();
-  const productCatalog = catalog.products;
+  const locale = useLocale() as "en" | "ar";
+  /**
+   * Lazy-load the catalog ONLY here on /pc-build (temporary exception — see the
+   * /api/ssr/pc-build-catalog route). Normal storefront pages never load it.
+   */
+  const { data: productCatalog = [] } = useQuery({
+    queryKey: ["pc-build-catalog", locale],
+    queryFn: () => fetchPcBuildCatalog(locale),
+    staleTime: 5 * 60_000,
+  });
 
   const [s, setS] = useState<PcBuildSelections>(() => emptySelections());
   const [acc, setAcc] = useState<Record<AccKey, Product | null>>({
