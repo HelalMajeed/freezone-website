@@ -129,3 +129,27 @@ diff it against this file and re-run the SPRINT_STATUS audit.
 ## A-12 · Analytics env names
 `VITE_GA4_ID` and `VITE_META_PIXEL_ID` (mission naming). Loaders are no-ops when
 unset; events: `page_view`, `view_item`, `add_to_cart`, `begin_checkout`, `purchase`.
+
+## A-19 · Phase-1 bootstrap trim — full catalog removed from storefront-bootstrap (2026-06-20, branch `perf/server-side-product-listing`)
+`GET /api/ssr/storefront-bootstrap` no longer returns `catalog.products`. The
+customer browser must never receive the whole catalog. Consumers were migrated
+to lightweight server-driven data first, then `products` was deleted (the TS
+compiler confirmed zero references). Decisions/assumptions:
+- **Home rails** read capped server collections (`catalog.collections` —
+  featured/newest/onSale ≤16/≤16/≤12 + bestSellers + `hasNew`) computed by
+  `getHomeCollections` (60s-cached). Tabs/featured/PDP-related/landing/wishlist/
+  compare browse via the paginated `/api/ssr/catalog/products`,
+  `/api/ssr/catalog/products/by-ids` (id cap 100), and `/api/ssr/product/[id]`.
+- **Brand badges** are now server-computed per category: `queryCatalogProducts`
+  returns `brandCounts` (one index-only `groupBy`, by category membership only —
+  matches the old client `collectBrandCounts`). `FilterSidebar` prefers them.
+- **PC builder is a documented temporary exception:** it lazy-loads the full
+  lean catalog from the new `GET /api/ssr/pc-build-catalog` ONLY when the wizard
+  mounts on `/pc-build` (never in bootstrap). Follow-up: replace with a curated
+  PC-part feed so even `/pc-build` stops loading the whole catalog.
+- **Catalog-dump safeguard:** `pageSize` stays clamped server-side to `[1,100]`
+  (default 48); a huge `?pageSize` can never pull the whole catalog in one page.
+- On a cold listing API failure the page shows an explicit bilingual error+retry
+  (the full-catalog in-memory fallback is gone, so there is nothing to dump).
+- Scope guard: local checkpoint commits only on this branch (no push/deploy);
+  the untracked `freezone-dashboard/` and `reports/` folders were never staged.

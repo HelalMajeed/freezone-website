@@ -75,7 +75,6 @@ export default function ProductsPage() {
         </nav>
       </div>
       <ProductsCollectionClient
-        products={catalog.products}
         categories={catalog.categories}
         initialCat={initialCat}
         initialBrand={initialBrand}

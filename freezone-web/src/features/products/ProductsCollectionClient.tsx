@@ -25,7 +25,6 @@ import collStyles from "./collection.module.css";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import {
-  catalogUsesFilteredApi,
   fetchCatalogProducts,
   fetchCatalogFacets,
   type CatalogProductsQuery,
@@ -34,6 +33,7 @@ import { facetValueForFilter } from "@/lib/classification/legacy-spec-map";
 import { sanitizeFacetFilterToken, formatFacetFilterLabel } from "@/lib/classification/facet-filter-token";
 import { getFacetDisplayLabel } from "@/lib/catalog-facet-ui";
 import { MotionReveal } from "@/components/motion/MotionReveal";
+import { useStorefront } from "@/components/providers/StorefrontProvider";
 export type SortOption = "featured" | "relevant" | "price-asc" | "price-desc" | "date-new" | "date-old";
 
 const SORT_OPTIONS: readonly SortOption[] = [
@@ -52,6 +52,10 @@ function parseSortParam(raw: string | null): SortOption {
 
 /** Matches the server default in catalog-filter.ts — both paths page in lockstep. */
 const LISTING_PAGE_SIZE = 48;
+
+/** Stable empty fallback — the listing no longer receives the full catalog from
+ *  bootstrap; the server-paginated query is the only product source. */
+const EMPTY_PRODUCTS: Product[] = [];
 
 function parsePageParam(raw: string | null): number {
   return Math.max(1, parseInt(raw ?? "1", 10) || 1);
@@ -124,7 +128,9 @@ function applySort(products: Product[], sort: SortOption): Product[] {
 }
 
 type InnerProps = {
-  products: Product[];
+  /** Optional in-memory catalog — only a graceful fallback now (normally empty);
+   *  the grid + brand counts come from the server-paginated API. */
+  products?: Product[];
   categories: Category[];
   initialCat: string;
   initialBrand: string;
@@ -168,9 +174,13 @@ function cardSearchLines(
   return { line1: t("searchMatchedCatalog") };
 }
 
-function ProductsInner({ products: allProducts, categories, initialCat, initialBrand, initialFeatured }: InnerProps) {
+function ProductsInner({ products: allProducts = EMPTY_PRODUCTS, categories, initialCat, initialBrand, initialFeatured }: InnerProps) {
   const t = useTranslations("Products");
   const locale = useLocale();
+  /** Global (all-category) brand counts from bootstrap — a resilient fallback so
+   *  the sidebar Brand section never disappears on the bare /products view if the
+   *  products endpoint omits per-category brandCounts (older/partial API build). */
+  const { catalog: bootstrapCatalog } = useStorefront();
   const [searchParams, setSearchParams] = useSearchParams();
   const catParam = searchParams.get("cat") ?? initialCat;
   const brandParams = parseCsvValues(searchParams.getAll("brand"));
@@ -319,7 +329,16 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
     [locale, filters, query, sortBy, pageParam],
   );
 
-  const useServerCatalog = catalogUsesFilteredApi(catalogQuery) || Boolean(filters.cat);
+  /**
+   * Always use the server-side paginated API for the listing — even on the bare
+   * /products view — so the product GRID is one page from the DB (skip/take in
+   * SQL), never a client-side filter/sort/slice over the full in-memory catalog.
+   * The in-memory `allProducts` array is kept only as (a) the source for the
+   * sidebar's brand/availability OPTION lists and (b) a graceful fallback while
+   * the first page is loading or if the request fails. The heavy browse work no
+   * longer depends on the full catalog.
+   */
+  const useServerCatalog = true;
 
   const serverCatalog = useQuery({
     queryKey: ["catalog-products", catalogQuery],
@@ -406,12 +425,22 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
   const serverFacets = serverCatalog.data?.facets;
   const serverFacetFilters = serverFacetDefs.data?.filters;
   const catalogLoading = useServerCatalog && serverCatalog.isFetching && !serverCatalog.data;
+  /** Cold API failure with no cached page — show an explicit error+retry rather
+   *  than a misleading "no results" (the full-catalog fallback is gone). */
+  const catalogError = useServerCatalog && serverCatalog.isError && !serverCatalog.data;
 
-  /** Server mode: `filtered` is already the requested page. Client mode: slice locally. */
-  const pageSize =
-    useServerCatalog && serverCatalog.data ? serverCatalog.data.pageSize : LISTING_PAGE_SIZE;
+  /**
+   * When a server page is present it is already the requested slice; otherwise
+   * (first load still pending, or the request failed before any page cached) we
+   * fall back to the in-memory list and MUST slice it locally — rendering the
+   * whole `filtered` array unsliced would dump the entire catalog into the DOM
+   * with broken pagination. Gating on `serverCatalog.data` keeps the fallback
+   * paginated exactly like the legacy client path.
+   */
+  const serverPaged = useServerCatalog && Boolean(serverCatalog.data);
+  const pageSize = serverCatalog.data ? serverCatalog.data.pageSize : LISTING_PAGE_SIZE;
   const pageCount = Math.max(1, Math.ceil(displayCount / pageSize));
-  const pagedProducts = useServerCatalog
+  const pagedProducts = serverPaged
     ? filtered
     : filtered.slice((pageParam - 1) * LISTING_PAGE_SIZE, pageParam * LISTING_PAGE_SIZE);
 
@@ -516,10 +545,13 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
       filters={filters}
       setFilters={setFilters}
       clearFilters={clearFilters}
-      products={useServerCatalog && serverCatalog.data ? serverCatalog.data.products : allProducts}
+      products={allProducts}
       categories={categories}
       serverFacets={serverFacets}
       serverFacetFilters={serverFacetFilters}
+      serverBrandCounts={
+        serverCatalog.data?.brandCounts ?? (filters.cat ? undefined : bootstrapCatalog.brandCounts)
+      }
     />
   );
 
@@ -642,8 +674,23 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
               <div className={productsStyles.noResults}>
                 <p>{t("loadingResults", { defaultValue: "Loading…" })}</p>
               </div>
-            ) : null}
-            {!catalogLoading && displayCount === 0 ? (
+            ) : catalogError ? (
+              <div className={productsStyles.noResults}>
+                <span className={productsStyles.noResultsEmoji} aria-hidden>
+                  ⚠️
+                </span>
+                <h3 className={productsStyles.noResultsTitleBilingual}>
+                  <span className={productsStyles.noResultsLang}>Couldn’t load products</span>
+                  <span className={productsStyles.noResultsLang} dir="rtl" lang="ar">
+                    تعذّر تحميل المنتجات
+                  </span>
+                </h3>
+                <p>{t("errorLoadingSub", { defaultValue: "Please check your connection and try again." })}</p>
+                <button type="button" className="btn-outline" onClick={() => serverCatalog.refetch()}>
+                  {t("retry", { defaultValue: "Retry" })}
+                </button>
+              </div>
+            ) : displayCount === 0 ? (
               <div className={productsStyles.noResults}>
                 <span className={productsStyles.noResultsEmoji} aria-hidden>
                   🔍
@@ -704,7 +751,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
 }
 
 export function ProductsCollectionClient(props: {
-  products: Product[];
+  products?: Product[];
   categories: Category[];
   initialCat: string;
   initialBrand: string;

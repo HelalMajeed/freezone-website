@@ -1,13 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { ProductSlider } from "@/components/ui/ProductSlider";
-import { resolveNewArrivalsViewAllLink, resolveNewProducts } from "@/lib/home-section-products";
 import type { Product } from "@/lib/data";
-
-const NEW_ARRIVALS_LIMIT = 16;
 
 type HomeNewArrivalsRailProps = {
   products?: Product[];
@@ -19,17 +15,10 @@ type HomeNewArrivalsRailProps = {
 export function HomeNewArrivalsRail({ products, title, link }: HomeNewArrivalsRailProps = {}) {
   const t = useTranslations("Home");
   const locale = useLocale() as "en" | "ar";
-  const { catalog, home } = useStorefront();
+  const { home } = useStorefront();
 
-  const list = useMemo(
-    () => products ?? resolveNewProducts(catalog.products, NEW_ARRIVALS_LIMIT),
-    [products, catalog.products],
-  );
-
-  const viewAllLink = useMemo(
-    () => link ?? resolveNewArrivalsViewAllLink(catalog.products),
-    [link, catalog.products],
-  );
+  const list = products ?? [];
+  const viewAllLink = link ?? "/products";
 
   const pc = home.pageCopy;
   const copyTitle =

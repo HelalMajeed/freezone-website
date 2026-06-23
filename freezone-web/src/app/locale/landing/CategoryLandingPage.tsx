@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Navigate, useParams, useSearchParams } from "react-router-dom";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { SlidersHorizontal } from "lucide-react";
 import { Link } from "@/navigation";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
-import { productBelongsToCategoryTree } from "@/lib/productCategoryMembership";
+import { fetchCatalogProducts } from "@/lib/catalog-products-api";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { PaginationControls } from "@/components/ui/PaginationControls";
 import { Seo } from "@/components/seo/Seo";
@@ -17,7 +18,10 @@ import crumbStyles from "@/features/product-detail/productDetail.module.css";
 
 const LANDING_PAGE_SIZE = 24;
 
-/** Category landing page — /:locale/category/:slug (docs/STOREFRONT_DESIGN.md). */
+/** Category landing page — /:locale/category/:slug (docs/STOREFRONT_DESIGN.md).
+ *  Products are server-paginated (GET /api/ssr/catalog/products?cat=…) — the
+ *  endpoint's category-tree membership mirrors productBelongsToCategoryTree, so
+ *  the browser only holds the current page, never the full catalog. */
 export default function CategoryLandingPage() {
   const { slug = "", locale: loc } = useParams<{ slug: string; locale: string }>();
   const lc = loc === "ar" ? "ar" : "en";
@@ -36,33 +40,40 @@ export default function CategoryLandingPage() {
     ? catalog.categories.find((c) => c.id === category.parent)
     : undefined;
 
-  const products = useMemo(
-    () => catalog.products.filter((p) => productBelongsToCategoryTree(p, slug, catalog.categories)),
-    [catalog.products, catalog.categories, slug],
-  );
-
   const [searchParams, setSearchParams] = useSearchParams();
-  const pageCount = Math.max(1, Math.ceil(products.length / LANDING_PAGE_SIZE));
-  /** Clamp a stale ?page from a shared URL instead of rendering an empty grid. */
-  const page = Math.min(
-    Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1),
-    pageCount,
-  );
-  const pageProducts = useMemo(
-    () => products.slice((page - 1) * LANDING_PAGE_SIZE, page * LANDING_PAGE_SIZE),
-    [products, page],
+  const pageParam = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+
+  const { data, isFetching } = useQuery({
+    queryKey: ["category-landing", lc, slug, pageParam],
+    queryFn: () => fetchCatalogProducts({ locale: lc, cat: slug, page: pageParam, pageSize: LANDING_PAGE_SIZE }),
+    enabled: Boolean(slug),
+    staleTime: 30_000,
+    placeholderData: keepPreviousData,
+  });
+
+  const pageProducts = data?.products ?? [];
+  const total = data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / LANDING_PAGE_SIZE));
+  const loading = isFetching && !data;
+
+  const goToPage = useCallback(
+    (p: number) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (p > 1) next.set("page", String(p));
+        else next.delete("page");
+        return next;
+      });
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    },
+    [setSearchParams],
   );
 
-  const goToPage = (p: number) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (p > 1) next.set("page", String(p));
-      else next.delete("page");
-      return next;
-    });
-    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
-  };
+  /** Clamp a stale ?page from a shared URL instead of rendering an empty grid. */
+  useEffect(() => {
+    if (data && pageParam > pageCount) goToPage(pageCount);
+  }, [data, pageParam, pageCount, goToPage]);
 
   if (!category) {
     return <Navigate to={`/${lc}/products`} replace />;
@@ -113,7 +124,7 @@ export default function CategoryLandingPage() {
           <span className={styles.eyebrow}>{t("categoryEyebrow")}</span>
           <h1 className={`fz-type-h1 ${styles.heroTitle}`}>{name}</h1>
           <div className={styles.heroMeta}>
-            <span className={styles.countPill}>{t("productsCount", { count: products.length })}</span>
+            <span className={styles.countPill}>{t("productsCount", { count: total })}</span>
             <Link href={`/products?cat=${encodeURIComponent(category.id)}`} className={styles.filtersLink}>
               <SlidersHorizontal size={15} aria-hidden />
               {t("openFilters")}
@@ -138,7 +149,11 @@ export default function CategoryLandingPage() {
       </header>
 
       <div className="container">
-        {products.length === 0 ? (
+        {loading ? (
+          <div className={styles.empty}>
+            <p>{locale === "ar" ? "جاري التحميل…" : "Loading…"}</p>
+          </div>
+        ) : total === 0 ? (
           <div className={styles.empty}>
             <p>{t("noProducts")}</p>
             <Link href="/products" className="btn-primary">
@@ -152,7 +167,7 @@ export default function CategoryLandingPage() {
                 <ProductCard key={p.id} product={p} categories={catalog.categories} />
               ))}
             </div>
-            <PaginationControls page={page} pageCount={pageCount} onPageChange={goToPage} />
+            <PaginationControls page={pageParam} pageCount={pageCount} onPageChange={goToPage} />
             <div className={styles.footerCta}>
               <Link href={`/products?cat=${encodeURIComponent(category.id)}`} className="btn-outline">
                 {t("openFilters")}

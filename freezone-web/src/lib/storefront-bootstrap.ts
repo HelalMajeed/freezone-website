@@ -9,14 +9,46 @@ import { isDatabaseConfigured } from "./prisma";
 import { mergeThemeTokens, DEFAULT_THEME } from "./theme-tokens";
 import { staticPublicSite } from "./site-public";
 import { staticHomeCms } from "./layout-cms";
+import { resolveSaleProducts, resolveHotProducts, resolveNewProducts } from "./home-section-products";
+
+/** Small capped homepage collections (replaces the full catalog for the rails). */
+export type HomeCollections = {
+  featured: Product[];
+  newest: Product[];
+  onSale: Product[];
+  bestSellers: Product[];
+  hasNew: boolean;
+};
+
+export type BrandCount = { value: string; count: number };
 
 export type StorefrontBootstrapPayload = {
   site: PublicSite;
   home: HomeCmsPayload;
-  catalog: { products: Product[]; categories: Category[]; brands: Brand[] };
+  catalog: {
+    categories: Category[];
+    brands: Brand[];
+    /** Capped server-computed home rails — replaces the full product catalog,
+     *  which is no longer shipped in the bootstrap. */
+    collections?: HomeCollections;
+    /** Per-brand counts for the filter sidebar (all categories). */
+    brandCounts?: BrandCount[];
+  };
   homeSections: StorefrontCmsSection[] | null;
   theme: ThemeTokens;
 };
+
+/** Static-data fallback collections (dev / API offline) — same logic as the API. */
+function staticHomeCollections(): HomeCollections {
+  const isNewList = PRODUCTS.filter((p) => p.isNew);
+  return {
+    featured: PRODUCTS.filter((p) => p.featured).slice(0, 16),
+    newest: resolveNewProducts(PRODUCTS, 16),
+    onSale: resolveSaleProducts(PRODUCTS, 12),
+    bestSellers: resolveHotProducts(PRODUCTS, 16),
+    hasNew: isNewList.length > 0,
+  };
+}
 
 /** Shell slice of the bootstrap — everything NavBar/Footer/theme need, no catalog. */
 export type StorefrontShellData = {
@@ -42,7 +74,12 @@ async function loadFallback(locale: "en" | "ar"): Promise<StorefrontBootstrapPay
   return withoutMarqueeStrips({
     site: staticPublicSite(locale),
     home: staticHomeCms(locale === "ar" ? "ar" : "en"),
-    catalog: { products: PRODUCTS, categories: CATEGORIES, brands: BRANDS },
+    catalog: {
+      categories: CATEGORIES,
+      brands: BRANDS,
+      collections: staticHomeCollections(),
+      brandCounts: [],
+    },
     homeSections: null,
     theme: DEFAULT_THEME,
   });
@@ -88,7 +125,7 @@ export async function fetchStorefrontBootstrap(locale: "en" | "ar"): Promise<Sto
       return loadFallback(locale);
     }
     const raw = (await r.json()) as StorefrontBootstrapPayload;
-    if (!raw?.catalog || !Array.isArray(raw.catalog.products)) {
+    if (!raw?.catalog || !Array.isArray(raw.catalog.categories)) {
       const msg = `[storefront-bootstrap] Invalid JSON from ${url}`;
       console.error(msg, raw);
       if (prod) throw new Error(`${msg}. Check API deployment.`);

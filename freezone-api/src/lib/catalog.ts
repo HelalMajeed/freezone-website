@@ -199,12 +199,14 @@ const CATALOG_TTL_MS = 60_000;
 const productsCatalogCache = createTtlCache<Product[]>(CATALOG_TTL_MS);
 const categoriesCatalogCache = createTtlCache<Category[]>(CATALOG_TTL_MS);
 const brandsCatalogCache = createTtlCache<Brand[]>(CATALOG_TTL_MS);
+const homeCollectionsCache = createTtlCache<HomeCollections>(CATALOG_TTL_MS);
 
 /** Drop every cached catalog slice (call after admin writes / imports). */
 export function invalidateCatalogCaches(): void {
   productsCatalogCache.invalidate();
   categoriesCatalogCache.invalidate();
   brandsCatalogCache.invalidate();
+  homeCollectionsCache.invalidate();
 }
 
 export function getProductsCatalog(locale: LocaleCode): Promise<Product[]> {
@@ -345,5 +347,117 @@ export async function getProductById(id: number, locale: LocaleCode): Promise<Pr
     return row ? mapDbToProduct(row, locale) : null;
   } catch {
     return PRODUCTS.find((p) => p.id === id) ?? null;
+  }
+}
+
+/** Hard cap on a by-ids lookup — bounds memory (mirrors the pageSize<=100 ethos). */
+export const MAX_PRODUCTS_BY_IDS = 100;
+
+/**
+ * Batch product lookup by id (wishlist / compare / PC-builder part links). One
+ * findMany with a capped, de-duplicated id set; result is re-ordered to match
+ * the requested id order (findMany ignores `in[]` order). Uses the LEAN include
+ * (specs come from the JSON column) — never the deep EAV path (OOM rule §12).
+ */
+export async function getProductsByIds(ids: number[], locale: LocaleCode): Promise<Product[]> {
+  const clean = Array.from(
+    new Set(ids.filter((n) => Number.isInteger(n) && n > 0)),
+  ).slice(0, MAX_PRODUCTS_BY_IDS);
+  if (clean.length === 0) return [];
+  if (!isDatabaseConfigured()) {
+    const byId = new Map(PRODUCTS.map((p) => [p.id, p]));
+    return clean.map((id) => byId.get(id)).filter((p): p is Product => Boolean(p));
+  }
+  try {
+    const rows = await prisma.product.findMany({
+      where: { id: { in: clean }, published: true, deletedAt: null },
+      include: { ...storefrontProductIncludeLegacy },
+    });
+    const byId = new Map(rows.map((r) => [r.id, mapDbToProduct(r, locale)]));
+    return clean.map((id) => byId.get(id)).filter((p): p is Product => Boolean(p));
+  } catch (e) {
+    if (!isDbConnectionError(e)) console.error("[catalog] products-by-ids fallback:", e);
+    return [];
+  }
+}
+
+/**
+ * Small, capped homepage collections — replaces shipping the full catalog to the
+ * browser for the home rails. Each list is a tiny targeted query (take 12-40),
+ * cached 60s, ordered to match the client `home-section-products.ts` helpers so
+ * the rails stay visually the same:
+ *   - featured     : featured=true, newest-first
+ *   - newest       : isNew=true, newest-first (fallback to newest overall)
+ *   - onSale       : real discounts, sorted by discount% then sales
+ *   - bestSellers  : sales desc, reviews desc
+ *   - hasNew       : whether any isNew product exists (drives the "new" view-all link)
+ */
+export interface HomeCollections {
+  featured: Product[];
+  newest: Product[];
+  onSale: Product[];
+  bestSellers: Product[];
+  hasNew: boolean;
+}
+
+const FEATURED_LIMIT = 16;
+const NEWEST_LIMIT = 16;
+const ONSALE_LIMIT = 12;
+const BESTSELLERS_LIMIT = 16;
+
+function sortOnSaleByDiscount(products: Product[]): Product[] {
+  return products
+    .filter((p) => p.oldPrice != null && p.oldPrice > p.price)
+    .sort((a, b) => {
+      const da = a.oldPrice ? (a.oldPrice - a.price) / a.oldPrice : 0;
+      const db = b.oldPrice ? (b.oldPrice - b.price) / b.oldPrice : 0;
+      if (db !== da) return db - da;
+      return b.sales - a.sales;
+    })
+    .slice(0, ONSALE_LIMIT);
+}
+
+export function getHomeCollections(locale: LocaleCode): Promise<HomeCollections> {
+  return homeCollectionsCache.get(locale, () => loadHomeCollections(locale));
+}
+
+async function loadHomeCollections(locale: LocaleCode): Promise<HomeCollections> {
+  if (!isDatabaseConfigured()) {
+    const all = PRODUCTS;
+    const isNewList = all.filter((p) => p.isNew);
+    return {
+      featured: all.filter((p) => p.featured).slice(0, FEATURED_LIMIT),
+      newest: (isNewList.length ? isNewList : all).slice(0, NEWEST_LIMIT),
+      onSale: sortOnSaleByDiscount([...all]),
+      bestSellers: [...all].sort((a, b) => b.sales - a.sales || b.reviews - a.reviews).slice(0, BESTSELLERS_LIMIT),
+      hasNew: isNewList.length > 0,
+    };
+  }
+  const baseWhere = { published: true, deletedAt: null } as const;
+  const include = { ...storefrontProductIncludeLegacy };
+  try {
+    const [featuredRows, newRows, anyNewCount, saleRows, bestRows] = await Promise.all([
+      prisma.product.findMany({ where: { ...baseWhere, featured: true }, include, orderBy: { id: "desc" }, take: FEATURED_LIMIT }),
+      prisma.product.findMany({ where: { ...baseWhere, isNew: true }, include, orderBy: { id: "desc" }, take: NEWEST_LIMIT }),
+      prisma.product.count({ where: { ...baseWhere, isNew: true } }),
+      prisma.product.findMany({ where: { ...baseWhere, oldPrice: { not: null } }, include, orderBy: { id: "desc" }, take: 40 }),
+      prisma.product.findMany({ where: baseWhere, include, orderBy: [{ sales: "desc" }, { reviews: "desc" }, { id: "desc" }], take: BESTSELLERS_LIMIT }),
+    ]);
+    const hasNew = anyNewCount > 0;
+    let newest = newRows.map((r) => mapDbToProduct(r, locale));
+    if (newest.length === 0) {
+      const fallbackRows = await prisma.product.findMany({ where: baseWhere, include, orderBy: { id: "desc" }, take: NEWEST_LIMIT });
+      newest = fallbackRows.map((r) => mapDbToProduct(r, locale));
+    }
+    return {
+      featured: featuredRows.map((r) => mapDbToProduct(r, locale)),
+      newest,
+      onSale: sortOnSaleByDiscount(saleRows.map((r) => mapDbToProduct(r, locale))),
+      bestSellers: bestRows.map((r) => mapDbToProduct(r, locale)),
+      hasNew,
+    };
+  } catch (e) {
+    if (!isDbConnectionError(e)) console.error("[catalog] home collections fallback:", e);
+    return { featured: [], newest: [], onSale: [], bestSellers: [], hasNew: false };
   }
 }

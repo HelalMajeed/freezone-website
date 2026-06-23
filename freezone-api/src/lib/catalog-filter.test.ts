@@ -59,3 +59,38 @@ test("parseCatalogFilterFromUrl accepts known sort values and drops unknown ones
   assert.equal(parseCatalogFilterFromUrl(`${base}?sort=bogus`).sort, undefined);
   assert.equal(parseCatalogFilterFromUrl(base).sort, undefined);
 });
+
+test("best-selling sort is accepted and orders by sales → reviews → id", () => {
+  const base = "http://localhost/api/ssr/catalog/products";
+  assert.equal(parseCatalogFilterFromUrl(`${base}?sort=best-selling`).sort, "best-selling");
+  assert.deepEqual(buildCatalogOrderBy("best-selling", false, "en"), [
+    { sales: "desc" },
+    { reviews: "desc" },
+    { id: "desc" },
+  ]);
+});
+
+/**
+ * pageSize clamp is the safeguard that keeps the listing server-paginated: even
+ * with the full catalog removed from bootstrap, an unclamped ?pageSize could let
+ * the browser pull the whole catalog through the products endpoint in one page.
+ */
+test("pageSize is clamped to [1,100] with a default of 48", () => {
+  const base = "http://localhost/api/ssr/catalog/products";
+  assert.equal(parseCatalogFilterFromUrl(base).pageSize, 48);
+  assert.equal(parseCatalogFilterFromUrl(`${base}?pageSize=24`).pageSize, 24);
+  assert.equal(parseCatalogFilterFromUrl(`${base}?pageSize=100000`).pageSize, 100);
+  // 0 and non-numeric fall back to the default (falsy → `|| 48`); negatives floor to 1.
+  assert.equal(parseCatalogFilterFromUrl(`${base}?pageSize=0`).pageSize, 48);
+  assert.equal(parseCatalogFilterFromUrl(`${base}?pageSize=-5`).pageSize, 1);
+  assert.equal(parseCatalogFilterFromUrl(`${base}?pageSize=abc`).pageSize, 48);
+});
+
+test("page is floored to 1", () => {
+  const base = "http://localhost/api/ssr/catalog/products";
+  assert.equal(parseCatalogFilterFromUrl(base).page, 1);
+  assert.equal(parseCatalogFilterFromUrl(`${base}?page=3`).page, 3);
+  assert.equal(parseCatalogFilterFromUrl(`${base}?page=0`).page, 1);
+  assert.equal(parseCatalogFilterFromUrl(`${base}?page=-2`).page, 1);
+  assert.equal(parseCatalogFilterFromUrl(`${base}?page=abc`).page, 1);
+});

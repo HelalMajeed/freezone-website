@@ -9,6 +9,9 @@ export type CatalogProductsResponse = {
   page: number;
   pageSize: number;
   facets: Record<string, FacetCount[]>;
+  /** Server-computed per-brand counts for the sidebar brand badges (optional —
+   *  absent on older API builds; the sidebar falls back gracefully). */
+  brandCounts?: FacetCount[];
 };
 
 export type CatalogProductsQuery = {
@@ -25,6 +28,8 @@ export type CatalogProductsQuery = {
   q?: string;
   sort?: string;
   page?: number;
+  /** Override the server default page size (clamped server-side to ≤100). */
+  pageSize?: number;
   facets?: Record<string, string[]>;
 };
 
@@ -42,6 +47,7 @@ function buildCatalogProductsUrl(q: CatalogProductsQuery): string {
   if (q.q?.trim()) sp.set("q", q.q.trim());
   if (q.sort) sp.set("sort", q.sort);
   if (q.page && q.page > 1) sp.set("page", String(q.page));
+  if (q.pageSize) sp.set("pageSize", String(q.pageSize));
   if (q.facets) {
     for (const [key, vals] of Object.entries(q.facets)) {
       if (vals.length) sp.set(key, vals.join(","));
@@ -72,6 +78,39 @@ export async function fetchCatalogProducts(q: CatalogProductsQuery): Promise<Cat
   const res = await fetch(url, { credentials: "include" });
   if (!res.ok) throw new Error(`catalog products ${res.status}`);
   return res.json() as Promise<CatalogProductsResponse>;
+}
+
+/**
+ * Batch product lookup by id — for wishlist / compare. Returns products in the
+ * requested id order (server re-orders), capped server-side at 100. No full
+ * catalog in the browser.
+ */
+export async function fetchProductsByIds(ids: number[], locale: "en" | "ar"): Promise<Product[]> {
+  if (ids.length === 0) return [];
+  const sp = new URLSearchParams();
+  sp.set("locale", locale);
+  sp.set("ids", ids.join(","));
+  const res = await fetch(freezoneApiUrl(`/api/ssr/catalog/products/by-ids?${sp.toString()}`), {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(`catalog products-by-ids ${res.status}`);
+  const data = (await res.json()) as { products: Product[] };
+  return data.products;
+}
+
+/**
+ * PC-builder catalog — TEMPORARY EXCEPTION. Fetches the (server-cached, lean)
+ * full catalog ONLY when the PC-builder wizard mounts on /pc-build, so the part
+ * → storefront-product mapping and the accessory pickers keep working without
+ * shipping the whole catalog to every storefront visitor via bootstrap.
+ */
+export async function fetchPcBuildCatalog(locale: "en" | "ar"): Promise<Product[]> {
+  const res = await fetch(freezoneApiUrl(`/api/ssr/pc-build-catalog?locale=${locale}`), {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(`pc-build catalog ${res.status}`);
+  const data = (await res.json()) as { products: Product[] };
+  return data.products;
 }
 
 export type FacetFilterOption = { label: string; value: string; count: number };
