@@ -175,9 +175,20 @@ function categoryMembershipWhere(slug: string): Prisma.ProductWhereInput {
   };
 }
 
+/**
+ * Single slug, or comma-separated slugs unioned — for showcase tabs that combine
+ * sibling top-level categories (e.g. gaming = "gaming,laptops,computers", which
+ * the strict one-level parent/child tree cannot otherwise reproduce).
+ */
+function categoryMembershipWhereMulti(catParam: string): Prisma.ProductWhereInput {
+  const slugs = catParam.split(",").map((s) => s.trim()).filter(Boolean);
+  if (slugs.length <= 1) return categoryMembershipWhere(slugs[0] ?? catParam);
+  return { OR: slugs.map((s) => categoryMembershipWhere(s)) };
+}
+
 function buildBaseWhere(input: CatalogFilterInput): Prisma.ProductWhereInput {
   const and: Prisma.ProductWhereInput[] = [{ published: true }];
-  if (input.cat) and.push(categoryMembershipWhere(input.cat));
+  if (input.cat) and.push(categoryMembershipWhereMulti(input.cat));
   if (input.brands?.length) {
     and.push({
       OR: [
@@ -398,6 +409,49 @@ export async function queryCatalogFacetCounts(
   } catch (e) {
     if (!isDbConnectionError(e)) console.error("[catalog-filter] facet counts", e);
     return {};
+  }
+}
+
+/**
+ * Per-brand product counts for the sidebar brand badges — replaces the client
+ * collectBrandCounts(full array). Scoped by published + (tree-aware) category
+ * ONLY (not by selected brands/other facets), matching the old client behavior.
+ * One index-supported groupBy on the Product.brand string — no rows hydrated.
+ */
+export async function queryBrandCounts(input: Pick<CatalogFilterInput, "cat">): Promise<FacetCount[]> {
+  if (!isDatabaseConfigured()) {
+    let list = [...PRODUCTS];
+    if (input.cat) {
+      const slugs = input.cat.split(",").map((s) => s.trim()).filter(Boolean);
+      const treeSlugs = new Set<string>();
+      for (const s of slugs) {
+        treeSlugs.add(s);
+        for (const c of CATEGORIES) if (c.parent === s) treeSlugs.add(c.id);
+      }
+      list = list.filter((p) => treeSlugs.has(p.cat) || p.extraCats?.some((x) => treeSlugs.has(x)));
+    }
+    const map = new Map<string, number>();
+    for (const p of list) if (p.brand && p.brand !== "—") map.set(p.brand, (map.get(p.brand) ?? 0) + 1);
+    return Array.from(map.entries())
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => a.value.localeCompare(b.value));
+  }
+  try {
+    const where: Prisma.ProductWhereInput = input.cat
+      ? { AND: [{ published: true, deletedAt: null }, categoryMembershipWhereMulti(input.cat)] }
+      : { published: true, deletedAt: null };
+    const groups = await prisma.product.groupBy({
+      by: ["brand"],
+      where,
+      _count: { _all: true },
+      orderBy: { brand: "asc" },
+    });
+    return groups
+      .filter((g) => Boolean(g.brand?.trim()) && g.brand !== "—")
+      .map((g) => ({ value: g.brand, count: g._count._all }));
+  } catch (e) {
+    if (!isDbConnectionError(e)) console.error("[catalog-filter] brand counts", e);
+    return [];
   }
 }
 
