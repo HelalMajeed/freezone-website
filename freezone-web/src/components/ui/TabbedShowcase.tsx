@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import styles from "./TabbedShowcase.module.css";
 import { ProductCard } from "./ProductCard";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
@@ -10,11 +11,15 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import {
   parseTabbedProductsPayload,
-  getProductsForTab,
   defaultViewAllHrefForTab,
+  type ProductTabMode,
   type TabbedProductTabConfig,
 } from "@/lib/home-section-products";
-import { productBelongsToCategoryTree } from "@/lib/productCategoryMembership";
+import {
+  fetchCatalogProducts,
+  fetchProductsByIds,
+  type CatalogProductsQuery,
+} from "@/lib/catalog-products-api";
 
 type LegacyTabId = "new" | "featured" | "gaming" | "components";
 
@@ -25,6 +30,33 @@ const LEGACY_TABS: { id: LegacyTabId; key: string }[] = [
   { id: "components", key: "tabComponents" },
 ];
 
+const TAB_LEGACY_LIMIT = 24;
+
+/** Map a tab mode to a server catalog query. The legacy "gaming"/"components"
+ *  tabs union sibling categories — served by the multi-cat (comma) param so the
+ *  one-level tree query still reproduces them. */
+function tabModeToQuery(
+  mode: ProductTabMode,
+  catSlug: string | undefined,
+  locale: "en" | "ar",
+  limit: number,
+): CatalogProductsQuery {
+  switch (mode) {
+    case "new":
+      return { locale, isNew: true, pageSize: limit };
+    case "featured":
+      return { locale, featured: true, pageSize: limit };
+    case "gaming":
+      return { locale, cat: "gaming,laptops,computers", pageSize: limit };
+    case "components":
+      return { locale, cat: "components,storage", pageSize: limit };
+    case "cat":
+      return { locale, cat: (catSlug ?? "").trim() || undefined, pageSize: limit };
+    default:
+      return { locale, pageSize: limit };
+  }
+}
+
 type Props = {
   /** Published CMS payload for `tabbed_products` — when set, drives tabs and copy */
   config?: unknown;
@@ -33,8 +65,7 @@ type Props = {
 export function TabbedShowcase({ config }: Props) {
   const t = useTranslations("Home");
   const locale = useLocale();
-  const { catalog, home } = useStorefront();
-  const PRODUCTS = catalog.products;
+  const { home } = useStorefront();
   const pc = home.pageCopy;
   const ar = locale === "ar";
 
@@ -71,31 +102,32 @@ export function TabbedShowcase({ config }: Props) {
   const activeCmsTab = cmsTabs?.find((x) => x.id === effectiveCmsTabId) ?? cmsTabs?.[0];
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const getFiltered = () => {
+  const tabSpec = useMemo<
+    | { kind: "manual"; productIds: number[]; limit: number }
+    | { kind: "query"; query: CatalogProductsQuery }
+  >(() => {
     if (cmsTabs && activeCmsTab) {
-      return getProductsForTab(PRODUCTS, activeCmsTab, limit);
+      const lim = Math.min(48, Math.max(1, limit ?? 24));
+      if (activeCmsTab.mode === "manual" && activeCmsTab.productIds?.length) {
+        return { kind: "manual", productIds: activeCmsTab.productIds, limit: lim };
+      }
+      return { kind: "query", query: tabModeToQuery(activeCmsTab.mode, activeCmsTab.catSlug, locale, lim) };
     }
-    switch (legacyActive) {
-      case "new":
-        return PRODUCTS.filter((p) => p.isNew).slice(0, 24);
-      case "featured":
-        return PRODUCTS.filter((p) => p.featured).slice(0, 24);
-      case "gaming":
-        return PRODUCTS.filter((p) =>
-          ["gaming", "laptops", "computers"].some((slug) =>
-            productBelongsToCategoryTree(p, slug, catalog.categories),
-          ),
-        ).slice(0, 24);
-      case "components":
-        return PRODUCTS.filter(
-          (p) =>
-            productBelongsToCategoryTree(p, "components", catalog.categories) ||
-            productBelongsToCategoryTree(p, "storage", catalog.categories),
-        ).slice(0, 24);
-      default:
-        return PRODUCTS.slice(0, 24);
-    }
-  };
+    return { kind: "query", query: tabModeToQuery(legacyActive, undefined, locale, TAB_LEGACY_LIMIT) };
+  }, [cmsTabs, activeCmsTab, legacyActive, limit, locale]);
+
+  /** Active tab is fetched server-side (small page) — no full catalog client-side. */
+  const { data: tabProducts = [] } = useQuery({
+    queryKey: ["tabbed-showcase", tabSpec],
+    queryFn: async () => {
+      if (tabSpec.kind === "manual") {
+        return (await fetchProductsByIds(tabSpec.productIds, locale)).slice(0, tabSpec.limit);
+      }
+      return (await fetchCatalogProducts(tabSpec.query)).products;
+    },
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
+  });
 
   const viewAllHref = (() => {
     const fallback = typeof cms?.viewAllLink === "string" ? cms.viewAllLink : "/products";
@@ -255,7 +287,7 @@ export function TabbedShowcase({ config }: Props) {
             className={styles.trackWrapper}
           >
             <div className={styles.track} ref={scrollRef}>
-              {getFiltered().map((p, i) => (
+              {tabProducts.map((p, i) => (
                 <div key={p.id} className={styles.slide}>
                   <ProductCard product={p} delay={i * 35} />
                 </div>

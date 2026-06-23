@@ -23,7 +23,8 @@ export type CatalogSort =
   | "price-asc"
   | "price-desc"
   | "date-new"
-  | "date-old";
+  | "date-old"
+  | "best-selling";
 
 export type CatalogFilterInput = {
   locale: LocaleCode;
@@ -123,7 +124,7 @@ export function parseCatalogFilterFromUrl(url: string): CatalogFilterInput {
 }
 
 function isCatalogSort(v: string): v is CatalogSort {
-  return ["featured", "relevant", "price-asc", "price-desc", "date-new", "date-old"].includes(v);
+  return ["featured", "relevant", "price-asc", "price-desc", "date-new", "date-old", "best-selling"].includes(v);
 }
 
 /**
@@ -150,6 +151,8 @@ export function buildCatalogOrderBy(
       return [{ id: "desc" }];
     case "date-old":
       return [{ id: "asc" }];
+    case "best-selling":
+      return [{ sales: "desc" }, { reviews: "desc" }, { id: "desc" }];
     case "relevant":
       return locale === "ar" ? [{ nameAr: "asc" }, { id: "desc" }] : [{ nameEn: "asc" }, { id: "desc" }];
     case "featured":
@@ -341,6 +344,8 @@ function sortProducts(products: Product[], sort: CatalogSort | undefined, hasQue
       return arr.sort((a, b) => b.id - a.id);
     case "date-old":
       return arr.sort((a, b) => a.id - b.id);
+    case "best-selling":
+      return arr.sort((a, b) => b.sales - a.sales || b.reviews - a.reviews || b.id - a.id);
     case "featured":
       return arr.sort((a, b) => (b.featured === a.featured ? 0 : b.featured ? 1 : -1));
     case "relevant":

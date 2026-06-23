@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useLocale } from "@/i18n/hooks";
 import type { StorefrontCmsSection } from "@/lib/cms-page-storefront";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
@@ -12,7 +13,11 @@ import { MotionReveal } from "@/components/motion/MotionReveal";
 import { HomeCatalogShowcase } from "@/components/storefront/HomeCatalogShowcase";
 import { HomeCommerceStack } from "@/components/storefront/HomeCommerceStack";
 import { ProductSlider } from "@/components/ui/ProductSlider";
-import { resolveFeaturedProductList } from "@/lib/home-section-products";
+import {
+  fetchCatalogProducts,
+  fetchProductsByIds,
+  type CatalogProductsQuery,
+} from "@/lib/catalog-products-api";
 import { BrandTicker } from "@/components/ui/BrandTicker";
 import { StoreGallery } from "@/components/ui/StoreGallery";
 import { TabbedShowcase } from "@/components/ui/TabbedShowcase";
@@ -46,6 +51,68 @@ function pick(locale: "en" | "ar", ar: unknown, en: unknown): string {
 
 function SectionBlock({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
   return <MotionReveal delay={delay}>{children}</MotionReveal>;
+}
+
+function featuredFilterToQuery(
+  filter: string,
+  catSlug: string | undefined,
+  locale: "en" | "ar",
+  limit: number,
+): CatalogProductsQuery {
+  if (filter === "new") return { locale, isNew: true, pageSize: limit };
+  if (filter === "featured") return { locale, featured: true, pageSize: limit };
+  if (filter === "hot" || filter === "bestsellers") return { locale, sort: "best-selling", pageSize: limit };
+  if (filter === "sale" || filter === "onSale") return { locale, onSale: true, pageSize: limit };
+  if (filter === "cat" && catSlug?.trim()) {
+    const slugs = catSlug.split(/[,،\s]+/).map((s) => s.trim()).filter(Boolean).join(",");
+    return { locale, cat: slugs || undefined, pageSize: limit };
+  }
+  return { locale, pageSize: limit };
+}
+
+/** CMS "featured_products" section — fetches its product slice server-side
+ *  (new/featured/hot/sale/cat/manual) instead of slicing the full catalog. */
+function FeaturedProductsSection({
+  payload: p,
+  locale,
+}: {
+  payload: Record<string, unknown>;
+  locale: "en" | "ar";
+}) {
+  const title = pick(locale, p.titleAr, p.titleEn);
+  const link = str(p.link).trim() || "/products";
+  const filter = typeof p.filter === "string" ? p.filter : "featured";
+  const limit = Math.min(48, Math.max(1, typeof p.limit === "number" ? p.limit : 16));
+  const catSlug = typeof p.catSlug === "string" ? p.catSlug : undefined;
+  const productIds = Array.isArray(p.productIds)
+    ? p.productIds.map((x) => Number(x)).filter((n) => Number.isFinite(n))
+    : undefined;
+  const viewAllRaw = pick(locale, p.viewAllAr, p.viewAllEn);
+  const bgColor = typeof p.bgColor === "string" ? p.bgColor : "#fff";
+  const ctaVariant = p.ctaVariant === "teal" ? "teal" : "gray";
+  const isManual = Boolean(productIds && productIds.length > 0);
+
+  const { data: products = [] } = useQuery({
+    queryKey: ["home-featured", locale, isManual ? { ids: productIds } : { filter, catSlug, limit }],
+    queryFn: async () => {
+      if (isManual && productIds) return (await fetchProductsByIds(productIds, locale)).slice(0, limit);
+      return (await fetchCatalogProducts(featuredFilterToQuery(filter, catSlug, locale, limit))).products;
+    },
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
+  });
+
+  return (
+    <ProductSlider
+      title={title || (locale === "ar" ? "منتجات مميزة" : "Featured products")}
+      link={link}
+      products={products}
+      bgColor={bgColor}
+      viewAllLabel={viewAllRaw.trim() || undefined}
+      ctaVariant={ctaVariant}
+      compact
+    />
+  );
 }
 
 /**
@@ -168,39 +235,12 @@ export function DynamicHomeSections({ sections }: { sections: StorefrontCmsSecti
               </SectionBlock>
             );
           }
-          case "featured_products": {
-            const title = pick(locale, p.titleAr, p.titleEn);
-            const link = str(p.link).trim() || "/products";
-            const filter = typeof p.filter === "string" ? p.filter : "featured";
-            const limit = typeof p.limit === "number" ? p.limit : 16;
-            const catSlug = typeof p.catSlug === "string" ? p.catSlug : undefined;
-            const productIds = Array.isArray(p.productIds)
-              ? p.productIds.map((x) => Number(x)).filter((n) => Number.isFinite(n))
-              : undefined;
-            const viewAllRaw = pick(locale, p.viewAllAr, p.viewAllEn);
-            const products = resolveFeaturedProductList(
-              catalog.products,
-              filter,
-              catSlug,
-              limit,
-              productIds,
-            );
-            const bgColor = typeof p.bgColor === "string" ? p.bgColor : "#fff";
-            const ctaVariant = p.ctaVariant === "teal" ? "teal" : "gray";
+          case "featured_products":
             return (
               <SectionBlock key={sec.id} delay={delay}>
-                <ProductSlider
-                  title={title || (locale === "ar" ? "منتجات مميزة" : "Featured products")}
-                  link={link}
-                  products={products}
-                  bgColor={bgColor}
-                  viewAllLabel={viewAllRaw.trim() || undefined}
-                  ctaVariant={ctaVariant}
-                  compact
-                />
+                <FeaturedProductsSection payload={p} locale={locale} />
               </SectionBlock>
             );
-          }
           case "brands_strip": {
             const stripTitle = pick(locale, p.titleAr, p.titleEn);
             return (
