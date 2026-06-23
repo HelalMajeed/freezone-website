@@ -52,6 +52,10 @@ export type CatalogProductsResult = {
   page: number;
   pageSize: number;
   facets: Record<string, FacetCount[]>;
+  /** Per-brand counts for the sidebar brand badges (by category membership
+   *  only — independent of selected brands/price/facets, like the old client
+   *  collectBrandCounts). Lets the listing drop the full in-memory catalog. */
+  brandCounts: FacetCount[];
 };
 
 const RESERVED_PARAMS = new Set([
@@ -463,7 +467,7 @@ export async function queryBrandCounts(input: Pick<CatalogFilterInput, "cat">): 
 export async function queryCatalogProducts(input: CatalogFilterInput): Promise<CatalogProductsResult> {
   const page = input.page ?? 1;
   const pageSize = input.pageSize ?? 48;
-  const empty: CatalogProductsResult = { products: [], total: 0, page, pageSize, facets: {} };
+  const empty: CatalogProductsResult = { products: [], total: 0, page, pageSize, facets: {}, brandCounts: [] };
 
   if (!isDatabaseConfigured()) {
     let list = [...PRODUCTS];
@@ -507,6 +511,7 @@ export async function queryCatalogProducts(input: CatalogFilterInput): Promise<C
       page,
       pageSize,
       facets: computeFacetCounts(list, facetDefs),
+      brandCounts: await queryBrandCounts({ cat: input.cat }),
     };
   }
 
@@ -518,7 +523,7 @@ export async function queryCatalogProducts(input: CatalogFilterInput): Promise<C
     const where: Prisma.ProductWhereInput =
       facetWhere != null ? { AND: [baseWhere, facetWhere] } : baseWhere;
 
-    const [total, rows] = await Promise.all([
+    const [total, rows, brandCounts] = await Promise.all([
       prisma.product.count({ where }),
       prisma.product.findMany({
         where,
@@ -530,6 +535,7 @@ export async function queryCatalogProducts(input: CatalogFilterInput): Promise<C
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
+      queryBrandCounts({ cat: input.cat }),
     ]);
 
     let products = rows.map((r) => mapDbToProduct(r, input.locale));
@@ -544,7 +550,7 @@ export async function queryCatalogProducts(input: CatalogFilterInput): Promise<C
 
     const facetCounts = await queryCatalogFacetCounts(input, facetDefs, baseWhere);
 
-    return { products, total, page, pageSize, facets: facetCounts };
+    return { products, total, page, pageSize, facets: facetCounts, brandCounts };
   } catch (e) {
     if (!isDbConnectionError(e)) console.error("[catalog-filter]", e);
     return empty;

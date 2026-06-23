@@ -9,6 +9,9 @@ export type CatalogProductsResponse = {
   page: number;
   pageSize: number;
   facets: Record<string, FacetCount[]>;
+  /** Server-computed per-brand counts for the sidebar brand badges (optional —
+   *  absent on older API builds; the sidebar falls back gracefully). */
+  brandCounts?: FacetCount[];
 };
 
 export type CatalogProductsQuery = {

@@ -52,6 +52,10 @@ function parseSortParam(raw: string | null): SortOption {
 /** Matches the server default in catalog-filter.ts — both paths page in lockstep. */
 const LISTING_PAGE_SIZE = 48;
 
+/** Stable empty fallback — the listing no longer receives the full catalog from
+ *  bootstrap; the server-paginated query is the only product source. */
+const EMPTY_PRODUCTS: Product[] = [];
+
 function parsePageParam(raw: string | null): number {
   return Math.max(1, parseInt(raw ?? "1", 10) || 1);
 }
@@ -123,7 +127,9 @@ function applySort(products: Product[], sort: SortOption): Product[] {
 }
 
 type InnerProps = {
-  products: Product[];
+  /** Optional in-memory catalog — only a graceful fallback now (normally empty);
+   *  the grid + brand counts come from the server-paginated API. */
+  products?: Product[];
   categories: Category[];
   initialCat: string;
   initialBrand: string;
@@ -167,7 +173,7 @@ function cardSearchLines(
   return { line1: t("searchMatchedCatalog") };
 }
 
-function ProductsInner({ products: allProducts, categories, initialCat, initialBrand, initialFeatured }: InnerProps) {
+function ProductsInner({ products: allProducts = EMPTY_PRODUCTS, categories, initialCat, initialBrand, initialFeatured }: InnerProps) {
   const t = useTranslations("Products");
   const locale = useLocale();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -414,6 +420,9 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
   const serverFacets = serverCatalog.data?.facets;
   const serverFacetFilters = serverFacetDefs.data?.filters;
   const catalogLoading = useServerCatalog && serverCatalog.isFetching && !serverCatalog.data;
+  /** Cold API failure with no cached page — show an explicit error+retry rather
+   *  than a misleading "no results" (the full-catalog fallback is gone). */
+  const catalogError = useServerCatalog && serverCatalog.isError && !serverCatalog.data;
 
   /**
    * When a server page is present it is already the requested slice; otherwise
@@ -535,6 +544,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
       categories={categories}
       serverFacets={serverFacets}
       serverFacetFilters={serverFacetFilters}
+      serverBrandCounts={serverCatalog.data?.brandCounts}
     />
   );
 
@@ -657,8 +667,23 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
               <div className={productsStyles.noResults}>
                 <p>{t("loadingResults", { defaultValue: "Loading…" })}</p>
               </div>
-            ) : null}
-            {!catalogLoading && displayCount === 0 ? (
+            ) : catalogError ? (
+              <div className={productsStyles.noResults}>
+                <span className={productsStyles.noResultsEmoji} aria-hidden>
+                  ⚠️
+                </span>
+                <h3 className={productsStyles.noResultsTitleBilingual}>
+                  <span className={productsStyles.noResultsLang}>Couldn’t load products</span>
+                  <span className={productsStyles.noResultsLang} dir="rtl" lang="ar">
+                    تعذّر تحميل المنتجات
+                  </span>
+                </h3>
+                <p>{t("errorLoadingSub", { defaultValue: "Please check your connection and try again." })}</p>
+                <button type="button" className="btn-outline" onClick={() => serverCatalog.refetch()}>
+                  {t("retry", { defaultValue: "Retry" })}
+                </button>
+              </div>
+            ) : displayCount === 0 ? (
               <div className={productsStyles.noResults}>
                 <span className={productsStyles.noResultsEmoji} aria-hidden>
                   🔍
@@ -719,7 +744,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
 }
 
 export function ProductsCollectionClient(props: {
-  products: Product[];
+  products?: Product[];
   categories: Category[];
   initialCat: string;
   initialBrand: string;

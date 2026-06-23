@@ -50,6 +50,9 @@ interface FilterSidebarProps {
   serverFacets?: Record<string, FacetCount[]>;
   /** Full facet definitions with sanitized labels from API. */
   serverFacetFilters?: FacetFilterDefinition[];
+  /** Server-computed per-brand counts. Preferred over deriving from `products`
+   *  so the sidebar no longer needs the full in-memory catalog. */
+  serverBrandCounts?: FacetCount[];
 }
 
 function resolveFacetOptions(
@@ -189,6 +192,7 @@ export function FilterSidebar({
   categories,
   serverFacets,
   serverFacetFilters,
+  serverBrandCounts,
 }: FilterSidebarProps) {
   const t = useTranslations("Products");
   const locale = useLocale();
@@ -225,7 +229,12 @@ export function FilterSidebar({
     return [...defs].sort((a, b) => facetSortIndex(catSlug, a.key) - facetSortIndex(catSlug, b.key));
   }, [activeCat, categoryMeta, serverFacetFilters, catSlug]);
 
-  const brandOptions = collectBrandCounts(products, activeCat);
+  /** Prefer server-computed brand counts; fall back to the in-memory catalog
+   *  only when they are absent (older API build or offline static data). */
+  const brandOptions =
+    serverBrandCounts && serverBrandCounts.length
+      ? serverBrandCounts
+      : collectBrandCounts(products, activeCat);
 
   const toggleSpecValue = (facetKey: string, value: string) => {
     const urlValue = facetValueForFilter(facetKey, value) ?? value;
