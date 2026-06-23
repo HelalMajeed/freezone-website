@@ -121,14 +121,63 @@ async function writeRoute(template, locale, routePath, meta) {
   await writeFile(path.join(outDir, "index.html"), html, "utf8");
 }
 
+/**
+ * Page through the server-paginated listing to assemble the full product set for
+ * the SEO shells. The storefront bootstrap intentionally no longer ships
+ * `catalog.products` (Phase-1: the customer BROWSER must never receive the whole
+ * catalog). This script runs at BUILD time on the CI/build runner — not a
+ * browser — so paging the full catalog here is fine. `pageSize` is clamped to
+ * 100 server-side, so we loop until the last (short) page or `total` is reached.
+ */
+/** One listing page, retried a few times — the listing endpoint hydrates the
+ *  EAV include, so a cold page can be slow; a single transient timeout must not
+ *  fail the whole deploy (the old single lean bootstrap fetch couldn't time out
+ *  mid-catalog, this paged path can). */
+async function fetchProductsPage(locale, page, pageSize) {
+  const url = `${API_ORIGIN}/api/ssr/catalog/products?locale=${locale}&page=${page}&pageSize=${pageSize}`;
+  let lastErr;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(45000) });
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      return await res.json();
+    } catch (e) {
+      lastErr = e;
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 1500 * attempt));
+    }
+  }
+  throw new Error(`products page ${page} failed after 3 attempts — ${url}: ${lastErr?.message ?? lastErr}`);
+}
+
+async function fetchAllProducts(locale) {
+  const PAGE_SIZE = 100;
+  const HARD_PAGE_CAP = 1000; // safety stop (≤100k products) — never an infinite loop
+  const all = [];
+  for (let page = 1; page <= HARD_PAGE_CAP; page++) {
+    const data = await fetchProductsPage(locale, page, PAGE_SIZE);
+    const batch = Array.isArray(data?.products) ? data.products : [];
+    all.push(...batch);
+    const total = Number(data?.total) || 0;
+    if (batch.length < PAGE_SIZE || all.length >= total) break;
+    if (MAX_PRODUCTS !== Infinity && all.length >= MAX_PRODUCTS) break;
+  }
+  return all;
+}
+
 async function fetchCatalog(locale) {
-  const url = `${API_ORIGIN}/api/ssr/storefront-bootstrap?locale=${locale}`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText} — ${url}`);
+  /** Shell metadata (categories/brands) still comes from the bootstrap; the full
+   *  product list is paged from the server-paginated listing endpoint, because
+   *  the bootstrap no longer carries `catalog.products` (Phase-1 trim). */
+  const bootUrl = `${API_ORIGIN}/api/ssr/storefront-bootstrap?locale=${locale}`;
+  const res = await fetch(bootUrl, { signal: AbortSignal.timeout(15000) });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText} — ${bootUrl}`);
   const data = await res.json();
-  if (!Array.isArray(data?.catalog?.products)) throw new Error(`invalid bootstrap payload from ${url}`);
+  if (!data?.catalog || !Array.isArray(data.catalog.categories)) {
+    throw new Error(`invalid bootstrap payload from ${bootUrl}`);
+  }
+  const products = await fetchAllProducts(locale);
   return {
-    products: data.catalog.products,
+    products,
     categories: Array.isArray(data.catalog.categories) ? data.catalog.categories : [],
     brands: Array.isArray(data.catalog.brands) ? data.catalog.brands : [],
   };
