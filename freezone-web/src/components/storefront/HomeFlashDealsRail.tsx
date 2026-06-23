@@ -1,19 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
 import { ChevronRight, Zap } from "lucide-react";
 import { Link } from "@/navigation";
 import { useTranslations } from "@/i18n/hooks";
-import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { ProductCarouselRow, useCarouselDragGuard } from "@/components/ui/ProductCarouselRow";
-import { resolveSaleProducts } from "@/lib/home-section-products";
 import { padCountdown, useMidnightCountdown } from "@/hooks/useMidnightCountdown";
 import type { Product } from "@/lib/data";
 import sliderStyles from "@/components/ui/ProductSlider.module.css";
 import styles from "./HomeFlashDealsRail.module.css";
-
-const FLASH_LIMIT = 12;
 
 type HomeFlashDealsRailProps = {
   products?: Product[];
@@ -33,13 +28,9 @@ function FlashSlide({ product, index }: { product: Product; index: number }) {
 /** On-sale products with countdown to midnight — master prompt §8.2 Section 4. */
 export function HomeFlashDealsRail({ products, title, link }: HomeFlashDealsRailProps = {}) {
   const t = useTranslations("Home");
-  const { catalog } = useStorefront();
   const { hours, minutes, seconds } = useMidnightCountdown();
 
-  const list = useMemo(
-    () => products ?? resolveSaleProducts(catalog.products, FLASH_LIMIT),
-    [products, catalog.products],
-  );
+  const list = products ?? [];
 
   if (list.length === 0) return null;
 

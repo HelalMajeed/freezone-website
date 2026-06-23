@@ -27,7 +27,13 @@ import { readPreferredLocale } from "@/lib/preferred-locale";
 const Footer = lazy(() => import("@/components/layout/Footer").then((m) => ({ default: m.Footer })));
 
 /** Stable empty catalog while the on-demand catalog query streams in. */
-const EMPTY_CATALOG = { products: [], categories: [], brands: [] };
+const EMPTY_CATALOG = {
+  products: [],
+  categories: [],
+  brands: [],
+  collections: { featured: [], newest: [], onSale: [], bestSellers: [], hasNew: false },
+  brandCounts: [],
+};
 
 export function LocaleLayout() {
   const { locale: loc } = useParams<{ locale: string }>();

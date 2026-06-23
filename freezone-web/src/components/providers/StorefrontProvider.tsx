@@ -6,16 +6,23 @@ import type { HomeCmsPayload } from "@/lib/layout-cms";
 import type { Brand, Category, Product } from "@/lib/data";
 import type { ThemeTokens } from "@/lib/theme-tokens";
 import type { StorefrontCmsSection } from "@/lib/cms-page-storefront";
+import type { HomeCollections, BrandCount } from "@/lib/storefront-bootstrap";
 
 export type StorefrontValue = {
   site: PublicSite;
   home: HomeCmsPayload;
   /** Live catalog from DB (or static fallback when DB offline) — use for homepage sections */
   catalog: {
+    /** @deprecated being retired — home rails use `collections`, browsing is
+     *  server-paginated. Present only during the catalog.products trim. */
     products: Product[];
     categories: Category[];
     /** Active brands from DB (or static fallback) — logos, strip, search */
     brands: Brand[];
+    /** Capped server-computed home rails (featured/newest/onSale/bestSellers). */
+    collections?: HomeCollections;
+    /** Per-brand counts for the sidebar (all categories). */
+    brandCounts?: BrandCount[];
   };
   theme: ThemeTokens;
   /** Published homepage CMS sections — null/empty → use legacy homepage layout */

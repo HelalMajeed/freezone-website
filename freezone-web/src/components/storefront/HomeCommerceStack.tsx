@@ -7,6 +7,7 @@ import { HomeFlashDealsRail } from "@/components/storefront/HomeFlashDealsRail";
 import { HomeHotItemsRail } from "@/components/storefront/HomeHotItemsRail";
 import { HomeNewArrivalsRail } from "@/components/storefront/HomeNewArrivalsRail";
 import { BrandTicker } from "@/components/ui/BrandTicker";
+import { useStorefront } from "@/components/providers/StorefrontProvider";
 import type { PublicSpotlightItem } from "@/lib/layout-cms";
 
 type HomeCommerceStackProps = {
@@ -29,19 +30,28 @@ export function HomeCommerceStack({
   showBrands = true,
   megaPayload,
 }: HomeCommerceStackProps) {
+  /** Home rails read small capped server collections — never the full catalog. */
+  const { catalog } = useStorefront();
+  const collections = catalog.collections;
   const nodes: ReactNode[] = [];
 
   if (showStrip) {
     nodes.push(<CategoryIconStrip key="strip" previewSpots={stripSpots} />);
   }
   if (showFlashDeals) {
-    nodes.push(<HomeFlashDealsRail key="flash" />);
+    nodes.push(<HomeFlashDealsRail key="flash" products={collections?.onSale} />);
   }
   if (showHotItems) {
-    nodes.push(<HomeHotItemsRail key="hot" />);
+    nodes.push(<HomeHotItemsRail key="hot" products={collections?.bestSellers} />);
   }
   if (showNewArrivals) {
-    nodes.push(<HomeNewArrivalsRail key="new" />);
+    nodes.push(
+      <HomeNewArrivalsRail
+        key="new"
+        products={collections?.newest}
+        link={collections?.hasNew ? "/products?isNew=true" : "/products"}
+      />,
+    );
   }
   if (showBrands) {
     nodes.push(<BrandTicker key="brands" compact />);
