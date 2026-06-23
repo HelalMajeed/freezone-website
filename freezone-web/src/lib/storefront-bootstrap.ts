@@ -26,10 +26,10 @@ export type StorefrontBootstrapPayload = {
   site: PublicSite;
   home: HomeCmsPayload;
   catalog: {
-    products: Product[];
     categories: Category[];
     brands: Brand[];
-    /** Capped server-computed home rails (added during the catalog.products trim). */
+    /** Capped server-computed home rails — replaces the full product catalog,
+     *  which is no longer shipped in the bootstrap. */
     collections?: HomeCollections;
     /** Per-brand counts for the filter sidebar (all categories). */
     brandCounts?: BrandCount[];
@@ -75,7 +75,6 @@ async function loadFallback(locale: "en" | "ar"): Promise<StorefrontBootstrapPay
     site: staticPublicSite(locale),
     home: staticHomeCms(locale === "ar" ? "ar" : "en"),
     catalog: {
-      products: PRODUCTS,
       categories: CATEGORIES,
       brands: BRANDS,
       collections: staticHomeCollections(),
@@ -126,7 +125,7 @@ export async function fetchStorefrontBootstrap(locale: "en" | "ar"): Promise<Sto
       return loadFallback(locale);
     }
     const raw = (await r.json()) as StorefrontBootstrapPayload;
-    if (!raw?.catalog || !Array.isArray(raw.catalog.products)) {
+    if (!raw?.catalog || !Array.isArray(raw.catalog.categories)) {
       const msg = `[storefront-bootstrap] Invalid JSON from ${url}`;
       console.error(msg, raw);
       if (prod) throw new Error(`${msg}. Check API deployment.`);

@@ -28,7 +28,6 @@ const Footer = lazy(() => import("@/components/layout/Footer").then((m) => ({ de
 
 /** Stable empty catalog while the on-demand catalog query streams in. */
 const EMPTY_CATALOG = {
-  products: [],
   categories: [],
   brands: [],
   collections: { featured: [], newest: [], onSale: [], bestSellers: [], hasNew: false },
