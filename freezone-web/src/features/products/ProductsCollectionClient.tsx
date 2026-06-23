@@ -33,6 +33,7 @@ import { facetValueForFilter } from "@/lib/classification/legacy-spec-map";
 import { sanitizeFacetFilterToken, formatFacetFilterLabel } from "@/lib/classification/facet-filter-token";
 import { getFacetDisplayLabel } from "@/lib/catalog-facet-ui";
 import { MotionReveal } from "@/components/motion/MotionReveal";
+import { useStorefront } from "@/components/providers/StorefrontProvider";
 export type SortOption = "featured" | "relevant" | "price-asc" | "price-desc" | "date-new" | "date-old";
 
 const SORT_OPTIONS: readonly SortOption[] = [
@@ -176,6 +177,10 @@ function cardSearchLines(
 function ProductsInner({ products: allProducts = EMPTY_PRODUCTS, categories, initialCat, initialBrand, initialFeatured }: InnerProps) {
   const t = useTranslations("Products");
   const locale = useLocale();
+  /** Global (all-category) brand counts from bootstrap — a resilient fallback so
+   *  the sidebar Brand section never disappears on the bare /products view if the
+   *  products endpoint omits per-category brandCounts (older/partial API build). */
+  const { catalog: bootstrapCatalog } = useStorefront();
   const [searchParams, setSearchParams] = useSearchParams();
   const catParam = searchParams.get("cat") ?? initialCat;
   const brandParams = parseCsvValues(searchParams.getAll("brand"));
@@ -544,7 +549,9 @@ function ProductsInner({ products: allProducts = EMPTY_PRODUCTS, categories, ini
       categories={categories}
       serverFacets={serverFacets}
       serverFacetFilters={serverFacetFilters}
-      serverBrandCounts={serverCatalog.data?.brandCounts}
+      serverBrandCounts={
+        serverCatalog.data?.brandCounts ?? (filters.cat ? undefined : bootstrapCatalog.brandCounts)
+      }
     />
   );
 
