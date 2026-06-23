@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { GitCompare, Star, X } from "lucide-react";
 import { Link } from "@/navigation";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { useCompare } from "@/lib/compare-store";
+import { fetchProductsByIds } from "@/lib/catalog-products-api";
 import { Seo } from "@/components/seo/Seo";
 import type { Product } from "@/lib/data";
 import styles from "./compare.module.css";
@@ -38,10 +40,14 @@ export default function ComparePage() {
   const toggle = useCompare((s) => s.toggle);
   const clear = useCompare((s) => s.clear);
 
-  const products = useMemo(() => {
-    const byId = new Map(catalog.products.map((p) => [p.id, p]));
-    return ids.map((id) => byId.get(id)).filter((p): p is Product => Boolean(p));
-  }, [ids, catalog.products]);
+  /** Compared ids → products fetched by id (≤4, with specs) — no full catalog. */
+  const { data: products = [], isFetching } = useQuery({
+    queryKey: ["compare-products", locale, ids],
+    queryFn: () => fetchProductsByIds(ids, locale),
+    enabled: ids.length > 0,
+    staleTime: 30_000,
+  });
+  const loading = ids.length > 0 && isFetching && products.length === 0;
 
   const specKeys = useMemo(() => unionSpecKeys(products), [products]);
 
@@ -76,7 +82,11 @@ export default function ComparePage() {
         ) : null}
       </header>
 
-      {products.length === 0 ? (
+      {loading ? (
+        <div className={styles.empty}>
+          <p className={styles.emptyBody}>{locale === "ar" ? "جاري التحميل…" : "Loading…"}</p>
+        </div>
+      ) : products.length === 0 ? (
         <div className={styles.empty}>
           <GitCompare size={56} className={styles.emptyIcon} aria-hidden />
           <h2 className={`fz-type-h3 ${styles.emptyTitle}`}>{t("empty")}</h2>

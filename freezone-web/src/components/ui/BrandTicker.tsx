@@ -129,17 +129,8 @@ export function useBrandTickerRows() {
     if (catalog.brands.length > 0) {
       return catalog.brands.map((b) => ({ name: b.name, img: b.img }));
     }
-    const seen = new Set<string>();
-    const out: BrandRow[] = [];
-    for (const p of catalog.products) {
-      const name = p.brand?.trim();
-      if (!name || seen.has(name)) continue;
-      seen.add(name);
-      out.push({ name, img: null });
-    }
-    if (out.length > 0) return out;
     return BRANDS.map((b) => ({ name: b.name, img: b.img }));
-  }, [catalog.brands, catalog.products]);
+  }, [catalog.brands]);
 }
 
 export function BrandTicker({ title, compact = false }: BrandTickerProps = {}) {

@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
 import { Heart } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@/navigation";
-import { useTranslations } from "@/i18n/hooks";
+import { useLocale, useTranslations } from "@/i18n/hooks";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import { useWishlist } from "@/lib/wishlist-store";
+import { fetchProductsByIds } from "@/lib/catalog-products-api";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { Seo } from "@/components/seo/Seo";
 import styles from "./wishlist.module.css";
@@ -13,14 +14,19 @@ import styles from "./wishlist.module.css";
 export default function WishlistPage() {
   const t = useTranslations("Wishlist");
   const tSeo = useTranslations("Seo");
+  const locale = useLocale();
   const { catalog } = useStorefront();
   const ids = useWishlist((s) => s.ids);
   const clear = useWishlist((s) => s.clear);
 
-  const products = useMemo(() => {
-    const byId = new Map(catalog.products.map((p) => [p.id, p]));
-    return ids.map((id) => byId.get(id)).filter((p): p is NonNullable<typeof p> => Boolean(p));
-  }, [ids, catalog.products]);
+  /** Saved ids → products fetched by id (never the full catalog). */
+  const { data: products = [], isFetching } = useQuery({
+    queryKey: ["wishlist-products", locale, ids],
+    queryFn: () => fetchProductsByIds(ids, locale),
+    enabled: ids.length > 0,
+    staleTime: 30_000,
+  });
+  const loading = ids.length > 0 && isFetching && products.length === 0;
 
   return (
     <div className={`container ${styles.wrapper}`}>
@@ -40,7 +46,11 @@ export default function WishlistPage() {
         ) : null}
       </header>
 
-      {products.length === 0 ? (
+      {loading ? (
+        <div className={styles.empty}>
+          <p className={styles.emptyBody}>{locale === "ar" ? "جاري التحميل…" : "Loading…"}</p>
+        </div>
+      ) : products.length === 0 ? (
         <div className={styles.empty}>
           <Heart size={56} className={styles.emptyIcon} aria-hidden />
           <h2 className={`fz-type-h3 ${styles.emptyTitle}`}>{t("empty")}</h2>

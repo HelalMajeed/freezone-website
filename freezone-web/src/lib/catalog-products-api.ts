@@ -77,6 +77,24 @@ export async function fetchCatalogProducts(q: CatalogProductsQuery): Promise<Cat
   return res.json() as Promise<CatalogProductsResponse>;
 }
 
+/**
+ * Batch product lookup by id — for wishlist / compare. Returns products in the
+ * requested id order (server re-orders), capped server-side at 100. No full
+ * catalog in the browser.
+ */
+export async function fetchProductsByIds(ids: number[], locale: "en" | "ar"): Promise<Product[]> {
+  if (ids.length === 0) return [];
+  const sp = new URLSearchParams();
+  sp.set("locale", locale);
+  sp.set("ids", ids.join(","));
+  const res = await fetch(freezoneApiUrl(`/api/ssr/catalog/products/by-ids?${sp.toString()}`), {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(`catalog products-by-ids ${res.status}`);
+  const data = (await res.json()) as { products: Product[] };
+  return data.products;
+}
+
 export type FacetFilterOption = { label: string; value: string; count: number };
 
 export type FacetFilterDefinition = {
