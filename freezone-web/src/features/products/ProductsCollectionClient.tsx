@@ -25,7 +25,6 @@ import collStyles from "./collection.module.css";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import {
-  catalogUsesFilteredApi,
   fetchCatalogProducts,
   fetchCatalogFacets,
   type CatalogProductsQuery,
@@ -319,7 +318,16 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
     [locale, filters, query, sortBy, pageParam],
   );
 
-  const useServerCatalog = catalogUsesFilteredApi(catalogQuery) || Boolean(filters.cat);
+  /**
+   * Always use the server-side paginated API for the listing — even on the bare
+   * /products view — so the product GRID is one page from the DB (skip/take in
+   * SQL), never a client-side filter/sort/slice over the full in-memory catalog.
+   * The in-memory `allProducts` array is kept only as (a) the source for the
+   * sidebar's brand/availability OPTION lists and (b) a graceful fallback while
+   * the first page is loading or if the request fails. The heavy browse work no
+   * longer depends on the full catalog.
+   */
+  const useServerCatalog = true;
 
   const serverCatalog = useQuery({
     queryKey: ["catalog-products", catalogQuery],
@@ -407,11 +415,18 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
   const serverFacetFilters = serverFacetDefs.data?.filters;
   const catalogLoading = useServerCatalog && serverCatalog.isFetching && !serverCatalog.data;
 
-  /** Server mode: `filtered` is already the requested page. Client mode: slice locally. */
-  const pageSize =
-    useServerCatalog && serverCatalog.data ? serverCatalog.data.pageSize : LISTING_PAGE_SIZE;
+  /**
+   * When a server page is present it is already the requested slice; otherwise
+   * (first load still pending, or the request failed before any page cached) we
+   * fall back to the in-memory list and MUST slice it locally — rendering the
+   * whole `filtered` array unsliced would dump the entire catalog into the DOM
+   * with broken pagination. Gating on `serverCatalog.data` keeps the fallback
+   * paginated exactly like the legacy client path.
+   */
+  const serverPaged = useServerCatalog && Boolean(serverCatalog.data);
+  const pageSize = serverCatalog.data ? serverCatalog.data.pageSize : LISTING_PAGE_SIZE;
   const pageCount = Math.max(1, Math.ceil(displayCount / pageSize));
-  const pagedProducts = useServerCatalog
+  const pagedProducts = serverPaged
     ? filtered
     : filtered.slice((pageParam - 1) * LISTING_PAGE_SIZE, pageParam * LISTING_PAGE_SIZE);
 
@@ -516,7 +531,7 @@ function ProductsInner({ products: allProducts, categories, initialCat, initialB
       filters={filters}
       setFilters={setFilters}
       clearFilters={clearFilters}
-      products={useServerCatalog && serverCatalog.data ? serverCatalog.data.products : allProducts}
+      products={allProducts}
       categories={categories}
       serverFacets={serverFacets}
       serverFacetFilters={serverFacetFilters}

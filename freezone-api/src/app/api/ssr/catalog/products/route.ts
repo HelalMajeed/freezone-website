@@ -1,47 +1,17 @@
-import { getProductsCatalog } from "@/lib/catalog";
 import { parseCatalogFilterFromUrl, queryCatalogProducts } from "@/lib/catalog-filter";
 
+/**
+ * Storefront product listing — ALWAYS server-paginated.
+ *
+ * The storefront listing (ProductsCollectionClient) uses this endpoint for the
+ * default browse path too (not only when a filter/category/search is active),
+ * so the browser never receives the full catalog array from here — only the
+ * requested page. queryCatalogProducts applies WHERE/ORDER BY/skip/take in SQL
+ * and returns { products, total, page, pageSize, facets }; an empty filter set
+ * yields page 1 of all published products.
+ */
 export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const hasFilters =
-    url.searchParams.has("cat") ||
-    url.searchParams.has("brand") ||
-    url.searchParams.has("price") ||
-    url.searchParams.has("q") ||
-    url.searchParams.has("sort") ||
-    url.searchParams.has("page") ||
-    url.searchParams.has("inStock") ||
-    url.searchParams.has("onSale") ||
-    url.searchParams.has("isNew") ||
-    url.searchParams.has("featured") ||
-    url.searchParams.has("listingAge") ||
-    [...url.searchParams.keys()].some((k) => !isReservedCatalogParam(k));
-
-  if (!hasFilters) {
-    const locale = url.searchParams.get("locale") === "ar" ? "ar" : "en";
-    const products = await getProductsCatalog(locale);
-    return Response.json(products);
-  }
-
   const input = parseCatalogFilterFromUrl(req.url);
   const result = await queryCatalogProducts(input);
   return Response.json(result);
-}
-
-function isReservedCatalogParam(key: string): boolean {
-  return [
-    "locale",
-    "cat",
-    "brand",
-    "price",
-    "inStock",
-    "onSale",
-    "isNew",
-    "featured",
-    "listingAge",
-    "q",
-    "sort",
-    "page",
-    "pageSize",
-  ].includes(key);
 }
