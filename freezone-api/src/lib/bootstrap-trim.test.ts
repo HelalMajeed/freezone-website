@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { GET as bootstrapGET } from "../app/api/ssr/storefront-bootstrap/route.ts";
-import { GET as byIdsGET } from "../app/api/ssr/catalog/products/by-ids/route.ts";
-import { GET as pcBuildCatalogGET } from "../app/api/ssr/pc-build-catalog/route.ts";
-import { MAX_PRODUCTS_BY_IDS, getProductsByIds } from "./catalog.ts";
+import { GET as bootstrapGET } from "../app/api/ssr/storefront-bootstrap/route";
+import { GET as byIdsGET } from "../app/api/ssr/catalog/products/by-ids/route";
+import { GET as pcBuildCatalogGET } from "../app/api/ssr/pc-build-catalog/route";
+import { MAX_PRODUCTS_BY_IDS, getProductsByIds } from "./catalog";
 
 /**
  * Phase-1 bootstrap trim regression suite. These run on the static path (no
