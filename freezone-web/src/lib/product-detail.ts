@@ -33,6 +33,9 @@ export type ProductDetailPayload = {
   specRows: ProductDetailSpecItem[];
   attributes: FacetAttributeDef[];
   variants: ProductVariantDto[];
+  /** Server-computed related products (same primary category) — replaces the
+   *  old client-side scan of the full catalog. */
+  related?: Product[];
 };
 
 export async function getProductDetail(
@@ -49,6 +52,7 @@ export async function getProductDetail(
       specRows: [],
       attributes: [],
       variants: [],
+      related: [],
     };
   }
   try {
@@ -71,6 +75,7 @@ export async function getProductDetail(
       specRows: [],
       attributes: [],
       variants: [],
+      related: [],
     };
   }
 }

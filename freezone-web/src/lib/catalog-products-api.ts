@@ -25,6 +25,8 @@ export type CatalogProductsQuery = {
   q?: string;
   sort?: string;
   page?: number;
+  /** Override the server default page size (clamped server-side to ≤100). */
+  pageSize?: number;
   facets?: Record<string, string[]>;
 };
 
@@ -42,6 +44,7 @@ function buildCatalogProductsUrl(q: CatalogProductsQuery): string {
   if (q.q?.trim()) sp.set("q", q.q.trim());
   if (q.sort) sp.set("sort", q.sort);
   if (q.page && q.page > 1) sp.set("page", String(q.page));
+  if (q.pageSize) sp.set("pageSize", String(q.pageSize));
   if (q.facets) {
     for (const [key, vals] of Object.entries(q.facets)) {
       if (vals.length) sp.set(key, vals.join(","));

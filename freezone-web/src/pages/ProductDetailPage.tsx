@@ -5,7 +5,6 @@ import { trackViewItem } from "@/lib/analytics";
 import type { LocaleCode } from "@/lib/layout-cms";
 import { useStorefront } from "@/components/providers/StorefrontProvider";
 import ProductDetailClient from "@/features/product-detail/ProductDetailClient";
-import { productsShareAnyCategory } from "@/lib/productCategoryMembership";
 import { getProductDetail } from "@/lib/product-detail";
 import { Seo } from "@/components/seo/Seo";
 import { ProductJsonLd } from "@/components/seo/ProductJsonLd";
@@ -56,8 +55,10 @@ export default function ProductDetailPage() {
     return null;
   }
 
-  const relatedProducts = catalog.products
-    .filter((p) => p.id !== detail.product.id && productsShareAnyCategory(p, detail.product))
+  /** Related products come from the server (GET /api/ssr/product/:id returns a
+   *  same-primary-category set) — no full catalog needed in the browser. */
+  const relatedProducts = (detail.related ?? [])
+    .filter((p) => p.id !== detail.product.id)
     .slice(0, 4);
 
   const product = detail.product;
