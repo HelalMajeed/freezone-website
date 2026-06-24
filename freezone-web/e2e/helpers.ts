@@ -35,9 +35,35 @@ export type CatalogProduct = {
 };
 
 type BootstrapBody = {
-  catalog: { products: CatalogProduct[] };
+  /** The bootstrap no longer ships `catalog.products` (Phase-1 trim) — products
+   *  are fetched from the paginated /api/ssr/catalog/products endpoint instead
+   *  (see fetchProducts). The bootstrap is still used here for `site` data. */
+  catalog?: Record<string, unknown>;
   site: { shippingFees?: Record<string, number>; freeDeliveryThreshold?: number };
 };
+
+type CatalogProductsResponse = { products: CatalogProduct[]; total?: number };
+
+/**
+ * Every product from the server-paginated storefront listing — the same endpoint
+ * the storefront itself browses, now that the bootstrap no longer carries the
+ * full catalog. Pages through all results (pageSize 100, capped at 50 pages) so a
+ * match is never missed if the seeded catalog grows past one page. Pass extra
+ * query params (e.g. "&inStock=true&sort=price-asc") to filter/sort server-side.
+ */
+export async function fetchProducts(request: APIRequestContext, query = ""): Promise<CatalogProduct[]> {
+  const PAGE_SIZE = 100;
+  const all: CatalogProduct[] = [];
+  for (let page = 1; page <= 50; page++) {
+    const res = await request.get(`/api/ssr/catalog/products?locale=en&pageSize=${PAGE_SIZE}&page=${page}${query}`);
+    expect(res.ok(), "catalog products endpoint should answer (is the API on :4000 with a seeded DB?)").toBe(true);
+    const body = (await res.json()) as CatalogProductsResponse;
+    const batch = Array.isArray(body.products) ? body.products : [];
+    all.push(...batch);
+    if (batch.length < PAGE_SIZE || all.length >= (body.total ?? all.length)) break;
+  }
+  return all;
+}
 
 /** One bootstrap fetch per process — the payload is heavy and read-only. */
 let bootstrapCache: BootstrapBody | null = null;
@@ -55,8 +81,8 @@ export async function findProduct(
   request: APIRequestContext,
   match: RegExp,
 ): Promise<CatalogProduct> {
-  const { catalog } = await fetchBootstrap(request);
-  const product = catalog.products.find((p) => p.inStock && match.test(p.name));
+  const products = await fetchProducts(request);
+  const product = products.find((p) => p.inStock && match.test(p.name));
   expect(product, `expected a seeded in-stock product matching ${match} — run db:seed:demo`).toBeTruthy();
   return product as CatalogProduct;
 }
@@ -68,7 +94,7 @@ export async function findProduct(
 export async function findCheapProduct(request: APIRequestContext): Promise<CatalogProduct> {
   const body = await fetchBootstrap(request);
   const threshold = body.site.freeDeliveryThreshold ?? 100_000;
-  const product = body.catalog.products
+  const product = (await fetchProducts(request, "&inStock=true&sort=price-asc"))
     .filter((p) => p.inStock && p.price > 0 && p.price < threshold)
     .sort((a, b) => a.price - b.price)[0];
   expect(product, "expected a seeded in-stock product below the free-delivery threshold").toBeTruthy();

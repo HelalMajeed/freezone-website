@@ -34,7 +34,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -149,7 +149,7 @@ async function fetchProductsPage(locale, page, pageSize) {
   throw new Error(`products page ${page} failed after 3 attempts — ${url}: ${lastErr?.message ?? lastErr}`);
 }
 
-async function fetchAllProducts(locale) {
+export async function fetchAllProducts(locale) {
   const PAGE_SIZE = 100;
   const HARD_PAGE_CAP = 1000; // safety stop (≤100k products) — never an infinite loop
   const all = [];
@@ -164,7 +164,7 @@ async function fetchAllProducts(locale) {
   return all;
 }
 
-async function fetchCatalog(locale) {
+export async function fetchCatalog(locale) {
   /** Shell metadata (categories/brands) still comes from the bootstrap; the full
    *  product list is paged from the server-paginated listing endpoint, because
    *  the bootstrap no longer carries `catalog.products` (Phase-1 trim). */
@@ -424,11 +424,17 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error("[prerender] failed:", e?.message ?? e);
-  if (ALLOW_EMPTY) {
-    console.warn("[prerender] PRERENDER_ALLOW_EMPTY=1 — build continues despite the failure.");
-  } else {
-    process.exit(1);
-  }
-});
+/** Only run the build when executed directly (`node scripts/prerender.mjs`).
+ *  Importing this module (e.g. from the regression test) must NOT kick off a
+ *  network build — it just exposes fetchCatalog/fetchAllProducts for assertions. */
+const isDirectRun = Boolean(process.argv[1]) && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isDirectRun) {
+  main().catch((e) => {
+    console.error("[prerender] failed:", e?.message ?? e);
+    if (ALLOW_EMPTY) {
+      console.warn("[prerender] PRERENDER_ALLOW_EMPTY=1 — build continues despite the failure.");
+    } else {
+      process.exit(1);
+    }
+  });
+}
