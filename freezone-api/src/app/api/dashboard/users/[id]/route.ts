@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { hashPassword, isRole, revokeAllUserSessions } from "@/lib/dashboard-auth";
-import { requireSuperAdminRead } from "@/lib/admin-auth";
+import { requireSuperAdminRead, requireSuperAdminMutate } from "@/lib/admin-auth";
 import { jsonError, jsonOk } from "@/lib/dashboard-guard";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -50,7 +50,7 @@ export async function GET(req: Request, ctx: Ctx): Promise<Response> {
  * Setting password rotates all sessions for the target user.
  */
 export async function PATCH(req: Request, ctx: Ctx): Promise<Response> {
-  const g = await requireSuperAdminRead(req);
+  const g = await requireSuperAdminMutate(req);
   if (!g.ok) return g.response;
   const id = await readId(ctx);
   if (id == null) return jsonError(400, "INVALID_ID");
@@ -134,7 +134,7 @@ export async function PATCH(req: Request, ctx: Ctx): Promise<Response> {
  * Refuses to delete the last active superadmin or yourself.
  */
 export async function DELETE(req: Request, ctx: Ctx): Promise<Response> {
-  const g = await requireSuperAdminRead(req);
+  const g = await requireSuperAdminMutate(req);
   if (!g.ok) return g.response;
   const id = await readId(ctx);
   if (id == null) return jsonError(400, "INVALID_ID");

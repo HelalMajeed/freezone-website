@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { hashPassword, isRole } from "@/lib/dashboard-auth";
-import { requireSuperAdminRead } from "@/lib/admin-auth";
+import { requireSuperAdminRead, requireSuperAdminMutate } from "@/lib/admin-auth";
 import { jsonError, jsonOk } from "@/lib/dashboard-guard";
 
 /**
@@ -36,7 +36,7 @@ export async function GET(req: Request): Promise<Response> {
  * Body: { email, name, password, role }
  */
 export async function POST(req: Request): Promise<Response> {
-  const g = await requireSuperAdminRead(req);
+  const g = await requireSuperAdminMutate(req);
   if (!g.ok) return g.response;
 
   const body = (await req.json().catch(() => ({}))) as {
