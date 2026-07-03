@@ -158,8 +158,9 @@
 .qtyBtn {
   background: var(--bg-secondary);
   border: none;
-  width: 32px;
-  height: 32px;
+  /* CMX-3: meet the 44px min tap target (matches PDP qty + --fz-touch-min token). */
+  min-width: var(--fz-touch-min, 44px);
+  min-height: var(--fz-touch-min, 44px);
   display: flex;
   align-items: center;
   justify-content: center;
