@@ -5,10 +5,12 @@ import { LocaleLayout } from "@/routes/LocaleLayout";
 import { ConfirmDialogHost } from "@/components/ui/ConfirmDialog";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import HomePage from "@/pages/HomePage";
-import ProductsPage from "@/pages/ProductsPage";
-import ProductDetailPage from "@/pages/ProductDetailPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 
+// PERF-4: lazy so the listing + product-detail trees leave the eager entry chunk
+// (a home visitor no longer downloads them up front — they load under Suspense).
+const ProductsPage = lazy(() => import("@/pages/ProductsPage"));
+const ProductDetailPage = lazy(() => import("@/pages/ProductDetailPage"));
 const CartPage = lazy(() => import("@/app/locale/cart/page"));
 const CheckoutPage = lazy(() => import("@/app/locale/checkout/page"));
 const LoginPage = lazy(() => import("@/app/locale/login/page"));
@@ -96,8 +98,8 @@ export default function App() {
 
       <Route path="/:locale" element={<LocaleLayout />}>
         <Route index element={<HomePage />} />
-        <Route path="products" element={<ProductsPage />} />
-        <Route path="product/:id" element={<ProductDetailPage />} />
+        <Route path="products" element={<SuspensePage><ProductsPage /></SuspensePage>} />
+        <Route path="product/:id" element={<SuspensePage><ProductDetailPage /></SuspensePage>} />
         <Route
           path="cart"
           element={
