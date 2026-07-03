@@ -64,6 +64,17 @@ export async function requireSuperAdminRead(req: Request): Promise<AdminAuthResu
 }
 
 /**
+ * Team-management WRITES (create / update / delete admin accounts) — dashboard
+ * SUPER_ADMIN only. Unlike `requireSuperAdminRead`, a legacy cookie is NOT
+ * sufficient (mirrors the CUD accountability rule of `requireAdminRole`), which
+ * closes the escalation path where a legacy/system actor could mutate admin
+ * accounts through the read guard's early return.
+ */
+export async function requireSuperAdminMutate(req: Request): Promise<AdminAuthResult> {
+  return requireAdminRole(req, ["SUPER_ADMIN"]);
+}
+
+/**
  * Mutating admin routes — requires dashboard session with one of `roles`.
  * Legacy cookie alone is not sufficient for CUD (data-entry accountability).
  */

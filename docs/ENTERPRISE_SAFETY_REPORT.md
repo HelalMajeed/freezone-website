@@ -12,11 +12,11 @@
 
 | ID | Title | Severity | Status |
 |----|-------|----------|--------|
-| SEO-1 | Real 404 for unknown category/brand slugs | Critical | **VERIFIED on deploy preview — pending production merge (PR #61)** |
-| OPS-3 | API availability (min_machines_running=1) | High | TODO |
-| SEC-1 | Enforce CSP (drop Report-Only) | Medium | TODO |
-| SEC-2 | Fail-closed legacy admin password | Medium | TODO |
-| SEC-3 | `requireSuperAdminMutate` for user-mgmt writes | Medium | TODO |
+| SEO-1 | Real 404 for unknown category/brand slugs | Critical | **DONE — VERIFIED LIVE in production** (PR #61 merged `dc6f65e`) |
+| SEC-2 | Fail-closed legacy admin password | Medium | **IMPLEMENTED + unit-tested (branch `claude/e1-auth-hardening`, pending PR)** |
+| SEC-3 | `requireSuperAdminMutate` for user-mgmt writes | Medium | **IMPLEMENTED (same branch, pending PR)** |
+| OPS-3 | API availability (min_machines_running=1) | High | TODO (cost decision) |
+| SEC-1 | Enforce CSP (drop Report-Only) | Medium | TODO (review violation reports first) |
 | SEC-4 | CSRF assertion on admin mutations | Medium | TODO |
 | OPS-1 | Real, verified DB backup (owner secrets) | High | BLOCKED (needs secrets) |
 | OPS-2 | Restore drill | High | BLOCKED (needs OPS-1) |
@@ -77,14 +77,90 @@ decisive.
   - `/ar/category/zzz-nope-xyz/` → **404**, `/ar/brand/zzz-nope-xyz/` → **404** ✅
   - `/en/category/gaming/` → **200**, `/en/brand/hp/` → **200**,
     `/ar/category/gaming/` → **200** (valid pages unchanged) ✅
-- **Pending production confirmation** after the owner merges PR #61: re-run the same
-  probes against `https://freezone-iq.com/`. (The preview runs the identical build +
-  edge runtime, so production is expected to match.)
-- Note: two Netlify projects (`freezone-web`, `freezoneweb`) build the same PR — see
-  audit OPS-8 (double-deploy). Both previews returned identical correct results.
+- **VERIFIED LIVE in production (`https://freezone-iq.com`, 2026-07-03)** after PR #61
+  merged to `main` (`dc6f65e`); the fix went live ~85 s after deploy:
+  - `/en/category/zzz-nope-xyz/` → **404** (`X-Robots-Tag: noindex`, `Cache-Control:
+    no-store`); `/ar/category/zzz-nope-xyz/` → **404**
+  - `/en/brand/zzz-nope-xyz/` → **404**; `/ar/brand/zzz-nope-xyz/` → **404**
+  - `/en/category/gaming/`, `/en/brand/hp/`, `/ar/category/gaming/` → **200** (valid,
+    unchanged); `/en/product/99999999/` → **404** (existing product fix, no regression)
+- Note: **3 Netlify projects** (`freezone-web`, `freezoneweb`, `freezone-admin`) build
+  each PR/push — confirms audit **OPS-8** (multiple web-deploy targets); all returned
+  identical correct results. Worth consolidating to one deploy path.
+
+**SEO-1 status: DONE (verified live).**
 
 ### Rollback
 Delete `freezone-web/netlify/edge-functions/seo-catbrand-404.ts` and redeploy (or
 `git revert` the commit). No other file is touched; no schema/data/config change; no
 dependency added. Category/brand pages revert to the prior soft-404 (200) behavior —
 i.e., exactly today's state.
+
+---
+
+## SEC-2 — Fail-closed legacy admin password
+
+**Problem:** `adminPasswordMatches(_input)` returned **`true` for any input** when
+`ADMIN_REQUIRE_PASSWORD !== "true"`, and `getAdminPassword()` fell back to the literal
+`"changeme2024"`. In production the boot guard (`admin-secrets.ts`) forces
+`ADMIN_REQUIRE_PASSWORD=true`, so the timing-safe branch always runs and the fail-open
+path is unreachable — but it is a latent fail-open that any staging/misconfig/refactor
+without those prod semantics would expose (the legacy `fz_admin_session` grants admin
+read to `/api/admin/*`).
+
+### Plan
+Make the function fail closed and remove the well-known default, without changing the
+production-correct timing-safe compare. Add a unit regression test.
+
+### Implementation (`freezone-api/src/lib/admin-session.ts`)
+- `adminPasswordMatches`: returns `false` unless `ADMIN_REQUIRE_PASSWORD === "true"`
+  **and** a non-empty `ADMIN_PASSWORD` is configured; otherwise the same
+  `timingSafeEqual` NFC/lowercase compare as before (existing behavior preserved).
+- `getAdminPassword`: returns `process.env.ADMIN_PASSWORD ?? ""` (no `changeme2024`).
+- Only caller is `admin/login/route.ts` (legacy login); no other code/test depended on
+  the old defaults (grep-verified).
+
+### Verification
+- New unit test `src/lib/admin-session.test.ts` (added to the API test list in
+  `package.json`): **5/5 pass** — fail-closed when not required, no accept-any on a set
+  value, fail-closed when required-but-unset, correct match when required+configured,
+  and `getAdminPassword()` has no default. `npm run build` (tsc `--noEmit` + esbuild) →
+  exit 0; `npm run routes:check` → OK.
+- Production behavior unchanged (boot guard already forced the timing-safe branch).
+
+### Rollback
+`git revert` the commit — restores the previous function bodies. No schema/data change.
+
+---
+
+## SEC-3 — `requireSuperAdminMutate` for user-management writes
+
+**Problem:** `requireSuperAdminRead` returns early for `legacy`/`system` actors
+**without a role check**, yet it guarded the user-management **POST/PATCH/DELETE**
+handlers (create/update/delete admin accounts). With `LEGACY_ADMIN_COOKIE=true`, a
+legacy-cookie holder could mutate admin accounts despite the "legacy = read-only"
+design (privilege escalation).
+
+### Plan
+Add a dedicated mutate guard that rejects legacy actors (mirroring `requireAdminRole`'s
+CUD rule) and apply it to the three write handlers, leaving GETs on the read guard.
+
+### Implementation
+- `freezone-api/src/lib/admin-auth.ts`: new
+  `requireSuperAdminMutate(req) = requireAdminRole(req, ["SUPER_ADMIN"])` — requires a
+  dashboard SUPER_ADMIN session; a legacy cookie gets `403 LEGACY_SESSION_READ_ONLY`
+  in production (direct-login is disabled there).
+- Swapped to the mutate guard: `dashboard/users/route.ts` **POST**;
+  `dashboard/users/[id]/route.ts` **PATCH** + **DELETE**. GET handlers unchanged
+  (still `requireSuperAdminRead`).
+
+### Verification
+- `npm run build` (tsc `--noEmit` + esbuild) → exit 0; `npm run routes:check` → OK.
+- Behavioral (post-deploy / CI): a dashboard SUPER_ADMIN can still create/update/delete
+  users; a legacy-cookie session gets `403` on those writes but can still read (GET).
+  (Full auth-integration test needs a DB → runs in CI; logic is a thin wrapper over the
+  already-tested `requireAdminRole`.)
+
+### Rollback
+`git revert` the commit — the three handlers return to `requireSuperAdminRead` and the
+new function is removed. No schema/data change.

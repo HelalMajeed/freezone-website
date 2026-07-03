@@ -103,20 +103,26 @@ export function jsonClearSessionCookie(body: unknown): Response {
 }
 
 export function getAdminPassword(): string {
-  return process.env.ADMIN_PASSWORD || "changeme2024";
+  // No insecure default. An unset ADMIN_PASSWORD means the legacy password login
+  // is simply unusable (fail closed) rather than accepting a well-known default.
+  return process.env.ADMIN_PASSWORD ?? "";
 }
 
-export function adminPasswordMatches(_input: string): boolean {
-  if (process.env.ADMIN_REQUIRE_PASSWORD === "true") {
-    const expected = getAdminPassword();
-    try {
-      const a = Buffer.from(_input.normalize("NFC").toLowerCase(), "utf8");
-      const b = Buffer.from(expected.normalize("NFC").toLowerCase(), "utf8");
-      if (a.length !== b.length) return false;
-      return timingSafeEqual(a, b);
-    } catch {
-      return false;
-    }
+export function adminPasswordMatches(input: string): boolean {
+  // Fail closed: the legacy `/api/admin/login` password path is usable only when a
+  // password is explicitly required AND configured. This previously returned true
+  // for ANY input when ADMIN_REQUIRE_PASSWORD !== "true" (fail open); this is
+  // defense-in-depth beyond the production boot guard (see admin-secrets.ts) for
+  // any environment where that guard's prod semantics do not apply.
+  if (process.env.ADMIN_REQUIRE_PASSWORD !== "true") return false;
+  const expected = getAdminPassword();
+  if (expected.length === 0) return false;
+  try {
+    const a = Buffer.from(input.normalize("NFC").toLowerCase(), "utf8");
+    const b = Buffer.from(expected.normalize("NFC").toLowerCase(), "utf8");
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
   }
-  return true;
 }
