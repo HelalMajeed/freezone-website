@@ -15,10 +15,9 @@
 | SEO-1 | Real 404 for unknown category/brand slugs | Critical | **DONE — VERIFIED LIVE in production** (PR #61 merged `dc6f65e`) |
 | SEC-2 | Fail-closed legacy admin password | Medium | **DONE — merged (PR #62 `1e4ea46`), API deployed, `/health` ok** |
 | SEC-3 | `requireSuperAdminMutate` for user-mgmt writes | Medium | **DONE — merged (PR #62), API deployed** |
-| SEC-4 | CSRF-origin guard on admin/dashboard mutations | Medium | **IMPLEMENTED + unit-tested (branch `claude/e1-csrf`, pending PR)** |
-| OPS-3 | API availability (min_machines_running=1) | High | TODO (cost decision) |
+| SEC-4 | CSRF-origin guard on admin/dashboard mutations | Medium | **DONE — merged (PR #63 `5791baa`), API deployed** |
+| OPS-3 | API availability (min_machines_running=1) | High | **IMPLEMENTED (branch `claude/e1-availability`, pending PR + cost approval)** |
 | SEC-1 | Enforce CSP (drop Report-Only) | Medium | TODO (review violation reports first) |
-| SEC-4 | CSRF assertion on admin mutations | Medium | TODO |
 | OPS-1 | Real, verified DB backup (owner secrets) | High | BLOCKED (needs secrets) |
 | OPS-2 | Restore drill | High | BLOCKED (needs OPS-1) |
 | OPS-4 | Error monitoring + uptime alerting | High | BLOCKED (needs `SENTRY_DSN`) |
@@ -211,3 +210,34 @@ blocked.
 ### Rollback
 `git revert` the commit — removes the middleware + lib and restores the inline CORS
 origin logic. No schema/data change; no dependency added.
+
+---
+
+## OPS-3 — API availability (no cold-start / no auto-stop SPOF)
+
+**Problem:** The Fly API ran with `min_machines_running = 0` + `auto_stop_machines =
+"stop"` — a single machine that stops when idle. The first request after idle pays a
+cold-start, and there is no always-on instance (single point of failure).
+
+### Plan
+Keep at least one machine always warm.
+
+### Implementation (`fly.toml`)
+- `min_machines_running = 0 → 1`. Excess machines still auto-stop; `auto_start_machines`
+  unchanged. (True HA would be `>= 2` across regions — noted as a later step.)
+
+### ⚠️ Cost note (owner decision — merging this PR approves it)
+Keeping one `shared-cpu-1x` / `2048mb` machine running 24/7 adds a small always-on Fly
+charge (on the order of a few USD/month) versus the near-zero idle cost of auto-stop.
+This is the one E1 item with a recurring cost, hence delivered as a review PR rather
+than merged automatically.
+
+### Verification
+- Config-only change; `fly.toml` is valid TOML (no code/build impact).
+- Post-merge (recommended): `flyctl status -a freezone-website` shows a machine in
+  `started` state even when idle; a first request after idle has no cold-start delay;
+  `/health` stays `200`.
+
+### Rollback
+Revert `min_machines_running` to `0` and redeploy (`git revert`). Instantly returns to
+scale-to-zero. No data/schema impact.
