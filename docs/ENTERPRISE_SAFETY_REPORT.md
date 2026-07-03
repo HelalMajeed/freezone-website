@@ -13,8 +13,9 @@
 | ID | Title | Severity | Status |
 |----|-------|----------|--------|
 | SEO-1 | Real 404 for unknown category/brand slugs | Critical | **DONE — VERIFIED LIVE in production** (PR #61 merged `dc6f65e`) |
-| SEC-2 | Fail-closed legacy admin password | Medium | **IMPLEMENTED + unit-tested (branch `claude/e1-auth-hardening`, pending PR)** |
-| SEC-3 | `requireSuperAdminMutate` for user-mgmt writes | Medium | **IMPLEMENTED (same branch, pending PR)** |
+| SEC-2 | Fail-closed legacy admin password | Medium | **DONE — merged (PR #62 `1e4ea46`), API deployed, `/health` ok** |
+| SEC-3 | `requireSuperAdminMutate` for user-mgmt writes | Medium | **DONE — merged (PR #62), API deployed** |
+| SEC-4 | CSRF-origin guard on admin/dashboard mutations | Medium | **IMPLEMENTED + unit-tested (branch `claude/e1-csrf`, pending PR)** |
 | OPS-3 | API availability (min_machines_running=1) | High | TODO (cost decision) |
 | SEC-1 | Enforce CSP (drop Report-Only) | Medium | TODO (review violation reports first) |
 | SEC-4 | CSRF assertion on admin mutations | Medium | TODO |
@@ -164,3 +165,49 @@ CUD rule) and apply it to the three write handlers, leaving GETs on the read gua
 ### Rollback
 `git revert` the commit — the three handlers return to `requireSuperAdminRead` and the
 new function is removed. No schema/data change.
+
+---
+
+## SEC-4 — CSRF-origin guard on admin/dashboard mutations
+
+**Problem:** No anti-CSRF mechanism existed. The admin SPA (`freezone-iq.com`) calls the
+API cross-site (`freezone-website.fly.dev`) with `credentials:include`, so the session
+cookie rides cross-site requests. CORS blocks *preflighted* cross-origin writes, but a
+non-preflighted "simple request" (e.g. form-encoded POST) is a residual CSRF vector.
+
+### Plan
+Add an app-layer Origin check for state-changing admin/dashboard requests, reusing the
+**exact CORS allow-list** so it can never reject a request CORS already permits.
+
+### Implementation
+- New `freezone-api/src/lib/csrf-origin.ts` (pure, unit-tested):
+  - `buildAllowedOriginMatcher(env?)` — the allow-list builder, factored out of the
+    inline CORS logic (`CORS_ORIGINS` or the prod defaults; exact + regex entries).
+  - `shouldRejectMutationOrigin(method, path, origin, isAllowed)` — true only for a
+    `POST/PUT/PATCH/DELETE` to `/api/admin/*` or `/api/dashboard/*` whose `Origin` is
+    **present but not allow-listed**. Absent Origin (server-to-server, curl, internal
+    importer) passes, matching CORS.
+- `freezone-api/src/server.ts`:
+  - `resolveCorsOrigins()` refactored to use `buildAllowedOriginMatcher()` (behavior
+    unchanged).
+  - New `csrfOriginMiddleware()` registered after `rateLimitMiddleware`; returns
+    `403 { code: "CSRF_ORIGIN_REJECTED" }` on a rejected mutation.
+
+**Why it cannot break a live admin flow:** the check is a strict subset of the CORS
+allow-list. The admin UI works today → its origin is already allow-listed → its
+mutations pass. Only cross-origin forgeries from non-allow-listed origins are newly
+blocked.
+
+### Verification
+- New unit test `src/lib/csrf-origin.test.ts` (added to the API test list): **5/5 pass**
+  — default list matches prod/netlify/localhost & rejects others, `CORS_ORIGINS`
+  override, forgery rejected on admin+dashboard mutations, legit + no-Origin allowed,
+  safe methods / non-admin paths / preflight ignored. `npm run build` (tsc `--noEmit` +
+  esbuild) → exit 0; `npm run routes:check` → OK.
+- Post-deploy smoke (recommended): a real admin mutation from the admin UI still works;
+  a `POST /api/admin/*` with `Origin: https://evil.com` returns `403
+  CSRF_ORIGIN_REJECTED`.
+
+### Rollback
+`git revert` the commit — removes the middleware + lib and restores the inline CORS
+origin logic. No schema/data change; no dependency added.

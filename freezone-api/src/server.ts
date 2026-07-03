@@ -11,6 +11,7 @@ import helmet from "helmet";
 import { rateLimitCheck, ipKeyFromExpressReq } from "./lib/rate-limit";
 import { resolveRateLimitRule } from "./lib/rate-rules";
 import { discoverRoutes, HTTP_METHODS, type DiscoveredRoute, type HttpMethod } from "./lib/route-registry";
+import { buildAllowedOriginMatcher, shouldRejectMutationOrigin } from "./lib/csrf-origin";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 process.chdir(path.join(__dirname, ".."));
@@ -79,32 +80,31 @@ function routeCtx(req: express.Request): { params: Promise<Record<string, string
  * accidentally wide-open.
  */
 function resolveCorsOrigins(): (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => void {
-  const raw = process.env.CORS_ORIGINS?.trim();
-  const explicit = raw
-    ? raw.split(",").map((s) => s.trim()).filter(Boolean)
-    : [
-        "https://freezone-iq.com",
-        "https://freezone-website.fly.dev",
-        /^https:\/\/[a-z0-9-]+\.netlify\.app$/i.source,
-        "http://127.0.0.1:3000",
-        "http://localhost:3000",
-      ];
-  const exact = new Set<string>();
-  const patterns: RegExp[] = [];
-  for (const entry of explicit) {
-    if (entry.startsWith("^") || entry.includes("\\.")) {
-      try { patterns.push(new RegExp(entry, "i")); continue; } catch { /* fall through to exact */ }
-    }
-    exact.add(entry);
-  }
+  const isAllowed = buildAllowedOriginMatcher();
   return (origin, cb) => {
     /** Same-origin / server-to-server / curl have no Origin header — allow. */
     if (!origin) return cb(null, true);
-    if (exact.has(origin)) return cb(null, true);
-    for (const p of patterns) {
-      if (p.test(origin)) return cb(null, true);
+    cb(null, isAllowed(origin));
+  };
+}
+
+/**
+ * CSRF defense-in-depth: reject state-changing admin/dashboard requests whose
+ * `Origin` header is present but not allow-listed (see lib/csrf-origin.ts). This
+ * reuses the exact CORS allow-list, so it never rejects a request CORS already
+ * permits — it only closes the non-preflighted "simple request" forgery gap.
+ */
+function csrfOriginMiddleware(): express.RequestHandler {
+  const isAllowed = buildAllowedOriginMatcher();
+  return (req, res, next) => {
+    if (shouldRejectMutationOrigin(req.method, req.path, req.get("origin"), isAllowed)) {
+      res
+        .status(403)
+        .type("application/json")
+        .send(JSON.stringify({ ok: false, error: "Request origin not allowed", code: "CSRF_ORIGIN_REJECTED" }));
+      return;
     }
-    cb(null, false);
+    next();
   };
 }
 
@@ -240,6 +240,8 @@ async function main() {
    *  uses multipart so the limit there is set in `multer` separately. */
   app.use(express.json({ limit: "1mb" }));
   app.use(rateLimitMiddleware);
+  /** CSRF defense-in-depth for admin/dashboard mutations (see csrfOriginMiddleware). */
+  app.use(csrfOriginMiddleware());
 
   /** Opt-in JSON access logs: set `LOG_HTTP=1` (avoid noisy stdout in production by default). */
   if (process.env.LOG_HTTP === "1") {
