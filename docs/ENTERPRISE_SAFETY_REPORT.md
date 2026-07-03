@@ -12,7 +12,7 @@
 
 | ID | Title | Severity | Status |
 |----|-------|----------|--------|
-| SEO-1 | Real 404 for unknown category/brand slugs | Critical | **IMPLEMENTED (pending deploy)** |
+| SEO-1 | Real 404 for unknown category/brand slugs | Critical | **VERIFIED on deploy preview — pending production merge (PR #61)** |
 | OPS-3 | API availability (min_machines_running=1) | High | TODO |
 | SEC-1 | Enforce CSP (drop Report-Only) | Medium | TODO |
 | SEC-2 | Fail-closed legacy admin password | Medium | TODO |
@@ -69,15 +69,19 @@ decisive.
   `tsconfig` `include: src/**`); `npm run lint` → exit 0 (`eslint src` scope). The
   app bundle is untouched — this file ships only via Netlify edge-function
   auto-discovery, exactly like the live `seo-product-404.ts`.
-- **Behavior (pending deploy — requires the Netlify edge runtime, not runnable
-  locally):** after deploy, expect:
-  - `curl -I https://freezone-iq.com/en/category/zzz-nope-xyz/` → **404** +
-    `x-robots-tag: noindex`
-  - `curl -I https://freezone-iq.com/en/brand/zzz-nope-xyz/` → **404**
-  - `curl -I https://freezone-iq.com/en/category/gaming/` → **200** (valid, unchanged)
-  - `curl -I https://freezone-iq.com/en/brand/hp/` → **200** (valid, unchanged)
-  - `/ar/...` equivalents behave identically.
-  - Storefront browse of a valid category/brand and cart/checkout are unaffected.
+- **Behavior — VERIFIED on the PR #61 Netlify deploy preview (2026-07-03),** on
+  both Netlify projects (`freezone-web` + `freezoneweb`):
+  - `/en/category/zzz-nope-xyz/` → **404** + `X-Robots-Tag: noindex` +
+    `Cache-Control: no-store` ✅
+  - `/en/brand/zzz-nope-xyz/` → **404** ✅
+  - `/ar/category/zzz-nope-xyz/` → **404**, `/ar/brand/zzz-nope-xyz/` → **404** ✅
+  - `/en/category/gaming/` → **200**, `/en/brand/hp/` → **200**,
+    `/ar/category/gaming/` → **200** (valid pages unchanged) ✅
+- **Pending production confirmation** after the owner merges PR #61: re-run the same
+  probes against `https://freezone-iq.com/`. (The preview runs the identical build +
+  edge runtime, so production is expected to match.)
+- Note: two Netlify projects (`freezone-web`, `freezoneweb`) build the same PR — see
+  audit OPS-8 (double-deploy). Both previews returned identical correct results.
 
 ### Rollback
 Delete `freezone-web/netlify/edge-functions/seo-catbrand-404.ts` and redeploy (or
