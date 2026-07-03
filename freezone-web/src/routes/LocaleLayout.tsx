@@ -16,6 +16,7 @@ import { ThemeApplier } from "@/components/providers/ThemeApplier";
 import { StoreJsonLd } from "@/components/seo/StoreJsonLd";
 import { StorefrontPrefetch } from "@/components/storefront/StorefrontPrefetch";
 import { setLocale } from "@/i18n/i18n";
+import { useTranslations } from "@/i18n/hooks";
 import { trackPageView } from "@/lib/analytics";
 import { LocaleRouteFallback } from "@/routes/LocaleRouteFallback";
 import { StorefrontErrorScreen, MaintenanceScreen } from "@/routes/LocaleShellScreens";
@@ -42,6 +43,7 @@ export function LocaleLayout() {
   const dir = locale === "ar" ? "rtl" : "ltr";
   const lc = locale;
   const apiKey = import.meta.env.VITE_API_URL ?? "";
+  const t = useTranslations("Navigation");
 
   /**
    * Split bootstrap (docs/STOREFRONT_DESIGN.md §4.2) — one HTTP request,
@@ -146,8 +148,11 @@ export function LocaleLayout() {
           }}
         >
           <ThemeApplier tokens={theme}>
+            <a href="#main" className="skip-to-content">
+              {t("skipToContent")}
+            </a>
             <NavBar />
-            <main className="app-main">
+            <main id="main" className="app-main" tabIndex={-1}>
               {catalogReady ? (
                 <PageTransition>
                   <Suspense fallback={<LocaleRouteFallback withChrome={false} />}>

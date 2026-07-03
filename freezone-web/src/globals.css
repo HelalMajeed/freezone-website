@@ -237,3 +237,22 @@ html[dir="rtl"] .btn-red {
 body:focus-visible, html:focus-visible, main:focus-visible {
   outline: none;
 }
+
+/* ─── Skip to content (CMX-2, a11y) ───────────────────────────
+   First focusable element; off-screen until keyboard-focused, then it
+   reveals at the top. Logical inset flips correctly for RTL (Arabic). */
+.skip-to-content {
+  position: absolute;
+  inset-inline-start: -9999px;
+  top: 0;
+  z-index: 2000;
+  padding: 10px 16px;
+  background: var(--color-accent, #c90000);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0 0 var(--radius-md, 8px) 0;
+}
+.skip-to-content:focus {
+  inset-inline-start: 0;
+}
