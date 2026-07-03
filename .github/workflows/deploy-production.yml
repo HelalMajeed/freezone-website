@@ -102,6 +102,13 @@ jobs:
       - run: npm run build
         env:
           VITE_API_URL: https://freezone-website.fly.dev
+          # NETLIFY_AUTH_TOKEN / NETLIFY_SITE_ID are not set, so the Netlify step
+          # below is a no-op and this build is never published — the real web deploy
+          # is the Netlify Git integration. Skip the postbuild prerender so it does
+          # not fetch the live API while deploy-api is mid rolling-deploy: that race
+          # timed out the "en" catalog fetch and flaked this whole workflow red even
+          # though the API + web deploys succeeded (masking the true deploy signal).
+          PRERENDER_SKIP: "1"
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v3.0
         with:
