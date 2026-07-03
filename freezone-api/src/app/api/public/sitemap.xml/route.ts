@@ -22,6 +22,7 @@ const LOCALES = ["en", "ar"] as const;
 const STATIC_PATHS = [
   "",
   "/products",
+  "/pc-builder", // SEO-7: prerendered conversion landing (was missing from the sitemap)
   "/about",
   "/contact",
   "/warranty",
