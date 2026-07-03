@@ -110,7 +110,7 @@ jobs:
           # though the API + web deploys succeeded (masking the true deploy signal).
           PRERENDER_SKIP: "1"
       - name: Deploy to Netlify
-        uses: nwtgck/actions-netlify@v3.0
+        uses: nwtgck/actions-netlify@v4.0
         with:
           publish-dir: ./freezone-web/dist
           production-deploy: true
