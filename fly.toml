@@ -22,9 +22,12 @@ primary_region = "iad"
 [http_service]
   internal_port = 4000
   force_https = true
+  # OPS-3 (docs/ENTERPRISE_GAP_AUDIT.md): keep >=1 machine always warm — removes the
+  # cold-start on the first request after idle AND the single-point auto-stop outage.
+  # Excess machines still auto-stop; raise to >=2 (multi-region) for true HA later.
   auto_stop_machines = "stop"
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
 
 [[http_service.checks]]
   interval = "15s"
