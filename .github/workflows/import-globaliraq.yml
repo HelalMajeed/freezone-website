@@ -162,7 +162,7 @@ jobs:
 
       - name: Open failure issue
         if: steps.poll.outputs.status != 'completed' && steps.poll.outputs.status != 'completed_with_errors'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const status = "${{ steps.poll.outputs.status }}";
