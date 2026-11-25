@@ -55,6 +55,24 @@
   aspect-ratio: 3 / 1;
 }
 
+/* The banner's shape follows the page width: 3:1 on phones, lower on tablets and
+   1440 x 325 on desktop, so the section cards share the first screen with it.
+   Each banner is a 3:1 set centred in this box (generated/heroScenes.ts); its
+   background is wider than the set and fills the sides. */
+@container (min-width: 700px) {
+  .cover,
+  .coverPlaceholder {
+    aspect-ratio: 3.6 / 1;
+  }
+}
+
+@container (min-width: 1024px) {
+  .cover,
+  .coverPlaceholder {
+    aspect-ratio: 1440 / 325;
+  }
+}
+
 .slide {
   position: absolute;
   inset: 0;
@@ -138,14 +156,17 @@
 
 /* ── Brand strip + "shop by section" ─────────────────────── */
 
+/* "Shop by section" sits right under the banner; the brand logos follow it, on
+   their own line above the product rows. */
 .sections {
   background: #ffffff;
-  padding-bottom: clamp(12px, 1.2cqw, 18px);
+  padding-top: clamp(14px, 1.8cqw, 26px);
+  padding-bottom: clamp(20px, 2.4cqw, 34px);
 }
 
 .brands {
-  padding-top: clamp(20px, 2.2cqw, 32px);
-  padding-bottom: clamp(24px, 2.8cqw, 40px);
+  padding-top: clamp(8px, 1.4cqw, 22px);
+  padding-bottom: clamp(20px, 2.6cqw, 36px);
   font-size: clamp(11px, 1.12cqw, 16px);
 }
 
@@ -351,7 +372,8 @@
 
 .promoGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+  /* two pictures per line down to tablet width, one per line on phones */
+  grid-template-columns: repeat(auto-fit, minmax(max(min(300px, 100%), calc(50% - 20px)), 1fr));
   gap: clamp(12px, 1.5cqw, 20px);
   padding-top: clamp(12px, 1.5cqw, 20px);
 }

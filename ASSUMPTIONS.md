@@ -215,3 +215,17 @@ Assumptions made while building it:
   repo, unrouted. `seo-catbrand-404.ts` is removed (it validated landings that no
   longer exist). `/sitemap.xml` is now a static build output, not an API proxy.
 - **Rollback:** revert the merge commit — no database or API change is involved.
+
+## A-22 · Home page: short banner, cards on the first screen (2026-11-25, branch `feat/home-short-banner`)
+Owner resized the design by hand (banner 1440 × 325, brand logos moved under the
+section cards) and asked for the banner pictures, the bottom overlaps and
+responsiveness to be fixed, then to push and merge.
+- **Banner shape by page width:** 3:1 on phones, 3.6:1 from 700 px, 1440 × 325
+  from 1024 px (the owner's size). The six banners remain 3:1 sets, centred and
+  never stretched; each background was widened by 760 px per side from its own
+  edges (reflected or pulled, then softened) to fill the sides.
+- **Order:** banner → "shop by section" → brand logos → product rows.
+- **Header** is 63 px tall as the owner set it. **Promo pictures** stay two per
+  line down to tablet width.
+- The fixed pixel heights the canvas editor had added are not carried over — the
+  site was already fluid.
