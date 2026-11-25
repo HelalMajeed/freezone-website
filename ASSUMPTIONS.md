@@ -153,3 +153,65 @@ compiler confirmed zero references). Decisions/assumptions:
   (the full-catalog in-memory fallback is gone, so there is nothing to dump).
 - Scope guard: local checkpoint commits only on this branch (no push/deploy);
   the untracked `freezone-dashboard/` and `reports/` folders were never staged.
+
+## A-20 · Home page v2 — fixed design replaces the CMS-driven home (2026-11-25, branch `feat/homepage-v2`)
+Owner decisions (asked): the whole new homepage goes live; product rows read the
+live catalogue; ship by branch + PR; hero banners are fixed (not admin-managed).
+Assumptions made while porting the design canvas:
+- **Header/footer unchanged.** The canvas header/footer were mock chrome with
+  placeholders; the live NavBar/Footer (real contact data, cart, locale) stay.
+- **Category mapping** (resolved against the live category list at runtime; a
+  missing slug falls back to `/products`, a missing/empty row is hidden):
+  cards cctv→`cctv`, computers & laptops→`computers`|`laptops`, gaming→`gaming`,
+  networking→`networking`, smart home→`smart-home`, power→`power-solutions`;
+  rows `laptops`, `routers`|`networking`, `cctv`; promo pictures `networking`,
+  `accessories`, `alarm-systems`|`security`, `power-solutions`.
+- **Rows show in-stock products only**, 5 per row, server default sort.
+- **Projects banner CTA** links to `/contact` (no quote form exists yet).
+- **Hero banners are not links** (as designed).
+- **Fonts** follow the storefront (IBM Plex Sans Arabic / Inter), not the
+  canvas's Tajawal — no external font is added.
+- **Admin impact:** home CMS sections and hero slides no longer affect the home
+  page. The old components stay in the repo; rollback = revert the PR.
+
+## A-21 · Whole storefront replaced by the static design site (2026-11-25, branch `feat/homepage-v2`)
+Owner decisions (asked): replace the site "with the design as it is" — home and
+product pages only, knowing online ordering, sign-in and order tracking go away;
+carry the new 586-product catalogue with its new prices; preview first, merge on
+the owner's go. Supersedes the header/footer, row-data and font points of A-20.
+Assumptions made while building it:
+- **Static catalogue, live data untouched.** "Replace with the new 586" is done on
+  the storefront only: the 586 products ship as `freezone-web/src/site/data/*.json`
+  + `public/catalog/*.webp`. Nothing was deleted or changed in the production
+  database (its ~1,500 products are simply no longer shown). Deleting live data is
+  a separate, destructive step that needs its own explicit confirmation (rule §9.6).
+  Consequence: storefront products/prices change by editing those files and
+  deploying, not from the admin panel.
+- **Only selling prices** are in the shipped data; supplier cost figures never
+  leave the working files (a test guards the JSON keys).
+- **Cart = list + WhatsApp.** The design's cart is a counter with no checkout. So
+  it is not a dead button, the cart is a panel listing the chosen products and
+  total, with one action: open WhatsApp with the list typed in. No order is stored
+  anywhere and nothing is simulated (rule §9.5).
+- **Contact details need the owner's confirmation before go-live:** WhatsApp
+  `+964 774 222 2377` (the default already in `freezone-api/src/lib/site-public.ts`
+  and the old footer) and the address "شارع الزهور، مجاور أزياء دلير" (given by the
+  owner for the new showroom; English form is a transliteration). Both live in
+  `src/site/contact.ts` / `Site.address`.
+- **Header:** the design's account icon is left out (no accounts); a language
+  switch and a "Products" link are added; the four design links jump to parts of
+  the home page. **Footer:** design links with no page behind them (About, Track
+  order, Shipping, Returns) are left out; "Contact us" opens WhatsApp.
+- **Links without matching products:** the "Power & solar" card and the
+  "computer accessories" / "solar" promo pictures open the full product list — the
+  catalogue has no such products yet.
+- **English:** names come from the supplier lists; laptop specification lines are
+  built from the same fields as the Arabic ones.
+- **Fonts:** Tajawal (self-hosted, 400/500/700/800) for Arabic and Inter for Latin,
+  as on the design canvas.
+- **Retired addresses:** `/category/*` and `/brand/*` → product list; about,
+  contact, policies, cart, checkout, account pages → home (`public/_redirects`);
+  old numeric product ids → product list (edge function). Their code stays in the
+  repo, unrouted. `seo-catbrand-404.ts` is removed (it validated landings that no
+  longer exist). `/sitemap.xml` is now a static build output, not an API proxy.
+- **Rollback:** revert the merge commit — no database or API change is involved.

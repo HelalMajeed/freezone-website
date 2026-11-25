@@ -1,41 +1,49 @@
-// SEO: turn the SPA "soft-404" into a real HTTP 404 for product URLs whose id
-// does not exist (issue #48). Without this, /:locale/product/<bad-id> served the
-// SPA shell with status 200 — a crawlable empty page. Scope is PRODUCT routes
-// only (the high-volume, unambiguous case): the API's /api/ssr/product/:id
-// returns 200 for a real product, 404 for a missing one, 400 for a non-numeric
-// id. Category/brand routes are intentionally left alone (few, mostly valid, and
-// their existence check is fuzzier — a wrong check could 404 a valid page).
+// SEO for product URLs (issue #48): a product address that does not exist must
+// not answer 200 with the SPA shell (a crawlable empty page).
 //
-// FAIL OPEN: any network error, timeout, or non-decisive API response serves the
-// page normally. A backend hiccup must NEVER 404 a valid product page.
+// The storefront catalogue is static (src/site/data), so this function needs no
+// API call: catalogue ids are FZ-001 … FZ-<LAST_PRODUCT>, each with its own
+// prerendered shell.
+//   - a catalogue id            → served normally (lower-case ids → 301 to the canonical form)
+//   - a numeric id              → the previous catalogue's product; 301 to the product list
+//   - anything else             → the SPA shell with a real 404 status + noindex
 import type { Context } from "@netlify/edge-functions";
 
-const API = "https://freezone-website.fly.dev";
+/**
+ * Number of products in src/site/data/catalog.json. scripts/prerender.mjs fails
+ * the build when this drifts from the catalogue, so a product added there can
+ * never be 404'd here.
+ */
+const LAST_PRODUCT = 586;
 
 export default async function handler(req: Request, context: Context): Promise<Response | void> {
-  const { pathname } = new URL(req.url);
-  const m = pathname.match(/^\/(?:en|ar)\/product\/([^/]+)\/?$/);
+  const url = new URL(req.url);
+  const m = url.pathname.match(/^\/(en|ar)\/product\/([^/]+)\/?$/);
   if (!m) return; // not a product detail route — pass through untouched
 
-  const id = decodeURIComponent(m[1]);
-
-  let missing = false;
+  const locale = m[1];
+  let id = m[2];
   try {
-    const res = await fetch(`${API}/api/ssr/product/${encodeURIComponent(id)}`, {
-      signal: AbortSignal.timeout(2500),
-    });
-    if (res.status === 404 || res.status === 400) {
-      missing = true; // genuinely unknown / invalid id
-    } else if (!res.ok) {
-      return; // 5xx or other → fail open, serve the page
-    }
+    id = decodeURIComponent(id);
   } catch {
-    return; // network error / timeout → fail open, serve the page
+    /* malformed escape → treated as unknown below */
   }
 
-  if (!missing) return; // real product → serve normally
+  const fz = /^fz-(\d{3})$/i.exec(id);
+  if (fz) {
+    const n = Number(fz[1]);
+    if (n >= 1 && n <= LAST_PRODUCT) {
+      const canonical = `FZ-${fz[1]}`;
+      if (id === canonical) return; // real product → serve its prerendered page
+      return Response.redirect(new URL(`/${locale}/product/${canonical}/`, url), 301);
+    }
+  }
 
-  // Unknown product: serve the SPA shell (renders the custom 404 client-side)
+  if (/^\d+$/.test(id)) {
+    return Response.redirect(new URL(`/${locale}/products/`, url), 301);
+  }
+
+  // Unknown product: serve the SPA shell (renders the 404 page client-side)
   // but with a real 404 status + noindex so crawlers treat it correctly.
   const shell = await context.next();
   const headers = new Headers(shell.headers);

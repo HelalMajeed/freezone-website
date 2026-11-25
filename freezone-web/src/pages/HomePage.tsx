@@ -1,33 +1,22 @@
-import { useStorefront } from "@/components/providers/StorefrontProvider";
-import { DynamicHomeSections } from "@/components/storefront/DynamicHomeSections";
-import { HomeLegacyContent } from "@/components/storefront/HomeLegacyContent";
-import { Seo } from "@/components/seo/Seo";
+import { lazy, Suspense } from "react";
 import { useTranslations } from "@/i18n/hooks";
-import { SolutionsDepartments } from "@/components/storefront/SolutionsDepartments";
+import { Seo } from "@/components/seo/Seo";
+import homeStyles from "@/components/home-v2/HomeV2.module.css";
+
+/** The hero carries about 90 kB of scenes and motion — its own chunk, off the first paint path. */
+const HomeV2 = lazy(() => import("@/components/home-v2/HomeV2"));
 
 export default function HomePage() {
-  const { homeSections, site } = useStorefront();
-  const tSeo = useTranslations("Seo");
-  const seo = (
-    <Seo
-      title={site.metaTitle?.trim() || tSeo("homeTitle")}
-      description={site.metaDescription?.trim() || tSeo("homeDesc")}
-    />
-  );
-  if (homeSections?.length) {
-    return (
-      <>
-        {seo}
-        <DynamicHomeSections sections={homeSections} />
-        <SolutionsDepartments />
-      </>
-    );
-  }
+  const t = useTranslations("Site");
+  const title = t("seoHomeTitle");
+
   return (
     <>
-      {seo}
-      <HomeLegacyContent />
-      <SolutionsDepartments />
+      <Seo title={title} description={t("seoHomeDesc")} />
+      <h1 className={homeStyles.srOnly}>{title}</h1>
+      <Suspense fallback={<div className={homeStyles.coverPlaceholder} aria-hidden="true" />}>
+        <HomeV2 />
+      </Suspense>
     </>
   );
 }

@@ -1,0 +1,490 @@
+/* Home page v2 — layout of the sections. Motion for the hero and the section
+   cards lives in generated/homeMotion.css (global, fzh-* prefixed).
+
+   `.root` is a size container: every `cqw` below — and in the generated hero and
+   card markup — is 1% of the home page width, as in the design canvas. */
+
+.root {
+  container-type: inline-size;
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+.root a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* The storefront sets `height: auto` on every image (.fz-theme-root img). The
+   pictures of this page fill their boxes instead, so their rules below are
+   written with `.root` in front to outrank it. */
+
+.wrap {
+  max-width: 1360px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 4cqw, 40px);
+  box-sizing: border-box;
+}
+
+/* Page heading for search engines and screen readers (the hero is pictures only). */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Hero: six layered banners ───────────────────────────── */
+
+.cover {
+  position: relative;
+  background: #0a0a0a;
+  aspect-ratio: 3 / 1;
+  overflow: hidden;
+  perspective: 130cqw;
+}
+
+/* Shown while the hero chunk loads: same box, so nothing below it moves. */
+.coverPlaceholder {
+  background: #0a0a0a;
+  aspect-ratio: 3 / 1;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  perspective: 90cqw;
+}
+
+.fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.fxUnder {
+  z-index: 3;
+}
+
+.fxTop {
+  z-index: 6;
+}
+
+.fxFill {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  display: block;
+}
+
+.fxSheen {
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: 0;
+  width: 16%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.14) 50%, rgba(255, 255, 255, 0) 100%);
+  opacity: 0;
+  display: block;
+}
+
+.dotsBar {
+  position: absolute;
+  z-index: 7;
+  inset-inline: 0;
+  bottom: clamp(4px, 0.7cqw, 10px);
+  display: flex;
+  justify-content: center;
+}
+
+.dots {
+  display: flex;
+  gap: 8px;
+  padding-inline: 10px;
+  border-radius: 999px;
+  background: rgba(10, 10, 10, 0.42);
+}
+
+.dot {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.dotMark {
+  width: 12px;
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.75);
+  display: block;
+  transition: width 0.3s ease;
+}
+
+.dotOn .dotMark {
+  width: 28px;
+  background: #c90000;
+}
+
+/* ── Brand strip + "shop by section" ─────────────────────── */
+
+.sections {
+  background: #ffffff;
+  padding-bottom: clamp(12px, 1.2cqw, 18px);
+}
+
+.brands {
+  padding-top: clamp(20px, 2.2cqw, 32px);
+  padding-bottom: clamp(24px, 2.8cqw, 40px);
+  font-size: clamp(11px, 1.12cqw, 16px);
+}
+
+.brandRow {
+  height: 2.5em;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 2.2em;
+  overflow: hidden;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.brandItem {
+  height: 2.5em;
+  flex: none;
+  display: flex;
+  align-items: center;
+}
+
+.root .brandLogo {
+  width: auto;
+  display: block;
+  opacity: 0.82;
+  transition: opacity 0.2s ease;
+}
+
+.brandLink {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.brandLink:hover .brandLogo {
+  opacity: 1;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 2.4cqw, 32px);
+}
+
+.headRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.h2 {
+  margin: 0;
+  font-size: clamp(24px, 2.5cqw, 36px);
+  line-height: 1.3;
+  font-weight: 800;
+}
+
+.moreLink {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.arrowIcon {
+  flex: none;
+  display: block;
+}
+
+/* The arrows are drawn pointing left (forward in Arabic). */
+:global(html[dir="ltr"]) .arrowIcon {
+  transform: scaleX(-1);
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(150px, 22%), 1fr));
+  grid-auto-rows: clamp(168px, 22cqw, 316px);
+  gap: clamp(12px, 1.5cqw, 20px);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(16px, 1.7cqw, 24px);
+  border-radius: 16px;
+  background:
+    linear-gradient(0deg, #d2d1cf 0%, #dcdbd9 9%, rgba(226, 225, 223, 0.6) 18%, rgba(226, 225, 223, 0) 26%),
+    radial-gradient(60% 44% at 50% 50%, #ffffff 0%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(180deg, #f5f5f4 0%, #f5f5f4 34%, #e7e6e4 74%);
+  color: #0a0a0a;
+  overflow: hidden;
+}
+
+.cardWide {
+  grid-column: span 2;
+}
+
+.cardHead {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cardTitle {
+  display: block;
+  font-size: clamp(17px, 1.6cqw, 22px);
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.cardMark {
+  display: block;
+  width: 28px;
+  height: 4px;
+  border-radius: 4px;
+  background: #c90000;
+  margin-top: 8px;
+}
+
+.cardArrow {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #0a0a0a;
+  border: 1px solid #0a0a0a;
+  color: #ffffff;
+  box-sizing: border-box;
+}
+
+.cardScene {
+  display: contents;
+}
+
+/* ── Product rows ────────────────────────────────────────── */
+
+.rows {
+  background: #ffffff;
+  padding-block: clamp(8px, 1cqw, 16px) clamp(20px, 2.4cqw, 32px);
+}
+
+.rowsStack {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(28px, 3.2cqw, 44px);
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 1.4cqw, 18px);
+}
+
+.rowHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.rowTitle {
+  margin: 0;
+  font-size: clamp(20px, 2cqw, 28px);
+  line-height: 1.3;
+  font-weight: 800;
+}
+
+.rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max(150px, calc((100% - 4 * clamp(12px, 1.5cqw, 20px)) / 5));
+  gap: clamp(12px, 1.5cqw, 20px);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Promo pictures ──────────────────────────────────────── */
+
+.promos {
+  background: #ffffff;
+  padding-bottom: clamp(24px, 2.6cqw, 38px);
+}
+
+.promoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+  gap: clamp(12px, 1.5cqw, 20px);
+  padding-top: clamp(12px, 1.5cqw, 20px);
+}
+
+.promo {
+  aspect-ratio: 16 / 9;
+  display: block;
+  border-radius: 16px;
+  background: #f5f5f4;
+  overflow: hidden;
+}
+
+.root .promoImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Projects banner ─────────────────────────────────────── */
+
+.projects {
+  position: relative;
+  overflow: hidden;
+  background: repeating-linear-gradient(135deg, #151515 0px, #151515 22px, #121212 22px, #121212 44px);
+  color: #ffffff;
+}
+
+.root .projectsImg {
+  max-width: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 18% 50%;
+  display: block;
+}
+
+/* Darkens the right side, where the text sits in both languages. */
+.projectsScrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to left,
+    rgba(10, 10, 10, 0.86) 0px,
+    rgba(10, 10, 10, 0.82) 430px,
+    rgba(10, 10, 10, 0.62) 600px,
+    rgba(10, 10, 10, 0) 725px
+  );
+  display: block;
+}
+
+.projectsInner {
+  position: relative;
+  min-height: clamp(360px, 30cqw, 440px);
+  padding-block: 56px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: center;
+  gap: 40px 32px;
+}
+
+/* The cameras are on the left of the photo: the text stays on the right in English too. */
+:global(html[dir="ltr"]) .projectsInner {
+  flex-direction: row-reverse;
+}
+
+.projectsText {
+  flex: 1 1 400px;
+  max-width: 620px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.projectsSpacer {
+  flex: 1 1 240px;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #e7e5e4;
+}
+
+.eyebrowDot {
+  width: 10px;
+  height: 10px;
+  background: #c90000;
+  display: block;
+  flex: none;
+}
+
+.projectsTitle {
+  margin: 0;
+  font-size: clamp(26px, 3cqw, 44px);
+  line-height: 1.25;
+  font-weight: 800;
+  text-wrap: balance;
+  color: #ffffff;
+}
+
+.projectsLead {
+  margin: 0;
+  max-width: 540px;
+  font-size: clamp(15px, 1.2cqw, 17px);
+  line-height: 1.7;
+  color: #d6d3d1;
+  text-wrap: balance;
+}
+
+.root a.projectsCta {
+  height: 52px;
+  padding-inline: 28px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0a0a0a;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dotMark {
+    transition: none;
+  }
+}
