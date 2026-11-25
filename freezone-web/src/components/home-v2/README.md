@@ -6,8 +6,8 @@ The storefront home page, ported from the "Home · Light" design canvas. Rendere
 | Part | File | Data |
 |---|---|---|
 | Hero — six layered banners, 4 s each, six switch effects | `HeroFilms.tsx` | fixed (generated) |
-| Brand strip (`#brands`) | `HomeSections.tsx` → `BrandStrip` | fixed logos in `public/home-v2/brands`; brands with products link to their list |
 | "Shop by section" (`#categories`) — six cards with looping scenes | `HomeSections.tsx` → `SectionCards` | each card opens the product list filtered to its section |
+| Brand strip (`#brands`) | `HomeSections.tsx` → `BrandStrip` | fixed logos in `public/home-v2/brands`; brands with products link to their list |
 | Product rows — laptops, routers, CCTV | `ProductRows.tsx` | five chosen catalogue ids per row (`src/site/data`) |
 | Promo pictures (`#offers`) | `HomeSections.tsx` → `PromoGrid` | fixed pictures, filtered-list links |
 | Projects banner (`#solutions`) | `HomeSections.tsx` → `ProjectsBanner` | fixed photo; the button opens a WhatsApp chat with the store |
@@ -27,8 +27,13 @@ canvas and are not meant to be edited by hand:
 - all `cqw` lengths refer to `.root` in `HomeV2.module.css`, which is a size container
   as wide as the page.
 
+The hero box is not 3:1 everywhere: `.cover` in `HomeV2.module.css` is 3:1 on phones, 3.6:1 from
+700 px and 1440 × 325 from 1024 px, so the section cards share the first screen with it. Each
+banner stays a 3:1 set, centred in that box and never stretched; its background is a widened copy
+(`*_wide`, 760 px added on each side from the background's own edges) that fills the sides.
+
 Pictures live in `public/home-v2/{hero,sections,brands,promos,projects}`. Each hero banner
-is an empty background (`*_plate`), lettering (`*_t*`) and one picture per product (`*_m*`,
+is that empty background (`*_wide`), lettering (`*_t*`) and one picture per product (`*_m*`,
 `*_p*`), stacked at fixed positions — replacing a banner means exporting a new set of layers
 from the design, not swapping one file.
 
