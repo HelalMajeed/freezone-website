@@ -1,34 +1,13 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { readPreferredLocale } from "@/lib/preferred-locale";
-import { LocaleLayout } from "@/routes/LocaleLayout";
+import { SiteLayout } from "@/site/SiteLayout";
 import { ConfirmDialogHost } from "@/components/ui/ConfirmDialog";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import HomePage from "@/pages/HomePage";
-import ProductsPage from "@/pages/ProductsPage";
-import ProductDetailPage from "@/pages/ProductDetailPage";
-import NotFoundPage from "@/pages/NotFoundPage";
-
-const CartPage = lazy(() => import("@/app/locale/cart/page"));
-const CheckoutPage = lazy(() => import("@/app/locale/checkout/page"));
-const LoginPage = lazy(() => import("@/app/locale/login/page"));
-const RegisterPage = lazy(() => import("@/app/locale/register/page"));
-const AccountPage = lazy(() => import("@/app/locale/account/page"));
-const AboutPage = lazy(() => import("@/app/locale/about/page"));
-const ContactPage = lazy(() => import("@/app/locale/contact/page"));
-const WishlistPage = lazy(() => import("@/app/locale/wishlist/page"));
-const ComparePage = lazy(() => import("@/app/locale/compare/page"));
-const TrackOrderPage = lazy(() => import("@/app/locale/track-order/page"));
-const CategoryLandingPage = lazy(() => import("@/app/locale/landing/CategoryLandingPage"));
-const BrandLandingPage = lazy(() => import("@/app/locale/landing/BrandLandingPage"));
-const PolicyPageLazy = lazy(() =>
-  import("@/app/locale/policies/PolicyPage").then((m) => ({ default: m.PolicyPage })),
-);
-const WarrantyPage = lazy(() => import("@/app/locale/warranty/page"));
-const FaqPage = lazy(() => import("@/app/locale/faq/page"));
-// Lazy so the heavy @google/model-viewer dependency (~1 MB) is not pulled into
-// the main storefront bundle — it now loads only when /pc-builder is visited.
-const PcBuilderPage = lazy(() => import("@/app/locale/pc-builder/page"));
+import ProductsListPage from "@/site/ProductsListPage";
+import ProductPage from "@/site/ProductPage";
+import SiteNotFound from "@/site/SiteNotFound";
 
 /**
  * The entire admin panel (guard, layout, ui kit, auth store, dashboard i18n)
@@ -94,164 +73,18 @@ export default function App() {
     <Routes>
       <Route path="/" element={<RootLocaleRedirect />} />
 
-      <Route path="/:locale" element={<LocaleLayout />}>
+      {/*
+        The storefront is the static site in src/site: home, product list and
+        product page. The earlier API-driven pages (cart, checkout, accounts,
+        order tracking, category/brand landings, policies…) are no longer routed;
+        their old addresses are redirected in public/_redirects.
+      */}
+      <Route path="/:locale" element={<SiteLayout />}>
         <Route index element={<HomePage />} />
-        <Route path="products" element={<ProductsPage />} />
-        <Route path="product/:id" element={<ProductDetailPage />} />
-        <Route
-          path="cart"
-          element={
-            <SuspensePage>
-              <CartPage />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="checkout"
-          element={
-            <SuspensePage>
-              <CheckoutPage />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="login"
-          element={
-            <SuspensePage>
-              <LoginPage />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="register"
-          element={
-            <SuspensePage>
-              <RegisterPage />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="account"
-          element={
-            <SuspensePage>
-              <AccountPage />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="about"
-          element={
-            <SuspensePage>
-              <AboutPage />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="contact"
-          element={
-            <SuspensePage>
-              <ContactPage />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="pc-builder"
-          element={
-            <SuspensePage>
-              <PcBuilderPage />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="wishlist"
-          element={
-            <SuspensePage>
-              <WishlistPage />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="compare"
-          element={
-            <SuspensePage>
-              <ComparePage />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="track-order"
-          element={
-            <SuspensePage>
-              <TrackOrderPage />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="category/:slug"
-          element={
-            <SuspensePage>
-              <CategoryLandingPage />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="brand/:slug"
-          element={
-            <SuspensePage>
-              <BrandLandingPage />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="shipping"
-          element={
-            <SuspensePage>
-              <PolicyPageLazy kind="shipping" />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="returns"
-          element={
-            <SuspensePage>
-              <PolicyPageLazy kind="returns" />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="privacy"
-          element={
-            <SuspensePage>
-              <PolicyPageLazy kind="privacy" />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="terms"
-          element={
-            <SuspensePage>
-              <PolicyPageLazy kind="terms" />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="warranty"
-          element={
-            <SuspensePage>
-              <WarrantyPage />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="faq"
-          element={
-            <SuspensePage>
-              <FaqPage />
-            </SuspensePage>
-          }
-        />
+        <Route path="products" element={<ProductsListPage />} />
+        <Route path="product/:id" element={<ProductPage />} />
         {/* Locale-scoped 404 — keeps the storefront chrome + language. */}
-        <Route path="*" element={<NotFoundPage />} />
+        <Route path="*" element={<SiteNotFound />} />
       </Route>
 
       {/* /admin and /dashboard are handled by the pathname branch above. */}

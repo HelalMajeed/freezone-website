@@ -8,6 +8,17 @@ start of EVERY session. Follow it in every task; subagents inherit these rules t
 > **the code wins**, then the newest ground-truth docs (`.claude-state.md`, `RESUME_STATUS.md`).
 > This file was rebuilt 2026-06-20 from a full read of the code + workflows.
 
+> **Storefront is static since 2026-11 (ASSUMPTIONS A-21).** Everything a visitor sees
+> outside `/admin` is `freezone-web/src/site/**` (+ `src/components/home-v2/**`): home,
+> product list, product page, cart-to-WhatsApp. Its catalogue is the JSON in
+> `freezone-web/src/site/data/` with pictures in `freezone-web/public/catalog/` — **not the
+> API/DB**. Admin-panel product/CMS edits do not reach the storefront; a price or product
+> changes by editing those files and deploying. Read `freezone-web/src/site/README.md`
+> first. Sections below that describe the API-driven storefront (`LocaleLayout`,
+> `storefront-bootstrap`, category/brand landings, checkout, customer accounts) describe
+> code that is still in the repo but is **no longer routed**. The API, DB and `/admin` are
+> unchanged.
+
 ---
 
 ## 1. What this project is
@@ -68,12 +79,17 @@ Browser ──► Netlify (freezone-iq.com)            Vite SPA: storefront + /a
 - The SPA calls the API cross-origin at `VITE_API_URL` (`https://freezone-website.fly.dev`,
   baked at build time). In local dev, requests are same-origin and Vite proxies `/api` +
   `/uploads` → `127.0.0.1:4000`.
-- Product/CMS images live on the Fly volume `/uploads`; Netlify **force-proxies** `/uploads/*`
-  and `/sitemap.xml` to the API (see `freezone-web/public/_redirects`).
+- Product/CMS images of the API catalogue live on the Fly volume `/uploads`; Netlify
+  **force-proxies** `/uploads/*` to the API (see `freezone-web/public/_redirects`) — the admin
+  panel uses them. Storefront product pictures are static files (`public/catalog/`).
+  `/sitemap.xml` is a **static file** written by the build (`scripts/prerender.mjs`).
 - **SEO for a client-only SPA**: build-time prerender (`freezone-web/scripts/prerender.mjs`,
-  `postbuild`) writes per-route static `index.html` shells with meta + JSON-LD; runtime
-  `src/components/seo/Seo.tsx` upserts head tags; one Netlify edge function
-  (`seo-product-404.ts`) turns unknown-product soft-404s into real 404s (fails open).
+  `postbuild`) reads `src/site/data/catalog.json` (no network) and writes per-route static
+  `index.html` shells with meta + JSON-LD for home, product list and every product, plus
+  `dist/sitemap.xml`; runtime `src/components/seo/Seo.tsx` upserts head tags; one Netlify
+  edge function (`seo-product-404.ts`) answers unknown product ids with a real 404 and
+  redirects the previous catalogue's numeric ids to the product list (no API call — its
+  `LAST_PRODUCT` constant must equal the catalogue size; the build fails if it drifts).
 
 ### API routing is filesystem-convention (Next.js App-Router ported onto Express)
 - Handlers live at `freezone-api/src/app/api/**/route.ts` and export Web-standard
@@ -109,7 +125,9 @@ Browser ──► Netlify (freezone-iq.com)            Vite SPA: storefront + /a
 **freezone-web/src/**
 - `main.tsx` / `App.tsx` — providers + top-level routing. `/admin` & `/dashboard` selected by
   **pathname regex** (not route ranking); admin is one lazy chunk.
-- `routes/LocaleLayout.tsx` — storefront shell; loads everything via one
+- `site/**` — **the live storefront** (static; see the note at the top and `site/README.md`):
+  `SiteLayout` shell, header/footer, product list + product page, cart, `data/` catalogue.
+- `routes/LocaleLayout.tsx` — previous storefront shell (**not routed**); loaded everything via one
   `GET /api/ssr/storefront-bootstrap` call, split into cached `shell` + `catalog` queries.
 - `routes/dashboard-routes.tsx` — admin routes under `/admin`, wrapped in `<DashboardGuard>` +
   `<RequireRole>`.
@@ -215,8 +233,8 @@ Browser ──► Netlify (freezone-iq.com)            Vite SPA: storefront + /a
    same commit. No hardcoded UI text. Code/comments/commits/docs in **English**; reply to the
    developer in **Arabic** when he writes Arabic.
 9. **SEO standing requirement:** any new public page ships with prerender entry + sitemap entry +
-   bilingual content + trailing-slash canonical (keep `prerender.mjs`, `Seo.tsx`, and the API
-   `sitemap.xml` route in sync). `/admin` + `/api` stay noindex / robots-disallowed.
+   bilingual content + trailing-slash canonical (keep `prerender.mjs` — which also writes the
+   sitemap — and `Seo.tsx` in sync). `/admin` + `/api` stay noindex / robots-disallowed.
 10. **Frontend:** mobile-first, RTL-aware, red `#C90000` accent. Lazy-load heavy routes; lazy
     images with width/height; loading/error/empty states on every page; cart persists to
     localStorage; guest checkout always allowed.
@@ -270,7 +288,7 @@ Verify these on first run (root `package.json` is the source of truth) and corre
   (Evidence: `SHIP_STATUS.md`, `RESUME_STATUS.md`. If those secrets are ever added, the Action
   becomes a *second* publish path and could race the Git build.)
 - **Authoritative Netlify config = `freezone-web/public/_redirects` + `freezone-web/public/_headers`**
-  (shipped inside the publish dir). They force-proxy `/uploads/*` and `/sitemap.xml` to the Fly
+  (shipped inside the publish dir). They force-proxy `/uploads/*` to the Fly
   API, set security headers, and `noindex` `/admin`. **Root `netlify.toml` is DEAD CONFIG** —
   edit the `public/_redirects` / `_headers` files, never the root toml.
 
@@ -345,8 +363,12 @@ git push origin main                       # → Netlify rebuild (+ Fly deploy i
 - **Hardcoded API origin** `https://freezone-website.fly.dev` appears in `api-internal.ts`,
   `prerender.mjs`, `seo-product-404.ts`, `_redirects`, `_headers`, `netlify.toml`s — change all
   if the host moves. **`VITE_*` are build-time baked** → changing them needs a full redeploy.
-- **Trailing-slash canonical** must stay identical across `prerender.mjs`, `Seo.tsx`, and the API
-  `sitemap.xml` route, or canonicals/hreflang break.
+- **Trailing-slash canonical** must stay identical across `prerender.mjs` (shells + sitemap)
+  and `Seo.tsx`, or canonicals/hreflang break.
+- **Static catalogue invariants** (`freezone-web/src/site/data`): ids `FZ-001…` with no gaps,
+  two pictures per product, integer IQD selling prices only (never cost prices), and
+  `LAST_PRODUCT` in `seo-product-404.ts` equal to the product count — `npm test` and the build
+  enforce all four.
 - **Three cookie SameSite envs** are independent; cross-origin needs `none`+`Secure` or the
   cookie silently drops and that subsystem breaks.
 - **In-memory rate limiter + catalog cache assume a single Fly machine** (`min_machines_running=0`,

@@ -1,85 +1,77 @@
 import { test, expect, vi, afterEach } from "vitest";
-import { fetchCatalog, fetchAllProducts } from "./prerender.mjs";
+import { checkCatalog, headBlock, loadCatalog, productJsonLd, sitemapXml } from "./prerender.mjs";
 
 /**
- * Regression guard for the Phase-1 bootstrap trim (PR #56/#57): the build-time
- * SEO prerender must NEVER require `catalog.products` on the storefront bootstrap
- * (it was removed so the browser never receives the whole catalog). Products for
- * the per-PDP shells come from the server-paginated /api/ssr/catalog/products
- * endpoint instead. These tests stub fetch — no network — and lock that contract.
+ * The storefront is static: the build-time SEO prerender reads the catalogue
+ * from src/site/data and must work with no network at all (a deploy can no
+ * longer fail, or ship without product pages, because the API was unreachable).
+ * These tests lock that, the canonical trailing-slash form, and the build guard.
  */
-
-/** Minimal Response-like for the stubbed global fetch. */
-function jsonResponse(body, ok = true) {
-  return { ok, status: ok ? 200 : 500, statusText: ok ? "OK" : "ERR", json: async () => body };
-}
-
-/** The Phase-1 (trimmed) bootstrap shape — note: NO `catalog.products`. */
-const TRIMMED_BOOTSTRAP = {
-  catalog: {
-    categories: [{ id: "laptops", name: "Laptops" }],
-    brands: [{ name: "Acme", img: null }],
-    collections: { featured: [], newest: [], onSale: [], bestSellers: [], hasNew: false },
-    brandCounts: [{ value: "Acme", count: 1 }],
-  },
-  site: {},
-};
-
-const makeProduct = (id) => ({
-  id,
-  name: `Product ${id}`,
-  desc: "",
-  price: 1000,
-  images: [],
-  inStock: true,
-  brand: "Acme",
-  cat: "laptops",
-});
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-test("fetchCatalog pages products from the listing endpoint, not catalog.products", async () => {
-  const calls = [];
-  vi.stubGlobal("fetch", async (url) => {
-    const u = String(url);
-    calls.push(u);
-    if (u.includes("storefront-bootstrap")) return jsonResponse(TRIMMED_BOOTSTRAP);
-    if (u.includes("/api/ssr/catalog/products")) {
-      return jsonResponse({ products: [makeProduct(1), makeProduct(2)], total: 2, page: 1, pageSize: 100 });
-    }
-    throw new Error(`unexpected url ${u}`);
+test("loadCatalog reads the shipped catalogue without touching the network", async () => {
+  const fetchSpy = vi.fn(() => {
+    throw new Error("prerender must not fetch");
   });
-
-  const catalog = await fetchCatalog("en");
-
-  expect(catalog.products.map((p) => p.id)).toEqual([1, 2]);
-  expect(catalog.categories).toHaveLength(1);
-  expect(catalog.brands).toHaveLength(1);
-  // Must consult the bootstrap (categories/brands) AND the paginated listing (products).
-  expect(calls.some((u) => u.includes("storefront-bootstrap"))).toBe(true);
-  expect(calls.some((u) => u.includes("/api/ssr/catalog/products"))).toBe(true);
+  vi.stubGlobal("fetch", fetchSpy);
+  const catalog = await loadCatalog();
+  expect(catalog.products.length).toBeGreaterThan(0);
+  expect(fetchSpy).not.toHaveBeenCalled();
 });
 
-test("fetchCatalog does not throw on a bootstrap without catalog.products", async () => {
-  expect("products" in TRIMMED_BOOTSTRAP.catalog).toBe(false);
-  vi.stubGlobal("fetch", async (url) => {
-    if (String(url).includes("storefront-bootstrap")) return jsonResponse(TRIMMED_BOOTSTRAP);
-    return jsonResponse({ products: [], total: 0, page: 1, pageSize: 100 });
-  });
-  const catalog = await fetchCatalog("ar");
-  expect(Array.isArray(catalog.products)).toBe(true);
+test("the shipped catalogue passes the build guard", async () => {
+  expect(await checkCatalog(await loadCatalog())).toEqual([]);
 });
 
-test("fetchAllProducts pages until a short page and returns every product", async () => {
-  vi.stubGlobal("fetch", async (url) => {
-    const page = Number(new URL(String(url)).searchParams.get("page"));
-    const count = page <= 2 ? 100 : 10; // pages 1,2 full → page 3 short → stop
-    const start = (page - 1) * 100;
-    const products = Array.from({ length: count }, (_, i) => makeProduct(start + i + 1));
-    return jsonResponse({ products, total: 210, page, pageSize: 100 });
+test("the build guard rejects an empty catalogue, a gap in ids and a bad price", async () => {
+  const catalog = await loadCatalog();
+  expect((await checkCatalog({ ...catalog, products: [] })).join("\n")).toMatch(/0 products/);
+
+  const gap = catalog.products.filter((p) => p.id !== "FZ-002");
+  expect((await checkCatalog({ ...catalog, products: gap })).join("\n")).toMatch(/LAST_PRODUCT|without gaps/);
+
+  const free = catalog.products.map((p) => (p.id === "FZ-001" ? { ...p, price: 0 } : p));
+  expect((await checkCatalog({ ...catalog, products: free })).join("\n")).toMatch(/FZ-001: price/);
+});
+
+test("head tags use the trailing-slash canonical, both hreflangs and a site-hosted picture", () => {
+  const html = headBlock({
+    title: "Test product",
+    description: 'A "quoted" <name>',
+    path: "/ar/product/FZ-001",
+    ogType: "product",
+    image: "/catalog/FZ-001.webp",
+    locale: "ar",
   });
-  const all = await fetchAllProducts("en");
-  expect(all).toHaveLength(210);
+  expect(html).toContain("<title>Test product | FreeZone</title>");
+  expect(html).toContain('rel="canonical" href="https://freezone-iq.com/ar/product/FZ-001/"');
+  expect(html).toContain('hreflang="en" href="https://freezone-iq.com/en/product/FZ-001/"');
+  expect(html).toContain('hreflang="x-default" href="https://freezone-iq.com/en/product/FZ-001/"');
+  expect(html).toContain('property="og:image" content="https://freezone-iq.com/catalog/FZ-001.webp"');
+  expect(html).toContain("A &quot;quoted&quot; &lt;name&gt;");
+});
+
+test("product structured data carries the selling price in IQD and the availability", () => {
+  const base = { id: "FZ-001", brand: "Acme", model: "X1", price: 125000 };
+  const inStock = productJsonLd(base, "Acme X1", "en");
+  expect(inStock.offers).toMatchObject({
+    price: 125000,
+    priceCurrency: "IQD",
+    availability: "https://schema.org/InStock",
+    url: "https://freezone-iq.com/en/product/FZ-001/",
+  });
+  expect(productJsonLd({ ...base, flag: "out" }, "Acme X1", "en").offers.availability).toBe(
+    "https://schema.org/OutOfStock",
+  );
+});
+
+test("the sitemap lists every route once per language with its alternates", () => {
+  const xml = sitemapXml(["", "/products", "/product/FZ-001"]);
+  expect(xml.match(/<url>/g)).toHaveLength(6);
+  expect(xml).toContain("<loc>https://freezone-iq.com/ar/</loc>");
+  expect(xml).toContain("<loc>https://freezone-iq.com/en/product/FZ-001/</loc>");
+  expect(xml).toContain('hreflang="ar" href="https://freezone-iq.com/ar/products/"');
 });

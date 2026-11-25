@@ -1,18 +1,19 @@
 # Home page v2
 
 The storefront home page, ported from the "Home · Light" design canvas. Rendered by
-`src/pages/HomePage.tsx` as a lazy chunk; the site header and footer are untouched.
+`src/pages/HomePage.tsx` as a lazy chunk inside the storefront shell (`src/site`).
 
 | Part | File | Data |
 |---|---|---|
 | Hero — six layered banners, 4 s each, six switch effects | `HeroFilms.tsx` | fixed (generated) |
-| Brand strip | `HomeSections.tsx` → `BrandStrip` | fixed logos in `public/home-v2/brands` |
-| "Shop by section" — six cards with looping scenes | `HomeSections.tsx` → `SectionCards` | links resolve against the live category list |
-| Product rows — laptops, routers, CCTV | `ProductRows.tsx` | live: `GET /api/ssr/catalog/products?cat=…&inStock=true&pageSize=5` |
-| Promo pictures | `HomeSections.tsx` → `PromoGrid` | fixed pictures, live category links |
-| Projects banner | `HomeSections.tsx` → `ProjectsBanner` | fixed photo, links to `/contact` |
+| Brand strip (`#brands`) | `HomeSections.tsx` → `BrandStrip` | fixed logos in `public/home-v2/brands`; brands with products link to their list |
+| "Shop by section" (`#categories`) — six cards with looping scenes | `HomeSections.tsx` → `SectionCards` | each card opens the product list filtered to its section |
+| Product rows — laptops, routers, CCTV | `ProductRows.tsx` | five chosen catalogue ids per row (`src/site/data`) |
+| Promo pictures (`#offers`) | `HomeSections.tsx` → `PromoGrid` | fixed pictures, filtered-list links |
+| Projects banner (`#solutions`) | `HomeSections.tsx` → `ProjectsBanner` | fixed photo; the button opens a WhatsApp chat with the store |
 
-Strings: `HomeV2` in `src/messages/{ar,en}.json`. Layout: `HomeV2.module.css`.
+Strings: `HomeV2` in `src/messages/{ar,en}.json`. Layout: `HomeV2.module.css`; the
+product card is shared with the product pages (`src/site/ProductCard.tsx`).
 
 ## Generated files (`generated/`)
 
@@ -35,4 +36,4 @@ from the design, not swapping one file.
 
 The CMS-driven home (`DynamicHomeSections`, `HomeLegacyContent`, `SolutionsDepartments`)
 is still in the repo but is not rendered: the admin panel's "home sections" and hero
-slides do not change this page. To go back, restore the previous `HomePage.tsx`.
+slides do not change this page.

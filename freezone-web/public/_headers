@@ -20,10 +20,6 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Strict-Transport-Security: max-age=63072000
-  # PERF-6: warm the DNS+TLS handshake to the cross-origin API before the runtime
-  # storefront bootstrap + product-image requests (LCP chain). crossorigin because
-  # those fetches are credentialed CORS (src/lib/api-internal.ts).
-  Link: <https://freezone-website.fly.dev>; rel=preconnect; crossorigin
   Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' https://www.googletagmanager.com https://connect.facebook.net; connect-src 'self' https://freezone-website.fly.dev https://*.google-analytics.com https://www.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://www.facebook.com; img-src 'self' data: blob: https://freezone-website.fly.dev https://images.unsplash.com https://cdn.simpleicons.org https://www.facebook.com https://*.google-analytics.com https://*.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self' https://freezone-website.fly.dev; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'
 
 # Vite emits content-hashed filenames under /assets — safe to cache forever.
@@ -36,6 +32,20 @@
 
 /admin/*
   X-Robots-Tag: noindex
+  # Only the admin panel talks to the API now (the storefront is static): warm the
+  # DNS+TLS handshake there. crossorigin because those fetches are credentialed CORS.
+  Link: <https://freezone-website.fly.dev>; rel=preconnect; crossorigin
+
+# Storefront pictures (product photos are named by product id, so they can be
+# replaced in a later deploy — cache for a day, not forever).
+/catalog/*
+  Cache-Control: public, max-age=86400
+
+/home-v2/*
+  Cache-Control: public, max-age=86400
+
+/site/*
+  Cache-Control: public, max-age=86400
 
 /favicon.ico
   Cache-Control: public, max-age=0, must-revalidate
