@@ -153,3 +153,23 @@ compiler confirmed zero references). Decisions/assumptions:
   (the full-catalog in-memory fallback is gone, so there is nothing to dump).
 - Scope guard: local checkpoint commits only on this branch (no push/deploy);
   the untracked `freezone-dashboard/` and `reports/` folders were never staged.
+
+## A-20 · Home page v2 — fixed design replaces the CMS-driven home (2026-11-25, branch `feat/homepage-v2`)
+Owner decisions (asked): the whole new homepage goes live; product rows read the
+live catalogue; ship by branch + PR; hero banners are fixed (not admin-managed).
+Assumptions made while porting the design canvas:
+- **Header/footer unchanged.** The canvas header/footer were mock chrome with
+  placeholders; the live NavBar/Footer (real contact data, cart, locale) stay.
+- **Category mapping** (resolved against the live category list at runtime; a
+  missing slug falls back to `/products`, a missing/empty row is hidden):
+  cards cctv→`cctv`, computers & laptops→`computers`|`laptops`, gaming→`gaming`,
+  networking→`networking`, smart home→`smart-home`, power→`power-solutions`;
+  rows `laptops`, `routers`|`networking`, `cctv`; promo pictures `networking`,
+  `accessories`, `alarm-systems`|`security`, `power-solutions`.
+- **Rows show in-stock products only**, 5 per row, server default sort.
+- **Projects banner CTA** links to `/contact` (no quote form exists yet).
+- **Hero banners are not links** (as designed).
+- **Fonts** follow the storefront (IBM Plex Sans Arabic / Inter), not the
+  canvas's Tajawal — no external font is added.
+- **Admin impact:** home CMS sections and hero slides no longer affect the home
+  page. The old components stay in the repo; rollback = revert the PR.
