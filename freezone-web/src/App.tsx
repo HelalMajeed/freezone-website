@@ -9,6 +9,11 @@ import ProductsListPage from "@/site/ProductsListPage";
 import ProductPage from "@/site/ProductPage";
 import SiteNotFound from "@/site/SiteNotFound";
 
+/** Pages reached by fewer visits than the list and product pages: each its own small chunk. */
+const CheckoutPage = lazy(() => import("@/site/CheckoutPage"));
+const FavoritesPage = lazy(() => import("@/site/FavoritesPage"));
+const ContactPage = lazy(() => import("@/site/ContactPage"));
+
 /**
  * The entire admin panel (guard, layout, ui kit, auth store, dashboard i18n)
  * behind ONE lazy boundary so the storefront bundle ships none of it.
@@ -74,15 +79,19 @@ export default function App() {
       <Route path="/" element={<RootLocaleRedirect />} />
 
       {/*
-        The storefront is the static site in src/site: home, product list and
-        product page. The earlier API-driven pages (cart, checkout, accounts,
-        order tracking, category/brand landings, policies…) are no longer routed;
-        their old addresses are redirected in public/_redirects.
+        The storefront is the static site in src/site: home, product list,
+        product page, order form (sent on WhatsApp), favourites and contact.
+        The earlier API-driven pages (accounts, order tracking, category/brand
+        landings, policies…) are no longer routed; their old addresses are
+        redirected in public/_redirects.
       */}
       <Route path="/:locale" element={<SiteLayout />}>
         <Route index element={<HomePage />} />
         <Route path="products" element={<ProductsListPage />} />
         <Route path="product/:id" element={<ProductPage />} />
+        <Route path="checkout" element={<CheckoutPage />} />
+        <Route path="wishlist" element={<FavoritesPage />} />
+        <Route path="contact" element={<ContactPage />} />
         {/* Locale-scoped 404 — keeps the storefront chrome + language. */}
         <Route path="*" element={<SiteNotFound />} />
       </Route>

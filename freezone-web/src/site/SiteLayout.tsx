@@ -11,8 +11,14 @@ import { publicSiteBaseUrl } from "@/components/seo/Seo";
 import { safeJsonLd } from "@/components/seo/jsonLd";
 import { INSTAGRAM_URL } from "./contact";
 import { CartPanel } from "./CartPanel";
+import { FloatingActions } from "./FloatingActions";
+import { LAYER_ID } from "./layer";
+import { SearchPanel } from "./SearchPanel";
 import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
+import { SiteMenu } from "./SiteMenu";
+import { Toasts } from "./Toasts";
+import { useSiteUi } from "./ui";
 import styles from "./site.module.css";
 
 /** Organization + WebSite structured data (the same block the build-time prerender writes). */
@@ -48,7 +54,8 @@ function SiteJsonLd({ locale }: { locale: "ar" | "en" }) {
 }
 
 /**
- * Storefront shell: header, page, footer, cart. Everything it shows is shipped
+ * Storefront shell: header, page, footer, and the panels over the page (phone
+ * menu, search, cart, messages, floating buttons). Everything it shows is shipped
  * with the site (src/site/data) — it makes no API request, so the store renders
  * the same whether or not the API is up.
  */
@@ -57,6 +64,13 @@ export function SiteLayout() {
   const location = useLocation();
   const isKnownLocale = loc === "ar" || loc === "en";
   const locale = loc === "ar" ? "ar" : "en";
+  const bottomBar = useSiteUi((s) => s.bottomBar);
+  const clearToasts = useSiteUi((s) => s.clearToasts);
+
+  /** A message about the last page ("added to cart") does not follow the visitor to the next one. */
+  useEffect(() => {
+    clearToasts();
+  }, [location.pathname, clearToasts]);
 
   useLayoutEffect(() => {
     if (isKnownLocale) setLocale(locale);
@@ -93,16 +107,27 @@ export function SiteLayout() {
   }
 
   return (
-    <div className={styles.site}>
+    <div className={styles.site} style={{ "--fz-bottom-bar": `${bottomBar}px` } as React.CSSProperties}>
       <SiteJsonLd locale={locale} />
-      <SiteHeader />
-      <main className={styles.main}>
-        <Suspense fallback={<div className={styles.pageFallback} aria-hidden="true" />}>
-          <Outlet />
-        </Suspense>
-      </main>
-      <SiteFooter />
+      {/* The page itself is a size container (.frame). The panels that sit over the
+          page are kept outside it: a size container can become the box that
+          `position: fixed` measures from, which would pin them to the page, not the screen. */}
+      <div className={styles.frame}>
+        <SiteHeader />
+        <main className={styles.main}>
+          <Suspense fallback={<div className={styles.pageFallback} aria-hidden="true" />}>
+            <Outlet />
+          </Suspense>
+        </main>
+        <SiteFooter />
+      </div>
+      {/* Pages put their own fixed pieces here (see layer.tsx). */}
+      <div id={LAYER_ID} />
+      <SiteMenu />
+      <SearchPanel />
       <CartPanel />
+      <FloatingActions />
+      <Toasts />
     </div>
   );
 }

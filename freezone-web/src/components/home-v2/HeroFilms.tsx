@@ -1,7 +1,25 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "@/navigation";
 import { useTranslations } from "@/i18n/hooks";
 import { HERO_NAMES, HERO_SCENES } from "./generated/heroScenes";
 import styles from "./HomeV2.module.css";
+
+/**
+ * Where a click on each banner goes, in the order of HERO_NAMES. Banners for
+ * things the catalogue does not list (custom servers, Epson) open the contact
+ * page with the subject already filled in.
+ */
+const HERO_LINKS: readonly string[] = [
+  "/products?brand=Sunell",
+  "/contact?topic=quote",
+  "/products?brand=ASUS&cat=pc&sub=lap-gaming",
+  "/products?cat=cctv",
+  "/contact?ask=Epson",
+  "/products?brand=EZVIZ",
+];
+
+/** A sideways drag longer than this (px) changes the banner instead of opening it. */
+const SWIPE_PX = 44;
 
 /** Each banner stays this long before the next one comes in. */
 const BANNER_MS = 4000;
@@ -25,6 +43,10 @@ type HeroState = {
  *
  * Only the banner on screen and the next one are in the page at first, so the
  * first paint downloads one banner's pictures, not all six.
+ *
+ * The visitor can step through with the arrows (shown on hover), the dots, the
+ * keyboard arrows or a swipe; the banners wait while the pointer or the keyboard
+ * focus is on them. A click or tap opens what the banner shows.
  */
 export function HeroFilms() {
   const t = useTranslations("HomeV2");
@@ -33,17 +55,32 @@ export function HeroFilms() {
   /** Bumped when the visitor picks a banner, so the timer starts counting again. */
   const [timerKey, setTimerKey] = useState(0);
 
+  /** Waiting: the pointer is over the banners, or the keyboard focus is inside them. */
+  const [hover, setHover] = useState(false);
+  const [focus, setFocus] = useState(false);
+  const paused = hover || focus;
+  const drag = useRef<{ id: number; x: number; y: number } | null>(null);
+  /** Set by a swipe so the click that ends it does not also open the banner. */
+  const swiped = useRef(false);
+
   const go = useCallback((k: number) => {
     setState((s) => (k === s.slide ? s : { slide: k, prev: s.slide, tr: (s.tr % TRANSITIONS) + 1 }));
   }, []);
 
+  /** Step forward or back; the count starts again from the new banner. */
+  const step = useCallback((by: 1 | -1) => {
+    setState((s) => ({ slide: (s.slide + by + COUNT) % COUNT, prev: s.slide, tr: (s.tr % TRANSITIONS) + 1 }));
+    setTimerKey((n) => n + 1);
+  }, []);
+
   useEffect(() => {
+    if (paused) return;
     const id = window.setInterval(() => {
       if (document.hidden) return;
       setState((s) => ({ slide: (s.slide + 1) % COUNT, prev: s.slide, tr: (s.tr % TRANSITIONS) + 1 }));
     }, BANNER_MS);
     return () => window.clearInterval(id);
-  }, [timerKey]);
+  }, [timerKey, paused]);
 
   /** Keep the banner on screen and the one after it in the page. */
   useEffect(() => {
@@ -66,9 +103,53 @@ export function HeroFilms() {
   }, []);
 
   const { slide, prev, tr } = state;
+  const isRtl = () => document.documentElement.dir === "rtl";
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    swiped.current = false;
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    const d = drag.current;
+    drag.current = null;
+    if (!d || d.id !== e.pointerId) return;
+    const dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
+    if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    swiped.current = true;
+    /** Pulling the banner toward the start of the line brings the next one, in either direction of writing. */
+    step((dx < 0) !== isRtl() ? 1 : -1);
+  };
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    step((e.key === "ArrowRight") !== isRtl() ? 1 : -1);
+  };
 
   return (
-    <section className={styles.cover} aria-roledescription="carousel" aria-label={t("heroLabel")}>
+    <section
+      className={styles.cover}
+      aria-roledescription="carousel"
+      aria-label={t("heroLabel")}
+      onPointerEnter={(e) => {
+        if (e.pointerType === "mouse") setHover(true);
+      }}
+      onPointerLeave={() => setHover(false)}
+      onFocus={(e) => {
+        /* Keyboard focus only: a tapped dot keeps focus on phones and would hold the banners for good. */
+        if ((e.target as HTMLElement).matches(":focus-visible")) setFocus(true);
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocus(false);
+      }}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerCancel={() => {
+        drag.current = null;
+      }}
+      onKeyDown={onKeyDown}
+    >
       {HERO_SCENES.map((html, k) => {
         const phase =
           k === slide
@@ -96,6 +177,24 @@ export function HeroFilms() {
         <span className={`${styles.fxFill} fzh-fx-line`} style={{ background: "#C90000" }} />
         <span className={`${styles.fxSheen} ${tr % 2 ? "fzh-sh-a" : "fzh-sh-b"}`} />
       </div>
+      {/* The whole banner is one link (the pictures carry no buttons of their own). */}
+      <Link
+        href={HERO_LINKS[slide] ?? "/products"}
+        className={styles.coverLink}
+        aria-label={t("heroOpen", { name: HERO_NAMES[slide] })}
+        draggable={false}
+        onClick={(e) => {
+          if (!swiped.current) return;
+          e.preventDefault();
+          swiped.current = false;
+        }}
+      />
+      <button type="button" className={`${styles.coverArrow} ${styles.coverPrev}`} aria-label={t("heroPrev")} onClick={() => step(-1)}>
+        <CoverChevron />
+      </button>
+      <button type="button" className={`${styles.coverArrow} ${styles.coverNext}`} aria-label={t("heroNext")} onClick={() => step(1)}>
+        <CoverChevron />
+      </button>
       <div className={styles.dotsBar}>
         <div className={styles.dots}>
           {HERO_NAMES.map((name, k) => (
@@ -110,11 +209,29 @@ export function HeroFilms() {
                 setTimerKey((n) => n + 1);
               }}
             >
-              <span className={styles.dotMark} />
+              <span className={styles.dotMark}>
+                {k === slide ? (
+                  /* Fills while this banner's time runs; re-keyed so it starts again on every change. */
+                  <span
+                    key={`${slide}-${timerKey}`}
+                    className={`${styles.dotFill} ${paused ? styles.dotFillHeld : ""}`}
+                    style={{ animationDuration: `${BANNER_MS}ms` }}
+                  />
+                ) : null}
+              </span>
             </button>
           ))}
         </div>
       </div>
     </section>
+  );
+}
+
+/** Drawn pointing to the end of the line; the "previous" arrow turns it round in the stylesheet. */
+function CoverChevron() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m9 6 6 6-6 6" />
+    </svg>
   );
 }

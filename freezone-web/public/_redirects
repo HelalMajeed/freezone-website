@@ -9,15 +9,15 @@
 # site-relative /uploads/* URLs always resolve to the latest files (admin panel).
 /uploads/* https://freezone-website.fly.dev/uploads/:splat 200!
 
-# Pages of the previous storefront. The site is now home + product list +
-# product page (src/site), so their old addresses go to the nearest live page.
+# Pages of the previous storefront that the site (src/site) no longer has: their
+# old addresses go to the nearest live page. /checkout, /wishlist and /contact
+# are pages of the current site and are not listed here.
 # Old numeric product ids are handled in netlify/edge-functions/seo-product-404.ts.
 /ar/category/* /ar/products/ 301
 /ar/brand/* /ar/products/ 301
 /en/category/* /en/products/ 301
 /en/brand/* /en/products/ 301
 /ar/about /ar/ 301
-/ar/contact /ar/ 301
 /ar/pc-builder /ar/ 301
 /ar/track-order /ar/ 301
 /ar/shipping /ar/ 301
@@ -26,15 +26,12 @@
 /ar/faq /ar/ 301
 /ar/privacy /ar/ 301
 /ar/terms /ar/ 301
-/ar/cart /ar/ 301
-/ar/checkout /ar/ 301
+/ar/cart /ar/checkout/ 301
 /ar/login /ar/ 301
 /ar/register /ar/ 301
 /ar/account /ar/ 301
-/ar/wishlist /ar/ 301
 /ar/compare /ar/ 301
 /en/about /en/ 301
-/en/contact /en/ 301
 /en/pc-builder /en/ 301
 /en/track-order /en/ 301
 /en/shipping /en/ 301
@@ -43,12 +40,10 @@
 /en/faq /en/ 301
 /en/privacy /en/ 301
 /en/terms /en/ 301
-/en/cart /en/ 301
-/en/checkout /en/ 301
+/en/cart /en/checkout/ 301
 /en/login /en/ 301
 /en/register /en/ 301
 /en/account /en/ 301
-/en/wishlist /en/ 301
 /en/compare /en/ 301
 
 # SPA fallback — must stay last. Static files and prerendered shells win first.

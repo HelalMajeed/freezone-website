@@ -1,6 +1,5 @@
 import { Link } from "@/navigation";
 import { useTranslations } from "@/i18n/hooks";
-import { whatsappLink } from "@/site/contact";
 import { SECTION_SCENES, type SectionSceneKey } from "./generated/sectionScenes";
 import styles from "./HomeV2.module.css";
 
@@ -28,7 +27,8 @@ export function ForwardArrow({ size = 18 }: { size?: number }) {
 
 /**
  * Logos shown under the hero, in this order; `em` is each logo's height against
- * the row. `listed` brands have products in the catalogue and link to them.
+ * the row. `listed` brands have products in the catalogue and link to them; the
+ * others open the contact page with a question about that brand ready to send.
  */
 const BRANDS: readonly { file: string; name: string; em: number; listed?: boolean }[] = [
   { file: "hikvision.webp", name: "Hikvision", em: 1.15, listed: true },
@@ -61,13 +61,14 @@ export function BrandStrip() {
           );
           return (
             <li key={b.name} className={styles.brandItem}>
-              {b.listed ? (
-                <Link href={`/products?brand=${encodeURIComponent(b.name)}`} className={styles.brandLink}>
-                  {logo}
-                </Link>
-              ) : (
-                logo
-              )}
+              <Link
+                href={b.listed ? `/products?brand=${encodeURIComponent(b.name)}` : `/contact?ask=${encodeURIComponent(b.name)}`}
+                className={styles.brandLink}
+                aria-label={t(b.listed ? "brandView" : "brandAsk", { name: b.name })}
+                title={t(b.listed ? "brandView" : "brandAsk", { name: b.name })}
+              >
+                {logo}
+              </Link>
             </li>
           );
         })}
@@ -165,7 +166,6 @@ export function PromoGrid() {
 
 export function ProjectsBanner() {
   const t = useTranslations("HomeV2");
-  const tSite = useTranslations("Site");
   return (
     <section id="solutions" className={styles.projects}>
       <img
@@ -186,16 +186,11 @@ export function ProjectsBanner() {
           </div>
           <h2 className={styles.projectsTitle}>{t("projectsTitle")}</h2>
           <p className={styles.projectsLead}>{t("projectsText")}</p>
-          {/* No contact page on this site: the quote request opens a WhatsApp chat with the store. */}
-          <a
-            href={whatsappLink(tSite("waQuote"))}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.projectsCta}
-          >
+          {/* The quote form on the contact page gathers the project details and sends them on WhatsApp. */}
+          <Link href="/contact?topic=quote" className={styles.projectsCta}>
             {t("projectsCta")}
             <ForwardArrow />
-          </a>
+          </Link>
         </div>
         <div className={styles.projectsSpacer} />
       </div>

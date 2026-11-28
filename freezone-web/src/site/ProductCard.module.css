@@ -135,6 +135,100 @@
   padding: 0;
 }
 
+.prodCart {
+  position: relative;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.prodCart:not(:disabled):hover {
+  background: #c90000;
+}
+
+.prodCart:not(:disabled):active {
+  transform: scale(0.92);
+}
+
+/* For a moment after an add: a tick on red. */
+.prodCartDone {
+  background: #c90000;
+  animation: fzCardPop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+/* How many of this product the cart already holds. */
+.prodCartCount {
+  position: absolute;
+  top: -4px;
+  inset-inline-end: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding-inline: 4px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  border: 2px solid #ffffff;
+  background: #c90000;
+  color: #ffffff;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 700;
+  text-align: center;
+  display: block;
+  animation: fzCardPop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+@keyframes fzCardPop {
+  0% {
+    transform: scale(0.7);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Favourite: a heart in the corner opposite the badge. */
+.fav {
+  position: absolute;
+  top: 2px;
+  inset-inline-end: 2px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #44403c;
+  cursor: pointer;
+  padding: 0;
+}
+
+.favDisc {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 4px rgba(10, 10, 10, 0.12);
+  transition: transform 0.2s cubic-bezier(0.3, 1.6, 0.5, 1), color 0.2s ease;
+}
+
+.fav:hover .favDisc {
+  transform: scale(1.1);
+  color: #c90000;
+}
+
+.favOn {
+  color: #c90000;
+}
+
+.favOn .favDisc {
+  animation: fzCardPop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
 .prodCart:disabled {
   background: #e7e5e4;
   color: #78716c;
@@ -176,8 +270,16 @@
 
 @media (prefers-reduced-motion: reduce) {
   .prod,
-  .prod .prodImg {
+  .prod .prodImg,
+  .prodCart,
+  .favDisc {
     transition: none;
+  }
+
+  .prodCartDone,
+  .prodCartCount,
+  .favOn .favDisc {
+    animation: none;
   }
 
   .prod:hover .prodImg {

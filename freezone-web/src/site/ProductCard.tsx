@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { Link as RouterLink, useLocation } from "react-router-dom";
 import { useLocale, useTranslations } from "@/i18n/hooks";
+import { useAddToCart, useFavorite } from "./actions";
 import { useSiteCart } from "./cart";
 import {
   formatMoney,
@@ -11,7 +13,7 @@ import {
   type SiteCatalog,
   type SiteProduct,
 } from "./catalog";
-import { CartIcon } from "./icons";
+import { CartIcon, CheckIcon, HeartIcon } from "./icons";
 import styles from "./ProductCard.module.css";
 
 /** Largest price size that still fits beside the cart button in a narrow card. */
@@ -25,7 +27,16 @@ export function ProductCard({ product: p, catalog }: { product: SiteProduct; cat
   const t = useTranslations("Site");
   const locale = useLocale();
   const location = useLocation();
-  const add = useSiteCart((s) => s.add);
+  const add = useAddToCart();
+  const inCart = useSiteCart((s) => s.items[p.id] ?? 0);
+  const fav = useFavorite(p.id);
+  /** The cart button shows a tick for a moment after each add. */
+  const [added, setAdded] = useState(0);
+  useEffect(() => {
+    if (!added) return;
+    const timer = window.setTimeout(() => setAdded(0), 1400);
+    return () => window.clearTimeout(timer);
+  }, [added]);
   const name = plainText(productName(p, locale));
   const subName = labelOf(catalog.subById.get(p.sub), locale);
   const meta = p.brand ? `${p.brand} · ${subName}` : subName;
@@ -71,16 +82,40 @@ export function ProductCard({ product: p, catalog }: { product: SiteProduct; cat
         </span>
         <button
           type="button"
-          className={styles.prodCart}
+          className={`${styles.prodCart} ${added ? styles.prodCartDone : ""}`}
           disabled={isOut}
-          aria-label={t(isOut ? "outNamed" : "addToCartNamed", { name })}
+          aria-label={
+            isOut
+              ? t("outNamed", { name })
+              : inCart > 0
+                ? t("inCartNamed", { name, count: inCart })
+                : t("addToCartNamed", { name })
+          }
           onClick={() => {
-            if (!isOut) add(p.id);
+            if (isOut) return;
+            add(p);
+            setAdded((n) => n + 1);
           }}
         >
-          <CartIcon size={20} />
+          {added ? <CheckIcon size={20} /> : <CartIcon size={20} />}
+          {inCart > 0 && !isOut ? (
+            <span key={inCart} className={styles.prodCartCount} dir="ltr" aria-hidden="true">
+              {inCart}
+            </span>
+          ) : null}
         </button>
       </div>
+      <button
+        type="button"
+        className={`${styles.fav} ${fav.on ? styles.favOn : ""}`}
+        aria-pressed={fav.on}
+        aria-label={t(fav.on ? "favRemove" : "favAdd", { name })}
+        onClick={fav.toggle}
+      >
+        <span className={styles.favDisc}>
+          <HeartIcon size={18} filled={fav.on} />
+        </span>
+      </button>
       {isOut ? (
         <span className={`${styles.badge} ${styles.badgeOut}`}>{t("badgeOut")}</span>
       ) : p.flag === "new" ? (

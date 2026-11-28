@@ -5,20 +5,46 @@ import { Seo } from "@/components/seo/Seo";
 import {
   buildListView,
   filtersQuery,
+  formatMoney,
   labelOf,
   PAGE_SIZE,
+  PRICE_RANGES,
   readFilters,
   SECTION_SIZE,
+  SORT_KEYS,
   useCatalog,
   type ListFilters,
   type SiteCatalog,
+  type SortKey,
 } from "./catalog";
-import { ChevronIcon, SearchIcon } from "./icons";
+import { CheckIcon, ChevronDownIcon, ChevronIcon, CloseIcon, SearchIcon } from "./icons";
+import { useSitePrefs } from "./prefs";
 import { GhostCard, ProductCard } from "./ProductCard";
 import styles from "./site.module.css";
 
 /** Filter links keep the page where it is instead of jumping to the top (see ScrollToTop). */
 const KEEP_SCROLL = { keepScroll: true } as const;
+
+const SORT_LABEL: Record<SortKey, string> = {
+  default: "sortDefault",
+  "price-asc": "sortPriceAsc",
+  "price-desc": "sortPriceDesc",
+  new: "sortNew",
+};
+
+/** Page numbers to show: first, last, and the pages around the current one; 0 marks a gap. */
+export function pageWindow(page: number, pages: number): number[] {
+  if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
+  const keep = new Set([1, pages, page - 1, page, page + 1].filter((n) => n >= 1 && n <= pages));
+  if (page <= 3) [2, 3, 4].forEach((n) => keep.add(n));
+  if (page >= pages - 2) [pages - 3, pages - 2, pages - 1].forEach((n) => keep.add(n));
+  const out: number[] = [];
+  for (const n of [...keep].sort((a, b) => a - b)) {
+    if (out.length && n - out[out.length - 1] > 1) out.push(0);
+    out.push(n);
+  }
+  return out;
+}
 
 function ListSkeleton() {
   return (
@@ -46,6 +72,7 @@ function ProductList({ catalog }: { catalog: SiteCatalog }) {
    * takes the address-bar value back only when that changed from outside — the
    * back button or a link — never from its own write.
    */
+  const addSearch = useSitePrefs((st) => st.addSearch);
   const [typed, setTyped] = useState(urlFilters.q);
   const written = useRef(urlFilters.q);
   useEffect(() => {
@@ -82,7 +109,7 @@ function ProductList({ catalog }: { catalog: SiteCatalog }) {
   /** After a filter change, bring the filters back into view if they scrolled away. */
   const topRef = useRef<HTMLDivElement>(null);
   const stackRef = useRef<HTMLDivElement>(null);
-  const filterKey = `${filters.brand}|${filters.cat}|${filters.sub}`;
+  const filterKey = `${filters.brand}|${filters.cat}|${filters.sub}|${filters.sort}|${filters.price}|${filters.stock}`;
   const lastFilterKey = useRef("");
   useEffect(() => {
     const first = lastFilterKey.current === "";
@@ -111,6 +138,29 @@ function ProductList({ catalog }: { catalog: SiteCatalog }) {
       : view.cat !== "all"
         ? `${labelOf(catalog.catById.get(view.cat), locale)} — ${t("products")}`
         : t("seoProductsTitle");
+
+  /** Sort, price and availability are controls, not links: they rewrite the address in place. */
+  const apply = (patch: Partial<ListFilters>) =>
+    navigate(href({ ...patch, page: 1 }), { replace: true, state: KEEP_SCROLL });
+  const priceLabel = (r: (typeof PRICE_RANGES)[number]) =>
+    r.min === 0
+      ? t("priceUnder", { max: formatMoney(r.max ?? 0) })
+      : r.max === null
+        ? t("priceOver", { min: formatMoney(r.min) })
+        : t("priceBetween", { min: formatMoney(r.min), max: formatMoney(r.max) });
+  const narrowed =
+    filters.brand !== "all" ||
+    filters.cat !== "all" ||
+    filters.sub !== "all" ||
+    filters.sort !== "default" ||
+    filters.price !== "all" ||
+    filters.stock ||
+    typed.trim() !== "";
+  const clearAll = () => {
+    written.current = "";
+    setTyped("");
+    navigate(base, { state: KEEP_SCROLL });
+  };
 
   const shown = view.sectioned ? [] : view.list.slice((view.page - 1) * PAGE_SIZE, view.page * PAGE_SIZE);
   const sections = view.sectioned
@@ -147,12 +197,28 @@ function ProductList({ catalog }: { catalog: SiteCatalog }) {
               type="search"
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") addSearch(typed);
+              }}
               placeholder={t("searchPlaceholder")}
               aria-label={t("searchAria")}
               className={styles.searchInput}
               enterKeyHint="search"
               autoComplete="off"
             />
+            {typed ? (
+              <button
+                type="button"
+                className={styles.searchClear}
+                aria-label={t("searchClear")}
+                onClick={() => {
+                  setTyped("");
+                  inputRef.current?.focus();
+                }}
+              >
+                <CloseIcon size={16} />
+              </button>
+            ) : null}
           </label>
         </div>
 
@@ -223,6 +289,54 @@ function ProductList({ catalog }: { catalog: SiteCatalog }) {
           </div>
         ) : null}
 
+        <div role="group" aria-label={t("listTools")} className={styles.tools2}>
+          <label className={styles.selectPill}>
+            <span className={styles.selectLabel}>{t("sortLabel")}</span>
+            <select
+              className={styles.select}
+              value={filters.sort}
+              onChange={(e) => apply({ sort: e.target.value as SortKey })}
+            >
+              {SORT_KEYS.map((k) => (
+                <option key={k} value={k}>
+                  {t(SORT_LABEL[k])}
+                </option>
+              ))}
+            </select>
+            <ChevronDownIcon />
+          </label>
+          <label className={styles.selectPill}>
+            <span className={styles.selectLabel}>{t("priceLabel")}</span>
+            <select className={styles.select} value={filters.price} onChange={(e) => apply({ price: e.target.value })}>
+              <option value="all">{t("priceAll")}</option>
+              {PRICE_RANGES.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {priceLabel(r)}
+                </option>
+              ))}
+            </select>
+            <ChevronDownIcon />
+          </label>
+          <label className={`${styles.togglePill} ${filters.stock ? styles.togglePillOn : ""}`}>
+            <input
+              type="checkbox"
+              className={styles.srOnly}
+              checked={filters.stock}
+              onChange={(e) => apply({ stock: e.target.checked })}
+            />
+            <span className={styles.toggleBox} aria-hidden="true">
+              {filters.stock ? <CheckIcon size={14} /> : null}
+            </span>
+            <span>{t("stockOnly")}</span>
+          </label>
+          {narrowed ? (
+            <button type="button" className={styles.clearBtn} onClick={clearAll}>
+              <CloseIcon size={16} />
+              <span>{t("clearFilters")}</span>
+            </button>
+          ) : null}
+        </div>
+
         {view.sectioned && sections.length > 0 ? (
           <div className={styles.sections}>
             {sections.map((s) => (
@@ -263,15 +377,7 @@ function ProductList({ catalog }: { catalog: SiteCatalog }) {
           <div className={styles.empty}>
             <span className={styles.emptyTitle}>{t("emptyTitle")}</span>
             <span className={styles.emptyText}>{t("emptyText")}</span>
-            <button
-              type="button"
-              className={styles.darkBtn}
-              onClick={() => {
-                written.current = "";
-                setTyped("");
-                navigate(base);
-              }}
-            >
+            <button type="button" className={styles.darkBtn} onClick={clearAll}>
               {t("showAll")}
             </button>
           </div>
@@ -288,17 +394,23 @@ function ProductList({ catalog }: { catalog: SiteCatalog }) {
             >
               <ChevronIcon className={styles.flipRtl} />
             </RouterLink>
-            {Array.from({ length: view.pages }, (_, i) => i + 1).map((n) => (
-              <RouterLink
-                key={n}
-                to={href({ page: n })}
-                aria-label={t("pageN", { n })}
-                aria-current={n === view.page ? "page" : undefined}
-                className={`${styles.pagerNum} ${n === view.page ? styles.pagerNumOn : ""}`}
-              >
-                <span dir="ltr">{n}</span>
-              </RouterLink>
-            ))}
+            {pageWindow(view.page, view.pages).map((n, i) =>
+              n === 0 ? (
+                <span key={`gap-${i}`} className={styles.pagerGap} aria-hidden="true">
+                  …
+                </span>
+              ) : (
+                <RouterLink
+                  key={n}
+                  to={href({ page: n })}
+                  aria-label={t("pageN", { n })}
+                  aria-current={n === view.page ? "page" : undefined}
+                  className={`${styles.pagerNum} ${n === view.page ? styles.pagerNumOn : ""}`}
+                >
+                  <span dir="ltr">{n}</span>
+                </RouterLink>
+              ),
+            )}
             <RouterLink
               to={href({ page: Math.min(view.pages, view.page + 1) })}
               aria-label={t("nextPage")}

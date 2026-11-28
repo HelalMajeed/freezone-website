@@ -10,8 +10,10 @@
  *
  * The storefront is static (src/site): its catalogue is the JSON in
  * src/site/data, so this script reads that file and makes NO network request.
- * Routes covered, in both languages: the home page, the product list and every
- * product. It also writes `dist/sitemap.xml` listing exactly those routes.
+ * Routes covered, in both languages: the home page, the product list, every
+ * product and the contact page. It also writes `dist/sitemap.xml` listing
+ * exactly those routes. (The order form and the favourites page are personal,
+ * noindex pages: no shell, not in the sitemap.)
  *
  * Trailing slash: Netlify pretty-URLs 301 `/en/product/FZ-001` →
  * `/en/product/FZ-001/`, so the trailing-slash form is the one that serves 200.
@@ -278,7 +280,18 @@ async function main() {
 
   for (const locale of LOCALES) {
     const msg = await loadMessages(locale);
-    for (const key of ["seoHomeTitle", "seoHomeDesc", "seoProductsTitle", "seoProductsDesc", "seoProductDesc", "home", "products"]) {
+    for (const key of [
+      "seoHomeTitle",
+      "seoHomeDesc",
+      "seoProductsTitle",
+      "seoProductsDesc",
+      "seoProductDesc",
+      "seoContactTitle",
+      "seoContactDesc",
+      "navContact",
+      "home",
+      "products",
+    ]) {
       if (!msg[key]) throw new Error(`messages/${locale}.json is missing Site.${key}`);
     }
 
@@ -293,6 +306,15 @@ async function main() {
       jsonLd: breadcrumbJsonLd([
         { name: msg.home, path: `/${locale}` },
         { name: msg.products, path: `/${locale}/products` },
+      ]),
+    });
+
+    await writeRoute(template, locale, `/${locale}/contact`, {
+      title: msg.seoContactTitle,
+      description: msg.seoContactDesc,
+      jsonLd: breadcrumbJsonLd([
+        { name: msg.home, path: `/${locale}` },
+        { name: msg.navContact, path: `/${locale}/contact` },
       ]),
     });
 
@@ -314,10 +336,10 @@ async function main() {
         ],
       });
     }
-    console.log(`[prerender] wrote home, product list and ${catalog.products.length} product pages for "${locale}".`);
+    console.log(`[prerender] wrote home, product list, contact and ${catalog.products.length} product pages for "${locale}".`);
   }
 
-  const routes = ["", "/products", ...catalog.products.map((p) => `/product/${p.id}`)];
+  const routes = ["", "/products", "/contact", ...catalog.products.map((p) => `/product/${p.id}`)];
   await writeFile(path.join(DIST, "sitemap.xml"), sitemapXml(routes), "utf8");
   console.log(`[prerender] wrote sitemap.xml with ${routes.length * LOCALES.length} URLs.`);
 }

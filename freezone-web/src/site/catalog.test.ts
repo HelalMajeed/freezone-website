@@ -13,11 +13,15 @@ import {
   formatMoney,
   normalizeProductId,
   PAGE_SIZE,
+  PRICE_RANGES,
   prepareCatalog,
   readFilters,
   relatedProducts,
+  searchCatalog,
+  searchKey,
   type SiteCatalog,
 } from "./catalog";
+import { pageWindow } from "./ProductsListPage";
 
 const catalog: SiteCatalog = prepareCatalog(raw as unknown as Parameters<typeof prepareCatalog>[0]);
 const root = path.resolve(__dirname, "..", "..");
@@ -103,11 +107,81 @@ describe("product list filters", () => {
     expect(filtersQuery(DEFAULT_FILTERS)).toBe("");
   });
 
+  it("sorts by price, puts new arrivals first, and keeps the catalogue order otherwise", () => {
+    const up = buildListView(catalog, filters("cat=pc&sort=price-asc")).list;
+    expect(up.length).toBeGreaterThan(1);
+    expect(up.every((p, i) => i === 0 || up[i - 1].price <= p.price)).toBe(true);
+    const down = buildListView(catalog, filters("cat=pc&sort=price-desc")).list;
+    expect(down.every((p, i) => i === 0 || down[i - 1].price >= p.price)).toBe(true);
+    const fresh = buildListView(catalog, filters("sort=new")).list;
+    const firstOld = fresh.findIndex((p) => p.flag !== "new");
+    expect(firstOld).toBeGreaterThan(0);
+    expect(fresh.slice(firstOld).some((p) => p.flag === "new")).toBe(false);
+    expect(buildListView(catalog, filters("sort=price-asc")).sectioned).toBe(false);
+  });
+
+  it("narrows by price range and by availability", () => {
+    let seen = 0;
+    for (const r of PRICE_RANGES) {
+      const list = buildListView(catalog, filters(`price=${r.id}`)).list;
+      expect(list.every((p) => p.price >= r.min && (r.max === null || p.price < r.max)), r.id).toBe(true);
+      seen += list.length;
+    }
+    /** The ranges cover every product exactly once. */
+    expect(seen).toBe(catalog.products.length);
+    const available = buildListView(catalog, filters("stock=1")).list;
+    expect(available.some((p) => p.flag === "out")).toBe(false);
+    expect(available.length).toBe(catalog.products.filter((p) => p.flag !== "out").length);
+    expect(filters("sort=nope&price=nope&stock=yes")).toEqual(DEFAULT_FILTERS);
+  });
+
+  it("matches every word of a search, in any order, and folds Arabic letter variants", () => {
+    const p = catalog.products.find((x) => x.brand && x.model.length > 5)!;
+    const q = `${p.model.toLowerCase()} ${p.brand.toLowerCase()}`;
+    expect(buildListView(catalog, filters(`q=${encodeURIComponent(q)}`)).list).toContain(p);
+    expect(searchKey("كاميرة إنذار ٤")).toBe(searchKey("كاميره انذار 4"));
+    expect(buildListView(catalog, filters(`q=${encodeURIComponent("كاميره")}`)).list.length).toBe(
+      buildListView(catalog, filters(`q=${encodeURIComponent("كاميرة")}`)).list.length,
+    );
+  });
+
   it("offers similar products of the same type, never the product itself", () => {
     const p = catalog.byId.get("FZ-001")!;
     const related = relatedProducts(catalog, p);
     expect(related.length).toBeLessThanOrEqual(5);
     expect(related.every((r) => r.sub === p.sub && r.id !== p.id)).toBe(true);
+  });
+});
+
+describe("instant search", () => {
+  it("returns nothing for an empty search", () => {
+    expect(searchCatalog(catalog, "  ")).toEqual({ products: [], total: 0, cats: [], subs: [], brands: [] });
+  });
+
+  it("puts an exact model first and reports the full count", () => {
+    const p = catalog.products.find((x) => x.model.length > 6 && x.flag !== "out")!;
+    const hits = searchCatalog(catalog, p.model, 6);
+    expect(hits.products[0].model).toBe(p.model);
+    expect(hits.products.length).toBeLessThanOrEqual(6);
+    expect(hits.total).toBeGreaterThanOrEqual(hits.products.length);
+  });
+
+  it("suggests the brand and the section that match", () => {
+    expect(searchCatalog(catalog, "hik").brands).toContain("Hikvision");
+    expect(searchCatalog(catalog, "network").cats.map((c) => c.id)).toContain("net");
+    expect(searchCatalog(catalog, "راوتر").subs.map((x) => x.id)).toContain("router");
+  });
+});
+
+describe("pager", () => {
+  it("lists every page when there are few", () => {
+    expect(pageWindow(2, 5)).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it("keeps the ends and the neighbours when there are many (0 = gap)", () => {
+    expect(pageWindow(1, 30)).toEqual([1, 2, 3, 4, 0, 30]);
+    expect(pageWindow(15, 30)).toEqual([1, 0, 14, 15, 16, 0, 30]);
+    expect(pageWindow(30, 30)).toEqual([1, 0, 27, 28, 29, 30]);
   });
 });
 
@@ -130,5 +204,19 @@ describe("storefront strings", () => {
     const e: Record<string, string> = en.Site;
     expect(Object.keys(a).sort()).toEqual(Object.keys(e).sort());
     for (const v of [...Object.values(a), ...Object.values(e)]) expect(v.trim()).not.toBe("");
+  });
+
+  it("carry the same placeholders in both languages", () => {
+    const holes = (v: string) => (v.match(/\{\{\w+\}\}/g) ?? []).sort().join(",");
+    for (const [ns, a, e] of [
+      ["Site", ar.Site, en.Site],
+      ["HomeV2", ar.HomeV2, en.HomeV2],
+    ] as const) {
+      const arabic: Record<string, string> = a;
+      const english: Record<string, string> = e;
+      expect(Object.keys(arabic).sort(), ns).toEqual(Object.keys(english).sort());
+      /** Plural forms (key_one) may drop the number in one language. */
+      for (const k of Object.keys(arabic)) if (!/_one$/.test(k)) expect(holes(arabic[k]), `${ns}.${k}`).toBe(holes(english[k]));
+    }
   });
 });
