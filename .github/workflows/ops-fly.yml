@@ -53,6 +53,9 @@ jobs:
           flyctl status -a "$APP" 2>&1 | head -40
           echo "== machines =="
           flyctl machine list -a "$APP" 2>&1 | head -20
+          echo "== last machine events =="
+          MID="$(flyctl machine list -a "$APP" --json 2>/dev/null | jq -r '.[0].id // empty')"
+          [ -n "$MID" ] && flyctl machine status "$MID" -a "$APP" 2>&1 | sed -n '/Event Logs/,$p' | head -16
           echo "== volumes =="
           flyctl volumes list -a "$APP" 2>&1 | head -10
           echo "== secret names (no values) =="
@@ -72,10 +75,15 @@ jobs:
         # files the volume holds. The machine stops again by itself when idle.
         if: inputs.action == 'health'
         run: |
-          set -uo pipefail
+          set +e
           MID="$(flyctl machine list -a "$APP" --json | jq -r '.[0].id')"
           echo "Starting machine $MID ..."
-          flyctl machine start "$MID" -a "$APP" 2>&1 | tail -2 || true
+          if ! START="$(flyctl machine start "$MID" -a "$APP" 2>&1)"; then
+            # Fly refuses to start machines on an account with unpaid invoices.
+            echo "$START" | tail -2
+            echo "::error::The machine could not be started — the API is down until Fly allows it to run."
+            exit 1
+          fi
           JS="$(cat <<'SCRIPT'
           const out = (k, v) => console.log(k + ": " + v);
           (async () => {
@@ -113,7 +121,7 @@ jobs:
           ok=false
           for i in $(seq 1 9); do
             sleep 10
-            OUT="$(flyctl ssh console -a "$APP" -C "sh -c 'cd /app && echo $B64 | base64 -d | node'" 2>&1)"
+            OUT="$(flyctl ssh console -a "$APP" -C "sh -c 'cd /app && echo $B64 | base64 -d | node'" 2>&1)" || true
             if printf '%s' "$OUT" | grep -q "api health: 200"; then ok=true; break; fi
           done
           printf '%s\n' "$OUT" | grep -E "^(api health|database|newest order|uploaded files)|Error|error" | head -12
