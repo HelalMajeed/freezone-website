@@ -15,6 +15,7 @@ on:
         default: "secrets-list"
         options:
           - status
+          - health
           - secrets-list
           - prepare-launch
           - seed-admin
@@ -61,7 +62,62 @@ jobs:
           echo "== postgres apps of this project =="
           flyctl postgres list 2>&1 | grep -iE "^NAME|freezone|error|no postgres" | head -10
           echo "== managed postgres of this project =="
-          flyctl mpg list 2>&1 | grep -iE "NAME|freezone|error|no " | head -10
+          flyctl mpg list --org personal 2>&1 | grep -iE "NAME|freezone|error|no " | head -10
+          exit 0
+
+      - name: Start the machine and check API, database and uploads from inside
+        # Starts the (auto-stopping) machine, then runs a small read-only script
+        # inside it. Prints only: API health, which kind of host the database is
+        # on (never the address or credentials), row counts, and how many uploaded
+        # files the volume holds. The machine stops again by itself when idle.
+        if: inputs.action == 'health'
+        run: |
+          set -uo pipefail
+          MID="$(flyctl machine list -a "$APP" --json | jq -r '.[0].id')"
+          echo "Starting machine $MID ..."
+          flyctl machine start "$MID" -a "$APP" 2>&1 | tail -2 || true
+          JS="$(cat <<'SCRIPT'
+          const out = (k, v) => console.log(k + ": " + v);
+          (async () => {
+            try {
+              const r = await fetch("http://127.0.0.1:4000/health", { signal: AbortSignal.timeout(8000) });
+              out("api health", r.status + " " + (await r.text()).slice(0, 60));
+            } catch (e) { out("api health", "not answering (" + (e.cause && e.cause.code || e.name) + ")"); }
+            try {
+              const u = new URL(process.env.DATABASE_URL);
+              out("database host kind", u.hostname.split(".").slice(-2).join(".") + " port " + (u.port || "5432"));
+            } catch { out("database host kind", "DATABASE_URL missing or not a URL"); }
+            try {
+              const { PrismaClient } = require("@prisma/client");
+              const db = new PrismaClient();
+              const [products, live, orders, customers, admins] = await Promise.all([
+                db.product.count(), db.product.count({ where: { deletedAt: null } }),
+                db.order.count(), db.customer.count(), db.adminUser.count(),
+              ]);
+              const last = await db.order.findFirst({ orderBy: { createdAt: "desc" }, select: { createdAt: true } });
+              out("database rows", "products " + products + " (not deleted " + live + "), orders " + orders + ", customers " + customers + ", admin users " + admins);
+              out("newest order", last ? last.createdAt.toISOString().slice(0, 10) : "none");
+              await db.$disconnect();
+            } catch (e) { out("database query", "failed: " + String(e.message || e).split("\n").slice(-1)[0].slice(0, 160)); }
+            try {
+              const fs = require("fs"), path = require("path");
+              let files = 0, bytes = 0;
+              const walk = (d) => { for (const n of fs.readdirSync(d, { withFileTypes: true })) { const f = path.join(d, n.name); if (n.isDirectory()) walk(f); else { files++; bytes += fs.statSync(f).size; } } };
+              walk("/app/public/uploads");
+              out("uploaded files", files + " files, " + Math.round(bytes / 1048576) + " MB");
+            } catch (e) { out("uploaded files", "unreadable: " + e.code); }
+          })();
+          SCRIPT
+          )"
+          B64="$(printf '%s' "$JS" | base64 -w0)"
+          ok=false
+          for i in $(seq 1 9); do
+            sleep 10
+            OUT="$(flyctl ssh console -a "$APP" -C "sh -c 'cd /app && echo $B64 | base64 -d | node'" 2>&1)"
+            if printf '%s' "$OUT" | grep -q "api health: 200"; then ok=true; break; fi
+          done
+          printf '%s\n' "$OUT" | grep -E "^(api health|database|newest order|uploaded files)|Error|error" | head -12
+          [ "$ok" = "true" ] || echo "::warning::API did not report healthy within 90 s"
           exit 0
 
       - name: List Fly secret names (no values)
