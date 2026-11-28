@@ -1,15 +1,17 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { useLocale, useTranslations } from "@/i18n/hooks";
 import { cartCount, useSiteCart } from "./cart";
 import { formatMoney, plainText, productImage, productName, useCatalog } from "./catalog";
-import { whatsappLink } from "./contact";
 import { CloseIcon, MinusIcon, PlusIcon, TrashIcon } from "./icons";
+import { useOverlay } from "./overlay";
+import { useSiteUi } from "./ui";
 import styles from "./site.module.css";
 
 /**
- * The cart: a list kept in this browser. There is no online checkout — the
- * visitor sends the list to the store over WhatsApp as a ready-typed message.
+ * The cart: a list kept in this browser, shown in a panel from the side. Its
+ * button leads to the order form (CheckoutPage), where the visitor adds their
+ * details and sends the order to the store as a WhatsApp message.
  */
 export function CartPanel() {
   const t = useTranslations("Site");
@@ -23,22 +25,13 @@ export function CartPanel() {
   const { data: catalog } = useCatalog();
   const closeRef = useRef<HTMLButtonElement>(null);
 
+  const close = useCallback(() => setOpen(false), [setOpen]);
+  useOverlay(open, close, closeRef);
+
+  /** "Added to cart — view cart" has done its job once the cart is open. */
   useEffect(() => {
-    if (!open) return;
-    const previous = document.activeElement as HTMLElement | null;
-    closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("keydown", onKey);
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = overflow;
-      previous?.focus?.();
-    };
-  }, [open, setOpen]);
+    if (open) useSiteUi.getState().clearToasts();
+  }, [open]);
 
   if (!open) return null;
 
@@ -52,19 +45,10 @@ export function CartPanel() {
   const total = rows.reduce((sum, r) => sum + r.p.price * r.qty, 0);
   const currency = t("currency");
 
-  const message = [
-    t("waOrderIntro"),
-    ...rows.map(
-      (r, i) =>
-        `${i + 1}. ${plainText(productName(r.p, locale))} (${r.p.id}) × ${r.qty} — ${formatMoney(r.p.price * r.qty)} ${currency}`,
-    ),
-    t("waTotal", { total: formatMoney(total) }),
-  ].join("\n");
-
   return (
     <div className={styles.cartLayer}>
       <button type="button" className={styles.cartScrim} aria-label={t("cartClose")} tabIndex={-1} onClick={() => setOpen(false)} />
-      <div className={styles.cartPanel} role="dialog" aria-modal="true" aria-labelledby="site-cart-title">
+      <div className={`${styles.cartPanel} ${styles.fromEnd}`} role="dialog" aria-modal="true" aria-labelledby="site-cart-title">
         <div className={styles.cartHead}>
           <h2 id="site-cart-title" className={styles.cartTitle}>
             {cartCount(items) > 0 ? t("cartCount", { count: cartCount(items) }) : t("cartTitle")}
@@ -133,9 +117,10 @@ export function CartPanel() {
                   <span className={styles.cartCur}>{currency}</span>
                 </span>
               </div>
-              <a className={styles.cartOrder} href={whatsappLink(message)} target="_blank" rel="noopener noreferrer">
-                {t("cartOrder")}
-              </a>
+              {/* The order form (details, then the WhatsApp message) is its own page. */}
+              <RouterLink to={`/${locale}/checkout`} className={styles.cartOrder} onClick={() => setOpen(false)}>
+                {t("cartCheckout")}
+              </RouterLink>
               <span className={styles.cartNote}>{t("cartNote")}</span>
               <button type="button" className={styles.cartClear} onClick={clear}>
                 {t("cartClear")}

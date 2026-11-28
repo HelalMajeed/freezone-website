@@ -1,13 +1,11 @@
 /* The storefront shell and its pages (header, footer, cart, product list, product).
 
-   `.site` is a size container: every `cqw` below is 1% of the page width, as on
-   the design canvas. Sizes, colours and spacing follow the design one to one. */
+   `.frame` (header + page + footer) is a size container: every `cqw` below is 1%
+   of the page width, as on the design canvas. Sizes, colours and spacing follow
+   the design one to one. The panels over the page (menu, search, cart, messages,
+   floating buttons) sit in `.site` but outside `.frame`, and use plain px/vw. */
 
 .site {
-  container-type: inline-size;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
   background: #ffffff;
   color: #0a0a0a;
   font-family: "Inter Variable", "Inter", "Tajawal", system-ui, "Segoe UI", Tahoma, sans-serif;
@@ -16,19 +14,36 @@
   -webkit-font-smoothing: antialiased;
 }
 
+.frame {
+  container-type: inline-size;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
 .site a {
   color: inherit;
   text-decoration: none;
 }
 
-.site button {
+/* `:where` keeps this at the weight of a bare tag, so a class on the control
+   (size, weight) always wins over it. */
+:where(.site) :where(button, input, select, textarea) {
   font: inherit;
 }
 
 .site a:focus-visible,
-.site button:focus-visible {
+.site button:focus-visible,
+.site select:focus-visible,
+.site summary:focus-visible {
   outline: 2px solid #c90000;
   outline-offset: 2px;
+}
+
+/* The header stays on screen, so anything scrolled to by a link stops below it. */
+.main [id],
+.chipRow {
+  scroll-margin-top: 78px;
 }
 
 .main {
@@ -64,11 +79,18 @@
 /* ── Header ──────────────────────────────────────────────── */
 
 .header {
-  position: relative;
-  z-index: 20;
+  position: sticky;
+  top: 0;
+  z-index: 30;
   background: #ffffff;
   color: #0a0a0a;
   border-bottom: 1px solid #e7e5e4;
+  transition: box-shadow 0.25s ease;
+}
+
+/* Once the page has moved (or a menu is open) the bar lifts off it. */
+.headerRaised {
+  box-shadow: 0 10px 30px -18px rgba(10, 10, 10, 0.35);
 }
 
 .headerBar {
@@ -130,8 +152,142 @@
   transition: border-color 0.2s ease;
 }
 
-.navLink:hover {
+.navLink:hover,
+.navLinkOn {
   border-bottom-color: #c90000;
+}
+
+/* "Sections" and "Brands" open a panel instead of going to a page. */
+.navBtn {
+  gap: 6px;
+  padding: 0;
+  border-width: 0 0 2px;
+  border-style: solid;
+  border-color: transparent;
+  background: transparent;
+  color: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.navCaret {
+  transition: transform 0.2s ease;
+}
+
+.navCaretOn {
+  transform: rotate(180deg);
+}
+
+/* ── Header panels: sections and brands ──────────────────── */
+
+.mega {
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  background: #ffffff;
+  border-top: 1px solid #e7e5e4;
+  box-shadow: 0 30px 40px -28px rgba(10, 10, 10, 0.4);
+  animation: fzDrop 0.18s ease both;
+}
+
+.megaInner {
+  padding-block: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.megaCols {
+  width: 100%;
+  columns: 4;
+  column-gap: clamp(20px, 3cqw, 48px);
+}
+
+.megaGroup {
+  break-inside: avoid;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-bottom: 18px;
+}
+
+.megaTitle {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.megaLink {
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #44403c;
+}
+
+.site a.megaLink {
+  color: #44403c;
+}
+
+.site a.megaTitle:hover,
+.site a.megaLink:hover {
+  color: #c90000;
+}
+
+.megaAll {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: #0a0a0a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.site a.megaAll {
+  color: #ffffff;
+}
+
+.megaBrands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.megaBrand {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #f5f5f4;
+  font-size: 15px;
+  font-weight: 700;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.megaBrand:hover {
+  background: #0a0a0a;
+}
+
+.site a.megaBrand:hover {
+  color: #ffffff;
+}
+
+.megaBrand:hover .chipNum {
+  color: #d6d3d1;
+}
+
+@keyframes fzDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
 }
 
 .tools {
@@ -157,6 +313,27 @@
   background: #f5f5f4;
 }
 
+.badgeDark {
+  background: #0a0a0a !important;
+}
+
+/* The cart count gives a small bump each time it changes. */
+.badgeBump {
+  animation: fzBump 0.4s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+@keyframes fzBump {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 .cartBadge {
   position: absolute;
   top: 3px;
@@ -175,44 +352,137 @@
   display: block;
 }
 
-.mobileNav {
-  display: none;
-}
-
 @container (max-width: 879px) {
   .menuBtn {
     display: flex;
     margin-inline-start: -10px;
   }
 
-  .nav {
+  .nav,
+  .mega {
     display: none;
   }
 
   .tools {
     margin-inline-start: auto;
   }
+}
 
-  .mobileNav {
-    display: flex;
-    flex-direction: column;
-    padding-block: 4px 12px;
-    border-top: 1px solid #e7e5e4;
-    background: #ffffff;
-    font-size: 16px;
-    font-weight: 500;
+/* The narrowest phones keep language, search and cart in the bar; favourites is in the menu. */
+@container (max-width: 400px) {
+  .favBtn {
+    display: none;
   }
+}
 
-  .mobileNav a {
-    min-height: 48px;
-    display: flex;
-    align-items: center;
-    border-bottom: 1px solid #f5f5f4;
-  }
+/* ── Phone menu (slides in from the side) ────────────────── */
 
-  .mobileNav a:last-child {
-    border-bottom: 0;
+.cartLayer.menuLayer {
+  justify-content: flex-start;
+}
+
+.cartPanel.menuPanel {
+  width: min(360px, 88%);
+  animation: fzSlideFromStart 0.26s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.menuLogo {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+
+.menuList {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 12px 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.menuItem {
+  flex: none;
+  width: 100%;
+  min-height: 52px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 10px;
+  border: 0;
+  border-bottom: 1px solid #f5f5f4;
+  background: transparent;
+  color: #0a0a0a;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+
+.menuWithIcon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menuSub {
+  flex: none;
+  margin-block: 6px 10px;
+  padding: 4px 6px;
+  border-radius: 14px;
+  background: #f5f5f4;
+  display: flex;
+  flex-direction: column;
+  animation: fzDrop 0.18s ease both;
+}
+
+.menuSubItem {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 10px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.menuFoot {
+  flex: none;
+  padding: 14px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid #e7e5e4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.menuWa {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+@keyframes fzSlideFromStart {
+  from {
+    transform: translateX(-100%);
   }
+}
+
+@keyframes fzSlideFromStartRtl {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+:global(html[dir="rtl"]) .cartPanel.menuPanel {
+  animation-name: fzSlideFromStartRtl;
 }
 
 /* ── Footer ──────────────────────────────────────────────── */
@@ -321,6 +591,13 @@ a.footLine {
   padding: 0;
   background: rgba(10, 10, 10, 0.5);
   cursor: default;
+  animation: fzFade 0.2s ease both;
+}
+
+@keyframes fzFade {
+  from {
+    opacity: 0;
+  }
 }
 
 .cartPanel {
@@ -772,6 +1049,170 @@ a.footLine {
   font-weight: 700;
 }
 
+/* Sort, price and availability: one line of controls above the products. */
+.tools2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+@container (max-width: 640px) {
+  .tools2 {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-inline: calc(-1 * clamp(16px, 4cqw, 40px));
+    padding-inline: clamp(16px, 4cqw, 40px);
+    scrollbar-width: none;
+  }
+
+  .tools2::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tools2 > * {
+    flex: none;
+  }
+}
+
+.selectPill {
+  position: relative;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-inline: 14px 12px;
+  border: 1px solid #d6d3d1;
+  border-radius: 999px;
+  background: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.selectPill:hover,
+.selectPill:focus-within {
+  border-color: #0a0a0a;
+}
+
+.selectLabel {
+  color: #57534e;
+}
+
+/* The real control fills the pill (so the whole pill opens it) but draws nothing of its own. */
+.site .select {
+  appearance: none;
+  -webkit-appearance: none;
+  min-width: 0;
+  max-width: 46vw;
+  height: 42px;
+  margin: 0;
+  padding: 0;
+  border: 0 !important;
+  outline: 0;
+  box-shadow: none;
+  background: transparent;
+  color: #0a0a0a;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
+.site .select:focus-visible {
+  outline: 0;
+}
+
+.togglePill {
+  /* Holds its hidden checkbox: left to the page, the checkbox would sit outside the scrolling line in Arabic and widen the page. */
+  position: relative;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-inline: 12px 16px;
+  border: 1px solid #d6d3d1;
+  border-radius: 999px;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+
+.togglePill:hover {
+  border-color: #0a0a0a;
+}
+
+.togglePill:focus-within {
+  outline: 2px solid #c90000;
+  outline-offset: 2px;
+}
+
+.togglePillOn {
+  border-color: #0a0a0a;
+  background: #f5f5f4;
+  font-weight: 700;
+}
+
+.toggleBox {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #a8a29e;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #ffffff;
+}
+
+.togglePillOn .toggleBox {
+  border-color: #c90000;
+  background: #c90000;
+}
+
+.clearBtn {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: #57534e;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.clearBtn:hover {
+  color: #c90000;
+}
+
+.searchClear {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  margin-inline-end: -8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: #f5f5f4;
+  color: #57534e;
+  cursor: pointer;
+  padding: 0;
+}
+
+.pagerGap {
+  min-width: 20px;
+  text-align: center;
+  color: #78716c;
+}
+
 .sections {
   display: flex;
   flex-direction: column;
@@ -1137,6 +1578,330 @@ a.footLine {
   font-weight: 800;
 }
 
+/* The picture is a button: hovering magnifies it around the pointer, a click or tap opens it large. */
+.zoomBtn {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.site .zoomBtn:focus-visible {
+  outline-offset: -4px;
+}
+
+.zoomBtn .detailImg {
+  transition: transform 0.25s ease;
+}
+
+@media (hover: hover) {
+  .zoomBtn[data-zoom] .detailImg {
+    transform: scale(1.9);
+    transform-origin: var(--zx, 50%) var(--zy, 50%);
+  }
+}
+
+.zoomHint {
+  position: absolute;
+  bottom: 12px;
+  inset-inline-end: 12px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #44403c;
+  box-shadow: 0 1px 4px rgba(10, 10, 10, 0.12);
+  pointer-events: none;
+}
+
+.detailTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detailTools {
+  flex: none;
+  display: flex;
+  gap: 8px;
+}
+
+.roundBtn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e7e5e4;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0a0a0a;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.roundBtn:hover {
+  border-color: #0a0a0a;
+}
+
+.roundBtn:active {
+  transform: scale(0.92);
+}
+
+.roundBtnOn {
+  border-color: #c90000;
+  color: #c90000;
+}
+
+.detailFacts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+}
+
+.stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f5f5f4;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.stock svg {
+  color: #c90000;
+}
+
+.stockOut {
+  color: #57534e;
+}
+
+.qtyLarge {
+  flex: none;
+  height: 52px;
+  box-sizing: border-box;
+}
+
+.qtyLarge .qtyBtn {
+  width: 48px;
+  height: 50px;
+}
+
+.qtyLarge .qtyNum {
+  min-width: 30px;
+  font-size: 16px;
+}
+
+.qtyBtn:disabled {
+  color: #a8a29e;
+  cursor: default;
+}
+
+.addBtn {
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.addBtn:not(:disabled):hover {
+  background: #c90000;
+}
+
+.addBtn:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.inCartLine {
+  align-self: flex-start;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #0a0a0a;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.inCartLine svg {
+  color: #c90000;
+}
+
+.inCartLink {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.detailLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.detailLinks .backBtn {
+  min-height: 48px;
+  transition: border-color 0.2s ease;
+}
+
+.detailLinks .backBtn:hover {
+  border-color: #0a0a0a;
+}
+
+/* The picture on its own, over the page. */
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.viewerBox {
+  position: relative;
+  width: min(92vw, 86vh, 760px);
+  aspect-ratio: 1 / 1;
+  border-radius: 20px;
+  background: #f5f5f4;
+  overflow: hidden;
+  animation: fzPop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.site .viewerImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+.viewerClose {
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(10, 10, 10, 0.16);
+}
+
+@keyframes fzPop {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+/* Phones: price and "add to cart" stay within reach whenever the main button is off screen. */
+.buyBar {
+  position: fixed;
+  z-index: 35;
+  inset-inline: 0;
+  bottom: 0;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: #ffffff;
+  border-top: 1px solid #e7e5e4;
+  box-shadow: 0 -10px 24px -18px rgba(10, 10, 10, 0.4);
+  animation: fzToast 0.25s ease both;
+}
+
+@media (max-width: 640px) {
+  .buyBar {
+    display: flex;
+  }
+}
+
+.buyBarPrice {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 18px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.buyBarBtn {
+  flex: 0 1 210px;
+  max-width: none;
+  min-height: 50px;
+  padding: 0 16px;
+}
+
+/* ── A line of product cards that scrolls sideways ───────── */
+
+.railBox {
+  position: relative;
+}
+
+.rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max(150px, calc((100% - 4 * clamp(12px, 1.5cqw, 20px)) / 5));
+  gap: clamp(12px, 1.5cqw, 20px);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+.railBtn {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  margin-top: -22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e7e5e4;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0a0a0a;
+  box-shadow: 0 6px 18px rgba(10, 10, 10, 0.16);
+  cursor: pointer;
+  padding: 0;
+}
+
+.railBtn:hover {
+  border-color: #0a0a0a;
+}
+
+.railPrev {
+  inset-inline-start: -12px;
+}
+
+.railNext {
+  inset-inline-end: -12px;
+}
+
+/* Touch screens swipe the line; the arrows are for a mouse. */
+@media (hover: none) {
+  .railBtn {
+    display: none;
+  }
+}
+
 .ghostBlock {
   border-radius: 20px;
   background: #f5f5f4;
@@ -1147,6 +1912,467 @@ a.footLine {
   height: 16px;
   border-radius: 8px;
   background: #f0efed;
+}
+
+/* ── Forms (order page, contact page) ────────────────────── */
+
+.lead {
+  margin: 0;
+  max-width: 720px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #57534e;
+}
+
+/* Form beside its summary; one under the other when the page is narrow. */
+.checkout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(16px, 2cqw, 28px);
+}
+
+.panel {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: clamp(16px, 2cqw, 28px);
+  border: 1px solid #e7e5e4;
+  border-radius: 20px;
+  background: #ffffff;
+}
+
+.panelTitle {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  font-size: clamp(18px, 1.7cqw, 22px);
+  line-height: 1.4;
+  font-weight: 800;
+}
+
+.summary {
+  position: sticky;
+  top: 84px;
+  background: #fafaf9;
+}
+
+@container (max-width: 879px) {
+  .checkout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* The products first, then the details and the send button. */
+  .summary {
+    position: static;
+    order: -1;
+  }
+}
+
+.choiceRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: 10px;
+}
+
+.choice {
+  position: relative;
+  min-height: 56px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border: 1px solid #d6d3d1;
+  border-radius: 14px;
+  background: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.choice:hover {
+  border-color: #0a0a0a;
+}
+
+.choice:focus-within {
+  outline: 2px solid #c90000;
+  outline-offset: 2px;
+}
+
+.choiceOn {
+  border-color: #0a0a0a;
+  box-shadow: inset 0 0 0 1px #0a0a0a;
+  background: #f5f5f4;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
+  gap: 14px 16px;
+}
+
+.fieldBox {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldWide {
+  grid-column: 1 / -1;
+}
+
+.fieldSet {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  gap: 10px;
+}
+
+.fieldSet legend {
+  padding: 0;
+  margin-bottom: 10px;
+}
+
+.fieldLabel {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* 16px text keeps phones from zooming the page when a field is tapped. */
+.site .input {
+  width: 100%;
+  height: 50px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 16px;
+  border: 1px solid #a8a29e !important;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #0a0a0a;
+  font-size: 16px;
+  outline: 0;
+  box-shadow: none;
+}
+
+.site .input:focus,
+.site .input:focus-visible {
+  outline: 0;
+  border-color: #0a0a0a !important;
+  box-shadow: 0 0 0 1px #0a0a0a;
+}
+
+.site .input.inputBad {
+  border-color: #c90000 !important;
+  box-shadow: 0 0 0 1px #c90000;
+}
+
+.site .inputArea {
+  height: auto;
+  min-height: 96px;
+  padding-block: 12px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+/* Numbers read left to right; in Arabic the box still starts at the right. */
+:global(html[dir="rtl"]) .inputPhone {
+  text-align: right;
+}
+
+.selectBox {
+  position: relative;
+  display: block;
+}
+
+.site .inputSelect {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline-end: 40px;
+  cursor: pointer;
+}
+
+.selectCaret {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 14px;
+  margin-top: -8px;
+  color: #57534e;
+  pointer-events: none;
+}
+
+.fieldErr {
+  font-size: 13px;
+  font-weight: 500;
+  color: #c90000;
+}
+
+.formErr {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #c90000;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sendBtn {
+  gap: 10px;
+  border: 0;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.site button.sendBtn {
+  color: #ffffff;
+}
+
+.cartOrder {
+  transition: background 0.2s ease;
+}
+
+.cartOrder:hover {
+  background: #c90000;
+}
+
+.sendBtn:active {
+  transform: scale(0.99);
+}
+
+/* Under a send button once it was used: the same WhatsApp link, in case the new tab was blocked. */
+.againLink {
+  align-self: center;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pickupNote {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f5f5f4;
+  font-size: 14px;
+}
+
+.sumList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sumRows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid #e7e5e4;
+}
+
+.sumRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: #57534e;
+}
+
+/* After the form: "press send in WhatsApp", then "thank you". */
+.doneBox {
+  max-width: 640px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-inline: auto;
+  padding: clamp(24px, 4cqw, 48px) clamp(16px, 3cqw, 40px);
+  border: 1px solid #e7e5e4;
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  animation: fzPop 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.doneBox .h1 {
+  font-size: clamp(22px, 2.4cqw, 30px);
+}
+
+.doneMark {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #c90000;
+  color: #ffffff;
+}
+
+.doneMarkDark {
+  background: #0a0a0a;
+}
+
+.doneActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.doneActions .cartOrder {
+  min-height: 48px;
+}
+
+.sentMessage {
+  width: 100%;
+  max-height: 220px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 14px 16px;
+  overflow: auto;
+  border-radius: 14px;
+  background: #f5f5f4;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.7;
+  text-align: start;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.emptyIcon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #c90000;
+}
+
+/* ── Contact page ────────────────────────────────────────── */
+
+.contactCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: clamp(10px, 1.2cqw, 16px);
+}
+
+.contactCard {
+  min-height: 84px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1px solid #e7e5e4;
+  border-radius: 20px;
+  background: #ffffff;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+a.contactCard:hover {
+  border-color: #0a0a0a;
+  transform: translateY(-2px);
+}
+
+.contactIcon {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #0a0a0a;
+  color: #ffffff;
+}
+
+.contactText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.contactKind {
+  font-size: 13px;
+  color: #57534e;
+}
+
+.contactValue {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.contactGo {
+  flex: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: #c90000;
+}
+
+.howList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.howItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.stepNum {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #c90000;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.howText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.howTitle {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.summary .pillBtn {
+  align-self: flex-start;
 }
 
 /* ── Not found ───────────────────────────────────────────── */
@@ -1175,8 +2401,471 @@ a.footLine {
   padding-top: 8px;
 }
 
+/* ── Panels sliding in from the end side (cart) ──────────── */
+
+.fromEnd {
+  animation: fzSlideFromEnd 0.26s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes fzSlideFromEnd {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fzSlideFromEndRtl {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+:global(html[dir="rtl"]) .fromEnd {
+  animation-name: fzSlideFromEndRtl;
+}
+
+/* ── Search panel ────────────────────────────────────────── */
+
+.searchLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 58;
+  display: flex;
+  flex-direction: column;
+}
+
+.searchPanel {
+  position: relative;
+  max-height: min(100dvh, 760px);
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  color: #0a0a0a;
+  box-shadow: 0 24px 60px rgba(10, 10, 10, 0.25);
+  animation: fzDrop 0.2s ease both;
+}
+
+.searchTop,
+.searchBody {
+  width: 100%;
+  max-width: 860px;
+  margin-inline: auto;
+  box-sizing: border-box;
+  padding-inline: clamp(16px, 4vw, 40px);
+}
+
+.searchTop {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-block: 12px;
+}
+
+.searchBoxWide {
+  flex: 1;
+  max-width: none;
+  height: 52px;
+}
+
+/* The pill around the box shows focus; the site-wide ring on the bare input would double it. */
+.site .searchInput:focus,
+.site .searchInput:focus-visible {
+  outline: 0;
+  box-shadow: none;
+}
+
+/* The browser's own "clear" cross would sit beside ours. */
+.searchInput::-webkit-search-cancel-button {
+  display: none;
+}
+
+.searchBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-block: 6px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.searchGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.searchLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #57534e;
+}
+
+.searchChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recentChip {
+  display: flex;
+  align-items: center;
+  border: 1px solid #d6d3d1;
+  border-radius: 999px;
+  background: #ffffff;
+}
+
+.recentText {
+  min-height: 42px;
+  padding-inline: 14px 4px;
+  border: 0;
+  background: transparent;
+  color: #0a0a0a;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.recentRemove {
+  width: 36px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #78716c;
+  cursor: pointer;
+  padding: 0;
+}
+
+.recentRemove:hover {
+  color: #c90000;
+}
+
+.hitList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 14px;
+}
+
+.hitOn {
+  background: #f5f5f4;
+}
+
+.hitThumb {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  background: #f5f5f4;
+  overflow: hidden;
+}
+
+.hitOn .hitThumb {
+  background: #ffffff;
+}
+
+.hitThumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+.hitText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hitName {
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 700;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.hitMeta {
+  font-size: 13px;
+  color: #57534e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:global(html[dir="rtl"]) .hitMeta {
+  text-align: right;
+}
+
+.hitPrice {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.searchAll {
+  flex: none;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 1px solid #0a0a0a;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0a0a0a;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.searchAll:hover {
+  background: #0a0a0a;
+  color: #ffffff;
+}
+
+.searchNone {
+  padding-block: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .searchPanel {
+    height: 100dvh;
+    max-height: none;
+  }
+}
+
+/* ── Messages after an action ────────────────────────────── */
+
+.toasts {
+  position: fixed;
+  z-index: 70;
+  inset-inline: 16px;
+  bottom: calc(20px + var(--fz-bottom-bar, 0px) + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  max-width: min(440px, 100%);
+  min-height: 52px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-block: 6px;
+  padding-inline: 14px 6px;
+  border-radius: 999px;
+  background: #0a0a0a;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 12px 30px rgba(10, 10, 10, 0.3);
+  animation: fzToast 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.toastMark {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #c90000;
+}
+
+.toastText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toastAction {
+  flex: none;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0a0a0a;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.toastClose {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #d6d3d1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.site .toast button:focus-visible {
+  outline-color: #ffffff;
+}
+
+@keyframes fzToast {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+/* ── Floating buttons (WhatsApp, back to top) ────────────── */
+
+.floaters {
+  position: fixed;
+  z-index: 40;
+  inset-inline-end: clamp(12px, 2vw, 24px);
+  bottom: calc(clamp(12px, 2vw, 24px) + var(--fz-bottom-bar, 0px) + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.floater {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: #0a0a0a;
+  box-shadow: 0 10px 26px rgba(10, 10, 10, 0.28);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.2s ease, background 0.2s ease;
+  animation: fzToast 0.25s ease both;
+}
+
+.site a.floater,
+.site button.floater {
+  color: #ffffff;
+}
+
+.floater:hover {
+  transform: translateY(-2px);
+  background: #c90000;
+}
+
+.floaterLight {
+  background: #ffffff;
+  border: 1px solid #d6d3d1;
+}
+
+.site button.floaterLight {
+  color: #0a0a0a;
+}
+
+.floaterLight:hover {
+  background: #f5f5f4;
+}
+
+/* On phones the buttons are smaller, and the messages keep clear of them. */
+@media (max-width: 640px) {
+  .floater {
+    width: 46px;
+    height: 46px;
+  }
+
+  .toasts {
+    inset-inline: 12px 70px;
+    align-items: stretch;
+  }
+
+  .toast {
+    max-width: none;
+  }
+
+  /* The message leaves by itself; on a narrow screen the room goes to its text. */
+  .toastClose {
+    display: none;
+  }
+
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .navLink {
+  .navLink,
+  .navCaret,
+  .header,
+  .floater,
+  .megaBrand,
+  .searchAll {
     transition: none;
+  }
+
+  .zoomBtn .detailImg,
+  .roundBtn,
+  .addBtn {
+    transition: none;
+  }
+
+  .choice,
+  .sendBtn,
+  .cartOrder,
+  .contactCard {
+    transition: none;
+  }
+
+  a.contactCard:hover {
+    transform: none;
+  }
+
+  .doneBox,
+  .viewerBox,
+  .buyBar,
+  .mega,
+  .menuPanel,
+  .menuSub,
+  .fromEnd,
+  .cartScrim,
+  .searchPanel,
+  .toast,
+  .floater,
+  .badgeBump {
+    animation: none;
   }
 }

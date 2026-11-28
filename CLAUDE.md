@@ -10,7 +10,8 @@ start of EVERY session. Follow it in every task; subagents inherit these rules t
 
 > **Storefront is static since 2026-11 (ASSUMPTIONS A-21).** Everything a visitor sees
 > outside `/admin` is `freezone-web/src/site/**` (+ `src/components/home-v2/**`): home,
-> product list, product page, cart-to-WhatsApp. Its catalogue is the JSON in
+> product list, product page, cart, order form (sent to the store on WhatsApp — A-23),
+> favourites and contact. Its catalogue is the JSON in
 > `freezone-web/src/site/data/` with pictures in `freezone-web/public/catalog/` — **not the
 > API/DB**. Admin-panel product/CMS edits do not reach the storefront; a price or product
 > changes by editing those files and deploying. Read `freezone-web/src/site/README.md`
@@ -85,7 +86,7 @@ Browser ──► Netlify (freezone-iq.com)            Vite SPA: storefront + /a
   `/sitemap.xml` is a **static file** written by the build (`scripts/prerender.mjs`).
 - **SEO for a client-only SPA**: build-time prerender (`freezone-web/scripts/prerender.mjs`,
   `postbuild`) reads `src/site/data/catalog.json` (no network) and writes per-route static
-  `index.html` shells with meta + JSON-LD for home, product list and every product, plus
+  `index.html` shells with meta + JSON-LD for home, product list, contact and every product, plus
   `dist/sitemap.xml`; runtime `src/components/seo/Seo.tsx` upserts head tags; one Netlify
   edge function (`seo-product-404.ts`) answers unknown product ids with a real 404 and
   redirects the previous catalogue's numeric ids to the product list (no API call — its
@@ -126,7 +127,8 @@ Browser ──► Netlify (freezone-iq.com)            Vite SPA: storefront + /a
 - `main.tsx` / `App.tsx` — providers + top-level routing. `/admin` & `/dashboard` selected by
   **pathname regex** (not route ranking); admin is one lazy chunk.
 - `site/**` — **the live storefront** (static; see the note at the top and `site/README.md`):
-  `SiteLayout` shell, header/footer, product list + product page, cart, `data/` catalogue.
+  `SiteLayout` shell, header/footer, search, product list + product page, cart, order form,
+  favourites, contact, `data/` catalogue.
 - `routes/LocaleLayout.tsx` — previous storefront shell (**not routed**); loaded everything via one
   `GET /api/ssr/storefront-bootstrap` call, split into cached `shell` + `catalog` queries.
 - `routes/dashboard-routes.tsx` — admin routes under `/admin`, wrapped in `<DashboardGuard>` +

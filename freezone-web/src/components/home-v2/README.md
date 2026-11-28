@@ -5,12 +5,13 @@ The storefront home page, ported from the "Home · Light" design canvas. Rendere
 
 | Part | File | Data |
 |---|---|---|
-| Hero — six layered banners, 4 s each, six switch effects | `HeroFilms.tsx` | fixed (generated) |
+| Hero — six layered banners, 4 s each, six switch effects; arrows, dots, keyboard arrows and swipe step through them, hover or keyboard focus holds them, a click opens what the banner shows | `HeroFilms.tsx` | fixed (generated); click targets in `HERO_LINKS` |
 | "Shop by section" (`#categories`) — six cards with looping scenes | `HomeSections.tsx` → `SectionCards` | each card opens the product list filtered to its section |
-| Brand strip (`#brands`) | `HomeSections.tsx` → `BrandStrip` | fixed logos in `public/home-v2/brands`; brands with products link to their list |
-| Product rows — laptops, routers, CCTV | `ProductRows.tsx` | five chosen catalogue ids per row (`src/site/data`) |
+| Brand strip (`#brands`) | `HomeSections.tsx` → `BrandStrip` | fixed logos in `public/home-v2/brands`; brands with products link to their list, the others open a question about that brand on the contact page |
+| Product rows — laptops, routers, CCTV, then "recently viewed" for returning visitors | `ProductRows.tsx` | five chosen catalogue ids per row (`src/site/data`); the last row comes from the browser (`src/site/prefs.ts`) |
 | Promo pictures (`#offers`) | `HomeSections.tsx` → `PromoGrid` | fixed pictures, filtered-list links |
-| Projects banner (`#solutions`) | `HomeSections.tsx` → `ProjectsBanner` | fixed photo; the button opens a WhatsApp chat with the store |
+| Projects banner (`#solutions`) | `HomeSections.tsx` → `ProjectsBanner` | fixed photo; the button opens the project-quote form on the contact page |
+| Rise-in as each part is reached | `Reveal.tsx` | — (off with reduced motion) |
 
 Strings: `HomeV2` in `src/messages/{ar,en}.json`. Layout: `HomeV2.module.css`; the
 product card is shared with the product pages (`src/site/ProductCard.tsx`).

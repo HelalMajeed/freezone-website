@@ -229,3 +229,38 @@ responsiveness to be fixed, then to push and merge.
   line down to tablet width.
 - The fixed pixel heights the canvas editor had added are not carried over — the
   site was already fluid.
+
+## A-23 · Storefront finished end to end, everything interactive (2026-11-28, branch `feat/storefront-interactive`)
+Owner asked to "finish the website end to end and make everything interactive".
+Read as: complete the live static storefront (A-21) — not the design canvas, and
+not a return to the API checkout.
+- **Ordering stays on WhatsApp, now with an order form.** New `/checkout` page:
+  name, mobile number, governorate + address or pickup from the showroom, notes →
+  one WhatsApp message to the store → "press send" screen → thank-you screen that
+  empties the cart. Nothing is posted to the API; there is no payment step.
+  Orders saved in the admin panel would need the 586 products loaded into the
+  database and API deploys working again (Fly.io billing) — a separate job.
+- **No delivery fee, delivery time, warranty or returns text is shown.** The old
+  policy and FAQ copy (`src/lib/policy-content.ts`, `faq-content.ts`, `FAQ.*`
+  strings) disagrees with itself (1-year vs 2-year warranty, 7 vs 30 days) and
+  describes features this site no longer has, so it was not republished. The
+  order page only says the store confirms availability, delivery and payment on
+  WhatsApp. Policy pages wait for the owner's terms.
+- **New pages:** `/checkout` and `/wishlist` (personal, noindex, not in the
+  sitemap) and `/contact` (prerendered, in the sitemap): contact details, a
+  question / project-quote form that writes the WhatsApp message, and "how
+  ordering works". No map and no opening hours — neither is known.
+- **Banner and brand links:** banners open the matching products; "Custom
+  Servers" opens the quote form and "Epson" a question to the store, because the
+  catalogue lists neither. Brand logos without products (Grandstream, Epson,
+  PlayStation) open a question about that brand instead of doing nothing.
+- **Saved in the visitor's browser only** (`fz-site-prefs-v1`): favourites,
+  recently viewed, recent searches, and the order form's details for next time.
+- **Search matches every word in any order** and treats أ/إ/آ/ا, ة/ه, ى/ي and
+  Arabic-Indic digits as the same; the product list gained sort (price, new
+  first), five price ranges and "available only".
+- **Fixed on the way:** buttons were rendering at normal weight because a shell
+  rule outranked their own (now `:where`); panels over the page moved out of the
+  page's size container so `position: fixed` measures from the screen in every
+  browser.
+- **Rollback:** revert the merge commit — no database or API change is involved.

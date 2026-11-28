@@ -21,10 +21,10 @@ export function SiteFooter() {
       <div className={`${styles.wrap} ${styles.footGrid}`}>
         <div className={styles.footAbout}>
           <img src="/site/logo-white.svg" alt="FreeZone" width={379} height={107} loading="lazy" className={styles.footLogo} />
-          <span className={styles.footLine}>
+          <RouterLink to={`/${locale}/contact`} className={styles.footLine}>
             <PinIcon />
             <span>{t("address")}</span>
-          </span>
+          </RouterLink>
           <a className={styles.footLine} href={whatsappLink(t("waHello"))} target="_blank" rel="noopener noreferrer">
             <PhoneIcon />
             <span>
@@ -44,9 +44,13 @@ export function SiteFooter() {
           <span className={styles.footTitle}>FreeZone</span>
           <RouterLink to={{ pathname: `/${locale}`, hash: "#solutions" }}>{t("navProjects")}</RouterLink>
           <RouterLink to={{ pathname: `/${locale}`, hash: "#brands" }}>{t("navBrands")}</RouterLink>
-          <a href={whatsappLink(t("waHello"))} target="_blank" rel="noopener noreferrer">
-            {t("footContact")}
-          </a>
+          <RouterLink to={`/${locale}/products`}>{t("allProducts")}</RouterLink>
+        </div>
+        <div className={styles.footCol}>
+          <span className={styles.footTitle}>{t("footHelp")}</span>
+          <RouterLink to={`/${locale}/contact`}>{t("footContact")}</RouterLink>
+          <RouterLink to={{ pathname: `/${locale}/contact`, hash: "#how-to-order" }}>{t("footHow")}</RouterLink>
+          <RouterLink to={`/${locale}/wishlist`}>{t("favorites")}</RouterLink>
         </div>
       </div>
       <div className={styles.wrap}>

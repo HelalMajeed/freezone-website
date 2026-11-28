@@ -1,6 +1,7 @@
 import { HeroFilms } from "./HeroFilms";
 import { BrandStrip, PromoGrid, ProjectsBanner, SectionCards } from "./HomeSections";
 import { ProductRows } from "./ProductRows";
+import { Reveal } from "./Reveal";
 import "./generated/homeMotion.css";
 import styles from "./HomeV2.module.css";
 
@@ -14,12 +15,20 @@ export default function HomeV2() {
     <div className={styles.root}>
       <HeroFilms />
       <section className={styles.sections}>
-        <SectionCards />
+        <Reveal>
+          <SectionCards />
+        </Reveal>
       </section>
-      <BrandStrip />
+      <Reveal>
+        <BrandStrip />
+      </Reveal>
       <ProductRows />
-      <PromoGrid />
-      <ProjectsBanner />
+      <Reveal>
+        <PromoGrid />
+      </Reveal>
+      <Reveal>
+        <ProjectsBanner />
+      </Reveal>
     </div>
   );
 }
