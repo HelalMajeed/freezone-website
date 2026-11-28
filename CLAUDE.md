@@ -297,16 +297,20 @@ Verify these on first run (root `package.json` is the source of truth) and corre
 ### B) API (+ DB migrate) → Fly.io app `freezone-website` → `https://freezone-website.fly.dev`
 - **Mechanism: GitHub Actions `.github/workflows/deploy-production.yml`** (secret `FLY_API_TOKEN`
   is present and this path works).
-- **Trigger:** push to `main` touching `freezone-api/**`, `freezone-web/**`, `fly.toml`,
-  `freezone-api/Dockerfile`, or `deploy-production.yml`; **or** manual `workflow_dispatch`.
+- **Trigger:** push to `main` touching `freezone-api/**`, `fly.toml` or
+  `freezone-api/Dockerfile`; **or** manual `workflow_dispatch`. A web-only push does **not**
+  run it (since 2026-11-28, A-24) — Netlify publishes the web app by itself.
 - **Pipeline:** `verify-api` (routes:check + test + build) **and** `verify-web` (lint + test +
   build) gate → `deploy-api` (`flyctl deploy -a freezone-website --remote-only`) →
   `deploy-web` (the no-op Netlify job).
 - **DB migrations run on container boot** via `freezone-api/docker-entrypoint.sh`
   (`npx prisma migrate deploy`) — **not** a Fly `release_command` (commented out). A bad/missing
   `DATABASE_URL` or migration fails the machine boot.
-- Postgres is a **separate** Fly app `freezone-website-pg`; daily volume snapshots via
-  `backup-database.yml`.
+- Postgres is a **separate** Fly app `freezone-website-pg` on the same Fly account. ⚠️ The
+  `backup-database.yml` snapshot job has **never worked since 2026-06-11** (the repo's
+  `FLY_API_TOKEN` is scoped to the API app and cannot see the Postgres app) and GitHub
+  disabled the schedule for inactivity on 2026-09-01. Real backups need an org-scoped Fly
+  token, or `DATABASE_URL_PROD` + `BACKUP_GPG_PASSPHRASE` (owner). See A-24.
 
 ### End-to-end: local edit → live
 1. Edit code under `freezone-api/**` (backend) and/or `freezone-web/**` (storefront/admin).
@@ -314,9 +318,10 @@ Verify these on first run (root `package.json` is the source of truth) and corre
 3. Commit and **push to `main`**.
 4. On push:
    - **Netlify** Git build rebuilds `freezone-web` → storefront **and** admin live (~1–3 min).
-   - **GitHub Actions** runs verify → deploys the **API to Fly** *if the push touched a path
-     filter* (~3–6 min); Fly migrates the DB on boot. A docs-only / `freezone-storefront/`-only
-     push does **not** trigger the Fly deploy (but Netlify still rebuilds).
+   - **GitHub Actions** runs verify → deploys the **API to Fly** *only if the push touched
+     `freezone-api/**` or `fly.toml`* (~3–6 min); Fly migrates the DB on boot. A web-only,
+     docs-only or `freezone-storefront/`-only push does **not** trigger the Fly deploy (Netlify
+     still rebuilds).
 5. Hard-refresh — `index.html` is served `no-cache`, so the new bundle loads immediately.
 
 ### Git commands to ship
@@ -326,11 +331,13 @@ git pull
 # ...edit files under freezone-web/** and/or freezone-api/**...
 git add <changed files>
 git commit -m "feat: <what changed>"      # conventional commits: feat|fix|chore|docs
-git push origin main                       # → Netlify rebuild (+ Fly deploy if API/web/fly paths)
+git push origin main                       # → Netlify rebuild (+ Fly deploy if API/fly paths)
 ```
 - **Manual API-only deploy** (bypass CI): `flyctl deploy -a freezone-website --remote-only`.
 - **Manual full deploy** (no code change): `gh workflow run deploy-production.yml`.
-- **Fly ops** (seed admin, snapshots, cancel test order): `gh workflow run ops-fly.yml -f action=<...>`.
+- **Fly ops** (`status`, `health`, seed admin, snapshots, cancel test order):
+  `gh workflow run ops-fly.yml -f action=<...>`. `status` is read-only; `health` starts the
+  machine and checks API, database and uploads from inside (no secret values printed).
 
 ### Branch policy (read before pushing to `main`)
 - The repo's golden rule (`§9`-style) historically said *"never commit directly to the default
@@ -343,9 +350,11 @@ git push origin main                       # → Netlify rebuild (+ Fly deploy i
   rewrite history without explicit approval.
 
 ### Other workflows (no deploy)
-`ci.yml` (every push/PR — all 3 packages), `backup-database.yml` (daily 03:00 UTC snapshot),
-`daily-summary.yml` (daily issue), `import-globaliraq[-full].yml` (manual catalog imports),
-`lighthouse.yml` (weekly + manual audit), `ops-fly.yml` (manual Fly admin).
+`ci.yml` (every push/PR — all 3 packages), `import-globaliraq[-full].yml` (manual catalog
+imports), `ops-fly.yml` (manual Fly admin). Scheduled and currently **disabled by GitHub for
+inactivity** (re-enable in the Actions tab once they can pass): `backup-database.yml` (daily
+03:00 UTC — see the warning above), `daily-summary.yml` (daily issue; needs
+`FREEZONE_ADMIN_EMAIL`), `lighthouse.yml` (weekly + manual audit).
 
 ---
 

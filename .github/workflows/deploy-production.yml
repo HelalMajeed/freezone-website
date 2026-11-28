@@ -4,12 +4,17 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    # API changes only. The web app (storefront + /admin) is published by
+    # Netlify's own Git integration on every push to main and takes nothing from
+    # this workflow, so a web-only push must not rebuild and redeploy the API.
+    # It used to (freezone-web/** was listed here): every storefront release then
+    # showed "Deploy production: failed" whenever Fly refused the API deploy,
+    # although the site itself had gone live. To redeploy the API without an API
+    # change (or after editing this file), run the workflow by hand.
     paths:
       - "freezone-api/**"
-      - "freezone-web/**"
       - "fly.toml"
       - "freezone-api/Dockerfile"
-      - ".github/workflows/deploy-production.yml"
 
 concurrency:
   group: deploy-production
