@@ -264,3 +264,26 @@ not a return to the API checkout.
   page's size container so `position: fixed` measures from the screen in every
   browser.
 - **Rollback:** revert the merge commit — no database or API change is involved.
+
+## A-24 · Hosting: web releases no longer depend on Fly (2026-11-28, branch `fix/hosting-pipeline`)
+Owner asked to "solve the hosting problem". Found with the new read-only
+`ops-fly.yml` actions (`status`, `health`) and the workflow history:
+- **Fly account has unpaid invoices.** Since at least 2026-11-25 Fly refuses every
+  deploy, and on 2026-11-28 it refused an explicit machine start ("your account
+  has overdue invoices"). The API machine still woke for a visitor at 11:08 UTC
+  that day and stopped again when idle; it runs the 2026-07-03 build. Only the
+  owner can settle the invoice — no agent action can.
+- **What sits on that account:** the API app, its `uploads_data` volume and the
+  Postgres app `freezone-website-pg` (orders, customers, the API catalogue).
+  The public storefront does not: it is static on Netlify and calls no API.
+- **Decision taken here:** `deploy-production.yml` runs on API changes only
+  (`freezone-web/**` and the workflow's own path removed from the trigger). A
+  web release therefore shows only CI, and is green or red on its own merits.
+- **Not changed:** the backup workflow. It has failed since 2026-06-11 because
+  the repo's Fly token cannot see the Postgres app (known as #44, owner-blocked)
+  and has been disabled by GitHub since 2026-09-01. There is no database backup
+  outside Fly. Fixing it needs an owner secret (org-scoped Fly token, or
+  `DATABASE_URL_PROD` + `BACKUP_GPG_PASSPHRASE`); the repository is public, so
+  an unencrypted dump must never be uploaded as an artifact.
+- **Open, owner's call:** pay Fly and keep the backend, move API + database to
+  another host, or retire the backend (the storefront does not use it).

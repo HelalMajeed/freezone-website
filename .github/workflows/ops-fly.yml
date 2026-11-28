@@ -42,10 +42,11 @@ jobs:
     steps:
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
-      - name: Read-only status (app, machines, volumes, database)
-        # Changes nothing and prints no secret values: what exists on Fly for this
-        # project and what state it is in. Lists are filtered to this project's
-        # names, because this repository's logs are public.
+      - name: Read-only status (app, machines, last events, volumes, secret names)
+        # Changes nothing and prints no secret values. FLY_API_TOKEN is scoped to
+        # the API app, so the Postgres app (freezone-website-pg) cannot be listed
+        # or inspected from here — use the `health` action to check the database
+        # from inside the API machine.
         if: inputs.action == 'status'
         run: |
           set +e
@@ -60,12 +61,6 @@ jobs:
           flyctl volumes list -a "$APP" 2>&1 | head -10
           echo "== secret names (no values) =="
           flyctl secrets list -a "$APP" 2>&1 | awk 'NR>1 {print $1}' | head -40
-          echo "== apps of this project =="
-          flyctl apps list 2>&1 | grep -iE "^NAME|freezone|error" | head -10
-          echo "== postgres apps of this project =="
-          flyctl postgres list 2>&1 | grep -iE "^NAME|freezone|error|no postgres" | head -10
-          echo "== managed postgres of this project =="
-          flyctl mpg list --org personal 2>&1 | grep -iE "NAME|freezone|error|no " | head -10
           exit 0
 
       - name: Start the machine and check API, database and uploads from inside
