@@ -14,6 +14,7 @@ on:
         type: choice
         default: "secrets-list"
         options:
+          - status
           - secrets-list
           - prepare-launch
           - seed-admin
@@ -39,6 +40,29 @@ jobs:
       APP: freezone-website
     steps:
       - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Read-only status (app, machines, volumes, database)
+        # Changes nothing and prints no secret values: what exists on Fly for this
+        # project and what state it is in. Lists are filtered to this project's
+        # names, because this repository's logs are public.
+        if: inputs.action == 'status'
+        run: |
+          set +e
+          echo "== app =="
+          flyctl status -a "$APP" 2>&1 | head -40
+          echo "== machines =="
+          flyctl machine list -a "$APP" 2>&1 | head -20
+          echo "== volumes =="
+          flyctl volumes list -a "$APP" 2>&1 | head -10
+          echo "== secret names (no values) =="
+          flyctl secrets list -a "$APP" 2>&1 | awk 'NR>1 {print $1}' | head -40
+          echo "== apps of this project =="
+          flyctl apps list 2>&1 | grep -iE "^NAME|freezone|error" | head -10
+          echo "== postgres apps of this project =="
+          flyctl postgres list 2>&1 | grep -iE "^NAME|freezone|error|no postgres" | head -10
+          echo "== managed postgres of this project =="
+          flyctl mpg list 2>&1 | grep -iE "NAME|freezone|error|no " | head -10
+          exit 0
 
       - name: List Fly secret names (no values)
         if: inputs.action == 'secrets-list'
